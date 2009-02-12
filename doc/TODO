@@ -1,0 +1,27 @@
+==========
+#TODO (Perl Passive) Realtime Network Awareness 
+==========
+
+1. The output now is more like PADS original. Add a switch to make it sguil complient?
+2. Discover host on ICMP too
+3. Discover Network Assets based on ARP.
+4. Internal table of [hosts(IP),services(port-#),ID string(banner of service or string that match),timestamp]
+5. TCP / ICMP Statistic Information ?
+
+6. p0f - Passive OS fingerprinting...
+   - Together with discovering hosts (and trying to get OS from banner strings etc.), PPRNA should
+     emulate p0f logic to detect OS based on tcp/icmp/udp... fingerprinting...
+
+7. Different output plugins...
+   - PoC should send to stdout or/and logfile (text).
+   - Next would be mysql
+
+
+MAC asset detection
+
+Sep 04 21:00:45 <qru>    * action_id            action
+Sep 04 21:00:45 <qru>    * 01                   TCP / ICMP Asset Discovered
+Sep 04 21:00:45 <qru>    * 02                   ARP Asset Discovered
+Sep 04 21:00:45 <qru>    * 03                   TCP / ICMP Statistic Information
+
+

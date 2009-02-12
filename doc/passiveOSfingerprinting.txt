@@ -1,0 +1,26 @@
+Info on what info to extract from packages :
+
+display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+
+ttl = time to live
+df = dont fragment flag(why org?)
+op = options
+ocnt = count ?
+mss = Maximum segment size
+wss = window size - a highly OS dependent setting
+wsc = Window scaling (WSCALE) - this feature is used to scale WSS. It extends the size of a TCP/IP window to 32 bits, of sorts. Some modern systems implement this feature.
+
+tstamp = timestamp - uptime...
+
+
+quirks =
+Some buggy stacks set certain values that should be zeroed in a
+#   TCP packet to non-zero values.
+- Data past the headers. Neither SYN nor SYN+ACK packets are supposed
+#     to carry any payload.
+#   - Options past EOL. Some systems have some trailing data past EOL
+#     in the options section of TCP/IP headers. P0f does not examine this
+#     data as of today, simply detects its presence. 
+much more
+
+

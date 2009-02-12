@@ -1,0 +1,25 @@
+redhat
+red hat
+debian
+ubuntu
+centos
+slackware
+windows
+mac
+apple
+linux
+unix
+win95
+win98
+nt
+2000
+winxp
+vista
+hpux
+solaris
+etch
+hardy
+lenny
+woody
+potato
+sid

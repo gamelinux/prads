@@ -1,0 +1,47 @@
+the new p0f: fingerprint submission page
+
+Thank you for deciding to contribute to p0f v2, a versatile passive operating system fingerprinting utility. Using this page, you can check your operating system fingerprint, and submit any eventual corrections or additional information (note: this code uses the most recent development snapshot, not the release code).
+
+I encourage you to visit this page from as many systems as you can, and fill out the form below if necessary. All the information gathered is anonymous and used only to develop the fingerprint database. Most needed systems: BSDI, IRIX, UnixWare, FreeSCO, AIX, older SunOS, HP-UX, DGUX/Tru64, ULTRIX, NetWare, UNICOS, OS/400, NextSTEP, OpenVMS, BeOS, OSF1, MacOS pre-X and all other minority OSes; proxy firewall/cache systems (Checkpoint, CacheOS); handhelds (Palm), appliances and other network devices.
+
+You can also use the SSL version if this will help you bypass proxies.
+
+Your address is: 78.156.13.199
+Your system is recognized as:
+
+
+78.156.13.199:56883 - Linux 2.6 (newer, 3) (up: 4 hrs) Signature: [S4:52:1:60:M1460,S,T,N,W7:.] -> 213.134.128.25:80 (distance 12, link: ethernet/modem)
+
+
+
+P0f recognized your system. Do not fill out the form below unless you believe the result is incorrect or too narrow - but please do not submit a more detailed definition if your system is already covered by the above. Keep in mind that if your system is grossly misidentified (for example Linux instead of Windows), it is likely that your ISP uses a transparent proxy to optimize your web browsing. Check using the SSL version of this page first. Thanks.
+
+If you are going thru a proxy and/or the IP above is not yours, but you know what this proxy device runs, your submission is still welcome. Please also check how p0f identified your network hook-up type (the "link" part of the signature). If the guess is incorrect, or if it says "unknown-nnnn", please submit a correction using the form below.
+
+Do not submit entries if you are behind a firewall with packet normalization (OpenBSD pf "scrub" / "modulate" option or such).
+
+System or device genre (for example Windows, Linux, Cisco). This is usually the system you are browsing from, NOT your router or modem or NAT box.
+
+OS type:[          ]
+
+System or device version (2000, XP, 2.4.1). For Linux, specify the version of your kernel, not "Mandrake 9" or such.
+
+System version:[          ]
+
+System patchlevel (for example SP3). This information is particularly important for Windows, please provide it. If no patches installed, specify "none". Only if unknown, leave this field blank.
+
+Patchlevel:[          ]
+
+Any custom tweaks or TCP/IP tuning. This includes any "DSL doctors", personal or non-personal firewalls, changes to the default TTL, enabled RFC1323 support, enabled or disabled timestamps, MSS/MTU changes, custom ToS, ippersonality, etc. Please provide as much information as you can. If not sure, leave this field blank, but please leave some contact information in the appropriate field below.
+
+TCP/IP tweaks:[          ]
+
+Your network hook-up type (if needs correction). This is not the name of your card, just a general description (Pacbell ADSL, dial-up, etc):
+
+Hook-up:[          ]
+
+Since I might have some questions if your signature is not typical, I strongly encourage you to provide contact information (e-mail) in the field below - as of today, I ended up with many incomplete or unusual submissions that can't be verified any further, and an e-mail would help. You will not receive spam.
+
+Your e-mail: [          ]
+
+[Submit]
