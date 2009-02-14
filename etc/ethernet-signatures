@@ -1,11 +1,11 @@
 ############################################################################
 #
-# Perl Passive Asset Detection System - Vendor Codes
+# Passive Real-time Asset Detection System - Vendor Codes
 #
 # This file contains vendor codes used to map MAC addresses to vendor
 # names.  It was taken from the Ettercap.
 #
-# $Id: ppads-ether-codes,v 0.1 2008/09/09 22:17:03 edward Exp $
+# $Id: ethernet-signatures,v 0.1 2008/09/09 22:17:03 edward Exp $
 #
 ############################################################################
 
