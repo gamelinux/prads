@@ -13,7 +13,7 @@ use Getopt::Long qw/:config auto_version auto_help/;
 
 =head1 NAME
 
-ppads.pl - inspired by passive.sourceforge.net
+prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0f.shtml
 
 =head1 VERSION
 
@@ -21,7 +21,7 @@ ppads.pl - inspired by passive.sourceforge.net
 
 =head1 SYNOPSIS
 
- $ ppads.pl [options]
+ $ prads.pl [options]
 
  OPTIONS:
 
@@ -29,7 +29,7 @@ ppads.pl - inspired by passive.sourceforge.net
  --signature|-s : path to signature file (default: signatures.txt)
  --debug        : enable debug messages (default: disabled)
  --help         : this help message
- --version      : show ppads.pl version
+ --version      : show prads.pl version
 
 =cut
 
@@ -53,7 +53,7 @@ GetOptions(
     # bpf filter
 );
 
-warn "Starting ppads.pl...\n";
+warn "Starting prads.pl...\n";
 
 warn "Initializing device\n" if $DEBUG;
 $DEVICE = init_dev($DEVICE)
