@@ -161,7 +161,7 @@ sub syn_packets {
          if ($fragment == 1) {
             if((5840 >= $winsize) && ($winsize >= 5488)) {
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }else{
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Linux ? \n";
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
