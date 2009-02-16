@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Net::Pcap;
+use lib qw(lib/perl5 ../lib/perl5);
 use NetPacket::Ethernet;
 use NetPacket::IP;
 use NetPacket::ARP;
