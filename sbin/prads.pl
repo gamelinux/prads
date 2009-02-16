@@ -323,7 +323,8 @@ sub filter_object {
     my($address, $netmask) = lookup_net($DEVICE);
     my $filter;
 #    my $BPF = q(tcp and src net 192.168.0.0 mask 255.255.255.0);
-    my $BPF = q(ip and src net 87.238.45.0/24);
+#    my $BPF = q(ip and src net 87.238.45.0/24);
+    my $BPF = q();
 
     Net::Pcap::compile(
         $object, \$filter, $BPF, 0, $netmask
