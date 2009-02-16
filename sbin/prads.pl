@@ -156,34 +156,39 @@ sub syn_packets {
       warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
 
       # Bogus/weak test, PoC - REWRITE
+      # LINUX/*NIX
       if((64 >= $ttl) && ($ttl > 32)) {
          if ($fragment == 1) {
             if((5840 >= $winsize) && ($winsize >= 5488)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 (up: 39 hrs) \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, link: ethernet/modem) \n";
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment \n";
             }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN \n";
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Linux ? \n";
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
          }elsif ($fragment == 0) {
-
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Fragment / *NIX ? \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
          }
-
+      # WINDOWS
       }elsif ((128 >= $ttl) && ($ttl > 64)) {
         if ($fragment == 1) {
            if((65535 >= $winsize ) && ($winsize >= 60000)) {
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000/2003/XP \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, link: IPv6/IPIP) \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN \n";
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Windows ? \n";
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
+         }elsif ($fragment == 0) {
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Fragment / *Windows ? \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
          }
-
-      }else{
+       # Others
+       }else{
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / UNKNOWN \n";
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
-      }
+       }
  
     }else{
       warn "Not an initial connection... Skipping OS detection\n" if($DEBUG);
