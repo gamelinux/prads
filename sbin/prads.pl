@@ -156,14 +156,14 @@ sub syn_packets {
       warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
       # Bogus/weak test, PoC - REWRITE
       if((64 >= $ttl) && ($ttl > 24)) {
-         if ($fragment = 1) {
+         if ($fragment == 1) {
             if((5840 >= $winsize) && ($winsize >= 5488)) {
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 (up: 39 hrs) ";
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (distance 9, link: ethernet/modem) ";
             }
          }
       }elsif ((128 >= $ttl) && ($ttl > 64)) {
-        if ($fragment = 1) {
+        if ($fragment == 1) {
            if((65535 > $winsize ) && ($winsize >= 64800)) {
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000/2003/XP";
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (distance 13, link: IPv6/IPIP) ";
