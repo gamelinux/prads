@@ -120,8 +120,8 @@ sub syn_packets {
     }
 
     my $ip       = NetPacket::IP->decode($ethernet);
-    my $tcp      = NetPacket::TCP->decode($ip->{'data'});
-    my $udp      = NetPacket::UDP->decode($ip->{'data'});
+#    my $tcp      = NetPacket::TCP->decode($ip->{'data'});
+#    my $udp      = NetPacket::UDP->decode($ip->{'data'});
 
     #### Should check ifdef $ip, $tcp, $udp... then do...
 
@@ -137,6 +137,7 @@ sub syn_packets {
     if($ip->{proto} == 6) {
       warn "Packet is of type TCP...\n" if($DEBUG);
       # Collect necessary info from TCP packet; if
+      my $tcp      = NetPacket::TCP->decode($ip->{'data'});
       my $winsize = $tcp->{'winsize'}; #
       my $tcpflags= $tcp->{'flags'};
       my $tcpopts = $tcp->{'options'}; # binary crap 'CEUAPRSF' 
@@ -182,15 +183,16 @@ sub syn_packets {
         }
     }
     }elsif ($ip->{proto} == 17) {
-     warn "Packet is of type UDP...\n" if($DEBUG);
-        unless($udp->{'data'}) {
+       warn "Packet is of type UDP...\n" if($DEBUG);
+       my $udp      = NetPacket::UDP->decode($ip->{'data'});
+       unless($udp->{'data'}) {
           warn "No UDP data - Skipping asset detection\n" if($DEBUG);
           warn "Done...\n\n" if($DEBUG);
           return;
-        }
-     # Make UDP asset detection here...
-     warn "Detectin UDP asset...\n" if($DEBUG);
-     warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
+       }
+       # Make UDP asset detection here...
+       warn "Detectin UDP asset...\n" if($DEBUG);
+       warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
     }
 warn "Done...\n\n" if($DEBUG);
 return;
