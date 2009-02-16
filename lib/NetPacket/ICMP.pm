@@ -39,12 +39,8 @@ package NetPacket::ICMP;
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-my $myclass;
-BEGIN {
-    $myclass = __PACKAGE__;
-    $VERSION = "0.04";
-}
-sub Version () { "$myclass v$VERSION" }
+
+our $VERSION = '0.41.1';
 
 BEGIN {
     @ISA = qw(Exporter NetPacket);
@@ -62,7 +58,7 @@ BEGIN {
                     ICMP_REDIRECT ICMP_ECHO ICMP_ROUTERADVERT
                     ICMP_ROUTERSOLICIT ICMP_TIMXCEED ICMP_PARAMPROB
                     ICMP_TSTAMP ICMP_TSTAMPREPLY ICMP_IREQ ICMP_IREQREPLY
-                    ICMP_MASREQ ICMP_MASKREPLY
+                    ICMP_MASKREQ ICMP_MASKREPLY
     );
 
 # Tags:
@@ -73,7 +69,7 @@ BEGIN {
                        ICMP_REDIRECT ICMP_ECHO ICMP_ROUTERADVERT 
                        ICMP_ROUTERSOLICIT ICMP_TIMXCEED ICMP_PARAMPROB
                        ICMP_TSTAMP ICMP_TSTAMPREPLY ICMP_IREQ ICMP_IREQREPLY
-                       ICMP_MASREQ ICMP_MASKREPLY)],
+                       ICMP_MASKREQ ICMP_MASKREPLY)],
     strip       => [qw(icmp_strip)],
 );
 
@@ -271,7 +267,7 @@ Icmp message types:
     ICMP_REDIRECT ICMP_ECHO ICMP_ROUTERADVERT
     ICMP_ROUTERSOLICIT ICMP_TIMXCEED ICMP_PARAMPROB
     ICMP_TSTAMP ICMP_TSTAMPREPLY ICMP_IREQ ICMP_IREQREPLY
-    ICMP_MASREQ ICMP_MASKREPLY
+    ICMP_MASKREQ ICMP_MASKREPLY
 
 
 =item tags

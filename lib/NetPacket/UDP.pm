@@ -38,13 +38,9 @@ package NetPacket::UDP;
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use NetPacket;
+use NetPacket::IP;
 
-my $myclass;
-BEGIN {
-    $myclass = __PACKAGE__;
-    $VERSION = "0.04";
-}
-sub Version () { "$myclass v$VERSION" }
+our $VERSION = '0.41.1';
 
 BEGIN {
     @ISA = qw(Exporter NetPacket);
@@ -140,23 +136,31 @@ sub encode {
 
 sub checksum {
 
-    my $self = shift;
-    my ($ip) = @_;
-    my ($packet,$zero,$udplen);
-    my ($src_ip, $dest_ip,$proto);
+    my( $self, $ip ) = @_;
 
-    $zero = 0;
-    $proto = NetPacket::IP::IP_PROTO_UDP;
+    my $proto = NetPacket::IP::IP_PROTO_UDP;
 
     # Pack pseudo-header for udp checksum
 
-    $src_ip = gethostbyname($ip->{src_ip});
-    $dest_ip = gethostbyname($ip->{dest_ip});
+    my $src_ip = gethostbyname($ip->{src_ip});
+    my $dest_ip = gethostbyname($ip->{dest_ip});
 
-    $packet = pack('a4a4nnnnnna*',
-            $src_ip,$dest_ip,$proto,$self->{len},
-            $self->{src_port}, $self->{dest_port}, 
-            $self->{len},$zero,$self->{data});
+    no warnings;
+
+    my $packet = pack 'a4a4CCnnnnna*' =>
+    			# fake ip header part
+            $src_ip,     
+	    $dest_ip,
+	    0,
+	    $proto,
+	    		# proper UDP part
+            $self->{src_port}, 
+	    $self->{dest_port}, 
+            $self->{len},
+	    0,
+	    $self->{data};
+
+    $packet .= "\x00" if length($packet) % 2;
 
     $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($packet)); 
 
@@ -391,6 +395,6 @@ Tim Potter E<lt>tpot@samba.orgE<gt>
 
 Stephanie Wehner E<lt>atrak@itsx.comE<gt>
 
-=cut
+Yanick Champoux <yanick@cpan.org>
 
-# any real autoloaded methods go after this line
+=cut

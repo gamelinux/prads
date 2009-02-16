@@ -39,12 +39,7 @@ use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use NetPacket;
 
-my $myclass;
-BEGIN {
-    $myclass = __PACKAGE__;
-    $VERSION = "0.04";
-}
-sub Version () { "$myclass v$VERSION" }
+our $VERSION = '0.41.1';
 
 BEGIN {
     @ISA = qw(Exporter NetPacket);
@@ -163,16 +158,19 @@ sub decode {
 	($self->{options}, $self->{data}) = unpack("a" . $olen .
 						   "a*", $self->{options});
 
+    my $length = $self->{hlen};
+    $length = 5 if $length < 5;  # precaution against bad header
+
+    # truncate data to the length given by the header
+    $self->{data} = substr $self->{data}, 0, $self->{len} - 4 * $length;
+
 	# Convert 32 bit ip addresses to dotted quad notation
 
 	$self->{src_ip} = to_dotquad($self->{src_ip});
 	$self->{dest_ip} = to_dotquad($self->{dest_ip});
     }
 
-    # Return a blessed object
-
-    bless($self, $class);
-    return $self;
+    return bless $self, $class;
 }
 
 #
@@ -217,14 +215,14 @@ sub encode {
 
     # construct header to calculate the checksum
     $hdr = pack('CCnnnCCna4a4a*', $tmp, $self->{tos},$self->{len}, 
-         $self->{id}, $self->{offset}, $self->{ttl}, $self->{proto}, 
+         $self->{id}, $offset, $self->{ttl}, $self->{proto}, 
          $zero, $src_ip, $dest_ip, $self->{options});
 
     $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($hdr));
 
     # make the entire packet
     $packet = pack('CCnnnCCna4a4a*a*', $tmp, $self->{tos},$self->{len}, 
-         $self->{id}, $self->{foffset}, $self->{ttl}, $self->{proto}, 
+         $self->{id}, $offset, $self->{ttl}, $self->{proto}, 
          $self->{cksum}, $src_ip, $dest_ip, $self->{options},
          $self->{data});
 

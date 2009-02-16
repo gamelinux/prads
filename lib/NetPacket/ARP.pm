@@ -35,12 +35,7 @@ package NetPacket::ARP;
 use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-my $myclass;
-BEGIN {
-    $myclass = __PACKAGE__;
-    $VERSION = "0.04";
-}
-sub Version () { "$myclass v$VERSION" }
+our $VERSION = '0.41.1';
 
 BEGIN {
     @ISA = qw(Exporter NetPacket);

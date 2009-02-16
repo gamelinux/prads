@@ -36,14 +36,9 @@ package NetPacket;
 #
 
 use strict;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-my $myclass;
-BEGIN {
-    $myclass = __PACKAGE__;
-    $VERSION = "0.04";
-}
-sub Version () { "$myclass v$VERSION" }
+our $VERSION = '0.41.1';
 
 BEGIN {
     @ISA = qw(Exporter);
@@ -245,11 +240,13 @@ however contains header fields and a payload.
   and costs any user may incur as a result of using, copying or
   modifying the Software.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Tim Potter E<lt>tpot@samba.orgE<gt>
+Tim Potter <tpot@samba.org>
 
-Stephanie Wehner E<lt>atrak@itsx.comE<gt>
+Stephanie Wehner <atrak@itsx.com>
+
+Yanick Champoux <yanick@cpan.org>
 
 =cut
 

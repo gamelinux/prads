@@ -53,11 +53,7 @@ use constant URG => 0x20;
 use constant ECE => 0x40;
 use constant CWR => 0x80;
 
-BEGIN {
-    $myclass = __PACKAGE__;
-    $VERSION = "0.04";
-}
-sub Version () { "$myclass v$VERSION" }
+our $VERSION = '0.41.1';
 
 BEGIN {
     @ISA = qw(Exporter NetPacket);
@@ -122,21 +118,21 @@ sub decode {
 
 	# Extract flags
 	
-	$self->{hlen} = ($tmp & 0xf000) >> 12;
+	$self->{hlen}     = ($tmp & 0xf000) >> 12;
 	$self->{reserved} = ($tmp & 0x0f00) >> 8;
-	$self->{flags} = $tmp & 0x00ff;
+	$self->{flags}    =  $tmp & 0x00ff;
 	
 	# Decode variable length header and remaining data
 
 	my $olen = $self->{hlen} - 5;
-	$olen = 0, if ($olen < 0);  # Check for bad hlen
+	$olen = 0 if $olen < 0;  # Check for bad hlen
 
         # Option length is number of 32 bit words
 
-        $olen = $olen * 4;
+    $olen *= 4;
 
-	($self->{options}, $self->{data}) = unpack("a" . $olen . 
-						   "a*", $self->{options});
+	( $self->{options}, $self->{data} ) 
+        = unpack( 'a' . $olen .  'a*', $self->{options});
     }
 
     # Return a blessed object
@@ -168,6 +164,7 @@ sub encode {
             $self->{acknum}, $tmp, $self->{winsize}, $self->{cksum},
             $self->{urg}, $self->{options},$self->{data});
 
+
     return($packet);
 
 }
@@ -187,6 +184,7 @@ sub checksum {
     $proto = 6;
     $tcplen = ($self->{hlen} * 4)+ length($self->{data});
 
+    no warnings qw/ uninitialized /;
     $tmp = $self->{hlen} << 12;
     $tmp = $tmp | (0x0f00 & ($self->{reserved} << 8));
     $tmp = $tmp | (0x00ff & $self->{flags});
@@ -201,6 +199,9 @@ sub checksum {
             $self->{src_port}, $self->{dest_port}, $self->{seqnum},
             $self->{acknum}, $tmp, $self->{winsize}, $zero,
             $self->{urg}, $self->{options},$self->{data});
+
+    # pad packet if odd-sized
+    $packet .= "\x00" if length( $packet ) % 2;
 
     $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($packet));
 }
