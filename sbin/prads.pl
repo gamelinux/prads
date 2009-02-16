@@ -158,15 +158,15 @@ sub syn_packets {
       if((64 >= $ttl) && ($ttl > 24)) {
          if ($fragment == 1) {
             if((5840 >= $winsize) && ($winsize >= 5488)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 (up: 39 hrs) ";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (distance 9, link: ethernet/modem) ";
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 (up: 39 hrs) \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (distance 9, link: ethernet/modem) \n";
             }
          }
       }elsif ((128 >= $ttl) && ($ttl > 64)) {
         if ($fragment == 1) {
            if((65535 > $winsize ) && ($winsize >= 64800)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000/2003/XP";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (distance 13, link: IPv6/IPIP) ";
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000/2003/XP \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (distance 13, link: IPv6/IPIP) \n";
             }
          }
       }
