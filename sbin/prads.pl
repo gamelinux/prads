@@ -188,7 +188,9 @@ sub syn_packets {
           warn "Done...\n\n" if($DEBUG);
           return;
         }
-        # Make UDP asset detection here...
+     # Make UDP asset detection here...
+     warn "Detectin UDP asset...\n" if($DEBUG);
+     warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
     }
 warn "Done...\n\n" if($DEBUG);
 return;
