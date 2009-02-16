@@ -154,6 +154,7 @@ sub syn_packets {
         }
       ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
       warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
+
       # Bogus/weak test, PoC - REWRITE
       if((64 >= $ttl) && ($ttl > 32)) {
          if ($fragment == 1) {
@@ -162,9 +163,12 @@ sub syn_packets {
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, link: ethernet/modem) \n";
             }else{
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize) \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
+         }elsif ($fragment == 0) {
+
          }
+
       }elsif ((128 >= $ttl) && ($ttl > 64)) {
         if ($fragment == 1) {
            if((65535 >= $winsize ) && ($winsize >= 60000)) {
@@ -172,12 +176,13 @@ sub syn_packets {
                print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, link: IPv6/IPIP) \n";
             }else{
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize) \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
          }
+
       }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize) \n";
+               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / UNKNOWN \n";
+               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
       }
  
     }else{
