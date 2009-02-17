@@ -2,19 +2,27 @@
 
 use strict;
 use warnings;
-
-use Getopt::Long qw/:config auto_version auto_help/;
-
 use FindBin;
-use lib "$FindBin::Bin/../lib";
-
+use Getopt::Long qw/:config auto_version auto_help/;
 use Net::Pcap;
-use NetPacket::Ethernet;
-use NetPacket::IP;
-use NetPacket::ARP;
-use NetPacket::ICMP;
-use NetPacket::TCP;
-use NetPacket::UDP;
+
+BEGIN {
+
+    # list of NetPacket:: modules
+    my @modules = map { "NetPacket::$_" } qw/Ethernet IP ARP ICMP TCP UDP/;
+
+    MODULE:
+    for my $module (@modules) {
+
+        # try to use installed version first
+        eval "use $module" and next MODULE;
+
+        # use bundled version instead
+        warn "$module is not installed. Using bundled version instead\n";
+        local @INC = ("$FindBin::Bin/../lib");
+        eval "use $module" or die $@;
+    }
+}
 
 =head1 NAME
 
