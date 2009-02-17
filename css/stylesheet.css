@@ -48,7 +48,7 @@ th {
 
 h1 {
     border-bottom: 3px solid #888;
-    font-size: 2em;
+    font-size: 1.8em;
     margin: 1em 0;
     padding: 0;
 }
@@ -154,7 +154,7 @@ p.quote {
 }
 
 #heading h1 {
-    color: #eee;
+    color: #678;
     font-size: 2.4em;
     margin: 0;
     padding: 0.5em;
@@ -163,7 +163,7 @@ p.quote {
 }
 
 #heading h1 a {
-    color: #eee;
+    color: #678;
     font-style: italic;
 }
 
@@ -177,14 +177,15 @@ p.quote {
 }
 
 #menu {
-    height: 2em;
-    clear: left;
+    padding: 1.3em;
+    height: 1em;
     position: relative;
     z-index: 40;
-    margin-bottom: 3em;
+    border-bottom: 3px solid #678;
 }
 
 #menu a {
+    color: #000;
     text-decoration: none;
     display: block;
     margin: 0.3em 0;
@@ -231,7 +232,7 @@ p.quote {
 }
 
 #content {
-    margin: 2em 0.5em;
+    margin: 2em 0;
 }
 
 #footer {
