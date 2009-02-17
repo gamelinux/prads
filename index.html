@@ -1,1 +1,36 @@
-My GitHub Page
+---
+layout: default
+title: Quelea
+---
+
+<h1>Introduction</h1>
+<p>
+prads.pl - inspired by <a href="passive.sourceforge.net">passive.sourceforge.net</a> and <a href="http://lcamtuf.coredump.cx/p0f.shtml">lcamtuf.coredump.cx/p0f</a>
+</p>
+
+<h2>Features</h2>
+</ul>
+
+<h2>Blog posts</h2>
+<ul>
+    {% for post in site.posts %}
+    <li><span>{{ post.date | date_to_string }}</span> &raquo; <a href="/prads{{ post.url }}">{{ post.title }}</a></li>
+    {% endfor %}
+</ul>
+
+<h2>Download</h2>
+<p>
+    Prads is available as a
+    <a href="http://github.com/gamelinux/prads/tarball/master">tar-</a>
+    or <a href="http://github.com/gamelinux/prads/zipball/master">zip-</a>ball,
+    but you can also <a href="http://github.com/gamelinux/prads">clone it</a> with git.
+</p>
+
+<h2>Details</h2>
+<ul>
+    <li>Project admin: <a href="http://github.com/gamelinux">gamelinux</a></li>
+    <li>Intended Audience: Developers</li>
+    <li>Programming Language: <a href="http://perl.com">Perl</a></li>
+    <li>User Interface: Console</li>
+    <li>View project <a href="http://github.com/gamelinux/prads/graphs">activity</a></li>
+</ul>
