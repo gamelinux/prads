@@ -151,6 +151,7 @@ p.quote {
 }
 
 #heading {
+    float: left;
 }
 
 #heading h1 {
