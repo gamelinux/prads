@@ -10,17 +10,29 @@ BEGIN {
 
     # list of NetPacket:: modules
     my @modules = map { "NetPacket::$_" } qw/Ethernet IP ARP ICMP TCP UDP/;
+    my $bundle  = 0;
 
     MODULE:
     for my $module (@modules) {
 
         # try to use installed version first
-        eval "use $module" and next MODULE;
+        eval "use $module";
+        next MODULE unless($@);
+
+        if($ENV{'DEBUG'}) {
+            warn "$module is not installed. Using bundled version instead\n";
+        }
 
         # use bundled version instead
-        warn "$module is not installed. Using bundled version instead\n";
         local @INC = ("$FindBin::Bin/../lib");
-        eval "use $module" or die $@;
+        eval "use $module";
+        die $@ if($@);
+        $bundle++;
+    }
+
+    if($ENV{'DEBUG'} and $bundle) {
+        warn "Run this command to install missing modules:\n";
+        warn "\$ perl -MCPAN -e'install NetPacket'\n";
     }
 }
 
