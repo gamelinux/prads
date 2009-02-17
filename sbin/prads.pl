@@ -2,15 +2,19 @@
 
 use strict;
 use warnings;
+
+use Getopt::Long qw/:config auto_version auto_help/;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
 use Net::Pcap;
-use lib qw(lib/ ../lib/);
 use NetPacket::Ethernet;
 use NetPacket::IP;
 use NetPacket::ARP;
 use NetPacket::ICMP;
 use NetPacket::TCP;
 use NetPacket::UDP;
-use Getopt::Long qw/:config auto_version auto_help/;
 
 =head1 NAME
 
