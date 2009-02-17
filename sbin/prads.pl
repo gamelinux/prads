@@ -80,6 +80,8 @@ GetOptions(
 
 warn "Starting prads.pl...\n";
 
+load_os_fingerprints($SIGNATURE_FILE);
+
 warn "Initializing device\n" if $DEBUG;
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
@@ -311,6 +313,51 @@ sub load_signatures {
             sort { length $b <=> length $a }
              keys %signatures;
 }
+
+=head2 load_os_fingerprints
+
+Loads signatures from file
+
+
+=cut
+
+sub load_os_fingerprints {
+    my $file = shift;
+    my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
+    my $rules = {};
+
+    open(my $FH, "<", $file) or die "Could not open '$file': $!";
+
+    LINE:
+    while (my $line = readline $FH) {
+        chomp $line;
+        $line =~ s/\#.*//;
+        next LINE unless($line); # empty line
+
+	my @elements = $line =~ $re;
+
+	unless(@elements == 8) {
+		die "Not enough elements in config line....blatti!";
+	}
+
+	my($last, $human) = splice @elements, -2;
+	my $tmp = $rules;
+
+	for my $e (@elements[4,3,2,6,5,1]) {
+		$tmp->{$e} ||= {};
+		$tmp = $tmp->{$e};
+	}
+
+	$tmp->{$last} = $human;
+    }
+
+    use Data::Dumper;
+    #print Dumper $rules;
+    die int keys %$rules;
+
+    return $rules;
+}
+
 
 =head2 init_dev
 
