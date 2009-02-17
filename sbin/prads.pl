@@ -95,7 +95,7 @@ warn "Compiling Berkeley Packet Filter\n" if $DEBUG;
 filter_object($PCAP);
 
 warn "Looping over object\n" if $DEBUG;
-Net::Pcap::loop($PCAP, -1, \&syn_packets, '') or die $ERROR{'loop'};
+Net::Pcap::loop($PCAP, -1, \&packets, '') or die $ERROR{'loop'};
 
 warn "Closing device\n" if $DEBUG;
 Net::Pcap::close($PCAP);
@@ -104,7 +104,7 @@ exit;
 
 =head1 FUNCTIONS
 
-=head2 syn_packets
+=head2 packets
 
 Callback function for C<Net::Pcap::loop>.
 
@@ -129,7 +129,7 @@ Callback function for C<Net::Pcap::loop>.
 =cut
 
 ### Should rename top packets etc.
-sub syn_packets {
+sub packets {
     my ($user_data, $header, $packet) = @_;
 
     warn "Packet received - processing...\n" if($DEBUG);
