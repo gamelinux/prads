@@ -50,18 +50,20 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
  OPTIONS:
 
- --dev|-d       : network device (default: eth0)
- --signature|-s : path to signature file (default: signatures.txt)
- --debug        : enable debug messages (default: disabled)
- --help         : this help message
- --version      : show prads.pl version
+ --dev|-d                : network device (default: eth0)
+ --service-signatures|-s : path to service-signatures file (default: /etc/prads/service.sig)
+ --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
+ --debug                 : enable debug messages (default: disabled)
+ --help                  : this help message
+ --version               : show prads.pl version
 
 =cut
 
 our $VERSION       = 0.1;
 our $DEBUG         = 0;
 my $DEVICE         = q(eth0);
-my $SIGNATURE_FILE = q(signatures.txt);
+my $S_SIGNATURE_FILE  = q(/etc/prads/service.sig);
+my $OS_FINGERPRINT_FILE = q(/etc/prads/os.fp);
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
     lookup_net => q(Unable to look up device information for %s - %s),
@@ -72,22 +74,23 @@ my %ERROR          = (
 );
 
 GetOptions(
-    'dev|d=s'       => \$DEVICE,
-    'signature|s=s' => \$SIGNATURE_FILE,
-    'debug'         => \$DEBUG,
+    'dev|d=s'                => \$DEVICE,
+    'service-signatures|s=s' => \$S_SIGNATURE_FILE,
+    'os-fingerprints|o=o'    => \$OS_FINGERPRINT_FILE,
+    'debug'                  => \$DEBUG,
     # bpf filter
 );
 
 warn "Starting prads.pl...\n";
 
-load_os_fingerprints($SIGNATURE_FILE);
+load_os_fingerprints($OS_FINGERPRINT_FILE);
 
 warn "Initializing device\n" if $DEBUG;
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
 
 warn "Loading signatures\n" if $DEBUG;
-my @SIGNATURES = load_signatures($SIGNATURE_FILE)
+my @SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 warn "Creating object\n" if $DEBUG;
