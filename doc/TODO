@@ -13,12 +13,17 @@
      emulate p0f logic to detect OS based on tcp/icmp/udp... fingerprinting...
    - Start with SYN fingerprinting...
 
-7. Different output plugins...
+7. Goes without saying, but adding it as a point : client OS and Client programs fingerprinting:
+        Like: "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.6) Gecko/2009020911 Ubuntu/8.10 (intrepid) Firefox/3.0.6 Ubiquity/0.1.5"
+              "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.6) Gecko/2009011913 Firefox/3.0.6"
+              "Mozilla/5.0 (Windows; U; Windows NT 6.0; fr; rv:1.9.0.6) Gecko/2009011913 Firefox/3.0.6"
+
+8. Different output plugins...
    - PoC should send to stdout or/and logfile (text).
    - Next would be mysql
    - Sguil
 
-8. GUI - by web or "desktop"
+9. GUI - by web or "desktop"
    - See your network, different OS and services.
    - See firewalls
 
