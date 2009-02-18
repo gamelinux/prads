@@ -5,6 +5,7 @@ use warnings;
 use FindBin;
 use Getopt::Long qw/:config auto_version auto_help/;
 use Net::Pcap;
+use Data::Dumper;
 
 BEGIN {
 
@@ -54,6 +55,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  --service-signatures|-s : path to service-signatures file (default: /etc/prads/service.sig)
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages (default: disabled)
+ --dump                  : Dumps all signatures and fingerprints then exits 
  --help                  : this help message
  --version               : show prads.pl version
 
@@ -61,8 +63,9 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
 our $VERSION       = 0.1;
 our $DEBUG         = 0;
+our $DUMP          = 0;
 my $DEVICE         = q(eth0);
-my $S_SIGNATURE_FILE  = q(/etc/prads/service.sig);
+my $S_SIGNATURE_FILE    = q(/etc/prads/service.sig);
 my $OS_FINGERPRINT_FILE = q(/etc/prads/os.fp);
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
@@ -76,21 +79,39 @@ my %ERROR          = (
 GetOptions(
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
-    'os-fingerprints|o=o'    => \$OS_FINGERPRINT_FILE,
+    'os-fingerprints|o=s'    => \$OS_FINGERPRINT_FILE,
     'debug'                  => \$DEBUG,
+    'dump'                   => \$DUMP,
     # bpf filter
 );
 
+
+if ($DUMP) {
+ warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
+
+ warn "\n *** Loading OS fingerprints *** \n\n";
+ my @OS_SIGS = load_os_fingerprints($OS_FINGERPRINT_FILE);
+ print Dumper @OS_SIGS;
+# print int keys @OS_SIGS;
+ 
+ warn "\n *** Loading Service signatures *** \n\n";
+ my @SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
+ print Dumper @SERVICE_SIGNATURES; 
+# print int keys @SERVICE_SIGNATURES;
+}
+
 warn "Starting prads.pl...\n";
 
-load_os_fingerprints($OS_FINGERPRINT_FILE);
+warn "Loading OS fingerprints\n" if $DEBUG;
+my @OS_SIGS = load_os_fingerprints($OS_FINGERPRINT_FILE)
+              or Getopt::Long::HelpMessage();
 
 warn "Initializing device\n" if $DEBUG;
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
 
-warn "Loading signatures\n" if $DEBUG;
-my @SIGNATURES = load_signatures($S_SIGNATURE_FILE)
+warn "Loading Service signatures\n" if $DEBUG;
+my @SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 warn "Creating object\n" if $DEBUG;
@@ -232,7 +253,7 @@ sub packets {
 
 #    # Check content(data) against signatures
     SIGNATURE:
-    for my $s (@SIGNATURES) {
+    for my $s (@SERVICE_SIGNATURES) {
         my $re = $s->[2];
 #
         if($tcp->{'data'} =~ /$re/) {
@@ -340,24 +361,23 @@ sub load_os_fingerprints {
 	my @elements = $line =~ $re;
 
 	unless(@elements == 8) {
-		die "Not enough elements in config line....blatti!";
+		die "Error: Not valid fingerprint format in: '$file'";
 	}
 
 	my($last, $human) = splice @elements, -2;
 	my $tmp = $rules;
 
-	for my $e (@elements[4,3,2,6,5,1]) {
+	for my $e (@elements) {
 		$tmp->{$e} ||= {};
 		$tmp = $tmp->{$e};
 	}
 
 	$tmp->{$last} = $human;
     }
-
-    use Data::Dumper;
-    #print Dumper $rules;
-    die int keys %$rules;
-
+#    if ($DEBUG) {
+#       print Dumper $rules;
+#       die int keys %$rules;
+#    }
     return $rules;
 }
 
