@@ -87,17 +87,17 @@ GetOptions(
 
 
 if ($DUMP) {
- warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
+   warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
- warn "\n *** Loading OS fingerprints *** \n\n";
- my @OS_SIGS = load_os_fingerprints($OS_FINGERPRINT_FILE);
- print Dumper @OS_SIGS;
-# print int keys @OS_SIGS;
+   warn "\n *** Loading OS fingerprints *** \n\n";
+   my @OS_SIGS = load_os_fingerprints($OS_FINGERPRINT_FILE);
+   print Dumper @OS_SIGS;
+#  print int keys @OS_SIGS;            # Would like to see the total sig count
  
- warn "\n *** Loading Service signatures *** \n\n";
- my @SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
- print Dumper @SERVICE_SIGNATURES; 
-# print int keys @SERVICE_SIGNATURES;
+   warn "\n *** Loading Service signatures *** \n\n";
+   my @SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
+   print Dumper @SERVICE_SIGNATURES; 
+#  print int keys @SERVICE_SIGNATURES; # Would like to see the total serv-sig count
 }
 
 warn "Starting prads.pl...\n";
@@ -205,7 +205,7 @@ sub packets {
       ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
       warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
 
-      # Bogus/weak test, PoC - REWRITE
+      # Bogus/weak test, PoC - REWRITE this to use @OS_SIGS
       # LINUX/*NIX
       if((64 >= $ttl) && ($ttl > 32)) {
          if ($fragment == 1) {
@@ -347,6 +347,8 @@ Loads signatures from file
 
 sub load_os_fingerprints {
     my $file = shift;
+    # Fingerprint entry format:
+    # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
     my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
     my $rules = {};
 
@@ -367,6 +369,7 @@ sub load_os_fingerprints {
 	my($last, $human) = splice @elements, -2;
 	my $tmp = $rules;
 
+# Need to fix - the two last elements are INFO ( OS : Details )
 	for my $e (@elements) {
 		$tmp->{$e} ||= {};
 		$tmp = $tmp->{$e};
