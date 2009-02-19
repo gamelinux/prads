@@ -235,7 +235,7 @@ sub packets {
                print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
          }
       # WINDOWS 2
-      }elsif ((16384 == $winsize ) {
+      }elsif (16384 == $winsize ) {
         if ($fragment == 1) {
           if ((128 >= $ttl) && ($ttl > 64)) {
                print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000 w/ZoneAlarm? \n";
