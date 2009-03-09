@@ -77,8 +77,22 @@ imap,v/Microsoft Exchange Server IMAP/$1/$2/,\* OK Microsoft Exchange Server ([\
 imap,v/Cyrus IMAP4 Server/$1//,\* OK [-.\w]+ Cyrus IMAP4 v([-.\w]+) server ready
 imap,v/UW IMAP Server/$1//,\* OK \[CAPABILITY IMAP4REV1 .*IMAP4rev1 (200\d\.[-.\w]+) ati
 
+# POP Signatures
+pop3,v/CommuniGate Pro POP3/$1//,OK CommuniGate Pro POP3 Server (.*) ready
+
+# Generic CVSup server
+cvsup,v/CVSup server///,CVSup server ready
+
+# SQL signatures
+sql,v/MySQL/$1//,([3-6]\.[0-1]\.\d\d-\w.+)
+
+# Citrix ICA. Included signature wasn't hitting, this seems to fix it.
+#ica,v/Citrix ICA Protocol///,\x7f\x7ICA\x00
+
+
 # FTP Signatures
 ftp,v/Microsoft FTP Server/$1//,Microsoft FTP Service \(Version ([\S]+)\).
+ftp,v/Microsoft FTP Server Unknown Version///,220 Microsoft FTP Service
 ftp,v/NcFTPd Server//$1/,NcFTPd Server \((.*)\) ready.
 ftp,v/vsFTPd///,FTP server \(vsftpd\)
 ftp,v/vsFTPd/$1//,220 \(vsFTPd ([\S]+)\)
