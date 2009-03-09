@@ -66,7 +66,7 @@ our $DEBUG         = 0;
 our $DUMP          = 0;
 my $DEVICE         = q(eth0);
 my $S_SIGNATURE_FILE    = q(/etc/prads/service.sig);
-my $OS_FINGERPRINT_FILE = q(/etc/prads/os.fp);
+my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
     lookup_net => q(Unable to look up device information for %s - %s),
@@ -79,7 +79,7 @@ my %ERROR          = (
 GetOptions(
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
-    'os-fingerprints|o=s'    => \$OS_FINGERPRINT_FILE,
+    'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
     'debug'                  => \$DEBUG,
     'dump'                   => \$DUMP,
     # bpf filter
@@ -90,20 +90,22 @@ if ($DUMP) {
    warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
    warn "\n *** Loading OS fingerprints *** \n\n";
-   my @OS_SIGS = load_os_fingerprints($OS_FINGERPRINT_FILE);
-   print Dumper @OS_SIGS;
-#  print int keys @OS_SIGS;            # Would like to see the total sig count
+   my @OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
+   print Dumper @OS_SYN_SIGS;
+#  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
  
    warn "\n *** Loading Service signatures *** \n\n";
    my @SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
    print Dumper @SERVICE_SIGNATURES; 
 #  print int keys @SERVICE_SIGNATURES; # Would like to see the total serv-sig count
+
+   exit 0;
 }
 
 warn "Starting prads.pl...\n";
 
 warn "Loading OS fingerprints\n" if $DEBUG;
-my @OS_SIGS = load_os_fingerprints($OS_FINGERPRINT_FILE)
+my @OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
 
 warn "Initializing device\n" if $DEBUG;
@@ -159,7 +161,7 @@ sub packets {
     my ($user_data, $header, $packet) = @_;
 
     warn "Packet received - processing...\n" if($DEBUG);
-#Check if arp - get mac and register...
+    # Check if arp - get mac and register...
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
 
@@ -202,8 +204,22 @@ sub packets {
         }else{
           $fragment=0; # Fragment or more fragments
         }
+
+
       ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
       warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
+
+#    OS_SYN_SIGNATURE:
+#    for my $s (@OS_SYN_SIGS) {
+#        #print Dumper $s;
+#        my $s_winsize = $s[1];
+#        print "$s_winsize\n";
+#        exit 0;
+#        if($tcp->{'data'} =~ /$re/) {
+#      last OS_SYN_SIGNATURE;  
+#}
+
+
 
       # Bogus/weak test, PoC - REWRITE this to use @OS_SIGS
       # LINUX/*NIX
@@ -272,11 +288,11 @@ sub packets {
         return;
     }
 
-#    # Check content(data) against signatures
+    # Check content(data) against signatures
     SIGNATURE:
     for my $s (@SERVICE_SIGNATURES) {
         my $re = $s->[2];
-#
+
         if($tcp->{'data'} =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
             printf("(%s) %s:%i -> (%s) %s:%i -> %s %s %s\n",
@@ -359,14 +375,13 @@ sub load_signatures {
              keys %signatures;
 }
 
-=head2 load_os_fingerprints
+=head2 load_os_syn_fingerprints
 
-Loads signatures from file
-
+Loads SYN signatures from file
 
 =cut
 
-sub load_os_fingerprints {
+sub load_os_syn_fingerprints {
     my $file = shift;
     # Fingerprint entry format:
     # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
@@ -387,24 +402,18 @@ sub load_os_fingerprints {
 		die "Error: Not valid fingerprint format in: '$file'";
 	}
 
-	my($last, $human) = splice @elements, -2;
+	my($details, $human) = splice @elements, -2;
 	my $tmp = $rules;
 
-# Need to fix - the two last elements are INFO ( OS : Details )
 	for my $e (@elements) {
 		$tmp->{$e} ||= {};
 		$tmp = $tmp->{$e};
 	}
 
-	$tmp->{$last} = $human;
+	$tmp->{$details} = $human;
     }
-#    if ($DEBUG) {
-#       print Dumper $rules;
-#       die int keys %$rules;
-#    }
     return $rules;
 }
-
 
 =head2 init_dev
 
