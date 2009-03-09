@@ -59,6 +59,7 @@ www,v/Apache AdvancedExtranetServer/$1/$2/,Server: Apache-AdvancedExtranetServer
 www,v/IBM HTTP Server/$1/$2/,Server: IBM_HTTP_Server\/([\S]+) ([\S]+)
 www,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
 www,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
+www,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 www,v/$1///,Server: (.*)\r\n
 
 # Fallback WWW Signature
