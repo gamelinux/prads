@@ -220,7 +220,6 @@ sub packets {
 #}
 
 
-
       # Bogus/weak test, PoC - REWRITE this to use @OS_SIGS
       # LINUX/*NIX
       if((5840 >= $winsize) && ($winsize >= 5488)) {
@@ -363,6 +362,7 @@ sub load_signatures {
         chomp $line;
         $line =~ s/\#.*//;
         next LINE unless($line); # empty line
+	# One should check for a more or less sane signature file.
         my($service, $version, $signature) = split /,/, $line, 3;
 
         $version =~ s"^v/"";
