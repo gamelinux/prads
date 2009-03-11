@@ -7,6 +7,8 @@ use Getopt::Long qw/:config auto_version auto_help/;
 use Net::Pcap;
 use Data::Dumper;
 
+use constant ETH_TYPE_ARP       => 0x0806;
+
 BEGIN {
 
     # list of NetPacket:: modules
@@ -159,11 +161,29 @@ Callback function for C<Net::Pcap::loop>.
 ### Should rename top packets etc.
 sub packets {
     my ($user_data, $header, $packet) = @_;
-
     warn "Packet received - processing...\n" if($DEBUG);
+
     # Check if arp - get mac and register...
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
+#    my $arp      = NetPacket::ARP->decode($eth->{data}, $eth);
+
+    if ($eth->{type} == ETH_TYPE_ARP) {
+     #print $eth->{type} . " ";
+        my $arp = NetPacket::ARP->decode($eth->{data}, $eth);
+        my $aip = $arp->{spa}; 
+        my $h1 = hex(substr( $aip,0,2));
+        my $h2 = hex(substr( $aip,2,2));
+        my $h3 = hex(substr( $aip,4,2));
+        my $h4 = hex(substr( $aip,6,2));
+
+        my $host = "$h1.$h2.$h3.$h4";
+
+        print("ARP: mac=$arp->{sha} - ip=$host\n");
+              #"dest mac=$arp->{tha} - ip=$arp->{dpa}\n");
+        return;
+    }
+
 
     unless(NetPacket::IP->decode($ethernet)) {
         warn "Not an IP packet..\n" if($DEBUG);
