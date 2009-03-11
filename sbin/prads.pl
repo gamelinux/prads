@@ -163,27 +163,22 @@ sub packets {
     my ($user_data, $header, $packet) = @_;
     warn "Packet received - processing...\n" if($DEBUG);
 
-    # Check if arp - get mac and register...
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
-#    my $arp      = NetPacket::ARP->decode($eth->{data}, $eth);
 
+    # Check if arp - get mac and register...
     if ($eth->{type} == ETH_TYPE_ARP) {
-     #print $eth->{type} . " ";
         my $arp = NetPacket::ARP->decode($eth->{data}, $eth);
         my $aip = $arp->{spa}; 
         my $h1 = hex(substr( $aip,0,2));
         my $h2 = hex(substr( $aip,2,2));
         my $h3 = hex(substr( $aip,4,2));
         my $h4 = hex(substr( $aip,6,2));
-
         my $host = "$h1.$h2.$h3.$h4";
 
         print("ARP: mac=$arp->{sha} - ip=$host\n");
-              #"dest mac=$arp->{tha} - ip=$arp->{dpa}\n");
         return;
     }
-
 
     unless(NetPacket::IP->decode($ethernet)) {
         warn "Not an IP packet..\n" if($DEBUG);
@@ -191,10 +186,8 @@ sub packets {
         return;
     }
 
+    # We should now have us an IP packet... good!
     my $ip       = NetPacket::IP->decode($ethernet);
-#    my $tcp      = NetPacket::TCP->decode($ip->{'data'});
-#    my $udp      = NetPacket::UDP->decode($ip->{'data'});
-
     #### Should check ifdef $ip, $tcp, $udp... then do...
 
     # OS finger printing
@@ -226,8 +219,8 @@ sub packets {
         }
 
 
-      ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
-      warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
+        ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
+        warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
 
 #    OS_SYN_SIGNATURE:
 #    for my $s (@OS_SYN_SIGS) {
@@ -239,8 +232,7 @@ sub packets {
 #      last OS_SYN_SIGNATURE;  
 #}
 
-
-      # Bogus/weak test, PoC - REWRITE this to use @OS_SIGS
+      # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
       # LINUX/*NIX
       if((5840 >= $winsize) && ($winsize >= 5488)) {
          if ($fragment == 1) {
