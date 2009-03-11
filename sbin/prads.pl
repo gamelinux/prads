@@ -67,8 +67,9 @@ our $VERSION       = 0.1;
 our $DEBUG         = 0;
 our $DUMP          = 0;
 my $DEVICE         = q(eth0);
-my $S_SIGNATURE_FILE    = q(/etc/prads/service.sig);
+my $S_SIGNATURE_FILE        = q(/etc/prads/service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
+my %pradshosts     = ();
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
     lookup_net => q(Unable to look up device information for %s - %s),
@@ -176,7 +177,8 @@ sub packets {
         my $h4 = hex(substr( $aip,6,2));
         my $host = "$h1.$h2.$h3.$h4";
 
-        print("ARP: mac=$arp->{sha} - ip=$host\n");
+        $pradshosts{"tstamp"} = time;
+        print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $pradshosts{"tstamp"} . "\n");
         return;
     }
 
