@@ -239,39 +239,39 @@ sub packets {
       if((5840 >= $winsize) && ($winsize >= 5488)) {
          if ($fragment == 1) {
             if((64 >= $ttl) && ($ttl > 32)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - Linux 2.6 (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Linux ? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - UNNKOWN / Linux ? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
          }elsif ($fragment == 0) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Fragment / *NIX ? \n";
+               print "OS Fingerprint: $ip->{'src_ip'} - UNNKOWN / Fragment / *NIX ? \n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
          }
       # WINDOWS
       }elsif ((65535 >= $winsize ) && ($winsize >= 60000)) {
         if ($fragment == 1) {
            if ((128 >= $ttl) && ($ttl > 64)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000/2003/XP (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - Windows 2000/2003/XP (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }elsif (60352 == $winsize) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 98 (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - Windows 98 (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Windows ? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - UNNKOWN / Windows ? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
          
          }elsif ($fragment == 0) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Fragment / *Windows ? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - UNNKOWN / Fragment / *Windows ? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
          }
       # WINDOWS 2K ZA
       }elsif (16384 == $winsize ) {
         if ($fragment == 1) {
           if ((128 >= $ttl) && ($ttl > 64)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000 w/ZoneAlarm? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - Windows 2000 w/ZoneAlarm? (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
           }
         }
@@ -279,14 +279,14 @@ sub packets {
       }elsif (53760 == $winsize ) {
         if ($fragment == 1) {
           if ((64 >= $ttl) && ($ttl > 32)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000 SP4 or XP SP2 (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - Windows 2000 SP4 or XP SP2 (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
           }
         }
 
        # Others
        }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / UNKNOWN (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
+               print "OS Fingerprint: $ip->{'src_ip'} - UNNKOWN / UNKNOWN (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
        }
  
@@ -308,9 +308,11 @@ sub packets {
 
         if($tcp->{'data'} =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
-            printf("(%s) %s:%i -> (%s) %s:%i -> %s %s %s\n",
-                $eth->{'src_mac'},  $ip->{'src_ip'},  $tcp->{'src_port'},
-                $eth->{'dest_mac'}, $ip->{'dest_ip'}, $tcp->{'dest_port'},
+#            printf("(%s) %s:%i -> (%s) %s:%i -> %s %s %s\n",
+            printf("Service: ip=%s port=%i -> %s %s %s\n",
+#                $eth->{'src_mac'},  $ip->{'src_ip'},  $tcp->{'src_port'},
+                $ip->{'src_ip'},  $tcp->{'src_port'},
+#                $eth->{'dest_mac'}, $ip->{'dest_ip'}, $tcp->{'dest_port'},
                 $vendor  || q(),
                 $version || q(),
                 $info    || q()
