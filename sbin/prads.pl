@@ -207,13 +207,14 @@ sub parse_opts {
 ### Should rename top packets etc.
 sub packets {
     my ($user_data, $header, $packet) = @_;
+    $pradshosts{"tstamp"} = time;
     warn "Packet received - processing...\n" if($DEBUG);
 
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
 
     # Check if arp - get mac and register...
-    if ($eth->{type} == ETH_TYPE_ARP && $eth->{opcode} == ARP_OPCODE_REPLY ) {
+    if ($eth->{type} == ETH_TYPE_ARP) {
         my $arp = NetPacket::ARP->decode($eth->{data}, $eth);
         my $aip = $arp->{spa}; 
         my $h1 = hex(substr( $aip,0,2));
@@ -222,7 +223,6 @@ sub packets {
         my $h4 = hex(substr( $aip,6,2));
         my $host = "$h1.$h2.$h3.$h4";
 
-        $pradshosts{"tstamp"} = time;
         print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $pradshosts{"tstamp"} . "\n");
         return;
     }
