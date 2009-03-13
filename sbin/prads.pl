@@ -595,6 +595,8 @@ Takes a ttl value as input, and guesses intial ttl
 sub normalize_ttl {
     my $ttl = shift;
     my $gttl;
+    # Only aiming for 255,128,64,32. But some strange ttls like
+    # 200,60,30 exist, but are rare.
     $gttl = 255 if (($ttl >   128) && (255  >= $ttl));
     $gttl = 128 if ((128  >= $ttl) && ($ttl >    64));
     $gttl =  64 if (( 64  >= $ttl) && ($ttl >    32));
