@@ -288,7 +288,7 @@ sub packets {
         my @tmatches = grep {
           $sigs->{$_}->{$ttl}
         } @wmatches;
-        print Dumper @matches;
+        print Dumper @wmatches;
 
 
 #    OS_SYN_SIGNATURE:
@@ -396,8 +396,16 @@ sub packets {
           return;
        }
        # Make UDP asset detection here...
-       warn "Detectin UDP asset...\n" if($DEBUG);
-       warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
+       warn "Detecting UDP asset...\n" if($DEBUG);
+       if ($udp->{src_port} = 53){
+        printf ("Service: ip=%s port=%i protocol=%i -> \"Bind9.x\"\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'});
+       }
+       elsif ($udp->{src_port} = 1194){
+        printf ("Service: ip=%s port=%i protocol=%i -> \"Openvpn 2.x\"\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'});
+       }
+       else {
+        warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
+       }
     }
 warn "Done...\n\n" if($DEBUG);
 return;
