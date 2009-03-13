@@ -297,7 +297,7 @@ sub packets {
       # LINUX/*NIX
       if((5840 >= $winsize) && ($winsize >= 5488)) {
          if ($fragment == 1) {
-            if((64 >= $ttl) && ($ttl > 32)) {
+            if($gttl == 64) {
                print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }else{
@@ -311,7 +311,7 @@ sub packets {
       # WINDOWS
       }elsif ((65535 >= $winsize ) && ($winsize >= 60000)) {
         if ($fragment == 1) {
-           if ((128 >= $ttl) && ($ttl > 64)) {
+           if ($gttl == 128) {
                print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }elsif (60352 == $winsize) {
@@ -329,7 +329,7 @@ sub packets {
       # WINDOWS 2K ZA
       }elsif (16384 == $winsize ) {
         if ($fragment == 1) {
-          if ((128 >= $ttl) && ($ttl > 64)) {
+          if ($gttl == 128) {
                print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
           }
@@ -337,7 +337,7 @@ sub packets {
       # Windows 2000 SP4 or XP SP2
       }elsif (53760 == $winsize ) {
         if ($fragment == 1) {
-          if ((64 >= $ttl) && ($ttl > 32)) {
+          if (64 == $ttl) {
                print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
 #               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
           }
