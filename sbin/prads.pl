@@ -269,6 +269,8 @@ sub packets {
           $fragment=0; # Fragment or more fragments
         }
 
+        # We need to guess initial TTL
+        my $gttl = normalize_ttl($ttl);
 
         ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
         warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
@@ -582,6 +584,22 @@ sub filter_object {
     Net::Pcap::setfilter($object, $filter)
         and die $ERROR{'compile_object_setfilter'};
     warn "filter_object : $address, $netmask, $filter\n" if($DEBUG);
+}
+
+=head2 normalize_ttl
+
+Takes a ttl value as input, and guesses intial ttl
+
+=cut
+
+sub normalize_ttl {
+    my $ttl = shift;
+    my $gttl;
+    $gttl = 255 if (($ttl >   128) && (255  >= $ttl));
+    $gttl = 128 if ((128  >= $ttl) && ($ttl >    64));
+    $gttl =  64 if (( 64  >= $ttl) && ($ttl >    32));
+    $gttl =  32 if (( 32  >= $ttl) && ($ttl >=    1));
+    return $gttl;
 }
 
 =head1 AUTHOR
