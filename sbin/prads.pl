@@ -8,6 +8,7 @@ use Net::Pcap;
 use Data::Dumper;
 
 use constant ETH_TYPE_ARP       => 0x0806;
+use constant ARP_OPCODE_REPLY   => 2;
 
 BEGIN {
 
@@ -212,7 +213,7 @@ sub packets {
     my $eth      = NetPacket::Ethernet->decode($packet);
 
     # Check if arp - get mac and register...
-    if ($eth->{type} == ETH_TYPE_ARP) {
+    if ($eth->{type} == ETH_TYPE_ARP && $eth->{opcode} == ARP_OPCODE_REPLY ) {
         my $arp = NetPacket::ARP->decode($eth->{data}, $eth);
         my $aip = $arp->{spa}; 
         my $h1 = hex(substr( $aip,0,2));
