@@ -291,17 +291,6 @@ sub packets {
         } @wmatches;
         print Dumper @wmatches;
 
-
-#    OS_SYN_SIGNATURE:
-#    for my $s (@OS_SYN_SIGS) {
-#        #print Dumper $s;
-#        my $s_winsize = $s[1];
-#        print "$s_winsize\n";
-#        exit 0;
-#        if($tcp->{'data'} =~ /$re/) {
-#      last OS_SYN_SIGNATURE;  
-#}
-
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
       # LINUX/*NIX
       if((5840 >= $winsize) && ($winsize >= 5488)) {
