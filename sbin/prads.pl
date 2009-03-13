@@ -295,58 +295,49 @@ sub packets {
 
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
       # LINUX/*NIX
+      my $dist = $gttl - $ttl;
       if((5840 >= $winsize) && ($winsize >= 5488)) {
          if ($fragment == 1) {
             if($gttl == 64) {
-               print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
             }else{
-               print "OS Fingerprint: $ip->{'src_ip'} - \"UNNKOWN / Linux ?\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Linux ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
             }
          }elsif ($fragment == 0) {
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *NIX ?\" \n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *NIX ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
          }
       # WINDOWS
       }elsif ((65535 >= $winsize ) && ($winsize >= 60000)) {
         if ($fragment == 1) {
            if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
             }elsif (60352 == $winsize) {
-               print "OS: $ip->{'src_ip'} - \"Windows 98\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"Windows 98\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
             }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Windows ?\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
             }
          
          }elsif ($fragment == 0) {
-               print "OS Fingerprint: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *Windows ?\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
          }
       # WINDOWS 2K ZA
       }elsif (16384 == $winsize ) {
         if ($fragment == 1) {
           if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
           }
         }
       # Windows 2000 SP4 or XP SP2
       }elsif (53760 == $winsize ) {
         if ($fragment == 1) {
           if (64 == $ttl) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
           }
         }
 
        # Others
        }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / UNKNOWN\" (ttl: $ttl, winsize:$winsize, DF=$fragment)\n";
-#               print "                   $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / UNKNOWN\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
        }
  
     }else{
