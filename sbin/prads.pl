@@ -164,9 +164,9 @@ Callback function for C<Net::Pcap::loop>.
 # so get the interesting bits here
 sub parse_opts {
     my ($opts) = @_;
-    my ($scale, $mss, $sackok, $ts);
+    my ($scale, $mss, $sackok, $ts) = (0,0,0,0);
     print "opts: ". unpack("B*", $opts)."\n" if $DEBUG; 
-    my ($kind, $rest, $size, $data, $count);
+    my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
     while ($opts){
       ($kind, $rest) = unpack("C a*", $opts);
       $count++;
