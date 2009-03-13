@@ -55,7 +55,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  OPTIONS:
 
  --dev|-d                : network device (default: eth0)
- --service-signatures|-s : path to service-signatures file (default: /etc/prads/service.sig)
+ --service-signatures|-s : path to service-signatures file (default: /etc/prads/tcp-service.sig)
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages (default: disabled)
  --dump                  : Dumps all signatures and fingerprints then exits 
@@ -68,7 +68,7 @@ our $VERSION       = 0.1;
 our $DEBUG         = 0;
 our $DUMP          = 0;
 my $DEVICE         = q(eth0);
-my $S_SIGNATURE_FILE        = q(/etc/prads/service.sig);
+my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
 my %pradshosts     = ();
 my %ERROR          = (
