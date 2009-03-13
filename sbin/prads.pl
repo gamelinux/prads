@@ -397,10 +397,10 @@ sub packets {
        }
        # Make UDP asset detection here...
        warn "Detecting UDP asset...\n" if($DEBUG);
-       if ($udp->{src_port} = 53){
+       if ($udp->{src_port} == 53){
         printf ("Service: ip=%s port=%i protocol=%i -> \"Bind9.x\"\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'});
        }
-       elsif ($udp->{src_port} = 1194){
+       elsif ($udp->{src_port} == 1194){
         printf ("Service: ip=%s port=%i protocol=%i -> \"Openvpn 2.x\"\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'});
        }
        else {
