@@ -93,8 +93,8 @@ if ($DUMP) {
    warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
    warn "\n *** Loading OS fingerprints *** \n\n";
-   my @OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
-   print Dumper @OS_SYN_SIGS;
+   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
+   print Dumper $OS_SYN_SIGS;
 #  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
  
    warn "\n *** Loading Service signatures *** \n\n";
@@ -108,7 +108,7 @@ if ($DUMP) {
 warn "Starting prads.pl...\n";
 
 warn "Loading OS fingerprints\n" if $DEBUG;
-my @OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
+my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
 
 warn "Initializing device\n" if $DEBUG;
@@ -159,6 +159,50 @@ Callback function for C<Net::Pcap::loop>.
 
 =cut
 
+# NetPacket::IP->decode gives us binary opts
+# so get the interesting bits here
+sub parse_opts {
+    my ($opts) = @_;
+    my ($scale, $mss, $sackok, $ts);
+    print "opts: ". unpack("B*", $opts)."\n" if $DEBUG; 
+    my ($kind, $rest, $size, $data, $count);
+    while ($opts){
+      ($kind, $rest) = unpack("C a*", $opts);
+      $count++;
+      if($kind == 0){
+        # EOL
+        last;
+      }elsif($kind == 1){
+        # NOP
+        $opts = $rest;
+      }else{
+        ($size, $rest) = unpack "C a*", $rest;
+        #print "$kind # $size\n";
+        $size = $size - 2;
+        print "rest: ". unpack("B*", $rest)."\n" if $DEBUG; 
+        #($data, $rest) = unpack "C${size}a", $rest;
+        if($kind == 2){
+          ($mss, $rest) = unpack "S a*", $rest;
+          print "MSS : $mss\n" if $DEBUG;
+        }elsif($kind == 3){
+          ($scale, $rest) = unpack "C3 a*", $rest;
+          print "WSOPT: $scale\n" if $DEBUG;
+        }elsif($kind == 4){
+          # hey. ballsacks are OK.
+          $sackok++;
+        }elsif($kind == 8){
+          # Timestamp.
+          ($ts, $rest) = unpack "C$size a*", $rest;
+        }else{
+          # don't care
+          ($data, $rest) = unpack "C$size a*", $rest;
+        }
+      }
+      $opts = $rest;
+      last if undef $opts;
+    }
+    return ($count, $scale, $mss, $sackok, $ts);
+}
 ### Should rename top packets etc.
 sub packets {
     my ($user_data, $header, $packet) = @_;
@@ -208,6 +252,10 @@ sub packets {
       my $winsize = $tcp->{'winsize'}; #
       my $tcpflags= $tcp->{'flags'};
       my $tcpopts = $tcp->{'options'}; # binary crap 'CEUAPRSF' 
+      my $seq     = $tcp->{'seqnum'};
+      my $ack     = $tcp->{'acknum'};
+      my ($optcnt, $scale, $mss, $sackok, $ts) = parse_opts($tcpopts);
+
       my $hex = unpack("H*", pack ("B*", $tcpopts));
 
       # Check if SYN is set and not ACK (Indicates an initial connection)
@@ -223,6 +271,25 @@ sub packets {
 
         ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
         warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
+        # port of p0f matching code
+        my $sigs = $OS_SYN_SIGS; 
+        # TX => WIN = (MSS+40 * X)
+        # p0f matches by packet size, option count, quirks and don't fragment (ip->off & 0x4000 != 0
+        # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
+        # + option object count
+
+        # OK, so this code is b0rked and I just took a look at the p0f implementation.
+        my @wmatches = grep { 
+          # SX => WIN = MSS * X
+          /S(\d\d)/ and $1*$mss == $winsize or
+          /T(\d\d)/ and $1*($mss+40) == $winsize or
+          $_ eq $winsize;
+        } keys %$sigs;
+        my @tmatches = grep {
+          $sigs->{$_}->{$ttl}
+        } @wmatches;
+        print Dumper @matches;
+
 
 #    OS_SYN_SIGNATURE:
 #    for my $s (@OS_SYN_SIGS) {
@@ -398,37 +465,37 @@ Loads SYN signatures from file
 =cut
 
 sub load_os_syn_fingerprints {
-    my $file = shift;
-    # Fingerprint entry format:
-    # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
-    my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
-    my $rules = {};
+  my $file = shift;
+# Fingerprint entry format:
+# WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
+  my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
+  my $rules = {};
 
-    open(my $FH, "<", $file) or die "Could not open '$file': $!";
+  open(my $FH, "<", $file) or die "Could not open '$file': $!";
 
-    LINE:
-    while (my $line = readline $FH) {
-        chomp $line;
-        $line =~ s/\#.*//;
-        next LINE unless($line); # empty line
+LINE:
+  while (my $line = readline $FH) {
+    chomp $line;
+    $line =~ s/\#.*//;
+    next LINE unless($line); # empty line
 
-	my @elements = $line =~ $re;
+    my @elements = $line =~ $re;
 
-	unless(@elements == 8) {
-		die "Error: Not valid fingerprint format in: '$file'";
-	}
-
-	my($details, $human) = splice @elements, -2;
-	my $tmp = $rules;
-
-	for my $e (@elements) {
-		$tmp->{$e} ||= {};
-		$tmp = $tmp->{$e};
-	}
-
-	$tmp->{$details} = $human;
+    unless(@elements == 8) {
+      die "Error: Not valid fingerprint format in: '$file'";
     }
-    return $rules;
+
+    my($details, $human) = splice @elements, -2;
+    my $tmp = $rules;
+
+    for my $e (@elements) {
+      $tmp->{$e} ||= {};
+      $tmp = $tmp->{$e};
+    }
+
+    $tmp->{$details} = $human;
+  }
+  return $rules;
 }
 
 =head2 init_dev
