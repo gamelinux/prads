@@ -273,7 +273,7 @@ sub packets {
         my $gttl = normalize_ttl($ttl);
 
         ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
-        warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
+        warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex" . $pradshosts{"tstamp"} . "\n" if($DEBUG);
         # port of p0f matching code
         my $sigs = $OS_SYN_SIGS; 
         # TX => WIN = (MSS+40 * X)
@@ -289,56 +289,56 @@ sub packets {
           $_ eq $winsize;
         } keys %$sigs;
         my @tmatches = grep {
-          $sigs->{$_}->{$ttl}
+          $sigs->{$_}->{$gttl}
         } @wmatches;
-        print Dumper @wmatches;
+        print "INFO: p0f rule OS match: " . Dumper @wmatches;
 
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
       # LINUX/*NIX
       my $dist = $gttl - $ttl;
-      print "$optcnt, $scale, $mss, $sackok, $ts\n";
+      print "INFO: TCP-OPTIONS $optcnt, $scale, $mss, $sackok, $ts\n";
       if((5840 >= $winsize) && ($winsize >= 5488)) {
          if ($fragment == 1) {
             if($gttl == 64) {
-               print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Linux ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Linux ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }
          }elsif ($fragment == 0) {
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *NIX ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *NIX ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
          }
       # WINDOWS
       }elsif ((65535 >= $winsize ) && ($winsize >= 60000)) {
         if ($fragment == 1) {
            if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }elsif (60352 == $winsize) {
-               print "OS: $ip->{'src_ip'} - \"Windows 98\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 98\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }
          
          }elsif ($fragment == 0) {
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
          }
       # WINDOWS 2K ZA
       }elsif (16384 == $winsize ) {
         if ($fragment == 1) {
           if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
           }
         }
       # Windows 2000 SP4 or XP SP2
       }elsif (53760 == $winsize ) {
         if ($fragment == 1) {
           if (64 == $ttl) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
           }
         }
 
        # Others
        }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / UNKNOWN\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist)\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / UNKNOWN\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
        }
  
     }else{
@@ -360,13 +360,14 @@ sub packets {
         if($tcp->{'data'} =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
 #            printf("(%s) %s:%i -> (%s) %s:%i -> %s %s %s\n",
-            printf("Service: ip=%s port=%i -> \"%s %s %s\"\n",
+            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
 #                $eth->{'src_mac'},  $ip->{'src_ip'},  $tcp->{'src_port'},
                 $ip->{'src_ip'},  $tcp->{'src_port'},
 #                $eth->{'dest_mac'}, $ip->{'dest_ip'}, $tcp->{'dest_port'},
                 $vendor  || q(),
                 $version || q(),
-                $info    || q()
+                $info    || q(),
+                $pradshosts{"tstamp"} || q()
             );
             last SIGNATURE;
         }
@@ -382,10 +383,10 @@ sub packets {
        # Make UDP asset detection here...
        warn "Detecting UDP asset...\n" if($DEBUG);
        if ($udp->{src_port} == 53){
-        printf ("Service: ip=%s port=%i protocol=%i -> \"Bind9.x\"\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'});
+        printf ("Service: ip=%s port=%i protocol=%i -> \"DNS\" timestamp=%i\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'}, $pradshosts{"tstamp"});
        }
        elsif ($udp->{src_port} == 1194){
-        printf ("Service: ip=%s port=%i protocol=%i -> \"Openvpn 2.x\"\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'});
+        printf ("Service: ip=%s port=%i protocol=%i -> \"OpenVPN\" timestamp=%i\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'}, $pradshosts{"tstamp"});
        }
        else {
         warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
