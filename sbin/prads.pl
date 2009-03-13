@@ -296,6 +296,7 @@ sub packets {
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
       # LINUX/*NIX
       my $dist = $gttl - $ttl;
+      print "$optcnt, $scale, $mss, $sackok, $ts\n";
       if((5840 >= $winsize) && ($winsize >= 5488)) {
          if ($fragment == 1) {
             if($gttl == 64) {
