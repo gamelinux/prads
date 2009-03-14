@@ -175,15 +175,7 @@ sub packets {
 
     # Check if arp - get mac and register...
     if ($eth->{type} == ETH_TYPE_ARP) {
-        my $arp = NetPacket::ARP->decode($eth->{data}, $eth);
-        my $aip = $arp->{spa}; 
-        my $h1 = hex(substr( $aip,0,2));
-        my $h2 = hex(substr( $aip,2,2));
-        my $h3 = hex(substr( $aip,4,2));
-        my $h4 = hex(substr( $aip,6,2));
-        my $host = "$h1.$h2.$h3.$h4";
-
-        print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $pradshosts{"tstamp"} . "\n");
+        arp_check ($eth, $pradshosts{"tstamp"});
         return;
     }
 
@@ -195,15 +187,12 @@ sub packets {
 
     # We should now have us an IP packet... good!
     my $ip       = NetPacket::IP->decode($ethernet);
-    #### Should check ifdef $ip, $tcp, $udp... then do...
 
     # OS finger printing
     # Collect necessary info from IP packet; if
-    my $ttl    = $ip->{'ttl'};
+    my $ttl      = $ip->{'ttl'};
     my $ipflags  = $ip->{'flags'}; # 2=dont fragment/1=more fragments, 0=nothing set
     my $ipopts   = $ip->{'options'}; # Not used in p0f
-
-#    my $tstamp = $ip->{'hmm implement'}; # or get it from $tcp options
 
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
@@ -216,8 +205,6 @@ sub packets {
       my $seq     = $tcp->{'seqnum'};
       my $ack     = $tcp->{'acknum'};
       my ($optcnt, $scale, $mss, $sackok, $ts) = check_tcp_options($tcpopts);
-
-      my $hex = unpack("H*", pack ("B*", $tcpopts));
 
       # Check if SYN is set and not ACK (Indicates an initial connection)
       if ($tcp->{'flags'} & SYN && $tcp->{'flags'} | ACK ) { 
@@ -233,8 +220,9 @@ sub packets {
         my $gttl = normalize_ttl($ttl);
 
         ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
-        warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex" . $pradshosts{"tstamp"} . "\n" if($DEBUG);
-        # port of p0f matching code
+        warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$$optcnt,$scale,$mss,$sackok,$ts timstamp=" . $pradshosts{"tstamp"} . "\n" if($DEBUG);
+
+        # Port of p0f matching code
         my $sigs = $OS_SYN_SIGS; 
         # TX => WIN = (MSS+40 * X)
         # p0f matches by packet size, option count, quirks and don't fragment (ip->off & 0x4000 != 0
@@ -254,6 +242,7 @@ sub packets {
         print "INFO: p0f rule OS match: " . Dumper @wmatches;
 
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
+      # AND MOVE OUT IN A SUB ?
       # LINUX/*NIX
       my $dist = $gttl - $ttl;
       print "INFO: TCP-OPTIONS $optcnt, $scale, $mss, $sackok, $ts\n";
@@ -304,16 +293,17 @@ sub packets {
     }else{
       warn "Not an initial connection... Skipping OS detection\n" if($DEBUG);
     }
-#    # Skip further check for services
+
+### SERVICE: DETECTION
 #    unless($tcp->{'data'} or $udp->{'data'}) {
     unless($tcp->{'data'}) {
         warn "No TCP data - Skipping asset detection\n" if($DEBUG);
         warn "Done...\n\n" if($DEBUG);
         return;
     }
-
-    # Check content(data) against signatures
+    # Check content(TCP data) against signatures
     tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
+
 
     }elsif ($ip->{proto} == 17) {
     # Can one do UPD OS detection !??!
@@ -337,6 +327,8 @@ sub packets {
         warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
        }
     }
+
+
 warn "Done...\n\n" if($DEBUG);
 return;
 }
@@ -640,6 +632,25 @@ sub udp_service_check {
     }
 }
 
+=head2 arp_check
+
+Takes 'NetPacket::Ethernet->decode($packet)' and timestamp as input and prints out arp asset.
+
+=cut
+
+sub arp_check {
+    my ($eth,$tstamp) = @_;
+
+    my $arp = NetPacket::ARP->decode($eth->{data}, $eth);
+    my $aip = $arp->{spa};
+    my $h1 = hex(substr( $aip,0,2));
+    my $h2 = hex(substr( $aip,2,2));
+    my $h3 = hex(substr( $aip,4,2));
+    my $h4 = hex(substr( $aip,6,2));
+    my $host = "$h1.$h2.$h3.$h4";
+
+    print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $tstamp . "\n");
+}
 
 =head1 AUTHOR
 
