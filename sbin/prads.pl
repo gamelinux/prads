@@ -352,26 +352,25 @@ sub packets {
         return;
     }
 
+    # There is a sub named tcp_service_check which should do this.
     # Check content(data) against signatures
-    SIGNATURE:
-    for my $s (@SERVICE_SIGNATURES) {
-        my $re = $s->[2];
-
-        if($tcp->{'data'} =~ /$re/) {
-            my($vendor, $version, $info) = split m"/", eval $s->[1];
-#            printf("(%s) %s:%i -> (%s) %s:%i -> %s %s %s\n",
-            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
-#                $eth->{'src_mac'},  $ip->{'src_ip'},  $tcp->{'src_port'},
-                $ip->{'src_ip'},  $tcp->{'src_port'},
-#                $eth->{'dest_mac'}, $ip->{'dest_ip'}, $tcp->{'dest_port'},
-                $vendor  || q(),
-                $version || q(),
-                $info    || q(),
-                $pradshosts{"tstamp"} || q()
-            );
-            last SIGNATURE;
-        }
-    }
+tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
+#    SIGNATURE:
+#    for my $s (@SERVICE_SIGNATURES) {
+#        my $re = $s->[2];
+#
+#        if($tcp->{'data'} =~ /$re/) {
+#            my($vendor, $version, $info) = split m"/", eval $s->[1];
+#            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
+#                $ip->{'src_ip'}, $tcp->{'src_port'},
+#                $vendor  || q(),
+#                $version || q(),
+#                $info    || q(),
+#                $pradshosts{"tstamp"} || q()
+#            );
+#            last SIGNATURE;
+#        }
+#    }
     }elsif ($ip->{proto} == 17) {
        warn "Packet is of type UDP...\n" if($DEBUG);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
@@ -596,6 +595,36 @@ sub normalize_ttl {
     $gttl =  32 if (( 32  >= $ttl) && ($ttl >=    1));
     return $gttl;
 }
+
+=head2 tcp_service_check
+
+Takes input: $tcp->{'data'}, $ip->{'src_ip'}, $tcp->{'src_port'}, $pradshosts{"tstamp"}
+Prints out service if found.
+
+=cut
+
+sub tcp_service_check {
+    my ($tcp_data, $src_ip, $src_port,$tstamp) = @_;
+
+    # Check content(data) against signatures
+    SIGNATURE:
+    for my $s (@SERVICE_SIGNATURES) {
+        my $re = $s->[2];
+
+        if($tcp_data =~ /$re/) {
+            my($vendor, $version, $info) = split m"/", eval $s->[1];
+            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
+                $src_ip, $src_port,
+                $vendor  || q(),
+                $version || q(),
+                $info    || q(),
+                $tstamp || q()
+            );
+            last SIGNATURE;
+        }
+    }
+}
+
 
 =head1 AUTHOR
 
