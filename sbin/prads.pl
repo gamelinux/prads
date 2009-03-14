@@ -99,9 +99,9 @@ if ($DUMP) {
 #  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
  
    warn "\n *** Loading Service signatures *** \n\n";
-   my @SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
-   print Dumper @SERVICE_SIGNATURES; 
-#  print int keys @SERVICE_SIGNATURES; # Would like to see the total serv-sig count
+   my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
+   print Dumper @TCP_SERVICE_SIGNATURES; 
+#  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
 
    exit 0;
 }
@@ -116,8 +116,13 @@ warn "Initializing device\n" if $DEBUG;
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
 
-warn "Loading Service signatures\n" if $DEBUG;
-my @SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
+warn "Loading TCP Service signatures\n" if $DEBUG;
+my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
+                 or Getopt::Long::HelpMessage();
+
+warn "Loading UDP Service signatures\n" if $DEBUG;
+# Currently loading the wrong sig file :)
+my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 warn "Creating object\n" if $DEBUG;
@@ -160,51 +165,6 @@ Callback function for C<Net::Pcap::loop>.
 
 =cut
 
-# NetPacket::IP->decode gives us binary opts
-# so get the interesting bits here
-sub parse_opts {
-    my ($opts) = @_;
-    my ($scale, $mss, $sackok, $ts) = (0,0,0,0);
-    print "opts: ". unpack("B*", $opts)."\n" if $DEBUG; 
-    my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
-    while ($opts){
-      ($kind, $rest) = unpack("C a*", $opts);
-      $count++;
-      if($kind == 0){
-        # EOL
-        last;
-      }elsif($kind == 1){
-        # NOP
-        $opts = $rest;
-      }else{
-        ($size, $rest) = unpack "C a*", $rest;
-        #print "$kind # $size\n";
-        $size = $size - 2;
-        print "rest: ". unpack("B*", $rest)."\n" if $DEBUG; 
-        #($data, $rest) = unpack "C${size}a", $rest;
-        if($kind == 2){
-          ($mss, $rest) = unpack "S a*", $rest;
-          print "MSS : $mss\n" if $DEBUG;
-        }elsif($kind == 3){
-          ($scale, $rest) = unpack "C3 a*", $rest;
-          print "WSOPT: $scale\n" if $DEBUG;
-        }elsif($kind == 4){
-          # hey. ballsacks are OK.
-          $sackok++;
-        }elsif($kind == 8){
-          # Timestamp.
-          ($ts, $rest) = unpack "C$size a*", $rest;
-        }else{
-          # don't care
-          ($data, $rest) = unpack "C$size a*", $rest;
-        }
-      }
-      $opts = $rest;
-      last if undef $opts;
-    }
-    return ($count, $scale, $mss, $sackok, $ts);
-}
-### Should rename top packets etc.
 sub packets {
     my ($user_data, $header, $packet) = @_;
     $pradshosts{"tstamp"} = time;
@@ -255,7 +215,7 @@ sub packets {
       my $tcpopts = $tcp->{'options'}; # binary crap 'CEUAPRSF' 
       my $seq     = $tcp->{'seqnum'};
       my $ack     = $tcp->{'acknum'};
-      my ($optcnt, $scale, $mss, $sackok, $ts) = parse_opts($tcpopts);
+      my ($optcnt, $scale, $mss, $sackok, $ts) = check_tcp_options($tcpopts);
 
       my $hex = unpack("H*", pack ("B*", $tcpopts));
 
@@ -352,26 +312,11 @@ sub packets {
         return;
     }
 
-    # There is a sub named tcp_service_check which should do this.
     # Check content(data) against signatures
-tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
-#    SIGNATURE:
-#    for my $s (@SERVICE_SIGNATURES) {
-#        my $re = $s->[2];
-#
-#        if($tcp->{'data'} =~ /$re/) {
-#            my($vendor, $version, $info) = split m"/", eval $s->[1];
-#            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
-#                $ip->{'src_ip'}, $tcp->{'src_port'},
-#                $vendor  || q(),
-#                $version || q(),
-#                $info    || q(),
-#                $pradshosts{"tstamp"} || q()
-#            );
-#            last SIGNATURE;
-#        }
-#    }
+    tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
+
     }elsif ($ip->{proto} == 17) {
+    # Can one do UPD OS detection !??!
        warn "Packet is of type UDP...\n" if($DEBUG);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
        unless($udp->{'data'}) {
@@ -379,7 +324,8 @@ tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts
           warn "Done...\n\n" if($DEBUG);
           return;
        }
-       # Make UDP asset detection here...
+       # Make UDP asset detection here... PoC CODE at the moment.
+### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        warn "Detecting UDP asset...\n" if($DEBUG);
        if ($udp->{src_port} == 53){
         printf ("Service: ip=%s port=%i protocol=%i -> \"DNS\" timestamp=%i\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'}, $pradshosts{"tstamp"});
@@ -408,9 +354,49 @@ Takes tcp options as input, and returns which args are set.
 =cut
 
 sub check_tcp_options{
-    my $opts = shift;
-    my %options;
-    return;
+# NetPacket::IP->decode gives us binary opts
+# so get the interesting bits here
+#sub parse_opts {
+    my ($opts) = @_;
+    my ($scale, $mss, $sackok, $ts) = (0,0,0,0);
+    print "opts: ". unpack("B*", $opts)."\n" if $DEBUG;
+    my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
+    while ($opts){
+      ($kind, $rest) = unpack("C a*", $opts);
+      $count++;
+      if($kind == 0){
+        # EOL
+        last;
+      }elsif($kind == 1){
+        # NOP
+        $opts = $rest;
+      }else{
+        ($size, $rest) = unpack "C a*", $rest;
+        #print "$kind # $size\n";
+        $size = $size - 2;
+        print "rest: ". unpack("B*", $rest)."\n" if $DEBUG;
+        #($data, $rest) = unpack "C${size}a", $rest;
+        if($kind == 2){
+          ($mss, $rest) = unpack "S a*", $rest;
+          print "MSS : $mss\n" if $DEBUG;
+        }elsif($kind == 3){
+          ($scale, $rest) = unpack "C3 a*", $rest;
+          print "WSOPT: $scale\n" if $DEBUG;
+        }elsif($kind == 4){
+          # hey. ballsacks are OK.
+          $sackok++;
+        }elsif($kind == 8){
+          # Timestamp.
+          ($ts, $rest) = unpack "C$size a*", $rest;
+        }else{
+          # don't care
+          ($data, $rest) = unpack "C$size a*", $rest;
+        }
+      }
+      $opts = $rest;
+      last if undef $opts;
+    }
+    return ($count, $scale, $mss, $sackok, $ts);
 }
 
 
@@ -606,12 +592,41 @@ Prints out service if found.
 sub tcp_service_check {
     my ($tcp_data, $src_ip, $src_port,$tstamp) = @_;
 
-    # Check content(data) against signatures
+    # Check content(tcp_data) against signatures
     SIGNATURE:
-    for my $s (@SERVICE_SIGNATURES) {
+    for my $s (@TCP_SERVICE_SIGNATURES) {
         my $re = $s->[2];
 
         if($tcp_data =~ /$re/) {
+            my($vendor, $version, $info) = split m"/", eval $s->[1];
+            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
+                $src_ip, $src_port,
+                $vendor  || q(),
+                $version || q(),
+                $info    || q(),
+                $tstamp || q()
+            );
+            last SIGNATURE;
+        }
+    }
+}
+
+=head2 udp_service_check
+
+Takes input: $udp->{'data'}, $ip->{'src_ip'}, $udp->{'src_port'}, $pradshosts{"tstamp"}
+Prints out service if found.
+
+=cut
+
+sub udp_service_check {
+    my ($udp_data, $src_ip, $src_port,$tstamp) = @_;
+
+    # Check content(udp_data) against signatures
+    SIGNATURE:
+    for my $s (@UDP_SERVICE_SIGNATURES) {
+        my $re = $s->[2];
+
+        if($udp_data =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
             printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
                 $src_ip, $src_port,
