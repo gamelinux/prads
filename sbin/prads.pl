@@ -191,8 +191,9 @@ sub packets {
     # OS finger printing
     # Collect necessary info from IP packet; if
     my $ttl      = $ip->{'ttl'};
-    my $ipflags  = $ip->{'flags'}; # 2=dont fragment/1=more fragments, 0=nothing set
+    my $ipflags  = $ip->{'flags'};   # 2=dont fragment/1=more fragments, 0=nothing set
     my $ipopts   = $ip->{'options'}; # Not used in p0f
+    my $len      = $ip->{'len'};     # total length of packet
 
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
@@ -204,11 +205,37 @@ sub packets {
       my $tcpopts = $tcp->{'options'}; # binary crap 'CEUAPRSF' 
       my $seq     = $tcp->{'seqnum'};
       my $ack     = $tcp->{'acknum'};
-      my ($optcnt, $scale, $mss, $sackok, $ts) = check_tcp_options($tcpopts);
+      my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, $quirks) = check_tcp_options($tcpopts);
 
       # Check if SYN is set and not ACK (Indicates an initial connection)
       if ($tcp->{'flags'} & SYN && $tcp->{'flags'} | ACK ) { 
         warn "Initial connection... Detecting OS...\n" if($DEBUG);
+=p0f matching algo
+# WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
+
+for each signature in db:
+  match packet size (0 means >= PACKET_BIG (=200))
+  match tcp option count
+  match zero timestamp
+  match don't fragment bit (ip->off&0x4000!= 0)
+  match quirks
+
+  check MSS (mod or no)
+  check WSCALE
+
+  -- do complex windowsize checks
+  -- match options
+  -- fuzzy match ttls
+
+  -- do NAT checks
+  == dump unknow packet
+=cut
+        # Port of p0f matching code
+        my $sigs = $OS_SYN_SIGS; 
+        # TX => WIN = (MSS+40 * X)
+
+        my $tot = ($len < 200)? $len : 0;
+        my $t0 = (not defined $ts or $ts != 0)? 0:1;
         my $fragment;
         if($ipflags == 2){
           $fragment=1; # Dont fragment
@@ -216,30 +243,17 @@ sub packets {
           $fragment=0; # Fragment or more fragments
         }
 
+        #sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
+        my $matches = $sigs->{$tot}->{$optcnt}->{$t0}->{$fragment};
+        # XXX: Need more sophisticated quirks matching
+        $matches = $matches->{$quirks};
+        print "INFO: p0f rule OS match: " . Dumper $matches;
+
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
 
         ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
         warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$$optcnt,$scale,$mss,$sackok,$ts timstamp=" . $pradshosts{"tstamp"} . "\n" if($DEBUG);
-
-        # Port of p0f matching code
-        my $sigs = $OS_SYN_SIGS; 
-        # TX => WIN = (MSS+40 * X)
-        # p0f matches by packet size, option count, quirks and don't fragment (ip->off & 0x4000 != 0
-        # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
-        # + option object count
-
-        # OK, so this code is b0rked and I just took a look at the p0f implementation.
-        my @wmatches = grep { 
-          # SX => WIN = MSS * X
-          /S(\d\d)/ and $1*$mss == $winsize or
-          /T(\d\d)/ and $1*($mss+40) == $winsize or
-          $_ eq $winsize;
-        } keys %$sigs;
-        my @tmatches = grep {
-          $sigs->{$_}->{$gttl}
-        } @wmatches;
-        print "INFO: p0f rule OS match: " . Dumper @wmatches;
 
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
       # AND MOVE OUT IN A SUB ?
@@ -341,7 +355,7 @@ Takes tcp options as input, and returns which args are set.
  $tcpoptions
 
  Output format.
- @tcpopts
+ ($count, $scale, $mss, $sackok, $ts, $optstr, $quirks);
 
 =cut
 
@@ -350,17 +364,22 @@ sub check_tcp_options{
 # so get the interesting bits here
 #sub parse_opts {
     my ($opts) = @_;
-    my ($scale, $mss, $sackok, $ts) = (0,0,0,0);
+    my ($scale, $mss, $sackok, $ts, $t2) = (undef,undef,0,undef,0);
     print "opts: ". unpack("B*", $opts)."\n" if $DEBUG;
     my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
+    my ($optstr, $quirks) = ('','');
     while ($opts){
       ($kind, $rest) = unpack("C a*", $opts);
       $count++;
       if($kind == 0){
         # EOL
+        $optstr .= ",E";
+        # quirk if opts past EOL
+        $quirks .= 'P' if not undef $rest and $rest ne '';
         last;
       }elsif($kind == 1){
         # NOP
+        $optstr .= ",N";
         $opts = $rest;
       }else{
         ($size, $rest) = unpack "C a*", $rest;
@@ -370,25 +389,44 @@ sub check_tcp_options{
         #($data, $rest) = unpack "C${size}a", $rest;
         if($kind == 2){
           ($mss, $rest) = unpack "S a*", $rest;
+          $optstr .= ",M$mss";
           print "MSS : $mss\n" if $DEBUG;
         }elsif($kind == 3){
           ($scale, $rest) = unpack "C3 a*", $rest;
+          $optstr .= ",W$scale";
           print "WSOPT: $scale\n" if $DEBUG;
         }elsif($kind == 4){
           # hey. ballsacks are OK.
+          $optstr .= ",S";
           $sackok++;
         }elsif($kind == 8){
           # Timestamp.
-          ($ts, $rest) = unpack "C$size a*", $rest;
+          my $t;
+          ($t, $rest) = unpack "C$size a*", $rest;
+          if(defined $ts and $t){
+            # non-zero second timestamp
+            $quirks .= 'T';
+          }else{
+            $ts = $t;
+          }
+
+          if($ts){
+            $optstr .= ",T";
+          }else{
+            $optstr .= ",T0";
+          }
         }else{
-          # don't care
+          # unrecognized
+          $optstr .= ",?$kind";
           ($data, $rest) = unpack "C$size a*", $rest;
         }
       }
       $opts = $rest;
       last if undef $opts;
     }
-    return ($count, $scale, $mss, $sackok, $ts);
+    $optstr = '.' if $optstr eq '';
+    $quirks = '.' if $quirks eq '';
+    return ($count, $scale, $mss, $sackok, $ts, $optstr, $quirks);
 }
 
 
@@ -431,6 +469,7 @@ sub load_signatures {
 =head2 load_os_syn_fingerprints
 
 Loads SYN signatures from file
+optimize for lookup matching
 
 =cut
 
@@ -438,31 +477,47 @@ sub load_os_syn_fingerprints {
   my $file = shift;
 # Fingerprint entry format:
 # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
-  my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
+  #my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
   my $rules = {};
 
   open(my $FH, "<", $file) or die "Could not open '$file': $!";
 
-LINE:
   while (my $line = readline $FH) {
     chomp $line;
     $line =~ s/\#.*//;
-    next LINE unless($line); # empty line
+    next unless($line); # empty line
 
-    my @elements = $line =~ $re;
-
+    #my @elements = $line =~ $re;
+    my @elements = split/:/,$line;
     unless(@elements == 8) {
       die "Error: Not valid fingerprint format in: '$file'";
     }
+    my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
+    #print "GRRRR $wss, $ttl, $df, $ss, $oo, $qq, $os, $detail\n";
+    my @opt = split /[, ]/, $oo;
+    my $oc = @opt;
+    my $t0 = 0;
+    my ($mss, $wsc) = ('none','none');
+    for(@opt){
+      if(/([MW])([\d%*])*/){
+        if($1 eq 'M'){
+          $mss = $2;
+        }else{
+          $wsc = $2;
+        }
+      }elsif(/T0/){
+        $t0 = 1;
+      }
+    }
 
     my($details, $human) = splice @elements, -2;
+    
     my $tmp = $rules;
-
-    for my $e (@elements) {
+    #print "Floppa: /",join("/",@ary),"/\n" if $. eq 354;
+    for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
       $tmp->{$e} ||= {};
       $tmp = $tmp->{$e};
     }
-
     $tmp->{$details} = $human;
   }
   return $rules;
