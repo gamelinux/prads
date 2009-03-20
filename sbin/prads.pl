@@ -501,11 +501,15 @@ passed to the program as an argument
 sub lookup_net {
     my $dev = shift;
     my($err, $address, $netmask);
+#    my $err;
+#    my $netmask = '255.255.255.255';
+#    my $address = '0.0.0.0';
 
     Net::Pcap::lookupnet(
         $dev, \$address, \$netmask, \$err
     ) and die sprintf $ERROR{'lookup_net'}, $dev, $err;
 
+warn "lookup_net : $address, $netmask\n";
     warn "lookup_net : $address, $netmask\n" if($DEBUG);
     return $address, $netmask;
 }
@@ -620,7 +624,7 @@ sub udp_service_check {
 
         if($udp_data =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
-            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
+            printf("SERVICE: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
                 $src_ip, $src_port,
                 $vendor  || q(),
                 $version || q(),
@@ -650,6 +654,26 @@ sub arp_check {
     my $host = "$h1.$h2.$h3.$h4";
 
     print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $tstamp . "\n");
+}
+
+=head2 add_asset
+
+Takes input: Category, $1 $2 $3 $4..... $N
+Adds the asset to the internal list %pradshosts of assets, or if it exists, just updates the timestamp.
+
+=cut
+
+sub add_asset {
+    my $assets = @_;
+    if($assets =~ /^OS: /) {
+#      $pradshosts{"tstamp"} = time;
+    }
+    elsif ($assets =~ /^ARP: /) {
+    }
+    elsif ($assets =~ /^SERVICE: /) {
+    }
+    elsif ($assets =~ /^OS: /) {
+    }
 }
 
 =head1 AUTHOR
