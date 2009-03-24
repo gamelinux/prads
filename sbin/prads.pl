@@ -111,7 +111,7 @@ warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
 
-warn "Initializing device\n" if $DEBUG;
+warn "Initializing device\n" if ($DEBUG>0);
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
 
@@ -167,7 +167,7 @@ Callback function for C<Net::Pcap::loop>.
 sub packets {
     my ($user_data, $header, $packet) = @_;
     $pradshosts{"tstamp"} = time;
-    warn "Packet received - processing...\n" if($DEBUG>10);
+    warn "Packet received - processing...\n" if($DEBUG>50);
 
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
@@ -204,7 +204,7 @@ sub packets {
 
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
-      warn "Packet is of type TCP...\n" if($DEBUG>10);
+      warn "Packet is of type TCP...\n" if($DEBUG>50);
       # Collect necessary info from TCP packet; if
       my $tcp      = NetPacket::TCP->decode($ip->{'data'});
       my $winsize = $tcp->{'winsize'}; #
@@ -258,7 +258,7 @@ sub packets {
 
 
     }else{
-      warn "Not an initial connection... Skipping OS detection\n" if($DEBUG&30);
+      warn "Not an initial connection... Skipping OS detection\n" if($DEBUG>30);
     }
 ### SERVICE: DETECTION
     unless($tcp->{'data'}) {
@@ -272,7 +272,7 @@ sub packets {
 
     }elsif ($ip->{proto} == 17) {
     # Can one do UPD OS detection !??!
-       warn "Packet is of type UDP...\n" if($DEBUG>10);
+       warn "Packet is of type UDP...\n" if($DEBUG>30);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
        unless($udp->{'data'}) {
           warn "No UDP data - Skipping asset detection\n" if($DEBUG>20);
@@ -294,7 +294,7 @@ sub packets {
     }
 
 
-warn "Done...\n\n" if($DEBUG>10);
+warn "Done...\n\n" if($DEBUG>50);
 return;
 }
 
