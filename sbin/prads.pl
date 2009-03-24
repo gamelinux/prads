@@ -168,7 +168,7 @@ Callback function for C<Net::Pcap::loop>.
 sub packets {
     my ($user_data, $header, $packet) = @_;
     $pradshosts{"tstamp"} = time;
-    warn "Packet received - processing...\n" if($DEBUG);
+    #warn "Packet received - processing...\n" if($DEBUG);
 
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
@@ -191,14 +191,21 @@ sub packets {
     # OS finger printing
     # Collect necessary info from IP packet; if
     my $ttl      = $ip->{'ttl'};
-    my $ipflags  = $ip->{'flags'};   # 2=dont fragment/1=more fragments, 0=nothing set
     my $ipopts   = $ip->{'options'}; # Not used in p0f
     my $len      = $ip->{'len'};     # total length of packet
     my $id       = $ip->{'id'};
 
+    my $ipflags  = $ip->{'flags'};   # 2=dont fragment/1=more fragments, 0=nothing set
+    my $df;
+    if($ipflags == 2){
+        $df = 1; # Dont fragment
+    }else{
+        $df = 0; # Fragment or more fragments
+    }
+
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
-      warn "Packet is of type TCP...\n" if($DEBUG);
+      #warn "Packet is of type TCP...\n" if($DEBUG);
       # Collect necessary info from TCP packet; if
       my $tcp      = NetPacket::TCP->decode($ip->{'data'});
       my $winsize = $tcp->{'winsize'}; #
@@ -214,167 +221,38 @@ sub packets {
         warn "Initial connection... Detecting OS...\n" if($DEBUG);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
 
-        # parse rest of quirks
-        # TODO: X (x2 field != 0), ! (broken opts) 
-        push @quirks, 'Z' if not $id;
-        push @quirks, 'I' if $ipopts;
-        push @quirks, 'U' if $urg;
-        push @quirks, 'X' if $reserved;
-        push @quirks, 'A' if $ack;
-        push @quirks, 'F' if $tcpflags & ~(SYN|ACK);
-        push @quirks, 'D' if $data;
-
-        my $quirkstring = '';
-        for(@quirks){
-          $quirkstring .= $_;
-        }
-        $quirkstring = '.' if not @quirks;
-        print "QUIRKS: ".(($quirkstring)?$quirkstring:'.')."\n" if $DEBUG;
-
-        my $df;
-        if($ipflags == 2){
-          $df = 1; # Dont fragment
-        }else{
-          $df = 0; # Fragment or more fragments
-        }
-        my $packet = "ip:$ip->{'src_ip'} size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt,WSC:$scale,MSS:$mss,SO:$sackok,TS:$ts Q:$quirkstring ($seq/$ack) timstamp=" . $pradshosts{"tstamp"};
-        print "OS: $packet\n" if($DEBUG);
-
-=p0f matching algo
-# WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
-
-for each signature in db:
-  match packet size (0 means >= PACKET_BIG (=200))
-  match tcp option count
-  match zero timestamp
-  match don't fragment bit (ip->off&0x4000!= 0)
-  match quirks
-
-  check MSS (mod or no)
-  check WSCALE
-
-  -- do complex windowsize checks
-  -- match options
-  -- fuzzy match ttls
-
-  -- do NAT checks
-  == dump unknow packet
-
-  TODO: 
-    NAT checks, unknown packets, error handling, refactor
-=cut
-        # Port of p0f matching code
-        my $sigs = $OS_SYN_SIGS; 
-        # TX => WIN = (MSS+40 * X)
-
         my $tot = ($len < 100)? $len : 0;
         my $t0 = (not defined $ts or $ts != 0)? 0:1;
 
-        #sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
-        my $matches = $sigs;
-        my $i = 0;
-        for($tot, $optcnt, $t0, $df){
-            if($matches->{$_}){
-                $matches = $matches->{$_};
-                #print "REDUCE: $i:$_: " . Dumper($matches). "\n";
-                $i++;
-                
-            }else{
-                warn "ERR: $packet:\n  Packet has no match for param $i:$_\n";
-                return;
-            }
-        }
-        warn "ERR: $packet:\n  No match in fp db.\n" and return if not $matches;
-        #print "INFO: p0f tot:oc:t0:frag match: " . Dumper($matches). "\n";
-        if(not @quirks) {
-            $matches = $matches->{'.'};
-            warn "ERR: $packet:\n  No quirks match for no quirks.\n" and return if not defined $matches;
-        }else{
-            my $i;
-            for(keys %$matches){
-                my @qq = split //;
-                next if @qq != @quirks;
-                $i = 0;
-                for(@quirks){
-                    if(grep /^$_$/,@qq){
-                        $i++;
-                    }else{
-                        last;
-                    }
-                }
-                $matches = $matches->{$_} and last if $i == @quirks;
-            }
-            warn "ERR: $packet:\n  No quirks match\n" and return if not $i;
-        }
-        #print "INFO: p0f quirks match: " . Dumper( $matches). "\n";
+        # parse rest of quirks
+        push @quirks, check_quirks($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data);
+        my $quirkstring = quirks_tostring(@quirks);
 
-        # Maximum Segment Size
-        my @mssmatch = grep {
-            (/^\%(\d)*$/ and ($mss % $_) == 0) or
-            (/^(\d)*$/ and $mss eq $_) or
-            ($_ eq '*')
-        } keys %$matches;
-        #print "INFO: p0f mss match: " . Dumper(@mssmatch). "\n";
-        warn "ERR: $packet:\n  No mss match in fp db.\n" and return if not @mssmatch;
+        my $packet = "ip:$ip->{'src_ip'} size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
+        print "OS: $packet\n" if($DEBUG);
 
-        # WSCALE. There may be multiple simultaneous matches to search beyond this point.
-        my (@wmatch,@fuzmatch);
-        for(@mssmatch){
-            my $t = $matches->{$_}->{$scale};
-            $t = $matches->{$_}->{'*'} if not $t;
-            # WINDOWSIZE
-            for(keys %$t){
-                #print "INFO: wss:$winsize,$_, " . Dumper($t->{$_}) ."\n";
-                if( ($_ =~ /S(\d*)/ and $1*$mss == $winsize) or
-                    ($_ =~ /M(\d*)/ and $1*($mss+40) == $winsize) or
-                    ($_ =~ /%(\d*)/ and $winsize % $1 == 0) or
-                    ($_ eq $winsize) or
-                    ($_ eq '*')
-                ){
-                    push @wmatch, $t->{$_};
-                }else{
-                    push @fuzmatch, $t->{$_};
-                }
-            }
-        }
-        if(not @wmatch and @fuzmatch){
-            warn "warning: $packet:\nNo exact window match. Proceeding fuzzily\n";
-            @wmatch = @fuzmatch;
-        }
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
-        if(not @wmatch){
-          print "$winsize:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
-          warn "ERR: $packet:\n  No window match in fp db.\n";
-          print "Closest matches: " . Dumper (@mssmatch) ."\n";
-          return;
-        }
-        #print "INFO: wmatch: " . Dumper(@wmatch) ."\n";
-
-        # TCP option sequence
-        my @omatch;
-        for my $h (@wmatch){
-            for(keys %$h){
-                #print "INFO: omatch:$optstr:$_ " .Dumper($_) ."\n";
-                push @omatch, $h->{$_} and last if match_opts($optstr,$_);
-            }
-        }
         my $dist = $gttl - $ttl;
-        for(@omatch){
-            my $match = $_->{$gttl};
-            #print "INFO: omatch: " .Dumper($match) ."\n";
-            if($match){
-                for(keys %$match){
-                    print "OS: ip:$ip->{'src_ip'} - $_ - $match->{$_} (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} ."\n";
+
+        # do the actual work
+        my ($os, $details, @more) = os_find_match(
+            $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
+            $winsize, $gttl, $optstr, $packet);
+        if(not $os){
+            print "$winsize:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
+        }else{
+            print "OS: ip:$ip->{'src_ip'} - $os - $details (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} ."\n";
+        
+            if(@more){
+                while(@more){
+                    ($os, $details, @more) = @more;
+                    print "MORE: ip:$ip->{'src_ip'} - $os - $details (ttl: $ttl($gttl), winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} ."\n";
+
                 }
             }
         }
-        if(not @omatch){
-          print "$winsize:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
-          warn "ERR: $packet:\n  No options match in fp db.\n";
-          print "Closest matches: " . Dumper (@wmatch) ."\n";
-          return;
-        }
+
 
 =bogus
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
@@ -427,13 +305,14 @@ for each signature in db:
  
 =cut
     }else{
-      warn "Not an initial connection... Skipping OS detection\n" if($DEBUG);
+      #warn "Not an initial connection... Skipping OS detection\n" if($DEBUG);
+      ;
     }
 ### SERVICE: DETECTION
 #    unless($tcp->{'data'} or $udp->{'data'})
     unless($tcp->{'data'}) {
-        warn "No TCP data - Skipping asset detection\n" if($DEBUG);
-        warn "Done...\n\n" if($DEBUG);
+        #warn "No TCP data - Skipping asset detection\n" if($DEBUG);
+        #warn "Done...\n\n" if($DEBUG);
         return;
     }
     # Check content(TCP data) against signatures
@@ -442,16 +321,16 @@ for each signature in db:
 
     }elsif ($ip->{proto} == 17) {
     # Can one do UPD OS detection !??!
-       warn "Packet is of type UDP...\n" if($DEBUG);
+       #warn "Packet is of type UDP...\n" if($DEBUG);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
        unless($udp->{'data'}) {
-          warn "No UDP data - Skipping asset detection\n" if($DEBUG);
-          warn "Done...\n\n" if($DEBUG);
+          #warn "No UDP data - Skipping asset detection\n" if($DEBUG);
+          #warn "Done...\n\n" if($DEBUG);
           return;
        }
        # Make UDP asset detection here... PoC CODE at the moment.
 ### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
-       warn "Detecting UDP asset...\n" if($DEBUG);
+       #warn "Detecting UDP asset...\n" if($DEBUG);
        if ($udp->{src_port} == 53){
         printf ("Service: ip=%s port=%i protocol=%i -> \"DNS\" timestamp=%i\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'}, $pradshosts{"tstamp"});
        }
@@ -464,7 +343,7 @@ for each signature in db:
     }
 
 
-warn "Done...\n\n" if($DEBUG);
+#warn "Done...\n\n" if($DEBUG);
 return;
 }
 
@@ -486,6 +365,175 @@ sub match_opts {
     return @o2 == 0;
 }
 
+=port of p0f find_match()
+# WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
+
+returns: ($os, $details, [...])
+or undef on fail
+
+for each signature in db:
+  match packet size (0 means >= PACKET_BIG (=200))
+  match tcp option count
+  match zero timestamp
+  match don't fragment bit (ip->off&0x4000!= 0)
+  match quirks
+
+  check MSS (mod or no)
+  check WSCALE
+
+  -- do complex windowsize checks
+  -- match options
+  -- fuzzy match ttls
+
+  -- do NAT checks
+  == dump unknow packet
+
+  TODO:
+    NAT checks, unknown packets, error handling, refactor
+=cut
+sub os_find_match{
+# Port of p0f matching code
+    my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $packet) = @_;
+    my @quirks = @$qq;
+    my $sigs = $OS_SYN_SIGS; 
+# TX => WIN = (MSS+40 * X)
+
+#warn "Matching $packet\n" if $DEBUG;
+
+#sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
+    my $matches = $sigs;
+    my $i = 0;
+    my @ec = ('packet size', 'option count', 'zero timestamp', 'don\'t fragment bit');
+    for($tot, $optcnt, $t0, $df){
+        if($matches->{$_}){
+            $matches = $matches->{$_};
+#print "REDUCE: $i:$_: " . Dumper($matches). "\n";
+            $i++;
+
+        }else{
+            warn "Packet has no match for $ec[$i]:$_\n";
+            return;
+        }
+    }
+# we should have $matches now.
+    warn "ERR: $packet:\n  No match in fp db, but should have a match.\n" and return if not $matches;
+
+#print "INFO: p0f tot:oc:t0:frag match: " . Dumper($matches). "\n";
+    if(not @quirks) {
+        $matches = $matches->{'.'};
+        warn "ERR: $packet:\n  No quirks match for no quirks.\n" and return if not defined $matches;
+    }else{
+        my $i;
+        for(keys %$matches){
+            my @qq = split //;
+            next if @qq != @quirks;
+            $i = 0;
+            for(@quirks){
+                if(grep /^$_$/,@qq){
+                    $i++;
+                }else{
+                    last;
+                }
+            }
+            $matches = $matches->{$_} and last if $i == @quirks;
+        }
+        warn "ERR: $packet:\n  No quirks match\n" and return if not $i;
+    }
+#print "INFO: p0f quirks match: " . Dumper( $matches). "\n";
+
+# Maximum Segment Size
+    my @mssmatch = grep {
+        (/^\%(\d)*$/ and ($mss % $_) == 0) or
+            (/^(\d)*$/ and $mss eq $_) or
+            ($_ eq '*')
+    } keys %$matches;
+#print "INFO: p0f mss match: " . Dumper(@mssmatch). "\n";
+    warn "ERR: $packet:\n  No mss match in fp db.\n" and return if not @mssmatch;
+
+# WSCALE. There may be multiple simultaneous matches to search beyond this point.
+    my (@wmatch,@fuzmatch);
+    for(@mssmatch){
+        my $t = $matches->{$_}->{$scale};
+        $t = $matches->{$_}->{'*'} if not $t;
+# WINDOWSIZE
+        for(keys %$t){
+#print "INFO: wss:$winsize,$_, " . Dumper($t->{$_}) ."\n";
+            if( ($_ =~ /S(\d*)/ and $1*$mss == $winsize) or
+                ($_ =~ /M(\d*)/ and $1*($mss+40) == $winsize) or
+                ($_ =~ /%(\d*)/ and $winsize % $1 == 0) or
+                ($_ eq $winsize) or
+                ($_ eq '*')
+              ){
+                push @wmatch, $t->{$_};
+            }else{
+                push @fuzmatch, $t->{$_};
+            }
+        }
+    }
+    if(not @wmatch and @fuzmatch){
+        warn "warning: $packet:\nNo exact window match. Proceeding fuzzily\n";
+        @wmatch = @fuzmatch;
+    }
+    if(not @wmatch){
+        warn "ERR: $packet:\n  No window match in fp db.\n";
+        warn "Closest matches: " . Dumper (@mssmatch) ."\n";
+        return;
+    }
+#print "INFO: wmatch: " . Dumper(@wmatch) ."\n";
+
+# TCP option sequence
+    my @omatch;
+    for my $h (@wmatch){
+        for(keys %$h){
+#print "INFO: omatch:$optstr:$_ " .Dumper($_) ."\n";
+            push @omatch, $h->{$_} and last if match_opts($optstr,$_);
+        }
+    }
+    my @os;
+    for(@omatch){
+        my $match = $_->{$gttl};
+#print "INFO: omatch: " .Dumper($match) ."\n";
+        if($match){
+            for(keys %$match){
+                push @os, ($_, $match->{$_});
+            }
+        }
+    }
+    if(not @os){
+        warn "ERR: $packet:\n  No options match in fp db.\n";
+        print "Closest matches: " . Dumper (@wmatch) ."\n";
+        return;
+    }
+    return @os;
+}
+
+# Parse most quirks.
+# quirk P (opts past EOL) and T(non-zero 2nd timestamp) are implemented in
+# check_tcp_options, where it makes most sense.
+# TODO: '!' : broken opts (?)
+sub check_quirks {
+    my ($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data) = @_;
+    my @quirks;
+
+    push @quirks, 'Z' if not $id;
+    push @quirks, 'I' if $ipopts;
+    push @quirks, 'U' if $urg;
+    push @quirks, 'X' if $reserved;
+    push @quirks, 'A' if $ack;
+    push @quirks, 'F' if $tcpflags & ~(SYN|ACK);
+    push @quirks, 'D' if $data;
+    return @quirks;
+}
+
+sub quirks_tostring {
+    my @quirks = @_;
+    my $quirkstring = '';
+    for(@quirks){
+        $quirkstring .= $_;
+    }
+    $quirkstring = '.' if not @quirks;
+    return $quirkstring;
+}
 
 
 =head2 check_tcp_options
@@ -505,7 +553,7 @@ sub check_tcp_options{
     # so get the interesting bits here
     my ($opts) = @_;
     my ($scale, $mss, $sackok, $ts, $t2) = (undef,undef,0,undef,0);
-    print "opts: ". unpack("B*", $opts)."\n" if $DEBUG;
+    print "opts: ". unpack("B*", $opts)."\n" if $DEBUG & 8;
     my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
     my $optstr = '';
     my @quirks;
@@ -514,14 +562,14 @@ sub check_tcp_options{
         last if not $kind;
         $count++;
         if($kind == 0){
-            print "EOL\n" if $DEBUG;
+            print "EOL\n" if $DEBUG & 8;
             $optstr .= "E,";
             # quirk if opts past EOL
             push @quirks, 'P' if $rest ne '';
-            last;
+            #last;
         }elsif($kind == 1){
             # NOP
-            print "NOP\n" if $DEBUG;
+            print "NOP\n" if $DEBUG & 8;
             $optstr .= "N,";
         }else{
             ($size, $rest) = unpack("C a*", $rest);
@@ -531,15 +579,15 @@ sub check_tcp_options{
             if($kind == 2){
                 ($mss, $rest) = unpack("n a*", $rest);
                 $optstr .= "M$mss,";
-                print "$size MSS: $mss\n" if $DEBUG;
+                print "$size MSS: $mss\n" if $DEBUG & 8;
             }elsif($kind == 3){
                 ($scale, $rest) = unpack("C a*", $rest);
                 $optstr .= "W$scale,";
-                print "WSOPT$size: $scale\n" if $DEBUG;
+                print "WSOPT$size: $scale\n" if $DEBUG & 8;
             }elsif($kind == 4){
                 # allsacks are OK.
                 $optstr .= "S,";
-                print "SACKOK\n" if $DEBUG;
+                print "SACKOK\n" if $DEBUG & 8;
                 $sackok++;
             }elsif($kind == 8){
                 # Timestamp.
@@ -552,7 +600,7 @@ sub check_tcp_options{
                     $t |= $c;
                     $tsize--;
                 }
-                print "TS$size: $t\n" if $DEBUG;
+                print "TS$size: $t\n" if $DEBUG & 8;
                 if($t){
                     $optstr .= "T,";
                 }else{
@@ -568,9 +616,9 @@ sub check_tcp_options{
                 # unrecognized
                 $optstr .= "?$kind,";
                 ($rest) = unpack("x[$count] a*", $rest);
-                print "unknown $kind:$size:" if $DEBUG;
+                print "unknown $kind:$size:" if $DEBUG & 8;
             }
-            print "rest: ". unpack("B*", $rest)."\n" if $DEBUG;
+            print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
         }
         $opts = $rest;
         last if not defined $opts;
