@@ -386,6 +386,8 @@ T4:64:1:60:M*,S,T,N,W2:.:Linux:2.6 (older, 5)
 
 S4:64:1:60:M*,S,T,N,W5:.:Linux:2.6 (newer, 1)
 S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 2)
+# added -kwy
+S2:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 2 loopback)
 S4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 3)
 T4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 4)
 

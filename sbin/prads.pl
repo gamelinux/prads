@@ -194,6 +194,7 @@ sub packets {
     my $ipflags  = $ip->{'flags'};   # 2=dont fragment/1=more fragments, 0=nothing set
     my $ipopts   = $ip->{'options'}; # Not used in p0f
     my $len      = $ip->{'len'};     # total length of packet
+    my $id       = $ip->{'id'};
 
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
@@ -205,11 +206,32 @@ sub packets {
       my $tcpopts = $tcp->{'options'}; # binary crap 'CEUAPRSF' 
       my $seq     = $tcp->{'seqnum'};
       my $ack     = $tcp->{'acknum'};
-      my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, $quirks) = check_tcp_options($tcpopts);
-
+      my $urg     = $tcp->{'urg'};
+      my $data    = $tcp->{'data'};
+      my $reserved= $tcp->{'reserved'};
       # Check if SYN is set and not ACK (Indicates an initial connection)
-      if ($tcp->{'flags'} & SYN && $tcp->{'flags'} | ACK ) { 
+      ### >Bogous check? Do SYN as well?
+      if ($tcpflags & SYN && $tcpflags | ACK ) { 
         warn "Initial connection... Detecting OS...\n" if($DEBUG);
+        my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
+        print "# got $len packet with $optcnt options: '$optstr', ts '$ts', wsc $scale, mss $mss, sackok $sackok, wss: $winsize, flags $tcpflags, ($seq/$ack)\n" if $DEBUG;
+
+        # parse rest of quirks
+        # TODO: X (x2 field != 0), ! (broken opts) 
+        push @quirks, 'Z' if not $id;
+        push @quirks, 'I' if $ipopts;
+        push @quirks, 'U' if $urg;
+        push @quirks, 'X' if $reserved;
+        push @quirks, 'A' if $ack;
+        push @quirks, 'F' if $tcpflags & ~(SYN|ACK);
+        push @quirks, 'D' if $data;
+
+        my $quirkstring = '';
+        for(@quirks){
+          $quirkstring .= $_;
+        }
+        print "QUIRKS: ".(($quirkstring)?$quirkstring:'.')."\n" if $DEBUG;
+
 =p0f matching algo
 # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
 
@@ -229,87 +251,177 @@ for each signature in db:
 
   -- do NAT checks
   == dump unknow packet
+
+  TODO: 
+    NAT checks, unknown packets, error handling, refactor
 =cut
+        my $df;
+        if($ipflags == 2){
+          $df = 1; # Dont fragment
+        }else{
+          $df = 0; # Fragment or more fragments
+        }
+        ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
+        my $packet = "ip:$ip->{'src_ip'} ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$optcnt,$scale,$mss,$sackok,$ts Q:$quirkstring timstamp=" . $pradshosts{"tstamp"};
+        print "OS: $packet\n" if($DEBUG);
+
         # Port of p0f matching code
         my $sigs = $OS_SYN_SIGS; 
         # TX => WIN = (MSS+40 * X)
 
-        my $tot = ($len < 200)? $len : 0;
+        my $tot = ($len < 100)? $len : 0;
         my $t0 = (not defined $ts or $ts != 0)? 0:1;
-        my $fragment;
-        if($ipflags == 2){
-          $fragment=1; # Dont fragment
-        }else{
-          $fragment=0; # Fragment or more fragments
-        }
 
         #sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
-        my $matches = $sigs->{$tot}->{$optcnt}->{$t0}->{$fragment};
-        # XXX: Need more sophisticated quirks matching
-        $matches = $matches->{$quirks};
-        print "INFO: p0f rule OS match: " . Dumper $matches;
+        my $matches = $sigs;
+        my $i = 0;
+        for($tot, $optcnt, $t0, $df){
+            if($matches->{$_}){
+                $matches = $matches->{$_};
+                #print "REDUCE: $i:$_: " . Dumper($matches). "\n";
+                $i++;
+                
+            }else{
+                warn "ERR: $packet:\n  Packet has no match for param $i:$_\n";
+                return;
+            }
+        }
+        warn "ERR: $packet:\n  No match in fp db.\n" and return if not $matches;
+        #print "INFO: p0f tot:oc:t0:frag match: " . Dumper($matches). "\n";
+        if(not @quirks) {
+            $matches = $matches->{'.'};
+            warn "ERR: $packet:\n  No quirks match for no quirks.\n" and return if not defined $matches;
+        }else{
+            my $i;
+            for(keys %$matches){
+                my @qq = split //;
+                next if @qq != @quirks;
+                $i = 0;
+                for(@quirks){
+                    if(grep /^$_$/,@qq){
+                        $i++;
+                    }else{
+                        last;
+                    }
+                }
+                $matches = $matches->{$_} and last if $i == @quirks;
+            }
+            warn "ERR: $packet:\n  No quirks match\n" and return if not $i;
+        }
+        #print "INFO: p0f quirks match: " . Dumper( $matches). "\n";
 
+        # Maximum Segment Size
+        my @mssmatch = grep {
+            (/^\%(\d)*$/ and ($mss % $_) == 0) or
+            (/^(\d)*$/ and $mss eq $_) or
+            ($_ eq '*')
+        } keys %$matches;
+        #print "INFO: p0f mss match: " . Dumper(@mssmatch). "\n";
+        warn "ERR: $packet:\n  No mss match in fp db.\n" and return if not @mssmatch;
+
+        # WSCALE. There may be multiple simultaneous matches to search beyond this point.
+        my (@wmatch,@fuzmatch);
+        for(@mssmatch){
+            my $t = $matches->{$_}->{$scale};
+            $t = $matches->{$_}->{'*'} if not $t;
+            # WINDOWSIZE
+            for(keys %$t){
+                #print "INFO: wss:$winsize,$_, " . Dumper($t->{$_}) ."\n";
+                if( ($_ =~ /S(\d*)/ and $1*$mss == $winsize) or
+                    ($_ =~ /M(\d*)/ and $1*($mss+40) == $winsize) or
+                    ($_ =~ /%(\d*)/ and $winsize % $1 == 0) or
+                    ($_ eq $winsize) or
+                    ($_ eq '*')
+                ){
+                    push @wmatch, $t->{$_};
+                }else{
+                    push @fuzmatch, $t->{$_};
+                }
+            }
+        }
+        if(not @wmatch and @fuzmatch){
+            warn "No exact window match. Proceeding fuzzily\n";
+            @wmatch = @fuzmatch;
+        }
+        warn "ERR: $packet:\n  No window match in fp db.\n" and return if not @wmatch;
+        #print "INFO: wmatch: " . Dumper(@wmatch) ."\n";
+
+        # TCP option sequence
+        my @omatch;
+        for my $h (@wmatch){
+            for(keys %$h){
+                #print "INFO: omatch:$optstr:$_ " .Dumper($_) ."\n";
+                push @omatch, $h->{$_} and last if match_opts($optstr,$_);
+            }
+        }
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
+        my $dist = $gttl - $ttl;
+        for(@omatch){
+            my $match = $_->{$gttl};
+            #print "INFO: omatch: " .Dumper($match) ."\n";
+            if($match){
+                for(keys %$match){
+                    print "OS: ip:$ip->{'src_ip'} - $_ - $match->{$_} (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} ."\n";
+                }
+            }
+        }
 
-        ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
-        warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$$optcnt,$scale,$mss,$sackok,$ts timstamp=" . $pradshosts{"tstamp"} . "\n" if($DEBUG);
-
+=bogus
       # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
       # AND MOVE OUT IN A SUB ?
       # LINUX/*NIX
-      my $dist = $gttl - $ttl;
       print "INFO: TCP-OPTIONS $optcnt, $scale, $mss, $sackok, $ts\n";
       if((5840 >= $winsize) && ($winsize >= 5488)) {
-         if ($fragment == 1) {
+         if ($df== 1) {
             if($gttl == 64) {
-               print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Linux ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Linux ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }
-         }elsif ($fragment == 0) {
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *NIX ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+         }elsif ($df == 0) {
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *NIX ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
          }
       # WINDOWS
       }elsif ((65535 >= $winsize ) && ($winsize >= 60000)) {
-        if ($fragment == 1) {
+        if ($df == 1) {
            if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }elsif (60352 == $winsize) {
-               print "OS: $ip->{'src_ip'} - \"Windows 98\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 98\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
             }
          
-         }elsif ($fragment == 0) {
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+         }elsif ($df == 0) {
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
          }
       # WINDOWS 2K ZA
       }elsif (16384 == $winsize ) {
-        if ($fragment == 1) {
+        if ($df == 1) {
           if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
           }
         }
       # Windows 2000 SP4 or XP SP2
       }elsif (53760 == $winsize ) {
-        if ($fragment == 1) {
+        if ($df == 1) {
           if (64 == $ttl) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
           }
         }
 
        # Others
        }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / UNKNOWN\" (ttl: $gttl, winsize:$winsize, DF=$fragment, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
+               print "OS: $ip->{'src_ip'} - \"UNNKOWN / UNKNOWN\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
        }
  
+=cut
     }else{
       warn "Not an initial connection... Skipping OS detection\n" if($DEBUG);
     }
-
 ### SERVICE: DETECTION
-#    unless($tcp->{'data'} or $udp->{'data'}) {
+#    unless($tcp->{'data'} or $udp->{'data'})
     unless($tcp->{'data'}) {
         warn "No TCP data - Skipping asset detection\n" if($DEBUG);
         warn "Done...\n\n" if($DEBUG);
@@ -347,6 +459,26 @@ warn "Done...\n\n" if($DEBUG);
 return;
 }
 
+sub match_opts {
+    my ($o1, $o2) = @_;
+    my @o1 = split /,/,$o1;
+    my @o2 = split /,/,$o2;
+    for(@o1){
+        #print "$_:$o2[0]\n";
+        if(/([MW])([\d*]*)/){
+            if(not $o2[0] =~ /$1($2|\*)/){
+                return 0;
+            }
+        }elsif($_ ne $o2[0]){
+            return 0;
+        }
+        shift @o2;
+    }
+    return @o2 == 0;
+}
+
+
+
 =head2 check_tcp_options
 
 Takes tcp options as input, and returns which args are set.
@@ -360,73 +492,83 @@ Takes tcp options as input, and returns which args are set.
 =cut
 
 sub check_tcp_options{
-# NetPacket::IP->decode gives us binary opts
-# so get the interesting bits here
-#sub parse_opts {
+    # NetPacket::IP->decode gives us binary opts
+    # so get the interesting bits here
     my ($opts) = @_;
     my ($scale, $mss, $sackok, $ts, $t2) = (undef,undef,0,undef,0);
     print "opts: ". unpack("B*", $opts)."\n" if $DEBUG;
     my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
-    my ($optstr, $quirks) = ('','');
+    my $optstr = '';
+    my @quirks;
     while ($opts){
-      ($kind, $rest) = unpack("C a*", $opts);
-      $count++;
-      if($kind == 0){
-        # EOL
-        $optstr .= ",E";
-        # quirk if opts past EOL
-        $quirks .= 'P' if not undef $rest and $rest ne '';
-        last;
-      }elsif($kind == 1){
-        # NOP
-        $optstr .= ",N";
-        $opts = $rest;
-      }else{
-        ($size, $rest) = unpack "C a*", $rest;
-        #print "$kind # $size\n";
-        $size = $size - 2;
-        print "rest: ". unpack("B*", $rest)."\n" if $DEBUG;
-        #($data, $rest) = unpack "C${size}a", $rest;
-        if($kind == 2){
-          ($mss, $rest) = unpack "S a*", $rest;
-          $optstr .= ",M$mss";
-          print "MSS : $mss\n" if $DEBUG;
-        }elsif($kind == 3){
-          ($scale, $rest) = unpack "C3 a*", $rest;
-          $optstr .= ",W$scale";
-          print "WSOPT: $scale\n" if $DEBUG;
-        }elsif($kind == 4){
-          # hey. ballsacks are OK.
-          $optstr .= ",S";
-          $sackok++;
-        }elsif($kind == 8){
-          # Timestamp.
-          my $t;
-          ($t, $rest) = unpack "C$size a*", $rest;
-          if(defined $ts and $t){
-            # non-zero second timestamp
-            $quirks .= 'T';
-          }else{
-            $ts = $t;
-          }
-
-          if($ts){
-            $optstr .= ",T";
-          }else{
-            $optstr .= ",T0";
-          }
+        ($kind, $rest) = unpack("C a*", $opts);
+        last if not $kind;
+        $count++;
+        if($kind == 0){
+            print "EOL\n" if $DEBUG;
+            $optstr .= "E,";
+            # quirk if opts past EOL
+            push @quirks, 'P' if $rest ne '';
+            last;
+        }elsif($kind == 1){
+            # NOP
+            print "NOP\n" if $DEBUG;
+            $optstr .= "N,";
         }else{
-          # unrecognized
-          $optstr .= ",?$kind";
-          ($data, $rest) = unpack "C$size a*", $rest;
+            ($size, $rest) = unpack("C a*", $rest);
+            #print "$kind # $size\n";
+            $size = $size - 2;
+            #($data, $rest) = unpack "C${size}a", $rest;
+            if($kind == 2){
+                ($mss, $rest) = unpack("n a*", $rest);
+                $optstr .= "M$mss,";
+                print "$size MSS: $mss\n" if $DEBUG;
+            }elsif($kind == 3){
+                ($scale, $rest) = unpack("C a*", $rest);
+                $optstr .= "W$scale,";
+                print "WSOPT$size: $scale\n" if $DEBUG;
+            }elsif($kind == 4){
+                # allsacks are OK.
+                $optstr .= "S,";
+                print "SACKOK\n" if $DEBUG;
+                $sackok++;
+            }elsif($kind == 8){
+                # Timestamp.
+                my ($c, $t, $tsize) = (0,0,$size);
+                while($tsize > 0){
+                    ($c, $rest) = unpack("C a*", $rest);
+                    # hack HACK: ts is 64bit and wraps our 32bit perl ints.
+                    # it's ok tho: we don't care what the value is, as long as it's not 0
+                    $t <<= 1;
+                    $t |= $c;
+                    $tsize--;
+                }
+                print "TS$size: $t\n" if $DEBUG;
+                if($t){
+                    $optstr .= "T,";
+                }else{
+                    $optstr .= "T0,";
+                }
+                if(defined $ts and $t){
+                    # non-zero second timestamp
+                    push @quirks, 'T';
+                }else{
+                    $ts = $t;
+                }
+            }else{
+                # unrecognized
+                $optstr .= "?$kind,";
+                ($rest) = unpack("x[$count] a*", $rest);
+                print "unknown $kind:$size:" if $DEBUG;
+            }
+            print "rest: ". unpack("B*", $rest)."\n" if $DEBUG;
         }
-      }
-      $opts = $rest;
-      last if undef $opts;
+        $opts = $rest;
+        last if not defined $opts;
     }
+    chop $optstr;
     $optstr = '.' if $optstr eq '';
-    $quirks = '.' if $quirks eq '';
-    return ($count, $scale, $mss, $sackok, $ts, $optstr, $quirks);
+    return ($count, $scale, $mss, $sackok, $ts, $optstr, @quirks);
 }
 
 
@@ -495,11 +637,11 @@ sub load_os_syn_fingerprints {
     my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
     #print "GRRRR $wss, $ttl, $df, $ss, $oo, $qq, $os, $detail\n";
     my @opt = split /[, ]/, $oo;
-    my $oc = @opt;
+    my $oc = scalar @opt;
     my $t0 = 0;
     my ($mss, $wsc) = ('none','none');
     for(@opt){
-      if(/([MW])([\d%*])*/){
+      if(/([MW])([\d%*]*)/){
         if($1 eq 'M'){
           $mss = $2;
         }else{
@@ -556,11 +698,15 @@ passed to the program as an argument
 sub lookup_net {
     my $dev = shift;
     my($err, $address, $netmask);
+#    my $err;
+#    my $netmask = '255.255.255.255';
+#    my $address = '0.0.0.0';
 
     Net::Pcap::lookupnet(
         $dev, \$address, \$netmask, \$err
     ) and die sprintf $ERROR{'lookup_net'}, $dev, $err;
 
+warn "lookup_net : $address, $netmask\n";
     warn "lookup_net : $address, $netmask\n" if($DEBUG);
     return $address, $netmask;
 }
@@ -675,7 +821,7 @@ sub udp_service_check {
 
         if($udp_data =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
-            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
+            printf("SERVICE: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
                 $src_ip, $src_port,
                 $vendor  || q(),
                 $version || q(),
@@ -705,6 +851,26 @@ sub arp_check {
     my $host = "$h1.$h2.$h3.$h4";
 
     print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $tstamp . "\n");
+}
+
+=head2 add_asset
+
+Takes input: Category, $1 $2 $3 $4..... $N
+Adds the asset to the internal list %pradshosts of assets, or if it exists, just updates the timestamp.
+
+=cut
+
+sub add_asset {
+    my $assets = @_;
+    if($assets =~ /^OS: /) {
+#      $pradshosts{"tstamp"} = time;
+    }
+    elsif ($assets =~ /^ARP: /) {
+    }
+    elsif ($assets =~ /^SERVICE: /) {
+    }
+    elsif ($assets =~ /^OS: /) {
+    }
 }
 
 =head1 AUTHOR
