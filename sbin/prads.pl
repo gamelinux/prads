@@ -84,7 +84,7 @@ GetOptions(
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
-    'debug|debug=s'          => \$DEBUG,
+    'debug=s'          => \$DEBUG,
     'dump'                   => \$DUMP,
     # bpf filter
 );
@@ -239,17 +239,21 @@ sub packets {
             $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
             $winsize, $gttl, $optstr, $packet);
         if(not $os){
-            print "$winsize:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
-        }else{
-            print "OS: ip:$ip->{'src_ip'} - $os - $details (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} ."\n";
-        
-            if(@more){
-                while(@more){
-                    ($os, $details, @more) = @more;
-                    print "MORE: ip:$ip->{'src_ip'} - $os - $details (ttl: $ttl($gttl), winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} ."\n";
-
-                }
+            my $wss = $winsize;
+            if (not $winsize % $mss){
+                $wss = $winsize / $mss;
+                $wss = "S$wss";
+            }elsif(not $winsize % ($mss +40)){
+                $wss = $winsize / ($mss + 40);
+                $wss = "T$wss";
             }
+
+            print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
+        }else{
+            do{
+                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] Dist:$dist timestamp=" . $pradshosts{"tstamp"} ."\n";
+                ($os, $details, @more) = @more;
+            }while(@more);
         }
 
 
@@ -343,18 +347,16 @@ sub os_find_match{
     my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $packet) = @_;
     my @quirks = @$qq;
     my $sigs = $OS_SYN_SIGS; 
-# TX => WIN = (MSS+40 * X)
 
-#warn "Matching $packet\n" if $DEBUG;
-
-#sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
+    #warn "Matching $packet\n" if $DEBUG;
+    #sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
     my $matches = $sigs;
     my $i = 0;
     my @ec = ('packet size', 'option count', 'zero timestamp', 'don\'t fragment bit');
     for($tot, $optcnt, $t0, $df){
         if($matches->{$_}){
             $matches = $matches->{$_};
-#print "REDUCE: $i:$_: " . Dumper($matches). "\n";
+    #print "REDUCE: $i:$_: " . Dumper($matches). "\n";
             $i++;
 
         }else{
@@ -362,10 +364,10 @@ sub os_find_match{
             return;
         }
     }
-# we should have $matches now.
+    # we should have $matches now.
     warn "ERR: $packet:\n  No match in fp db, but should have a match.\n" and return if not $matches;
 
-#print "INFO: p0f tot:oc:t0:frag match: " . Dumper($matches). "\n";
+    #print "INFO: p0f tot:oc:t0:frag match: " . Dumper($matches). "\n";
     if(not @quirks) {
         $matches = $matches->{'.'};
         warn "ERR: $packet:\n  No quirks match for no quirks.\n" and return if not defined $matches;
@@ -386,34 +388,37 @@ sub os_find_match{
         }
         warn "ERR: $packet:\n  No quirks match\n" and return if not $i;
     }
-#print "INFO: p0f quirks match: " . Dumper( $matches). "\n";
+    #print "INFO: p0f quirks match: " . Dumper( $matches). "\n";
 
-# Maximum Segment Size
+    # Maximum Segment Size
     my @mssmatch = grep {
         (/^\%(\d)*$/ and ($mss % $_) == 0) or
             (/^(\d)*$/ and $mss eq $_) or
             ($_ eq '*')
     } keys %$matches;
-#print "INFO: p0f mss match: " . Dumper(@mssmatch). "\n";
+    #print "INFO: p0f mss match: " . Dumper(@mssmatch). "\n";
     warn "ERR: $packet:\n  No mss match in fp db.\n" and return if not @mssmatch;
 
-# WSCALE. There may be multiple simultaneous matches to search beyond this point.
+    # WSCALE. There may be multiple simultaneous matches to search beyond this point.
     my (@wmatch,@fuzmatch);
-    for(@mssmatch){
-        my $t = $matches->{$_}->{$scale};
-        $t = $matches->{$_}->{'*'} if not $t;
-# WINDOWSIZE
-        for(keys %$t){
-#print "INFO: wss:$winsize,$_, " . Dumper($t->{$_}) ."\n";
-            if( ($_ =~ /S(\d*)/ and $1*$mss == $winsize) or
-                ($_ =~ /M(\d*)/ and $1*($mss+40) == $winsize) or
-                ($_ =~ /%(\d*)/ and $winsize % $1 == 0) or
-                ($_ eq $winsize) or
-                ($_ eq '*')
-              ){
-                push @wmatch, $t->{$_};
-            }else{
-                push @fuzmatch, $t->{$_};
+    for my $s (@mssmatch){
+        for my $wsc ($scale, '*'){
+            my $t = $matches->{$s}->{$wsc};
+            next if not $t;
+
+            # WINDOWSIZE
+            for my $wss (keys %$t){
+                #print "INFO: wss:$winsize,$_, " . Dumper($t->{$_}) ."\n";
+                if( ($wss =~ /S(\d*)/ and $1*$mss == $winsize) or
+                    ($wss =~ /M(\d*)/ and $1*($mss+40) == $winsize) or
+                    ($wss =~ /%(\d*)/ and $winsize % $1 == 0) or
+                    ($wss eq $winsize) or
+                    ($wss eq '*')
+                  ){
+                    push @wmatch, $t->{$wss};
+                }else{
+                    push @fuzmatch, $t->{$wss};
+                }
             }
         }
     }
@@ -426,20 +431,20 @@ sub os_find_match{
         warn "Closest matches: " . Dumper (@mssmatch) ."\n";
         return;
     }
-#print "INFO: wmatch: " . Dumper(@wmatch) ."\n";
+    #print "INFO: wmatch: " . Dumper(@wmatch) ."\n";
 
-# TCP option sequence
+    # TCP option sequence
     my @omatch;
     for my $h (@wmatch){
         for(keys %$h){
-#print "INFO: omatch:$optstr:$_ " .Dumper($_) ."\n";
+            #print "INFO: omatch:$optstr:$_ " .Dumper($h->{$_}) ."\n";
             push @omatch, $h->{$_} and last if match_opts($optstr,$_);
         }
     }
     my @os;
     for(@omatch){
         my $match = $_->{$gttl};
-#print "INFO: omatch: " .Dumper($match) ."\n";
+        #print "INFO: omatch: " .Dumper($match) ."\n";
         if($match){
             for(keys %$match){
                 push @os, ($_, $match->{$_});
