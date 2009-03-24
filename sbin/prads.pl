@@ -84,7 +84,7 @@ GetOptions(
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
-    'debug=s'          => \$DEBUG,
+    'debug=s'                => \$DEBUG,
     'dump'                   => \$DUMP,
     # bpf filter
 );
@@ -92,15 +92,19 @@ GetOptions(
 if ($DUMP) {
    warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
-   warn "\n *** Loading OS fingerprints *** \n\n";
-   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
-   print Dumper $OS_SYN_SIGS;
-#  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
+#   warn "\n *** Loading OS fingerprints *** \n\n";
+#   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
+#   print Dumper $OS_SYN_SIGS;
+##  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
  
-   warn "\n *** Loading Service signatures *** \n\n";
-   my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
-   print Dumper @TCP_SERVICE_SIGNATURES; 
-#  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
+#   warn "\n *** Loading Service signatures *** \n\n";
+#   my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
+#   print Dumper @TCP_SERVICE_SIGNATURES; 
+##  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
+
+   warn "\n *** Loading MTU signatures *** \n\n";
+   my @MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
+   print Dumper @MTU_SIGNATURES;
 
    exit 0;
 }
@@ -300,6 +304,12 @@ warn "Done...\n\n" if($DEBUG>50);
 return;
 }
 
+=head2 match_opts
+
+Function to match options
+
+=cut
+
 sub match_opts {
     my ($o1, $o2) = @_;
     my @o1 = split /,/,$o1;
@@ -344,6 +354,7 @@ for each signature in db:
   TODO:
     NAT checks, unknown packets, error handling, refactor
 =cut
+
 sub os_find_match{
 # Port of p0f matching code
     my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $packet) = @_;
@@ -465,10 +476,15 @@ sub os_find_match{
     return @os;
 }
 
+=head2 check_quirks
+
 # Parse most quirks.
 # quirk P (opts past EOL) and T(non-zero 2nd timestamp) are implemented in
 # check_tcp_options, where it makes most sense.
 # TODO: '!' : broken opts (?)
+
+=cut
+
 sub check_quirks {
     my ($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data) = @_;
     my @quirks;
@@ -482,6 +498,10 @@ sub check_quirks {
     push @quirks, 'D' if $data;
     return @quirks;
 }
+
+=head2 quirks_tostring
+ Function to make quirks into a string.
+=cut
 
 sub quirks_tostring {
     my @quirks = @_;
@@ -621,6 +641,40 @@ sub load_signatures {
     return map { $signatures{$_} }
             sort { length $b <=> length $a }
              keys %signatures;
+}
+
+=head2 load_mtu
+
+Loads MTU signatures from file
+
+ File format:
+ <MTU>,<info>
+
+ Example:
+ 1492,"pppoe (DSL)"
+
+=cut
+
+sub load_mtu {
+    my $file = shift;
+    my %signatures;
+
+    open(my $FH, "<", $file) or die "Could not open '$file': $!";
+
+    LINE:
+    while (my $line = readline $FH) {
+        chomp $line;
+        $line =~ s/\#.*//;
+        next LINE unless($line); # empty line
+        # One should check for a more or less sane signature file.
+        my($mtu, $info) = split /,/, $line, 2;
+#        my @tmp = ($mtu, $info);
+#        my %signatures = @tmp; 
+#        print Dumper \%signatures;
+        print "$mtu, $info\n";
+        $signatures{my $mtu} = [$mtu, qq($info)];
+    }
+return %signatures;
 }
 
 =head2 load_os_syn_fingerprints
