@@ -338,7 +338,7 @@ for each signature in db:
             }
         }
         if(not @wmatch and @fuzmatch){
-            warn "No exact window match. Proceeding fuzzily\n";
+            warn "warning: $packet:\nNo exact window match. Proceeding fuzzily\n";
             @wmatch = @fuzmatch;
         }
         # We need to guess initial TTL
@@ -368,6 +368,12 @@ for each signature in db:
                     print "OS: ip:$ip->{'src_ip'} - $_ - $match->{$_} (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} ."\n";
                 }
             }
+        }
+        if(not @omatch){
+          print "$winsize:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
+          warn "ERR: $packet:\n  No options match in fp db.\n";
+          print "Closest matches: " . Dumper (@wmatch) ."\n";
+          return;
         }
 
 =bogus
