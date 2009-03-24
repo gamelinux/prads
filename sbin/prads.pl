@@ -210,8 +210,7 @@ sub packets {
       my $data    = $tcp->{'data'};
       my $reserved= $tcp->{'reserved'};
       # Check if SYN is set and not ACK (Indicates an initial connection)
-      ### >Bogous check? Do SYN as well?
-      if ($tcpflags & SYN && $tcpflags | ACK ) { 
+      if ($tcpflags & SYN and ~$tcpflags & ACK) { 
         warn "Initial connection... Detecting OS...\n" if($DEBUG);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
         print "# got $len packet with $optcnt options: '$optstr', ts '$ts', wsc $scale, mss $mss, sackok $sackok, wss: $winsize, flags $tcpflags, ($seq/$ack)\n" if $DEBUG;
