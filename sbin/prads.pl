@@ -57,7 +57,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  --dev|-d                : network device (default: eth0)
  --service-signatures|-s : path to service-signatures file (default: /etc/prads/tcp-service.sig)
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
- --debug                 : enable debug messages (default: disabled)
+ --debug                 : enable debug messages 0-255 (default: disabled(0))
  --dump                  : Dumps all signatures and fingerprints then exits 
  --help                  : this help message
  --version               : show prads.pl version
@@ -84,11 +84,10 @@ GetOptions(
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
-    'debug'                  => \$DEBUG,
+    'debug|debug=s'          => \$DEBUG,
     'dump'                   => \$DUMP,
     # bpf filter
 );
-
 
 if ($DUMP) {
    warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
@@ -108,7 +107,7 @@ if ($DUMP) {
 
 warn "Starting prads.pl...\n";
 
-warn "Loading OS fingerprints\n" if $DEBUG;
+warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
 
@@ -116,25 +115,25 @@ warn "Initializing device\n" if $DEBUG;
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
 
-warn "Loading TCP Service signatures\n" if $DEBUG;
+warn "Loading TCP Service signatures\n" if ($DEBUG>0);
 my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
-warn "Loading UDP Service signatures\n" if $DEBUG;
+warn "Loading UDP Service signatures\n" if ($DEBUG>0);
 # Currently loading the wrong sig file :)
 my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
-warn "Creating object\n" if $DEBUG;
+warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
 
-warn "Compiling Berkeley Packet Filter\n" if $DEBUG;
+warn "Compiling Berkeley Packet Filter\n" if ($DEBUG>0);
 filter_object($PCAP);
 
-warn "Looping over object\n" if $DEBUG;
+warn "Looping over object\n" if ($DEBUG>0);
 Net::Pcap::loop($PCAP, -1, \&packets, '') or die $ERROR{'loop'};
 
-warn "Closing device\n" if $DEBUG;
+warn "Closing device\n" if ($DEBUG>0);
 Net::Pcap::close($PCAP);
 
 exit;
@@ -168,7 +167,7 @@ Callback function for C<Net::Pcap::loop>.
 sub packets {
     my ($user_data, $header, $packet) = @_;
     $pradshosts{"tstamp"} = time;
-    #warn "Packet received - processing...\n" if($DEBUG);
+    warn "Packet received - processing...\n" if($DEBUG>10);
 
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
@@ -180,8 +179,8 @@ sub packets {
     }
 
     unless(NetPacket::IP->decode($ethernet)) {
-        warn "Not an IP packet..\n" if($DEBUG);
-        warn "Done...\n\n" if($DEBUG);
+        warn "Not an IP packet..\n" if($DEBUG>50);
+        warn "Done...\n\n" if($DEBUG>50);
         return;
     }
 
@@ -205,7 +204,7 @@ sub packets {
 
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
-      #warn "Packet is of type TCP...\n" if($DEBUG);
+      warn "Packet is of type TCP...\n" if($DEBUG>10);
       # Collect necessary info from TCP packet; if
       my $tcp      = NetPacket::TCP->decode($ip->{'data'});
       my $winsize = $tcp->{'winsize'}; #
@@ -218,7 +217,7 @@ sub packets {
       my $reserved= $tcp->{'reserved'};
       # Check if SYN is set and not ACK (Indicates an initial connection)
       if ($tcpflags & SYN and ~$tcpflags & ACK) { 
-        warn "Initial connection... Detecting OS...\n" if($DEBUG);
+        warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
 
         my $tot = ($len < 100)? $len : 0;
@@ -305,14 +304,12 @@ sub packets {
  
 =cut
     }else{
-      #warn "Not an initial connection... Skipping OS detection\n" if($DEBUG);
-      ;
+      warn "Not an initial connection... Skipping OS detection\n" if($DEBUG&30);
     }
 ### SERVICE: DETECTION
-#    unless($tcp->{'data'} or $udp->{'data'})
     unless($tcp->{'data'}) {
-        #warn "No TCP data - Skipping asset detection\n" if($DEBUG);
-        #warn "Done...\n\n" if($DEBUG);
+        warn "No TCP data - Skipping asset detection\n" if($DEBUG>30);
+        warn "Done...\n\n" if($DEBUG>30);
         return;
     }
     # Check content(TCP data) against signatures
@@ -321,11 +318,11 @@ sub packets {
 
     }elsif ($ip->{proto} == 17) {
     # Can one do UPD OS detection !??!
-       #warn "Packet is of type UDP...\n" if($DEBUG);
+       warn "Packet is of type UDP...\n" if($DEBUG>10);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
        unless($udp->{'data'}) {
-          #warn "No UDP data - Skipping asset detection\n" if($DEBUG);
-          #warn "Done...\n\n" if($DEBUG);
+          warn "No UDP data - Skipping asset detection\n" if($DEBUG>20);
+          warn "Done...\n\n" if($DEBUG>20);
           return;
        }
        # Make UDP asset detection here... PoC CODE at the moment.
@@ -338,12 +335,12 @@ sub packets {
         printf ("Service: ip=%s port=%i protocol=%i -> \"OpenVPN\" timestamp=%i\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'}, $pradshosts{"tstamp"});
        }
        else {
-        warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG);
+        warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG>20);
        }
     }
 
 
-#warn "Done...\n\n" if($DEBUG);
+warn "Done...\n\n" if($DEBUG>10);
 return;
 }
 
@@ -763,8 +760,8 @@ sub lookup_net {
         $dev, \$address, \$netmask, \$err
     ) and die sprintf $ERROR{'lookup_net'}, $dev, $err;
 
-warn "lookup_net : $address, $netmask\n";
-    warn "lookup_net : $address, $netmask\n" if($DEBUG);
+#   warn "lookup_net : $address, $netmask\n";
+    warn "lookup_net : $address, $netmask\n" if($DEBUG>0);
     return $address, $netmask;
 }
 
@@ -781,7 +778,7 @@ sub create_object {
 
     $object = Net::Pcap::open_live($dev, 1500, $promisc, 0, \$err)
               or die sprintf $ERROR{'create_object'}, $dev, $err;
-    warn "create_object : $dev\n" if($DEBUG);
+    warn "create_object : $dev\n" if($DEBUG>0);
     return $object;
 }
 
@@ -811,7 +808,7 @@ sub filter_object {
 
     Net::Pcap::setfilter($object, $filter)
         and die $ERROR{'compile_object_setfilter'};
-    warn "filter_object : $address, $netmask, $filter\n" if($DEBUG);
+    warn "filter_object : $address, $netmask, $filter\n" if($DEBUG>0);
 }
 
 =head2 normalize_ttl
