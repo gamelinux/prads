@@ -219,7 +219,8 @@ sub packets {
       if ($tcpflags & SYN and ~$tcpflags & ACK) { 
         warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
-
+        # MSS may be undefined
+        $mss = '*' if not $mss;
         my $tot = ($len < 100)? $len : 0;
         my $t0 = (not defined $ts or $ts != 0)? 0:1;
 
@@ -428,7 +429,11 @@ sub os_find_match{
     }
     if(not @wmatch){
         warn "ERR: $packet:\n  No window match in fp db.\n";
-        warn "Closest matches: " . Dumper (@mssmatch) ."\n";
+        warn "Closest matches: \n";
+        for my $m (@mssmatch){
+            print Dumper($matches->{$m},"$m");
+        }
+
         return;
     }
     #print "INFO: wmatch: " . Dumper(@wmatch) ."\n";
@@ -504,7 +509,7 @@ sub check_tcp_options{
     # NetPacket::IP->decode gives us binary opts
     # so get the interesting bits here
     my ($opts) = @_;
-    my ($scale, $mss, $sackok, $ts, $t2) = (undef,undef,0,undef,0);
+    my ($scale, $mss, $sackok, $ts, $t2) = (0,undef,0,undef,0);
     print "opts: ". unpack("B*", $opts)."\n" if $DEBUG & 8;
     my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
     my $optstr = '';
