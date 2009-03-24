@@ -714,8 +714,8 @@ sub lookup_net {
         $dev, \$address, \$netmask, \$err
     ) and die sprintf $ERROR{'lookup_net'}, $dev, $err;
 
-warn "lookup_net : $address, $netmask\n";
-    warn "lookup_net : $address, $netmask\n" if($DEBUG);
+#   warn "lookup_net : $address, $netmask\n";
+    warn "lookup_net : $address, $netmask\n" if($DEBUG>0);
     return $address, $netmask;
 }
 
@@ -732,7 +732,7 @@ sub create_object {
 
     $object = Net::Pcap::open_live($dev, 1500, $promisc, 0, \$err)
               or die sprintf $ERROR{'create_object'}, $dev, $err;
-    warn "create_object : $dev\n" if($DEBUG);
+    warn "create_object : $dev\n" if($DEBUG>0);
     return $object;
 }
 
@@ -762,7 +762,7 @@ sub filter_object {
 
     Net::Pcap::setfilter($object, $filter)
         and die $ERROR{'compile_object_setfilter'};
-    warn "filter_object : $address, $netmask, $filter\n" if($DEBUG);
+    warn "filter_object : $address, $netmask, $filter\n" if($DEBUG>0);
 }
 
 =head2 normalize_ttl
