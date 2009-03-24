@@ -84,7 +84,7 @@ GetOptions(
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
-    'debug|debug=s'          => \$DEBUG,
+    'debug=s'          => \$DEBUG,
     'dump'                   => \$DUMP,
     # bpf filter
 );
