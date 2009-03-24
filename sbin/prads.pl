@@ -253,56 +253,6 @@ sub packets {
         }
 
 
-=bogus
-      # Bogus/weak test, PoC - REWRITE this to use @OS_SYN_SIGNATURE
-      # AND MOVE OUT IN A SUB ?
-      # LINUX/*NIX
-      print "INFO: TCP-OPTIONS $optcnt, $scale, $mss, $sackok, $ts\n";
-      if((5840 >= $winsize) && ($winsize >= 5488)) {
-         if ($df== 1) {
-            if($gttl == 64) {
-               print "OS: $ip->{'src_ip'} - \"Linux 2.6\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-            }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Linux ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-            }
-         }elsif ($df == 0) {
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *NIX ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-         }
-      # WINDOWS
-      }elsif ((65535 >= $winsize ) && ($winsize >= 60000)) {
-        if ($df == 1) {
-           if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000/2003/XP\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-            }elsif (60352 == $winsize) {
-               print "OS: $ip->{'src_ip'} - \"Windows 98\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-            }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-            }
-         
-         }elsif ($df == 0) {
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / Fragment / *Windows ?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-         }
-      # WINDOWS 2K ZA
-      }elsif (16384 == $winsize ) {
-        if ($df == 1) {
-          if ($gttl == 128) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 w/ZoneAlarm?\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-          }
-        }
-      # Windows 2000 SP4 or XP SP2
-      }elsif (53760 == $winsize ) {
-        if ($df == 1) {
-          if (64 == $ttl) {
-               print "OS: $ip->{'src_ip'} - \"Windows 2000 SP4 or XP SP2\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-          }
-        }
-
-       # Others
-       }else{
-               print "OS: $ip->{'src_ip'} - \"UNNKOWN / UNKNOWN\" (ttl: $gttl, winsize:$winsize, DF=$df, Distance=$dist) timestamp=" . $pradshosts{"tstamp"} . "\n";
-       }
- 
-=cut
     }else{
       warn "Not an initial connection... Skipping OS detection\n" if($DEBUG&30);
     }
