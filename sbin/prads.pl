@@ -668,11 +668,7 @@ sub load_mtu {
         next LINE unless($line); # empty line
         # One should check for a more or less sane signature file.
         my($mtu, $info) = split /,/, $line, 2;
-#        my @tmp = ($mtu, $info);
-#        my %signatures = @tmp; 
-#        print Dumper \%signatures;
-        print "$mtu, $info\n";
-        $signatures{my $mtu} = [$mtu, qq($info)];
+        $signatures{$mtu} = [$mtu, qq($info)];
     }
 return %signatures;
 }
