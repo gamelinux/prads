@@ -241,14 +241,15 @@ sub packets {
             $winsize, $gttl, $optstr, $packet);
         if(not $os){
             my $wss = $winsize;
-            if (not $winsize % $mss){
-                $wss = $winsize / $mss;
-                $wss = "S$wss";
-            }elsif(not $winsize % ($mss +40)){
-                $wss = $winsize / ($mss + 40);
-                $wss = "T$wss";
-            } if int $mss;
-
+            if(int $mss){
+                if (not $winsize % $mss){
+                    $wss = $winsize / $mss;
+                    $wss = "S$wss";
+                }elsif(not $winsize % ($mss +40)){
+                    $wss = $winsize / ($mss + 40);
+                    $wss = "T$wss";
+                }
+            }
             print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
         }else{
             do{
@@ -352,16 +353,16 @@ sub os_find_match{
     #warn "Matching $packet\n" if $DEBUG;
     #sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
     my $matches = $sigs;
-    my $i = 0;
+    my $j = 0;
     my @ec = ('packet size', 'option count', 'zero timestamp', 'don\'t fragment bit');
     for($tot, $optcnt, $t0, $df){
         if($matches->{$_}){
             $matches = $matches->{$_};
-    #print "REDUCE: $i:$_: " . Dumper($matches). "\n";
-            $i++;
+    #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
+            $j++;
 
         }else{
-            warn "Packet has no match for $ec[$i]:$_\n";
+            warn "Packet has no match for $ec[$j]:$_\n";
             return;
         }
     }
