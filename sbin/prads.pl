@@ -432,7 +432,7 @@ sub os_find_match{
         warn "ERR: $packet:\n  No window match in fp db.\n";
         warn "Closest matches: \n";
         for my $s (@mssmatch){
-            print Data::Dumper->Dump([$matches->{$s}],["$s"]);
+            print Data::Dumper->Dump([$matches->{$s}],["MSS$s"]);
         }
 
         return;
