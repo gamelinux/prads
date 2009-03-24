@@ -213,7 +213,6 @@ sub packets {
       if ($tcpflags & SYN and ~$tcpflags & ACK) { 
         warn "Initial connection... Detecting OS...\n" if($DEBUG);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
-        print "# got $len packet with $optcnt options: '$optstr', ts '$ts', wsc $scale, mss $mss, sackok $sackok, wss: $winsize, flags $tcpflags, ($seq/$ack)\n" if $DEBUG;
 
         # parse rest of quirks
         # TODO: X (x2 field != 0), ! (broken opts) 
@@ -229,7 +228,17 @@ sub packets {
         for(@quirks){
           $quirkstring .= $_;
         }
+        $quirkstring = '.' if not @quirks;
         print "QUIRKS: ".(($quirkstring)?$quirkstring:'.')."\n" if $DEBUG;
+
+        my $df;
+        if($ipflags == 2){
+          $df = 1; # Dont fragment
+        }else{
+          $df = 0; # Fragment or more fragments
+        }
+        my $packet = "ip:$ip->{'src_ip'} size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt,WSC:$scale,MSS:$mss,SO:$sackok,TS:$ts Q:$quirkstring ($seq/$ack) timstamp=" . $pradshosts{"tstamp"};
+        print "OS: $packet\n" if($DEBUG);
 
 =p0f matching algo
 # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
@@ -254,16 +263,6 @@ for each signature in db:
   TODO: 
     NAT checks, unknown packets, error handling, refactor
 =cut
-        my $df;
-        if($ipflags == 2){
-          $df = 1; # Dont fragment
-        }else{
-          $df = 0; # Fragment or more fragments
-        }
-        ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
-        my $packet = "ip:$ip->{'src_ip'} ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$optcnt,$scale,$mss,$sackok,$ts Q:$quirkstring timstamp=" . $pradshosts{"tstamp"};
-        print "OS: $packet\n" if($DEBUG);
-
         # Port of p0f matching code
         my $sigs = $OS_SYN_SIGS; 
         # TX => WIN = (MSS+40 * X)
@@ -342,7 +341,14 @@ for each signature in db:
             warn "No exact window match. Proceeding fuzzily\n";
             @wmatch = @fuzmatch;
         }
-        warn "ERR: $packet:\n  No window match in fp db.\n" and return if not @wmatch;
+        # We need to guess initial TTL
+        my $gttl = normalize_ttl($ttl);
+        if(not @wmatch){
+          print "$winsize:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
+          warn "ERR: $packet:\n  No window match in fp db.\n";
+          print "Closest matches: " . Dumper (@mssmatch) ."\n";
+          return;
+        }
         #print "INFO: wmatch: " . Dumper(@wmatch) ."\n";
 
         # TCP option sequence
@@ -353,8 +359,6 @@ for each signature in db:
                 push @omatch, $h->{$_} and last if match_opts($optstr,$_);
             }
         }
-        # We need to guess initial TTL
-        my $gttl = normalize_ttl($ttl);
         my $dist = $gttl - $ttl;
         for(@omatch){
             my $match = $_->{$gttl};
