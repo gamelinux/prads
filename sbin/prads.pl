@@ -247,7 +247,7 @@ sub packets {
             }elsif(not $winsize % ($mss +40)){
                 $wss = $winsize / ($mss + 40);
                 $wss = "T$wss";
-            }
+            } if int $mss;
 
             print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
         }else{
