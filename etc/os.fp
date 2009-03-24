@@ -838,4 +838,5 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 ###################
 #65535:128:1:48:M1460,N,N,S:.:Windows:XP
 8192:128:1:52:M1460,N,W2,N,N,S:.:Windows:2008 Server
-S4:64:1:60:M1460,S,T,N,W4:.:Linux:2.6 (newer, 2 Xen)
+# Generic Linux
+S4:64:1:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic)
