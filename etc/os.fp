@@ -833,4 +833,7 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 *:128:1:48:M536,N,N,S:.:@Windows:98
 *:128:1:48:M*,N,N,S:.:@Windows:XP/2000
 
-
+###################
+# PRADS TEST SIGS #
+###################
+65535:128:1:48:M1460,N,N,S:.:Windows:XP
