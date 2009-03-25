@@ -392,7 +392,7 @@ sub os_find_match{
     #print "INFO: p0f tot:oc:t0:frag match: " . Dumper($matches). "\n";
     if(not @quirks) {
         $matches = $matches->{'.'};
-        warn "ERR: $packet:\n  No quirks match for no quirks.\n" and return if not defined $matches;
+        warn "ERR: $packet:\n  No quirks match.\n" and return if not defined $matches;
     }else{
         my $i;
         for(keys %$matches){
