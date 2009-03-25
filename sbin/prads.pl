@@ -103,8 +103,8 @@ if ($DUMP) {
 ##  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
 
    warn "\n *** Loading MTU signatures *** \n\n";
-   my @MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
-   print Dumper @MTU_SIGNATURES;
+   my %MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
+   print Dumper %MTU_SIGNATURES;
 
    exit 0;
 }
@@ -668,9 +668,9 @@ sub load_mtu {
         next LINE unless($line); # empty line
         # One should check for a more or less sane signature file.
         my($mtu, $info) = split /,/, $line, 2;
-        $signatures{$mtu} = [$mtu, qq($info)];
+        $signatures{$mtu} = $info;
     }
-return %signatures;
+    return %signatures;
 }
 
 =head2 load_os_syn_fingerprints
