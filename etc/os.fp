@@ -841,7 +841,10 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 8192:128:1:52:M1460,N,W2,N,N,S:.:Windows:2008 Server
 65535:128:1:48:M1460,N,N,S:.:Windows:2003 Server/msnbot 
 # Generic Linux
-S4:64:1:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic)
+S4:64:1:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag+)
+S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
+
+S4:64:0:60:M1430,S,T,N,W6:.:Linux: 2.6 (Google Translate )
 
 
 ###########################
