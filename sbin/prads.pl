@@ -255,7 +255,6 @@ sub packets {
         if(not $os){
             my $wss = $winsize;
             if ($mss =~ /^[+-]?\d+$/) {
-#            if(int $mss){ # do not work :)
                 if (not $winsize % $mss){
                     $wss = $winsize / $mss;
                     $wss = "S$wss";
@@ -714,7 +713,7 @@ sub load_os_syn_fingerprints {
     my @opt = split /[, ]/, $oo;
     my $oc = scalar @opt;
     my $t0 = 0;
-    my ($mss, $wsc) = ('none','none');
+    my ($mss, $wsc) = ('*','*');
     for(@opt){
       if(/([MW])([\d%*]*)/){
         if($1 eq 'M'){
