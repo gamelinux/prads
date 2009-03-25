@@ -59,6 +59,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages 0-255 (default: disabled(0))
  --dump                  : Dumps all signatures and fingerprints then exits 
+ --arp                   : Enables ARP discover check (Default off)
  --help                  : this help message
  --version               : show prads.pl version
 
@@ -67,6 +68,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 our $VERSION       = 0.1;
 our $DEBUG         = 0;
 our $DUMP          = 0;
+our $ARP           = 0;
 my $DEVICE         = q(eth0);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
@@ -86,25 +88,26 @@ GetOptions(
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
     'debug=s'                => \$DEBUG,
     'dump'                   => \$DUMP,
+    'arp'                    => \$ARP,
     # bpf filter
 );
 
 if ($DUMP) {
    warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
-#   warn "\n *** Loading OS fingerprints *** \n\n";
-#   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
-#   print Dumper $OS_SYN_SIGS;
-##  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
+   warn "\n *** Loading OS fingerprints *** \n\n";
+   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
+   print Dumper $OS_SYN_SIGS;
+#  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
  
-#   warn "\n *** Loading Service signatures *** \n\n";
-#   my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
-#   print Dumper @TCP_SERVICE_SIGNATURES; 
-##  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
+   warn "\n *** Loading Service signatures *** \n\n";
+   my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
+   print Dumper @TCP_SERVICE_SIGNATURES; 
+#  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
 
    warn "\n *** Loading MTU signatures *** \n\n";
-   my %MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
-   print Dumper %MTU_SIGNATURES;
+   my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
+   print Dumper $MTU_SIGNATURES;
 
    exit 0;
 }
@@ -113,6 +116,10 @@ warn "Starting prads.pl...\n";
 
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
+              or Getopt::Long::HelpMessage();
+
+warn "Loading MTU fingerprints\n" if ($DEBUG>0);
+my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig")
               or Getopt::Long::HelpMessage();
 
 warn "Initializing device\n" if ($DEBUG>0);
@@ -177,7 +184,7 @@ sub packets {
     my $eth      = NetPacket::Ethernet->decode($packet);
 
     # Check if arp - get mac and register...
-    if ($eth->{type} == ETH_TYPE_ARP) {
+    if ($ARP == 1 && $eth->{type} == ETH_TYPE_ARP) {
         arp_check ($eth, $pradshosts{"tstamp"});
         return;
     }
@@ -238,6 +245,8 @@ sub packets {
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
         my $dist = $gttl - $ttl;
+        # Get link type
+        my $link = get_mtu_link($mss);
 
         # do the actual work
         my ($os, $details, @more) = os_find_match(
@@ -245,7 +254,8 @@ sub packets {
             $winsize, $gttl, $optstr, $packet);
         if(not $os){
             my $wss = $winsize;
-            if(int $mss){
+            if ($mss =~ /^[+-]?\d+$/) {
+#            if(int $mss){ # do not work :)
                 if (not $winsize % $mss){
                     $wss = $winsize / $mss;
                     $wss = "S$wss";
@@ -257,7 +267,7 @@ sub packets {
             print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
         }else{
             do{
-                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] Dist:$dist timestamp=" . $pradshosts{"tstamp"} ."\n";
+                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n";
                 ($os, $details, @more) = @more;
             }while(@more);
         }
@@ -657,7 +667,7 @@ Loads MTU signatures from file
 
 sub load_mtu {
     my $file = shift;
-    my %signatures;
+    my $signatures = {};
 
     open(my $FH, "<", $file) or die "Could not open '$file': $!";
 
@@ -668,9 +678,9 @@ sub load_mtu {
         next LINE unless($line); # empty line
         # One should check for a more or less sane signature file.
         my($mtu, $info) = split /,/, $line, 2;
-        $signatures{$mtu} = $info;
+        $signatures->{$mtu} = $info;
     }
-    return %signatures;
+    return $signatures;
 }
 
 =head2 load_os_syn_fingerprints
@@ -918,6 +928,23 @@ sub arp_check {
     print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $tstamp . "\n");
 }
 
+=head2 get_mtu_link
+
+ Takes MSS as input, and returns a guessed Link for that MTU.
+
+=cut
+
+sub get_mtu_link {
+    my $mss = shift;
+    my $link = "UNKOWN";
+#   if ($mss =~ m/^[0-9]+$/) { 
+    if ($mss =~ /^[+-]?\d+$/) {
+       my $mtu = $mss + 40;
+       if (my $link = $MTU_SIGNATURES->{ $mtu }) {return $link}
+    }
+    return $link;
+}
+
 =head2 add_asset
 
 Takes input: Category, $1 $2 $3 $4..... $N
@@ -943,6 +970,8 @@ sub add_asset {
 Edward Fjellskål
 
 Jan Henning Thorsen
+
+Kacper Wysocki
 
 =head1 COPYRIGHT
 
