@@ -59,6 +59,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages 0-255 (default: disabled(0))
  --dump                  : Dumps all signatures and fingerprints then exits 
+ --arp                   : Enables ARP discover check (Default off)
  --help                  : this help message
  --version               : show prads.pl version
 
@@ -67,6 +68,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 our $VERSION       = 0.1;
 our $DEBUG         = 0;
 our $DUMP          = 0;
+our $ARP           = 0;
 my $DEVICE         = q(eth0);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
@@ -86,6 +88,7 @@ GetOptions(
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
     'debug=s'                => \$DEBUG,
     'dump'                   => \$DUMP,
+    'arp'                    => \$ARP,
     # bpf filter
 );
 
@@ -177,7 +180,7 @@ sub packets {
     my $eth      = NetPacket::Ethernet->decode($packet);
 
     # Check if arp - get mac and register...
-    if ($eth->{type} == ETH_TYPE_ARP) {
+    if ($ARP == 1 && $eth->{type} == ETH_TYPE_ARP) {
         arp_check ($eth, $pradshosts{"tstamp"});
         return;
     }
