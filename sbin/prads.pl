@@ -602,7 +602,7 @@ sub check_tcp_options{
             }else{
                 # unrecognized
                 $optstr .= "?$kind,";
-                ($rest) = unpack("x[$count] a*", $rest);
+                ($rest) = unpack("x$count a*", $rest);
                 print "unknown $kind:$size:" if $DEBUG & 8;
             }
             print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
