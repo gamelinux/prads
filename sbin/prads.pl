@@ -109,12 +109,6 @@ if ($DUMP) {
    my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
    print Dumper $MTU_SIGNATURES;
 
-    my $mtu = 1500;
-    print "Value EXISTS, but may be undefined.\n" if exists  $MTU_SIGNATURES->{ $mtu };
-    print "Value is DEFINED, but may be false.\n" if defined $MTU_SIGNATURES->{ $mtu };
-    print "Value is TRUE at hash key $mtu.\n"     if         $MTU_SIGNATURES->{ $mtu };
-    my $test = $MTU_SIGNATURES->{ $mtu };
-    print "JALLA: " . $test . "\n";
    exit 0;
 }
 
