@@ -92,15 +92,15 @@ GetOptions(
 if ($DUMP) {
    warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
-#   warn "\n *** Loading OS fingerprints *** \n\n";
-#   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
-#   print Dumper $OS_SYN_SIGS;
-##  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
+   warn "\n *** Loading OS fingerprints *** \n\n";
+   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
+   print Dumper $OS_SYN_SIGS;
+#  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
  
-#   warn "\n *** Loading Service signatures *** \n\n";
-#   my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
-#   print Dumper @TCP_SERVICE_SIGNATURES; 
-##  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
+   warn "\n *** Loading Service signatures *** \n\n";
+   my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
+   print Dumper @TCP_SERVICE_SIGNATURES; 
+#  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
 
    warn "\n *** Loading MTU signatures *** \n\n";
    my @MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
@@ -657,7 +657,7 @@ Loads MTU signatures from file
 
 sub load_mtu {
     my $file = shift;
-    my %signatures;
+    my $signatures = {};
 
     open(my $FH, "<", $file) or die "Could not open '$file': $!";
 
@@ -668,9 +668,9 @@ sub load_mtu {
         next LINE unless($line); # empty line
         # One should check for a more or less sane signature file.
         my($mtu, $info) = split /,/, $line, 2;
-        $signatures{$mtu} = [$mtu, qq($info)];
+        $signatures->{$mtu} = $info;
     }
-return %signatures;
+    return $signatures;
 }
 
 =head2 load_os_syn_fingerprints
