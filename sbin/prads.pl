@@ -106,9 +106,15 @@ if ($DUMP) {
 #  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
 
    warn "\n *** Loading MTU signatures *** \n\n";
-   my @MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
-   print Dumper @MTU_SIGNATURES;
+   my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
+   print Dumper $MTU_SIGNATURES;
 
+    my $mtu = 1500;
+    print "Value EXISTS, but may be undefined.\n" if exists  $MTU_SIGNATURES->{ $mtu };
+    print "Value is DEFINED, but may be false.\n" if defined $MTU_SIGNATURES->{ $mtu };
+    print "Value is TRUE at hash key $mtu.\n"     if         $MTU_SIGNATURES->{ $mtu };
+    my $test = $MTU_SIGNATURES->{ $mtu };
+    print "JALLA: " . $test . "\n";
    exit 0;
 }
 
@@ -116,6 +122,10 @@ warn "Starting prads.pl...\n";
 
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
+              or Getopt::Long::HelpMessage();
+
+warn "Loading MTU fingerprints\n" if ($DEBUG>0);
+my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig")
               or Getopt::Long::HelpMessage();
 
 warn "Initializing device\n" if ($DEBUG>0);
@@ -241,6 +251,8 @@ sub packets {
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
         my $dist = $gttl - $ttl;
+        # Get link type
+        my $link = get_mtu_link($mss);
 
         # do the actual work
         my ($os, $details, @more) = os_find_match(
@@ -260,7 +272,7 @@ sub packets {
             print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
         }else{
             do{
-                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] Dist:$dist timestamp=" . $pradshosts{"tstamp"} ."\n";
+                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n";
                 ($os, $details, @more) = @more;
             }while(@more);
         }
@@ -919,6 +931,26 @@ sub arp_check {
     my $host = "$h1.$h2.$h3.$h4";
 
     print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $tstamp . "\n");
+}
+
+=head2 get_mtu_link
+
+ Takes MSS as input, and returns a guessed Link for that MTU.
+
+=cut
+
+sub get_mtu_link {
+    my $mss = shift;
+    my $link = "UNKOWN";
+    if ($mss > 0) {
+       my $mtu = $mss + 40;
+       if (my $link = $MTU_SIGNATURES->{ $mtu }) {
+          return $link;
+       }
+    }else{
+       return $link;
+    }
+    return $link;
 }
 
 =head2 add_asset
