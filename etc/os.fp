@@ -844,7 +844,7 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 S4:64:1:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag+)
 S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
 
-S4:64:0:60:M1430,S,T,N,W6:.:Linux: 2.6 (Google Translate )
+S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google Translate)
 
 
 ###########################
