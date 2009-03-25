@@ -936,7 +936,8 @@ sub arp_check {
 sub get_mtu_link {
     my $mss = shift;
     my $link = "UNKOWN";
-    if (int $mss) {
+#   if ($mss =~ m/^[0-9]+$/) { 
+    if ($mss =~ /^[+-]?\d+$/) {
        my $mtu = $mss + 40;
        if (my $link = $MTU_SIGNATURES->{ $mtu }) {return $link}
     }
@@ -968,6 +969,8 @@ sub add_asset {
 Edward Fjellskål
 
 Jan Henning Thorsen
+
+Kacper Wysocki
 
 =head1 COPYRIGHT
 
