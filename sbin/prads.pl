@@ -254,7 +254,8 @@ sub packets {
             $winsize, $gttl, $optstr, $packet);
         if(not $os){
             my $wss = $winsize;
-            if(int $mss){
+            if ($mss =~ /^[+-]?\d+$/) {
+#            if(int $mss){ # do not work :)
                 if (not $winsize % $mss){
                     $wss = $winsize / $mss;
                     $wss = "S$wss";
