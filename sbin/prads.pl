@@ -936,13 +936,9 @@ sub arp_check {
 sub get_mtu_link {
     my $mss = shift;
     my $link = "UNKOWN";
-    if ($mss > 0) {
+    if (int $mss) {
        my $mtu = $mss + 40;
-       if (my $link = $MTU_SIGNATURES->{ $mtu }) {
-          return $link;
-       }
-    }else{
-       return $link;
+       if (my $link = $MTU_SIGNATURES->{ $mtu }) {return $link}
     }
     return $link;
 }
