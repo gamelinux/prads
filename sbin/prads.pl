@@ -229,7 +229,7 @@ sub packets {
       my $data    = $tcp->{'data'};
       my $reserved= $tcp->{'reserved'};
       # Check if SYN is set and not ACK (Indicates an initial connection)
-      if ($tcpflags & SYN and ~$tcpflags & ACK) { 
+      if ($OS == 1 && ($tcpflags & SYN and ~$tcpflags & ACK)) { 
         warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
         # MSS may be undefined
