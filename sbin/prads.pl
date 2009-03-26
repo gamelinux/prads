@@ -69,6 +69,8 @@ our $VERSION       = 0.1;
 our $DEBUG         = 0;
 our $DUMP          = 0;
 our $ARP           = 0;
+our $SERVICE       = 0;
+our $OS            = 0;
 my $DEVICE         = q(eth0);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
@@ -89,23 +91,23 @@ GetOptions(
     'debug=s'                => \$DEBUG,
     'dump'                   => \$DUMP,
     'arp'                    => \$ARP,
+    'service'                => \$SERVICE,
+    'os'                     => \$OS,
     # bpf filter
 );
 
 if ($DUMP) {
-   warn "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
+   print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
-   warn "\n *** Loading OS fingerprints *** \n\n";
+   print "\n *** Loading OS fingerprints *** \n\n";
    my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
    print Dumper $OS_SYN_SIGS;
-#  print int keys @OS_SYN_SIGS;            # Would like to see the total sig count
- 
-   warn "\n *** Loading Service signatures *** \n\n";
+
+   print "\n *** Loading Service signatures *** \n\n";
    my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
    print Dumper @TCP_SERVICE_SIGNATURES; 
-#  print int keys @TCP_SERVICE_SIGNATURES; # Would like to see the total serv-sig count
 
-   warn "\n *** Loading MTU signatures *** \n\n";
+   print "\n *** Loading MTU signatures *** \n\n";
    my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
    print Dumper $MTU_SIGNATURES;
 
@@ -272,28 +274,22 @@ sub packets {
         }
 
 
-    }else{
-      warn "Not an initial connection... Skipping OS detection\n" if($DEBUG>30);
-    }
-### SERVICE: DETECTION
-    unless($tcp->{'data'}) {
-        warn "No TCP data - Skipping asset detection\n" if($DEBUG>30);
-        warn "Done...\n\n" if($DEBUG>30);
-        return;
-    }
-    # Check content(TCP data) against signatures
-    tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
+      }
 
+### SERVICE: DETECTION
+    if ($tcp->{'data'} && $SERVICE == 1) {
+       # Check content(TCP data) against signatures
+       tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
+    }
 
     }elsif ($ip->{proto} == 17) {
     # Can one do UPD OS detection !??!
        warn "Packet is of type UDP...\n" if($DEBUG>30);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
-       unless($udp->{'data'}) {
-          warn "No UDP data - Skipping asset detection\n" if($DEBUG>20);
-          warn "Done...\n\n" if($DEBUG>20);
-          return;
+       if ($udp->{'data'} && $SERVICE == 1) {
+          udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        }
+
        # Make UDP asset detection here... PoC CODE at the moment.
 ### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        #warn "Detecting UDP asset...\n" if($DEBUG);
@@ -888,23 +884,36 @@ Prints out service if found.
 sub udp_service_check {
     my ($udp_data, $src_ip, $src_port,$tstamp) = @_;
 
-    # Check content(udp_data) against signatures
-    SIGNATURE:
-    for my $s (@UDP_SERVICE_SIGNATURES) {
-        my $re = $s->[2];
+       # Make UDP asset detection here... PoC CODE at the moment.
+### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
+       #warn "Detecting UDP asset...\n" if($DEBUG);
+       if ($src_port == 53){
+        printf ("Service: ip=%s port=%i -> \"DNS\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
+       }
+       elsif ($src_port == 1194){
+        printf ("Service: ip=%s port=%i -> \"OpenVPN\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
+       }
+       else {
+        warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG>20);
+       }
 
-        if($udp_data =~ /$re/) {
-            my($vendor, $version, $info) = split m"/", eval $s->[1];
-            printf("SERVICE: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
-                $src_ip, $src_port,
-                $vendor  || q(),
-                $version || q(),
-                $info    || q(),
-                $tstamp || q()
-            );
-            last SIGNATURE;
-        }
-    }
+#    # Check content(udp_data) against signatures
+#    SIGNATURE:
+#    for my $s (@UDP_SERVICE_SIGNATURES) {
+#        my $re = $s->[2];
+#
+#        if($udp_data =~ /$re/) {
+#            my($vendor, $version, $info) = split m"/", eval $s->[1];
+#            printf("SERVICE: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
+#                $src_ip, $src_port,
+#                $vendor  || q(),
+#                $version || q(),
+#                $info    || q(),
+#                $tstamp || q()
+#            );
+#            last SIGNATURE;
+#        }
+#    }
 }
 
 =head2 arp_check
