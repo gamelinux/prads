@@ -466,6 +466,9 @@ sub os_find_match{
         print "Closest matches: " . Dumper (@wmatch) ."\n";
         return;
     }
+    if(@os > 2){
+        warn "Multiple matches:\n";
+    }
     return @os;
 }
 
@@ -674,53 +677,58 @@ optimize for lookup matching
 =cut
 
 sub load_os_syn_fingerprints {
-  my $file = shift;
+    my $file = shift;
 # Fingerprint entry format:
 # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
-  #my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
-  my $rules = {};
+#my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
+    my $rules = {};
 
-  open(my $FH, "<", $file) or die "Could not open '$file': $!";
+    open(my $FH, "<", $file) or die "Could not open '$file': $!";
 
-  while (my $line = readline $FH) {
-    chomp $line;
-    $line =~ s/\#.*//;
-    next unless($line); # empty line
+    my $lineno = 0;
+    while (my $line = readline $FH) {
+        $lineno++;
+        chomp $line;
+        $line =~ s/\#.*//;
+        next unless($line); # empty line
 
-    #my @elements = $line =~ $re;
-    my @elements = split/:/,$line;
-    unless(@elements == 8) {
-      die "Error: Not valid fingerprint format in: '$file'";
-    }
-    my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
-    #print "GRRRR $wss, $ttl, $df, $ss, $oo, $qq, $os, $detail\n";
-    my @opt = split /[, ]/, $oo;
-    my $oc = scalar @opt;
-    my $t0 = 0;
-    my ($mss, $wsc) = ('*','*');
-    for(@opt){
-      if(/([MW])([\d%*]*)/){
-        if($1 eq 'M'){
-          $mss = $2;
-        }else{
-          $wsc = $2;
+#my @elements = $line =~ $re;
+            my @elements = split/:/,$line;
+        unless(@elements == 8) {
+            die "Error: Not valid fingerprint format in: '$file'";
         }
-      }elsif(/T0/){
-        $t0 = 1;
-      }
-    }
+        my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
+#print "GRRRR $wss, $ttl, $df, $ss, $oo, $qq, $os, $detail\n";
+        my @opt = split /[, ]/, $oo;
+        my $oc = scalar @opt;
+        my $t0 = 0;
+        my ($mss, $wsc) = ('*','*');
+        for(@opt){
+            if(/([MW])([\d%*]*)/){
+                if($1 eq 'M'){
+                    $mss = $2;
+                }else{
+                    $wsc = $2;
+                }
+            }elsif(/T0/){
+                $t0 = 1;
+            }
+        }
 
-    my($details, $human) = splice @elements, -2;
-    
-    my $tmp = $rules;
-    #print "Floppa: /",join("/",@ary),"/\n" if $. eq 354;
-    for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
-      $tmp->{$e} ||= {};
-      $tmp = $tmp->{$e};
+        my($details, $human) = splice @elements, -2;
+
+        my $tmp = $rules;
+#print "Floppa: /",join("/",@ary),"/\n" if $. eq 354;
+        for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
+            $tmp->{$e} ||= {};
+            $tmp = $tmp->{$e};
+        }
+        if($tmp->{$details}){
+            warn "$file:$lineno:Conflicting signature: '$line' overwrites earlier signature '$details:$tmp->{$details}'\n";
+        }
+        $tmp->{$details} = $human;
     }
-    $tmp->{$details} = $human;
-  }
-  return $rules;
+    return $rules;
 }
 
 =head2 init_dev
