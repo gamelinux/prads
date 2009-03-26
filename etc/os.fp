@@ -829,6 +829,7 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 *:128:1:52:M*,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w-, tstamp+)
 *:128:1:64:M*,N,W0,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w, tstamp+)
 *:128:1:64:M*,N,W*,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp+)
+*:64:1:64:M*,N,W*,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp+, ttl- ?)
 
 *:128:1:48:M536,N,N,S:.:@Windows:98
 *:128:1:48:M*,N,N,S:.:@Windows:XP/2000
@@ -854,6 +855,8 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google Translate)
 
 # Netcache OnTap
 #24576:64:1:64:M1460,N,W0,N,N,T,S:.:NetCache: OnTap (?) (Windows NT 5.1)
+#65535:64:1:64:M1460,N,W1,N,N,T,S:.:UNKNOWN:UNKNOWN (Closest: NetCache' => '5.3)
+#16384:64:1:64:M1460,N,N,S,N,W0,N:.:NetCache:5.3
 
 # WinNT
 #65535:128:1:48:M1432,N,N,S:.:Windows: NT 5.1
@@ -861,3 +864,10 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google Translate)
 #S48:128:0:48:M1360,N,N,S:.:Windows:XP w/Winroute? (closest match)
 #65535:128:1:48:M1460,N,N,S:.:Windows:2003 Server/msnbot
 #53760:64:1:64:M1440,N,W3,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN @Windows' => 'XP/2000 (RFC1323+, w+, tstamp+)
+
+#Packet has no match for zero timestamp:0
+8192:128:1:52:M1380,N,W2,N,N,N,N:.:UNKNOWN:UNKNOWN
+#Packet has no match for option count:0
+16384:128:0:40:.:.:UNKNOWN:UNKNOWN
+#Packet has no match for option count:17
+65535:64:0:60:M1460,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N:.:UNKNOWN:UNKNOWN
