@@ -270,7 +270,7 @@ sub packets {
             do{
                 print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n";
                 ($os, $details, @more) = @more;
-            }while(@more);
+            }while($os);
         }
 
 

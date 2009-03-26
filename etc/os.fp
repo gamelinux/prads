@@ -866,6 +866,9 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google Translate)
 #65535:128:1:48:M1460,N,N,S:.:Windows:2003 Server/msnbot
 #53760:64:1:64:M1440,N,W3,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN @Windows' => 'XP/2000 (RFC1323+, w+, tstamp+)
 
+# UNKNOWN
+S4:64:1:48:M1460,N,W8:.:UNKNOWN:UNKNOWN
+
 #Packet has no match for zero timestamp:0
 8192:128:1:52:M1380,N,W2,N,N,N,N:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:0
