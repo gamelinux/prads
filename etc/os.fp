@@ -391,6 +391,8 @@ S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 2)
 S2:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 2 loopback)
 S4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 3)
 T4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 4)
+S4:64:1:60:M*,S,T,N,W8:.:Linux:2.6 (newer, 5)
+#T4:64:1:60:M*,S,T,N,W8:.:Linux:2.6 (newer, 5)
 
 S20:64:1:60:M*,S,T,N,W0:.:Linux:2.2 (1)
 S22:64:1:60:M*,S,T,N,W0:.:Linux:2.2 (2)
