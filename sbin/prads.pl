@@ -467,7 +467,7 @@ sub os_find_match{
         return;
     }
     if(@os > 2){
-        warn "Multiple matches:\n";
+        warn "Multiple matches. Possible conflict in rules?:\n";
     }
     return @os;
 }
