@@ -290,18 +290,6 @@ sub packets {
           udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        }
 
-       # Make UDP asset detection here... PoC CODE at the moment.
-### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
-       #warn "Detecting UDP asset...\n" if($DEBUG);
-       if ($udp->{src_port} == 53){
-        printf ("Service: ip=%s port=%i protocol=%i -> \"DNS\" timestamp=%i\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'}, $pradshosts{"tstamp"});
-       }
-       elsif ($udp->{src_port} == 1194){
-        printf ("Service: ip=%s port=%i protocol=%i -> \"OpenVPN\" timestamp=%i\n",$ip->{'src_ip'}, $udp->{'src_port'}, $ip->{'proto'}, $pradshosts{"tstamp"});
-       }
-       else {
-        warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG>20);
-       }
     }
 
 
