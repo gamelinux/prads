@@ -724,7 +724,7 @@ sub load_os_syn_fingerprints {
             $tmp = $tmp->{$e};
         }
         if($tmp->{$details}){
-            warn "$file:$lineno:Conflicting signature: '$line' overwrites earlier signature '$details:$tmp->{$details}'\n";
+            print "$file:$lineno:Conflicting signature: '$line' overwrites earlier signature '$details:$tmp->{$details}'\n\n" if ($DEBUG);
         }
         $tmp->{$details} = $human;
     }
