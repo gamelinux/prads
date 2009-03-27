@@ -267,8 +267,12 @@ sub packets {
             }
             print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
         }else{
+            my $skip = 0;
+            if(not grep /^@/, ($os, @more)){
+                $skip = 1;
+            }
             do{
-                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n";
+                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not ($skip and $os =~ /^@/);
                 ($os, $details, @more) = @more;
             }while($os);
         }
@@ -362,7 +366,7 @@ sub os_find_match{
     for($tot, $optcnt, $t0, $df){
         if($matches->{$_}){
             $matches = $matches->{$_};
-    #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
+            #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
             $j++;
 
         }else{
