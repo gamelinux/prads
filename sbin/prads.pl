@@ -367,7 +367,10 @@ sub os_find_match{
 
         }else{
             warn "Packet has no match for $ec[$j]:$_\n";
-            return;
+# Kacper - Im adding this. Is this SANE ?
+            $matches = $matches->{'.'};
+            #return;
+# Kacper - end
         }
     }
     # we should have $matches now.
