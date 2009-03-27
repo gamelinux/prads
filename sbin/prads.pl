@@ -268,7 +268,7 @@ sub packets {
             print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
         }else{
             my $skip = 0;
-            if(not grep /^@/, ($os, @more)){
+            if(grep /^[^@]/, ($os, @more)){
                 $skip = 1;
             }
             do{
