@@ -367,10 +367,7 @@ sub os_find_match{
 
         }else{
             warn "Packet has no match for $ec[$j]:$_\n";
-# Kacper - Im adding this. Is this SANE ?
-            $matches = $matches->{'.'};
-            #return;
-# Kacper - end
+            return;
         }
     }
     # we should have $matches now.
@@ -681,9 +678,9 @@ optimize for lookup matching
 
 sub load_os_syn_fingerprints {
     my $file = shift;
-# Fingerprint entry format:
-# WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
-#my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
+    # Fingerprint entry format:
+    # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
+    #my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
     my $rules = {};
 
     open(my $FH, "<", $file) or die "Could not open '$file': $!";
@@ -695,33 +692,38 @@ sub load_os_syn_fingerprints {
         $line =~ s/\#.*//;
         next unless($line); # empty line
 
-#my @elements = $line =~ $re;
-            my @elements = split/:/,$line;
+        #my @elements = $line =~ $re;
+        my @elements = split/:/,$line;
         unless(@elements == 8) {
             die "Error: Not valid fingerprint format in: '$file'";
         }
         my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
-#print "GRRRR $wss, $ttl, $df, $ss, $oo, $qq, $os, $detail\n";
-        my @opt = split /[, ]/, $oo;
-        my $oc = scalar @opt;
+        #print "GRRRR $wss, $ttl, $df, $ss, $oo, $qq, $os, $detail\n";
+        my $oc = 0;
         my $t0 = 0;
         my ($mss, $wsc) = ('*','*');
-        for(@opt){
-            if(/([MW])([\d%*]*)/){
-                if($1 eq 'M'){
-                    $mss = $2;
-                }else{
-                    $wsc = $2;
+        if($oc eq '.'){
+            $oc = 0;
+        }else{
+            my @opt = split /[, ]/, $oo;
+            $oc = scalar @opt;
+            for(@opt){
+                if(/([MW])([\d%*]*)/){
+                    if($1 eq 'M'){
+                        $mss = $2;
+                    }else{
+                        $wsc = $2;
+                    }
+                }elsif(/T0/){
+                    $t0 = 1;
                 }
-            }elsif(/T0/){
-                $t0 = 1;
             }
         }
 
         my($details, $human) = splice @elements, -2;
 
         my $tmp = $rules;
-#print "Floppa: /",join("/",@ary),"/\n" if $. eq 354;
+        #print "Floppa: /",join("/",@ary),"/\n" if $. eq 354;
         for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
             $tmp->{$e} ||= {};
             $tmp = $tmp->{$e};
