@@ -869,12 +869,18 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google Translate)
 #65535:128:1:48:M1460,N,N,S:.:Windows:2003 Server/msnbot
 #53760:64:1:64:M1440,N,W3,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN @Windows' => 'XP/2000 (RFC1323+, w+, tstamp+)
 
-# UNKNOWN
+# UNKNOWN:UNKNOWN - We would like to know what this is and if it is a valid fingerprint.
+# Since they can be b0rked packets - hench not interresting to match on.
+65535:128:0:44:M1360:.:UNKNOWN:UNKNOWN
 S4:64:1:48:M1460,N,W8:.:UNKNOWN:UNKNOWN
-
 #Packet has no match for zero timestamp:0
 8192:128:1:52:M1380,N,W2,N,N,N,N:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:0
 16384:128:0:40:.:.:UNKNOWN:UNKNOWN
+#Packet has no match for option count:7
+16384:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:17
 65535:64:0:60:M1460,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N:.:UNKNOWN:UNKNOWN
+
+
+

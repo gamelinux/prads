@@ -371,6 +371,7 @@ sub os_find_match{
 
         }else{
             warn "Packet has no match for $ec[$j]:$_\n";
+            warn "ERR: $packet\n";
             return;
         }
     }
