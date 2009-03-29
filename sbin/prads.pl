@@ -959,6 +959,27 @@ sub get_mtu_link {
     return $link;
 }
 
+=head2 load_config
+
+ Reads the configuration file and loads variables.
+
+=cut
+
+sub load_config {
+    my $file = shift;
+    my $config;
+
+    open(CONFIG,$file);
+    while (my $line = <CONFIG>) {
+        chomp($line);
+        $line =~ s/\#.*//;
+        my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/);
+        $config->{$key} = $value;
+        # print "$key: $value\n";
+    }
+    return $config;
+}
+
 =head2 add_asset
 
 Takes input: Category, $1 $2 $3 $4..... $N

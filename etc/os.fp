@@ -873,10 +873,11 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google Translate)
 # Since they can be b0rked packets - hench not interresting to match on.
 65535:128:0:44:M1360:.:UNKNOWN:UNKNOWN
 S4:64:1:48:M1460,N,W8:.:UNKNOWN:UNKNOWN
+65535:128:0:48:M1460,N,N,S:A:Redline:T|X 2200
 #Packet has no match for zero timestamp:0
 8192:128:1:52:M1380,N,W2,N,N,N,N:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:0
-16384:128:0:40:.:.:UNKNOWN:UNKNOWN
+16384:128:0:40:.:.:UNKNOWN:UNKNOWN ULTRIX 4.5?
 #Packet has no match for option count:7
 16384:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:17
