@@ -85,11 +85,8 @@ my %ERROR          = (
     loop => q(Unable to perform packet capture),
 );
 
-GetOptions('config|c=s' => \$CONFIG);
-my $conf = load_config("$CONFIG");
-
-
 GetOptions(
+    'config|c=s'             => \$CONFIG,
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
@@ -101,9 +98,13 @@ GetOptions(
     # bpf filter
 );
 
-#my $conf = load_config("$CONFIG");
-#my @array = split(/\s+/, $tmp_config->{array-param});
-#my $variable = $config->{variable};
+my $conf = load_config("$CONFIG");
+#my @array = split(/\s+/, $conf->{array-param});
+#my $variable = $conf->{variable};
+#$OS       = $conf->{os_synack_fingerprint};
+#$DEVICE   = $conf->{interface};
+#$ARP      = $conf->{arp};
+#$DEBUG    = $conf->{debug};
 
 if ($DUMP) {
    print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
