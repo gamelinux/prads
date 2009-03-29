@@ -983,15 +983,13 @@ sub load_config {
         chomp($line);
         $line =~ s/\#.*//;
         next unless($line); # empty line
-        unless(my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/)) {
+        if (my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/)) {
         my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/);
-            die "Error: Not valid configfile format in: '$file'";
+           warn  "$key:$value\n";
+           $config->{$key} = $value;
+        }else {
+          die "Error: Not valid configfile format in: '$file'";
         }
-
-        my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/);
-        warn  "$key:$value\n";
-        $config->{$key} = $value;
-        # print "$key: $value\n";
     }
     close $FH;
     return $config;
