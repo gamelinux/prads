@@ -72,6 +72,7 @@ our $ARP           = 0;
 our $SERVICE       = 0;
 our $OS            = 0;
 my $DEVICE         = q(eth0);
+my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
 my %pradshosts     = ();
@@ -84,6 +85,10 @@ my %ERROR          = (
     loop => q(Unable to perform packet capture),
 );
 
+GetOptions('config|c=s' => \$CONFIG);
+my $conf = load_config("$CONFIG");
+
+
 GetOptions(
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
@@ -95,6 +100,10 @@ GetOptions(
     'os'                     => \$OS,
     # bpf filter
 );
+
+#my $conf = load_config("$CONFIG");
+#my @array = split(/\s+/, $tmp_config->{array-param});
+#my $variable = $config->{variable};
 
 if ($DUMP) {
    print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
@@ -962,21 +971,24 @@ sub get_mtu_link {
 =head2 load_config
 
  Reads the configuration file and loads variables.
+ Takes the config file as input, and returns a hash of config options.
 
 =cut
 
 sub load_config {
     my $file = shift;
     my $config;
-
-    open(CONFIG,$file);
-    while (my $line = <CONFIG>) {
+    open(my $FH, "<",$file) or die "Could not open '$file': $!";
+    while (my $line = <$FH>) {
         chomp($line);
         $line =~ s/\#.*//;
+        next unless($line); # empty line
         my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/);
+        warn  "$key:$value\n";
         $config->{$key} = $value;
         # print "$key: $value\n";
     }
+    close $FH;
     return $config;
 }
 
