@@ -125,6 +125,7 @@ if ($DUMP) {
 }
 
 warn "Starting prads.pl...\n";
+print "Using $DEVICE\n";
 
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
@@ -985,7 +986,7 @@ sub load_config {
         $line =~ s/\#.*//;
         next unless($line); # empty line
         if (my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/)) {
-        my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/);
+#        my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/);
            warn  "$key:$value\n";
            $config->{$key} = $value;
         }else {
