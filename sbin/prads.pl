@@ -718,7 +718,7 @@ sub load_os_syn_fingerprints {
         my $oc = 0;
         my $t0 = 0;
         my ($mss, $wsc) = ('*','*');
-        if($oc eq '.'){
+        if($oo eq '.'){
             $oc = 0;
         }else{
             my @opt = split /[, ]/, $oo;
