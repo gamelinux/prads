@@ -130,6 +130,7 @@ print "Using $DEVICE\n";
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
+my $OS_SYN_DB = {};
 
 warn "Loading MTU fingerprints\n" if ($DEBUG>0);
 my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig")
@@ -193,6 +194,8 @@ sub packets {
     $pradshosts{"tstamp"} = time;
     warn "Packet received - processing...\n" if($DEBUG>50);
 
+    #setup the storage hash.. could also let adding to DB be caller's job
+    my $db = $OS_SYN_DB;
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
 
@@ -252,7 +255,8 @@ sub packets {
         push @quirks, check_quirks($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data);
         my $quirkstring = quirks_tostring(@quirks);
 
-        my $packet = "ip:$ip->{'src_ip'} size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
+        my $src_ip = $ip->{'src_ip'};
+        my $packet = "ip:$src_ip size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
         print "OS: $packet\n" if($DEBUG);
 
         # We need to guess initial TTL
@@ -262,43 +266,67 @@ sub packets {
         my $link = get_mtu_link($mss);
 
         # do the actual work
-        my ($os, $details, @more) = os_find_match(
-            $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
-            $winsize, $gttl, $optstr, $packet);
-        if(not $os){
-            my $wss = $winsize;
-            if ($mss =~ /^[+-]?\d+$/) {
-                if (not $winsize % $mss){
-                    $wss = $winsize / $mss;
-                    $wss = "S$wss";
-                }elsif(not $winsize % ($mss +40)){
-                    $wss = $winsize / ($mss + 40);
-                    $wss = "T$wss";
-                }
+        my $wss = $winsize;
+        if ($mss =~ /^[+-]?\d+$/) {
+            if (not $winsize % $mss){
+                $wss = $winsize / $mss;
+                $wss = "S$wss";
+            }elsif(not $winsize % ($mss +40)){
+                $wss = $winsize / ($mss + 40);
+                $wss = "T$wss";
             }
-            print "$wss:$gttl:$df:$tot:$optstr:$quirkstring:UNKNOWN:UNKNOWN\n";
-        }else{
-            my $skip = 0;
-            if(grep /^[^@]/, ($os, @more)){
-                $skip = 1;
-            }
-            do{
-                print "OS: ip:$ip->{'src_ip'} - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not ($skip and $os =~ /^@/);
-                ($os, $details, @more) = @more;
-            }while($os);
         }
+        my $fpstring = "$wss:$gttl:$df:$tot:$optstr:$quirkstring";
 
-
+        # TODO: make a list of previously matched OS'es (NAT ips) and
+        # check on $db->{$ip}->{$fingerprint}
+        my $prev_found = $db->{$src_ip};
+        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+        if(not $prev_found){
+            my ($os, $details, @more) = os_find_match(
+                                                      $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
+                                                      $winsize, $gttl, $optstr, $packet);
+            if(not $os){
+                print "$fpstring:UNKNOWN:UNKNOWN\n";
+                my $match = { 
+                    'ip' => $ip,
+                    'fingerprint' => $fpstring,
+                    'os' => 'UNKNOWN', 
+                    'details' => 'UNKNOWN',
+                    'packet' => $ip
+                };
+                $db->{$src_ip} = $match;
+            }else{
+                my $skip = 0;
+                if(grep /^[^@]/, ($os, @more)){
+                    $skip = 1;
+                }
+                do{ 
+                    if(not ($skip and $os =~ /^@/)){
+                        print "OS: ip:$src_ip - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n";
+                        my $match = { 
+                            'ip' => $src_ip,
+                            'fingerprint' => $fpstring,
+                            'os' => $os, 
+                            'details' => $details,
+                            'packet' => $ip
+                        };
+                        $db->{$src_ip} = $match; # may be unneccessary by ref
+                    }
+                    ($os, $details, @more) = @more;
+                }while($os);
+            }
+        }
       }
 
-### SERVICE: DETECTION
+    ### SERVICE: DETECTION
     if ($tcp->{'data'} && $SERVICE == 1) {
        # Check content(TCP data) against signatures
        tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
     }
 
     }elsif ($ip->{proto} == 17) {
-    # Can one do UPD OS detection !??!
+    # Can one do UDP OS detection !??!
        warn "Packet is of type UDP...\n" if($DEBUG>30);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
        if ($udp->{'data'} && $SERVICE == 1) {
