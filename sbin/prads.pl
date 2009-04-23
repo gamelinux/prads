@@ -355,9 +355,10 @@ sub match_opts {
     my @o1 = split /,/,$o1;
     my @o2 = split /,/,$o2;
     for(@o1){
-        #print "$_:$o2[0]\n";
-        if(/([MW])([\d*]*)/){
+        print "$_:$o2[0]\n" if $DEBUG > 1;
+        if(/([MW])(\d*|\*)/){
             if(not $o2[0] =~ /$1($2|\*)/){
+                print "$o2[0] != $1$2\n" if $DEBUG > 1;
                 return 0;
             }
         }elsif($_ ne $o2[0]){
@@ -368,7 +369,9 @@ sub match_opts {
     return @o2 == 0;
 }
 
-=port of p0f find_match()
+=head2 os_find_match
+
+port of p0f find_match()
 # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
 
 returns: ($os, $details, [...])
