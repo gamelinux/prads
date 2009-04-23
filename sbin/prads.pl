@@ -280,7 +280,6 @@ sub packets {
 
         # TODO: make a list of previously matched OS'es (NAT ips) and
         # check on $db->{$ip}->{$fingerprint}
-        # - save timestamp
         my $prev_found = $db->{$src_ip};
         print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
         if(not $prev_found){
@@ -502,6 +501,12 @@ sub os_find_match{
             push @omatch, $h->{$_} and last if match_opts($optstr,$_);
         }
     }
+    if(not @omatch){
+        warn "ERR: $packet:\n  No match for TCP options.\n";
+        print "Closest matches: " . Dumper (@wmatch) ."\n";
+        return;
+    }
+
     my @os;
     for(@omatch){
         my $match = $_->{$gttl};
@@ -513,8 +518,8 @@ sub os_find_match{
         }
     }
     if(not @os){
-        warn "ERR: $packet:\n  No options match in fp db.\n";
-        print "Closest matches: " . Dumper (@wmatch) ."\n";
+        warn "ERR: $packet:\n  No match for TTL.\n";
+        print "Closest matches: " . Dumper (@omatch) ."\n";
         return;
     }
     return @os;
