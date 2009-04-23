@@ -280,6 +280,7 @@ sub packets {
 
         # TODO: make a list of previously matched OS'es (NAT ips) and
         # check on $db->{$ip}->{$fingerprint}
+        # - save timestamp
         my $prev_found = $db->{$src_ip};
         print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
         if(not $prev_found){
@@ -293,10 +294,12 @@ sub packets {
                     'fingerprint' => $fpstring,
                     'os' => 'UNKNOWN', 
                     'details' => 'UNKNOWN',
-                    'packet' => $ip
+                    'packet' => $ip,
+                    'timestamp' => $pradshosts{"tstamp"}
                 };
                 $db->{$src_ip} = $match;
             }else{
+                # if we have non-generic matches, skip generics
                 my $skip = 0;
                 if(grep /^[^@]/, ($os, @more)){
                     $skip = 1;
@@ -309,7 +312,8 @@ sub packets {
                             'fingerprint' => $fpstring,
                             'os' => $os, 
                             'details' => $details,
-                            'packet' => $ip
+                            'packet' => $ip,
+                            'timestamp' => $pradshosts{"tstamp"}
                         };
                         $db->{$src_ip} = $match; # may be unneccessary by ref
                     }
@@ -509,9 +513,6 @@ sub os_find_match{
         warn "ERR: $packet:\n  No options match in fp db.\n";
         print "Closest matches: " . Dumper (@wmatch) ."\n";
         return;
-    }
-    if(@os > 2){
-        warn "Multiple matches. Possible conflict in rules?:\n";
     }
     return @os;
 }
