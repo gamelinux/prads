@@ -510,6 +510,14 @@ sub os_find_match{
     my @os;
     for(@omatch){
         my $match = $_->{$gttl};
+        if(not $match){
+            # re-normalize ttl, machine may be really distant
+            # (over ttl/2 hops away)
+            warn "Re-adjusting guessed ttl $gttl -> ";
+            $gttl = normalize_ttl($gttl);
+            $match = $_->{$gttl};
+            warn "$gttl\n";
+        }
         #print "INFO: omatch: " .Dumper($match) ."\n";
         if($match){
             for(keys %$match){
@@ -890,12 +898,13 @@ Takes a ttl value as input, and guesses intial ttl
 sub normalize_ttl {
     my $ttl = shift;
     my $gttl;
-    # Only aiming for 255,128,64,32. But some strange ttls like
-    # 200,60,30 exist, but are rare.
-    $gttl = 255 if (($ttl >   128) && (255  >= $ttl));
-    $gttl = 128 if ((128  >= $ttl) && ($ttl >    64));
-    $gttl =  64 if (( 64  >= $ttl) && ($ttl >    32));
-    $gttl =  32 if (( 32  >= $ttl) && ($ttl >=    1));
+    # Only aiming for 255,128,64,60,32. But some strange ttls like
+    # 200,30 exist, but are rare.
+    $gttl = 255 if (($ttl >=  128) && (255  >= $ttl));
+    $gttl = 128 if ((128  >  $ttl) && ($ttl >=   64));
+    $gttl =  64 if (( 64  >  $ttl) && ($ttl >=   32));
+    $gttl =  60 if (( 60  >  $ttl) && ($ttl >=   32));
+    $gttl =  32 if (( 32  >  $ttl));
     return $gttl;
 }
 
