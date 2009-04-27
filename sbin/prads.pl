@@ -514,7 +514,7 @@ sub os_find_match{
             # re-normalize ttl, machine may be really distant
             # (over ttl/2 hops away)
             $gttl = normalize_ttl($gttl);
-            warn "Re-adjusted ttl to $gttl" if $gttl != 64;
+            print "Re-adjusted ttl to $gttl\n" if $gttl != 64;
             $match = $_->{$gttl};
         }
         #print "INFO: omatch: " .Dumper($match) ."\n";
@@ -901,7 +901,7 @@ sub normalize_ttl {
     # 200,30 exist, but are rare.
     $gttl = 255 if (($ttl >=  128) && (255  >= $ttl));
     $gttl = 128 if ((128  >  $ttl) && ($ttl >=   64));
-    $gttl =  64 if (( 64  >  $ttl) && ($ttl >=   32));
+    $gttl =  64 if (( 64  >  $ttl) && ($ttl >=   60));
     $gttl =  60 if (( 60  >  $ttl) && ($ttl >=   32));
     $gttl =  32 if (( 32  >  $ttl));
     return $gttl;
