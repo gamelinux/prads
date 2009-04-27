@@ -513,9 +513,9 @@ sub os_find_match{
         if(not $match){
             # re-normalize ttl, machine may be really distant
             # (over ttl/2 hops away)
-            $gttl = normalize_ttl($gttl);
-            print "Re-adjusted ttl to $gttl\n" if $gttl != 64;
-            $match = $_->{$gttl};
+            my $ttl = normalize_ttl($gttl);
+            print "Re-adjusted ttl from $gttl to $ttl\n" if $ttl != 64;
+            $match = $_->{$ttl};
         }
         #print "INFO: omatch: " .Dumper($match) ."\n";
         if($match){
