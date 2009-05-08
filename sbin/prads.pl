@@ -936,7 +936,7 @@ sub normalize_ttl {
     # 200,30 exist, but are rare.
     $gttl = 255 if (($ttl >=  128) && (255  >= $ttl));
     $gttl = 128 if ((128  >=  $ttl) && ($ttl >   64));
-    $gttl =  64 if (( 64  >=  $ttl) && ($ttl >   60));
+    $gttl =  64 if (( 64  >=  $ttl) && ($ttl >   32));
     $gttl =  32 if (( 32  >=  $ttl));
     return $gttl;
 }
