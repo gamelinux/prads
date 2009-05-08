@@ -35,4 +35,9 @@ Sep 04 21:00:45 <qru>    * 01                   TCP / ICMP Asset Discovered
 Sep 04 21:00:45 <qru>    * 02                   ARP Asset Discovered
 Sep 04 21:00:45 <qru>    * 03                   TCP / ICMP Statistic Information
 
+Kacper's crazy ideas:
 
+- switch/router topology by sniffing OSPF/BGP/RSTP
+- synack implementation (ebf0 idea=)
+-.geoip maps ( passive lookup )
+-.sniff DNS lookups
