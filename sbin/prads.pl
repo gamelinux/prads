@@ -6,6 +6,7 @@ use FindBin;
 use Getopt::Long qw/:config auto_version auto_help/;
 use Net::Pcap;
 use Data::Dumper;
+use DBI;
 
 use constant ETH_TYPE_ARP       => 0x0806;
 use constant ARP_OPCODE_REPLY   => 2;
@@ -71,6 +72,8 @@ our $DUMP          = 0;
 our $ARP           = 0;
 our $SERVICE       = 0;
 our $OS            = 0;
+our $NOPERSIST     = 0;
+
 my $DEVICE         = q(eth0);
 my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
@@ -95,6 +98,7 @@ GetOptions(
     'arp'                    => \$ARP,
     'service'                => \$SERVICE,
     'os'                     => \$OS,
+    'no-persist|np'          => \$NOPERSIST,
     # bpf filter
 );
 
@@ -149,6 +153,14 @@ warn "Loading UDP Service signatures\n" if ($DEBUG>0);
 my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
+if (not $NOPERSIST){
+    warn "Loading persistent database $conf->{'persist_file'}\n" if ($DEBUG>0);
+    if(-r $conf->{'persist_file'}){
+        $OS_SYN_DB = load_persistent($conf->{'persist_file'});
+    }else{
+        warn "Persistence file $conf->{'persist_file'} not readable\n";
+    }
+}
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
 
@@ -649,7 +661,7 @@ sub check_tcp_options{
             }else{
                 # unrecognized
                 $optstr .= "?$kind,";
-                ($rest) = unpack("x$count a*", $rest);
+                ($rest) = unpack("x$size a*", $rest);
                 print "unknown $kind:$size:" if $DEBUG & 8;
             }
             print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
