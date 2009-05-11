@@ -957,13 +957,14 @@ sub tcp_service_check {
 
         if($tcp_data =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
-            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
-                $src_ip, $src_port,
-                $vendor  || q(),
-                $version || q(),
-                $info    || q(),
-                $tstamp || q()
-            );
+            add_asset('SERVICE', $src_ip, $src_port, $vendor, $version, $info);
+#            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
+#                $src_ip, $src_port,
+#                $vendor  || q(),
+#                $version || q(),
+#                $info    || q(),
+#                $tstamp || q()
+#            );
             last SIGNATURE;
         }
     }
@@ -983,10 +984,12 @@ sub udp_service_check {
 ### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        #warn "Detecting UDP asset...\n" if($DEBUG);
        if ($src_port == 53){
-        printf ("Service: ip=%s port=%i -> \"DNS\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
+          add_asset('SERVICE', $src_ip, $src_port, "-","-","DNS");
+#         printf ("Service: ip=%s port=%i -> \"DNS\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
        }
        elsif ($src_port == 1194){
-        printf ("Service: ip=%s port=%i -> \"OpenVPN\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
+          add_asset('SERVICE', $src_ip, $src_port, "OpenVPN","-","-");
+#         printf ("Service: ip=%s port=%i -> \"OpenVPN\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
        }
        else {
         warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG>20);
@@ -1026,9 +1029,9 @@ sub arp_check {
     my $h2 = hex(substr( $aip,2,2));
     my $h3 = hex(substr( $aip,4,2));
     my $h4 = hex(substr( $aip,6,2));
-    my $host = "$h1.$h2.$h3.$h4";
+    my $ip = "$h1.$h2.$h3.$h4";
 
-    print("ARP: mac=$arp->{sha} ip=$host timestamp=" . $tstamp . "\n");
+    add_asset('ARP', $arp->{sha}, $ip);
 }
 
 =head2 get_mtu_link
@@ -1097,13 +1100,12 @@ sub add_asset {
             $prev_found = undef;
         }
 
-
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
         my $match = {
-            'address' => $src_ip,
+            'address'     => $src_ip,
             'fingerprint' => $fingerprint,
             'link'        => $link,
             'sense'       => $type,
@@ -1117,6 +1119,52 @@ sub add_asset {
 
         print "OS: ip:$src_ip - $os - $details [$fingerprint] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not $prev_found;
     }
+    
+#   add_asset('ARP', $mac, $host, @more);
+    elsif($type eq 'ARP'){
+        my ($mac, $ip, @more) = @rest;
+        my $prev_found = $db->{$mac};
+        my $prev_ip = $prev_found->{'ip'} if $prev_found;
+         
+        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+        my $match = {
+            'mac'         => $mac,
+            'ip'          => $ip,
+            'last_seen'   => $pradshosts{'tstamp'},
+        };
+        $db->{$mac} = $match;
+
+        if ($prev_found){
+           if ( $match->{'ip'} ne $prev_ip ){
+              print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
+           }
+        }else{
+           print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
+        }
+    }
+
+#   Service: ip=87.238.47.67 port=631 -> "CUPS 1.2 " timestamp=1242033096
+#   add_asset('SERVICE', $ip, $port, $vendor, $version, $info, @more);
+    elsif($type eq 'SERVICE'){
+        my ($ip, $port, $vendor, $version, $info, @more) = @rest;
+        my $prev_found = $db->{"$ip:$port"};
+
+        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+        my $match = {
+            'ip'          => $ip,
+            'port'        => $port,
+            'vendor'      => $vendor,
+            'version'     => $version,
+            'info'        => $info,
+            'last_seen'   => $pradshosts{'tstamp'},
+        };
+        $db->{"$ip:$port"} = $match;
+
+        print "SERVICE: ip=$ip port=$port vendor=$vendor version=$version info=$info timestamp=" . $pradshosts{'tstamp'} . "\n" if not $prev_found;
+    }
+
+
+
 =more types
     my $assets = @_;
     if($assets =~ /^OS: /) {
