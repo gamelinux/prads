@@ -71,6 +71,7 @@ our $DUMP          = 0;
 our $ARP           = 0;
 our $SERVICE       = 0;
 our $OS            = 0;
+our $BPF           = q();
 my $DEVICE         = q(eth0);
 my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
@@ -80,8 +81,8 @@ my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
     lookup_net => q(Unable to look up device information for %s - %s),
     create_object => q(Unable to create packet capture on device %s - %s),
-    compile_object => q(Unable to compile packet capture filter),
-    compile_object => q(Unable to set packet capture filter),
+    compile_object_compile => q(Unable to compile packet capture filter),
+    compile_object_setfilter => q(Unable to set packet capture filter),
     loop => q(Unable to perform packet capture),
 );
 
@@ -97,11 +98,12 @@ GetOptions(
     'os'                     => \$OS,
     # bpf filter
 );
-
+#
 my $conf = load_config("$CONFIG");
 #my @array = split(/\s+/, $conf->{array-param});
 #my $variable = $conf->{variable};
-#$OS       = $conf->{os_synack_fingerprint};
+$OS       = $conf->{os_synack_fingerprint};
+$BPF      = $conf->{bpfilter};
 #$DEVICE   = $conf->{interface};
 #$ARP      = $conf->{arp};
 #$DEBUG    = $conf->{debug};
@@ -280,6 +282,8 @@ sub packets {
 
         # TODO: make a list of previously matched OS'es (NAT ips) and
         # check on $db->{$ip}->{$fingerprint}
+        # Also we need timestamp to delete "old" hosts, that might have
+        # been updated (Say if we are on a dhcp network)
         my $prev_found = $db->{$src_ip};
         print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
         if(not $prev_found){
@@ -829,15 +833,11 @@ passed to the program as an argument
 sub lookup_net {
     my $dev = shift;
     my($err, $address, $netmask);
-#    my $err;
-#    my $netmask = '255.255.255.255';
-#    my $address = '0.0.0.0';
 
     Net::Pcap::lookupnet(
         $dev, \$address, \$netmask, \$err
     ) and die sprintf $ERROR{'lookup_net'}, $dev, $err;
 
-#   warn "lookup_net : $address, $netmask\n";
     warn "lookup_net : $address, $netmask\n" if($DEBUG>0);
     return $address, $netmask;
 }
@@ -859,7 +859,7 @@ sub create_object {
     return $object;
 }
 
-=head2 compile_object
+=head2 filter_object
 
 Compile and set packet filter for packet capture 
 object - For the capture of TCP packets with the SYN 
@@ -873,11 +873,12 @@ as a default BPF filter.
 
 sub filter_object {
     my $object = shift;
-    my($address, $netmask) = lookup_net($DEVICE);
+#    my($address, $netmask) = lookup_net($DEVICE);
     my $filter;
+    my $netmask = q(0);
 #    my $BPF = q(tcp and src net 192.168.0.0 mask 255.255.255.0);
 #    my $BPF = q(ip and src net 87.238.45.0/24);
-    my $BPF = q();
+#   my $BPF = q(src net 0.0.0.0 mask 0.0.0.0 or dst net 0.0.0.0 mask 0.0.0.0);
 
     Net::Pcap::compile(
         $object, \$filter, $BPF, 0, $netmask
@@ -885,7 +886,7 @@ sub filter_object {
 
     Net::Pcap::setfilter($object, $filter)
         and die $ERROR{'compile_object_setfilter'};
-    warn "filter_object : $address, $netmask, $filter\n" if($DEBUG>0);
+    warn "filter_object : $filter\n" if($DEBUG>0);
 }
 
 =head2 normalize_ttl
