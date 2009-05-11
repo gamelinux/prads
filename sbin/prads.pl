@@ -6,6 +6,7 @@ use FindBin;
 use Getopt::Long qw/:config auto_version auto_help/;
 use Net::Pcap;
 use Data::Dumper;
+use DBI;
 
 use constant ETH_TYPE_ARP       => 0x0806;
 use constant ARP_OPCODE_REPLY   => 2;
@@ -72,6 +73,8 @@ our $ARP           = 0;
 our $SERVICE       = 0;
 our $OS            = 0;
 our $BPF           = q();
+our $NOPERSIST     = 0;
+
 my $DEVICE         = q(eth0);
 my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
@@ -96,6 +99,7 @@ GetOptions(
     'arp'                    => \$ARP,
     'service'                => \$SERVICE,
     'os'                     => \$OS,
+    'no-persist|np'          => \$NOPERSIST,
     # bpf filter
 );
 #
@@ -151,6 +155,14 @@ warn "Loading UDP Service signatures\n" if ($DEBUG>0);
 my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
+if (not $NOPERSIST){
+    warn "Loading persistent database $conf->{'persist_file'}\n" if ($DEBUG>0);
+    if(-r $conf->{'persist_file'}){
+        $OS_SYN_DB = load_persistent($conf->{'persist_file'});
+    }else{
+        warn "Persistence file $conf->{'persist_file'} not readable\n";
+    }
+}
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
 
@@ -197,7 +209,6 @@ sub packets {
     warn "Packet received - processing...\n" if($DEBUG>50);
 
     #setup the storage hash.. could also let adding to DB be caller's job
-    my $db = $OS_SYN_DB;
     my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
 
@@ -234,103 +245,7 @@ sub packets {
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
       warn "Packet is of type TCP...\n" if($DEBUG>50);
-      # Collect necessary info from TCP packet; if
-      my $tcp      = NetPacket::TCP->decode($ip->{'data'});
-      my $winsize = $tcp->{'winsize'}; #
-      my $tcpflags= $tcp->{'flags'};
-      my $tcpopts = $tcp->{'options'}; # binary crap 'CEUAPRSF' 
-      my $seq     = $tcp->{'seqnum'};
-      my $ack     = $tcp->{'acknum'};
-      my $urg     = $tcp->{'urg'};
-      my $data    = $tcp->{'data'};
-      my $reserved= $tcp->{'reserved'};
-      # Check if SYN is set and not ACK (Indicates an initial connection)
-      if ($OS == 1 && ($tcpflags & SYN and ~$tcpflags & ACK)) { 
-        warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
-        my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
-        # MSS may be undefined
-        $mss = '*' if not $mss;
-        my $tot = ($len < 100)? $len : 0;
-        my $t0 = (not defined $ts or $ts != 0)? 0:1;
-
-        # parse rest of quirks
-        push @quirks, check_quirks($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data);
-        my $quirkstring = quirks_tostring(@quirks);
-
-        my $src_ip = $ip->{'src_ip'};
-        my $packet = "ip:$src_ip size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
-        print "OS: $packet\n" if($DEBUG);
-
-        # We need to guess initial TTL
-        my $gttl = normalize_ttl($ttl);
-        my $dist = $gttl - $ttl;
-        # Get link type
-        my $link = get_mtu_link($mss);
-
-        # do the actual work
-        my $wss = $winsize;
-        if ($mss =~ /^[+-]?\d+$/) {
-            if (not $winsize % $mss){
-                $wss = $winsize / $mss;
-                $wss = "S$wss";
-            }elsif(not $winsize % ($mss +40)){
-                $wss = $winsize / ($mss + 40);
-                $wss = "T$wss";
-            }
-        }
-        my $fpstring = "$wss:$gttl:$df:$tot:$optstr:$quirkstring";
-
-        # TODO: make a list of previously matched OS'es (NAT ips) and
-        # check on $db->{$ip}->{$fingerprint}
-        # Also we need timestamp to delete "old" hosts, that might have
-        # been updated (Say if we are on a dhcp network)
-        my $prev_found = $db->{$src_ip};
-        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
-        if(not $prev_found){
-            my ($os, $details, @more) = os_find_match(
-                                                      $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
-                                                      $winsize, $gttl, $optstr, $packet);
-            if(not $os){
-                print "$fpstring:UNKNOWN:UNKNOWN\n";
-                my $match = { 
-                    'ip' => $ip,
-                    'fingerprint' => $fpstring,
-                    'os' => 'UNKNOWN', 
-                    'details' => 'UNKNOWN',
-                    'packet' => $ip,
-                    'timestamp' => $pradshosts{"tstamp"}
-                };
-                $db->{$src_ip} = $match;
-            }else{
-                # if we have non-generic matches, skip generics
-                my $skip = 0;
-                if(grep /^[^@]/, ($os, @more)){
-                    $skip = 1;
-                }
-                do{ 
-                    if(not ($skip and $os =~ /^@/)){
-                        print "OS: ip:$src_ip - $os - $details [$winsize:$gttl:$df:$tot:$optstr:$quirkstring] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n";
-                        my $match = { 
-                            'ip' => $src_ip,
-                            'fingerprint' => $fpstring,
-                            'os' => $os, 
-                            'details' => $details,
-                            'packet' => $ip,
-                            'timestamp' => $pradshosts{"tstamp"}
-                        };
-                        $db->{$src_ip} = $match; # may be unneccessary by ref
-                    }
-                    ($os, $details, @more) = @more;
-                }while($os);
-            }
-        }
-      }
-
-    ### SERVICE: DETECTION
-    if ($tcp->{'data'} && $SERVICE == 1) {
-       # Check content(TCP data) against signatures
-       tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
-    }
+      packet_tcp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
 
     }elsif ($ip->{proto} == 17) {
     # Can one do UDP OS detection !??!
@@ -345,6 +260,78 @@ sub packets {
 
 warn "Done...\n\n" if($DEBUG>50);
 return;
+}
+
+=head2 packet_tcp 
+
+Parse TCP packet
+
+=cut
+sub packet_tcp {
+    my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
+    # Collect necessary info from TCP packet; if
+    my $tcp      = NetPacket::TCP->decode($ip->{'data'});
+    my $winsize = $tcp->{'winsize'};
+    my $tcpflags= $tcp->{'flags'};
+    my $tcpopts = $tcp->{'options'};
+    my $seq     = $tcp->{'seqnum'};
+    my $ack     = $tcp->{'acknum'};
+    my $urg     = $tcp->{'urg'};
+    my $data    = $tcp->{'data'};
+    my $reserved= $tcp->{'reserved'};
+    my $src_port= $tcp->{'src_port'};
+    my $dst_port= $tcp->{'dst_port'};
+
+    # Check if SYN is set and not ACK (Indicates an initial connection)
+    if ($OS == 1 && ($tcpflags & SYN and ~$tcpflags & ACK)) { 
+        warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
+        my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
+
+        # big packets are packets of size > 100
+        my $tot = ($len < 100)? $len : 0;
+
+        # do we have an all-zero timestamp?
+        my $t0 = (not defined $ts or $ts != 0)? 0:1;
+
+        # parse rest of quirks
+        push @quirks, check_quirks($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data);
+        my $quirkstring = quirks_tostring(@quirks);
+
+        my $src_ip = $ip->{'src_ip'};
+
+        # debug info
+        my $packet = "ip:$src_ip size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
+        print "OS: $packet\n" if($DEBUG);
+
+        # We need to guess initial TTL
+        my $gttl = normalize_ttl($ttl);
+        my $dist = $gttl - $ttl;
+
+        my $wss = normalize_wss($winsize, $mss);
+        my $fpstring = "$wss:$gttl:$df:$tot:$optstr:$quirkstring";
+
+        # TODO: make a list of previously matched OS'es (NAT ips) and
+        # check on $db->{$ip}->{$fingerprint}
+
+        my ($os, $details, @more) = os_find_match(
+                                                  $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
+                                                  $winsize, $gttl, $optstr, $packet);
+
+        # Get link type
+        my $link = get_mtu_link($mss);
+
+        # asset database: want to know the following intel:
+        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
+        # maybe also add binary IP packet for audit?
+        add_asset('SYN', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+    }
+    ### SERVICE: DETECTION
+    ### Can also do src/dst_port
+    if ($tcp->{'data'} && $SERVICE == 1) {
+       # Check content(TCP data) against signatures
+       tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
+    }
+
 }
 
 =head2 match_opts
@@ -533,7 +520,29 @@ sub os_find_match{
         print "Closest matches: " . Dumper (@omatch) ."\n";
         return;
     }
-    return @os;
+
+    # if we have non-generic matches, filter out generics
+    my $skip = 0;
+    my @filtered;
+
+    # loop through to check for non-generics
+    my ($os, $details, @more) = @os;
+    while($os){
+        if($os =~ /^[^@]/){
+            $skip++;
+            last;
+        }
+        ($os, $details, @more) = @more;
+    }
+    # filter generics
+    ($os, $details, @more) = @os;
+    do{ 
+        if(not ($skip and $os =~ /^@/)){
+            push @filtered, ($os, $details);
+        }
+        ($os, $details, @more) = @more;
+    }while($os);
+    return @filtered;
 }
 
 =head2 check_quirks
@@ -653,7 +662,7 @@ sub check_tcp_options{
             }else{
                 # unrecognized
                 $optstr .= "?$kind,";
-                ($rest) = unpack("x$count a*", $rest);
+                ($rest) = unpack("x$size a*", $rest);
                 print "unknown $kind:$size:" if $DEBUG & 8;
             }
             print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
@@ -663,6 +672,10 @@ sub check_tcp_options{
     }
     chop $optstr;
     $optstr = '.' if $optstr eq '';
+
+    # MSS may be undefined
+    $mss = '*' if not $mss;
+
     return ($count, $scale, $mss, $sackok, $ts, $optstr, @quirks);
 }
 
@@ -889,6 +902,26 @@ sub filter_object {
     warn "filter_object : $filter\n" if($DEBUG>0);
 }
 
+=head2 normalize_wss
+
+Computes WSS respecive of MSS
+
+=cut
+sub normalize_wss {
+    my ($winsize, $mss) = @_;
+    my $wss = $winsize;
+    if ($mss =~ /^[+-]?\d+$/) {
+        if (not $winsize % $mss){
+            $wss = $winsize / $mss;
+            $wss = "S$wss";
+        }elsif(not $winsize % ($mss +40)){
+            $wss = $winsize / ($mss + 40);
+            $wss = "T$wss";
+        }
+    }
+    return $wss;
+}
+
 =head2 normalize_ttl
 
 Takes a ttl value as input, and guesses intial ttl
@@ -901,10 +934,9 @@ sub normalize_ttl {
     # Only aiming for 255,128,64,60,32. But some strange ttls like
     # 200,30 exist, but are rare.
     $gttl = 255 if (($ttl >=  128) && (255  >= $ttl));
-    $gttl = 128 if ((128  >  $ttl) && ($ttl >=   64));
-    $gttl =  64 if (( 64  >  $ttl) && ($ttl >=   60));
-    $gttl =  60 if (( 60  >  $ttl) && ($ttl >=   32));
-    $gttl =  32 if (( 32  >  $ttl));
+    $gttl = 128 if ((128  >=  $ttl) && ($ttl >   64));
+    $gttl =  64 if (( 64  >=  $ttl) && ($ttl >   32));
+    $gttl =  32 if (( 32  >=  $ttl));
     return $gttl;
 }
 
@@ -1045,12 +1077,40 @@ sub load_config {
 
 =head2 add_asset
 
-Takes input: Category, $1 $2 $3 $4..... $N
-Adds the asset to the internal list %pradshosts of assets, or if it exists, just updates the timestamp.
+Takes input: type, type-specific args, ...
+Adds the asset to the internal list of assets, or if it exists, just updates the timestamp.
 
 =cut
 
 sub add_asset {
+    my $db = $OS_SYN_DB;
+    my ($type, @rest) = @_;
+    if($type eq 'SYN'){
+        my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
+        my $prev_found = $db->{$src_ip};
+        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+
+
+        if(not $os){
+            $os = 'UNKNOWN';
+            $details = 'UNKNOWN';
+        }
+        my $match = {
+            'address' => $src_ip,
+            'fingerprint' => $fingerprint,
+            'link'        => $link,
+            'sense'       => $type,
+            'last_seen'   => $pradshosts{'tstamp'},
+            'os'          => $os,
+            'details'     => $details,
+            'distance'    => $dist,
+        };
+
+        $db->{$src_ip} = $match;
+
+        print "OS: ip:$src_ip - $os - $details [$fingerprint] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not $prev_found;
+    }
+=more types
     my $assets = @_;
     if($assets =~ /^OS: /) {
 #      $pradshosts{"tstamp"} = time;
@@ -1061,6 +1121,7 @@ sub add_asset {
     }
     elsif ($assets =~ /^OS: /) {
     }
+=cut
 }
 
 =head1 AUTHOR
