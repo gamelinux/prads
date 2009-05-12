@@ -64,6 +64,9 @@ S4:64:1:44:M*:ZA:Linux:recent 2.4 (2)
 
 S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
 
+# init
+#5792:64:1:60:M*,S,T,N,W0:ZA:Linux:2.6 ?
+5792:64:1:60:M*,S,T,N,W0:ZA:Linux:2.6 (newer, 0)
 5792:64:1:60:M*,S,T,N,W2:ZA:Linux:2.6 (newer, 2)
 5792:64:1:60:M*,S,T,N,W3:ZA:Linux:2.6 (newer, 3)
 5792:64:1:60:M*,S,T,N,W4:ZA:Linux:2.6 (newer, 4)
