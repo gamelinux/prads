@@ -79,6 +79,7 @@ my $DEVICE         = q(eth0);
 my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
+my $OS_SYNACK_FINGERPRINT_FILE = q(/etc/prads/osa.fp);
 my %pradshosts     = ();
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
@@ -116,7 +117,7 @@ if ($DUMP) {
    print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
    print "\n *** Loading OS fingerprints *** \n\n";
-   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
+   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE);
    print Dumper $OS_SYN_SIGS;
 
    print "\n *** Loading Service signatures *** \n\n";
@@ -134,7 +135,7 @@ warn "Starting prads.pl...\n";
 print "Using $DEVICE\n";
 
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
-my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
+my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
 my $OS_SYN_DB = {};
 
@@ -283,8 +284,10 @@ sub packet_tcp {
     my $dst_port= $tcp->{'dst_port'};
 
     # Check if SYN is set and not ACK (Indicates an initial connection)
-    if ($OS == 1 && ($tcpflags & SYN and ~$tcpflags & ACK)) { 
-        warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
+   #if ($OS == 1 && ($tcpflags & SYN and ~$tcpflags & ACK)) { 
+   #if ($OS == 1 && ($tcpflags & SYN && $tcpflags & ACK)) {
+    if ($OS == 1 && ($tcpflags & SYN )) {
+        warn "SYN flag detected... Detecting OS...\n" if($DEBUG>20);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
 
         # big packets are packets of size > 100
@@ -754,12 +757,13 @@ optimize for lookup matching
 =cut
 
 sub load_os_syn_fingerprints {
-    my $file = shift;
+    my @files = @_;
+#    my $file = shift;
     # Fingerprint entry format:
     # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
     #my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
     my $rules = {};
-
+for my $file (@files) {
     open(my $FH, "<", $file) or die "Could not open '$file': $!";
 
     my $lineno = 0;
@@ -810,6 +814,7 @@ sub load_os_syn_fingerprints {
         }
         $tmp->{$details} = $human;
     }
+}# for files loop
     return $rules;
 }
 
