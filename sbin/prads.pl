@@ -348,7 +348,7 @@ sub match_opts {
     my @o1 = split /,/,$o1;
     my @o2 = split /,/,$o2;
     for(@o1){
-        print "$_:$o2[0]\n" if $DEBUG > 1;
+        print "$_:$o2[0]\n" if $DEBUG & 8;
         if(/([MW])(\d*|\*)/){
             if(not $o2[0] =~ /$1($2|\*)/){
                 print "$o2[0] != $1$2\n" if $DEBUG > 1;
@@ -507,7 +507,7 @@ sub os_find_match{
         if(not $match){
             # re-normalize ttl, machine may be really distant
             # (over ttl/2 hops away)
-            my $ttl = normalize_ttl($gttl);
+            my $ttl = normalize_ttl($gttl+1);
             print "Re-adjusted ttl from $gttl to $ttl\n" if $ttl != 64;
             $match = $_->{$ttl};
         }
@@ -1096,7 +1096,14 @@ sub add_asset {
     if($type eq 'SYN'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
         my $prev_found = $db->{$src_ip};
+
         print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+        if ($pradshosts{'tstamp'} - $prev_found->{'last_seen'} > 200){
+            $prev_found = undef;
+        }
+        if($prev_found->{'fingerprint'} ne $fingerprint){
+            $prev_found = undef;
+        }
 
         if(not $os){
             $os = 'UNKNOWN';
