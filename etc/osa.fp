@@ -64,6 +64,11 @@ S4:64:1:44:M*:ZA:Linux:recent 2.4 (2)
 
 S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
 
+5792:64:1:60:M*,S,T,N,W4:ZA:Linux:2.6 (newer, 4, Xen DomU)
+5792:64:1:60:M*,S,T,N,W5:ZA:Linux:2.6 (newer, 5, Xen DomU)
+5792:64:1:60:M*,S,T,N,W6:ZA:Linux:2.6 (newer, 6, Xen DomU)
+5792:64:1:60:M*,S,T,N,W7:ZA:Linux:2.6 (newer, 7, xen Dom0)
+
 # --------------- Windows ------------------
 
 65535:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 SP4
@@ -117,6 +122,7 @@ S1:255:1:60:N,N,T,N,W0,M*:AT:Solaris:7
 
 57344:64:1:48:M1460,N,W0:A:FreeBSD:4.6-4.8 (wscale)
 57344:64:1:60:M1460,N,W0,N,N,T:AT:FreeBSD:4.6-4.8 (RFC1323)
+65535:64:1:48:M1460,S:A:FreeBSD:7.0
 
 # ------------------- AIX ------------------
 
