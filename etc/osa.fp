@@ -64,10 +64,14 @@ S4:64:1:44:M*:ZA:Linux:recent 2.4 (2)
 
 S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
 
-5792:64:1:60:M*,S,T,N,W4:ZA:Linux:2.6 (newer, 4, Xen DomU)
-5792:64:1:60:M*,S,T,N,W5:ZA:Linux:2.6 (newer, 5, Xen DomU)
-5792:64:1:60:M*,S,T,N,W6:ZA:Linux:2.6 (newer, 6, Xen DomU)
-5792:64:1:60:M*,S,T,N,W7:ZA:Linux:2.6 (newer, 7, xen Dom0)
+5792:64:1:60:M*,S,T,N,W2:ZA:Linux:2.6 (newer, 2)
+5792:64:1:60:M*,S,T,N,W3:ZA:Linux:2.6 (newer, 3)
+5792:64:1:60:M*,S,T,N,W4:ZA:Linux:2.6 (newer, 4)
+5792:64:1:60:M*,S,T,N,W5:ZA:Linux:2.6 (newer, 5)
+5792:64:1:60:M*,S,T,N,W6:ZA:Linux:2.6 (newer, 6)
+5792:64:1:60:M*,S,T,N,W7:ZA:Linux:2.6 (newer, 7)
+5792:64:1:60:M*,S,T,N,W8:ZA:Linux:2.6 (newer, 8)
+5792:64:1:60:M*,S,T,N,W9:ZA:Linux:2.6 (newer, 9)
 
 # --------------- Windows ------------------
 
