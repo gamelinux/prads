@@ -862,6 +862,7 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google Translate)
 #16384:64:1:64:M1460,N,N,S,N,W0,N:.:NetCache:5.3
 #65535:64:1:64:M1460,N,W1,N,N,T,S:.:UNKNOWN:UNKNOWN (Closest: NetCache' => '5.3)
 65535:64:1:64:M1460,N,W*,N,N,T,S:.:NetCache:5.3 (Generic?)
+S3:255:1:64:M1460,N,W0,N,N,T,S:A:NetCache: Unconfirmed version (Generic?)
 
 # WinNT
 #65535:128:1:48:M1432,N,N,S:.:Windows: NT 5.1
