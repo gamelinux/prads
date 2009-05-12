@@ -1,0 +1,42 @@
+### PRADS ROADMAP
+
+From where we are now - 12 May 2009
+
+Point Release 0.1
+ * SYN/ACK
+ * Persistant DB
+ * Text File Log
+ * (prads2sguil.pl script)
+
+Point Release 0.2
+ * Database (mysql)
+ * Client Sercive Fingerprinting
+
+Point Release 0.3
+ * Switch discover?
+ * Router discover?
+ * hops
+ * NAT
+
+Point Release 0.4
+ * Graphic display of network topology
+
+.
+.
+.
+.
+
+
+Point Release 1.0
+ * When we are sattisfied with:
+   - performance
+   - output
+   - functionality
+
+
+Point Release 2.0
+ * If performance is an issue ? C/C++ ?
+ * CVE coorolation on services, not in prads, but prads GUI ?
+
+
+
