@@ -1,0 +1,10 @@
+* 01                   TCP / ICMP Asset Discovered
+* 02                   ARP Asset Discovered
+* 03                   TCP / ICMP Statistic Information
+
+As I see it, 03 is just timestamp update
+
+01,80.233.33.109,80,6,www,Apache 2.2.8 (Ubuntu),1242207522
+02,80.233.33.81,Extreme Networks,00:04:96:E6:F5:75,1242207871
+03,80.233.33.198,80,6,1242207521
+
