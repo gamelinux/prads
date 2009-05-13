@@ -1098,6 +1098,8 @@ sub add_asset {
         my $prev_found = $db->{$src_ip};
 
         print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+
+      # You got to do a check befor you use the empty variable in a test kwy :)
         if ($pradshosts{'tstamp'} - $prev_found->{'last_seen'} > 200){
             $prev_found = undef;
         }
