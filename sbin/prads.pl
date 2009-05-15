@@ -108,6 +108,12 @@ my $conf = load_config("$CONFIG");
 #my $variable = $conf->{variable};
 $OS       = $conf->{os_synack_fingerprint};
 $BPF      = $conf->{bpfilter};
+
+my $PRADS_HOSTNAME = $conf->{hostname};
+$PRADS_HOSTNAME ||= `hostname`;
+chomp $PRADS_HOSTNAME;
+
+my $PRADS_START = time;
 #$DEVICE   = $conf->{interface};
 #$ARP      = $conf->{arp};
 #$DEBUG    = $conf->{debug};
@@ -156,12 +162,8 @@ my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 if (not $NOPERSIST){
-    warn "Loading persistent database $conf->{'persist_file'}\n" if ($DEBUG>0);
-    if(-r $conf->{'persist_file'}){
-        $OS_SYN_DB = load_persistent($conf->{'persist_file'});
-    }else{
-        warn "Persistence file $conf->{'persist_file'} not readable\n";
-    }
+    warn "Loading persistent database ". $conf->{'db'}."\n";#if ($DEBUG>0);
+    $OS_SYN_DB = load_persistent($conf->{'db'}) if $conf->{'db'};
 }
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
@@ -178,6 +180,47 @@ Net::Pcap::close($PCAP);
 exit;
 
 =head1 FUNCTIONS
+
+=head2 load_persistent
+
+Load persistent database
+
+=cut
+
+sub load_persistent {
+    my ($db) = @_;
+    my $dbh = DBI->connect($db);
+    my ($sql, $sth);
+    eval{ 
+        no warnings 'all';
+        my $ms = $SIG{__WARN__};
+        $SIG{'__WARN__'} = sub { };
+        #my $sql = "DROP TABLE asset";
+        #my $sth = $dbh->prepare($sql);
+        #$sth->execute;
+        $sql = "CREATE TABLE asset (ip TEXT, service TEXT, time TEXT, fingerprint TEXT,".
+                     "mac TEXT, os TEXT, details TEXT, link TEXT, distance TEXT, reporting TEXT)";
+        $sth = $dbh->prepare($sql);
+       #$dbh->{PrintError} = 0;
+       #$dbh->{RaiseError} = 0; 
+       #$dbh->{PrintWarn} = 0; 
+       #$dbh->{Warn} = 0; 
+       #$dbh->{Error} = 0; 
+       #
+        $sth->execute;
+        $SIG{'__WARN__'} = $ms;
+    };
+    if($DEBUG){
+        $sql = "SELECT * from asset";
+        $sth = $dbh->prepare($sql) or die "foo $!";
+        $sth->execute or die "$!";
+        $sth->dump_results;
+    }
+    #$dbh->{'RaiseError'} = 1;
+    return $dbh;
+}
+
+
 
 =head2 packets
 
@@ -258,8 +301,8 @@ sub packets {
     }
 
 
-warn "Done...\n\n" if($DEBUG>50);
-return;
+    warn "Done...\n\n" if($DEBUG>50);
+    return;
 }
 
 =head2 packet_tcp 
@@ -283,7 +326,7 @@ sub packet_tcp {
     my $dst_port= $tcp->{'dst_port'};
 
     # Check if SYN is set and not ACK (Indicates an initial connection)
-    if ($OS == 1 && ($tcpflags & SYN and ~$tcpflags & ACK)) { 
+    if ($OS == 1 && ($tcpflags & SYN)){
         warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
 
@@ -393,6 +436,7 @@ sub os_find_match{
     my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $packet) = @_;
     my @quirks = @$qq;
     my $sigs = $OS_SYN_SIGS; 
+    my $confidence = 0;
 
     #warn "Matching $packet\n" if $DEBUG;
     #sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
@@ -501,11 +545,11 @@ sub os_find_match{
     my @os;
     for(@omatch){
         my $match = $_->{$gttl};
-        if(not $match){
+        if(not $match and $gttl < 255){
             # re-normalize ttl, machine may be really distant
             # (over ttl/2 hops away)
             my $ttl = normalize_ttl($gttl+1);
-            print "Re-adjusted ttl from $gttl to $ttl\n" if $ttl != 64;
+            #print "Re-adjusted ttl from $gttl to $ttl\n" if $ttl != 64;
             $match = $_->{$ttl};
         }
         #print "INFO: omatch: " .Dumper($match) ."\n";
@@ -930,10 +974,10 @@ Takes a ttl value as input, and guesses intial ttl
 
 sub normalize_ttl {
     my $ttl = shift;
-    my $gttl;
+    my $gttl = 255;
     # Only aiming for 255,128,64,60,32. But some strange ttls like
-    # 200,30 exist, but are rare.
-    $gttl = 255 if (($ttl >=  128) && (255  >= $ttl));
+    # 200,30 exist, but are rare
+    $gttl = 255 if (($ttl >=  128) && (255  > $ttl));
     $gttl = 128 if ((128  >=  $ttl) && ($ttl >   64));
     $gttl =  64 if (( 64  >=  $ttl) && ($ttl >   32));
     $gttl =  32 if (( 32  >=  $ttl));
@@ -1078,6 +1122,48 @@ sub load_config {
     return $config;
 }
 
+=head2 add_db
+
+Add a record to the table;
+
+=cut
+
+# add/update?
+#
+# TODO> CLEANUP! prepare_cached('SELECT ? foo ? bar ?)'
+#      sth->execute($table, $foo, $bar);
+sub add_db {
+    my $db = $OS_SYN_DB;
+    my $table = 'asset';
+    my ($dbh, $ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
+
+    my $sth = $db->prepare("SELECT ip,fingerprint,time FROM $table WHERE ip='$ip' AND fingerprint='$fp'");
+    $sth->execute;
+    my ($o_ip, $o_fp, $o_time) = $sth->fetchrow_array();
+    if($o_time){
+        if($o_time < $PRADS_START){
+            print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
+        }
+       my $sth = $db->prepare("UPDATE $table SET time='$time' WHERE ip='$ip' AND fingerprint='$fp'") or die "$!";
+       $sth->execute;
+    }else{
+        #($host, $mac, $service) = ('prads', 'DE:AD:BE:EF:CA:FE', 'fingerfuck') if not $mac;
+        for my $sql (
+                     "INSERT INTO $table (ip, service, time, fingerprint, mac, os, details, link, distance, reporting)
+                     VALUES ('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')",
+                     #"SELECT ip, time from $table WHERE ip='$ip",
+                     #"DELETE FROM asset WHERE service = 'SYN'",
+                    ){
+
+            #print "EXEC '$sql'\n";
+            $sth = $db->prepare($sql);
+            $sth->execute;
+            $sth->dump_results if $sth->{NUM_OF_FIELDS};
+        }
+        print "$time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link\n";
+    }
+}
+
 =head2 add_asset
 
 Takes input: type, type-specific args, ...
@@ -1090,93 +1176,85 @@ sub add_asset {
     my ($type, @rest) = @_;
     if($type eq 'SYN'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-        my $prev_found = $db->{$src_ip};
+       #my $prev_found = $db->{$src_ip};
+       #
+       #print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+       #if ($prev_found){
+       #   if($pradshosts{'tstamp'} - $prev_found->{'last_seen'} > 200){
+       #       $prev_found = undef;
+       #   }
+       #   if($prev_found->{'fingerprint'} ne $fingerprint){
+       #       $prev_found = undef;
+       #   }
+       #}
 
-        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
-        if ($pradshosts{'tstamp'} - $prev_found->{'last_seen'} > 200){
-            $prev_found = undef;
-        }
-        if($prev_found->{'fingerprint'} ne $fingerprint){
-            $prev_found = undef;
-        }
 
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
-        my $match = {
-            'address'     => $src_ip,
-            'fingerprint' => $fingerprint,
-            'link'        => $link,
-            'sense'       => $type,
-            'last_seen'   => $pradshosts{'tstamp'},
-            'os'          => $os,
-            'details'     => $details,
-            'distance'    => $dist,
-        };
+       #my $match = {
+       #    'address'     => $src_ip,
+       #    'fingerprint' => $fingerprint,
+       #    'link'        => $link,
+       #    'sense'       => $type,
+       #    'last_seen'   => $pradshosts{'tstamp'},
+       #    'os'          => $os,
+       #    'details'     => $details,
+       #    'distance'    => $dist,
+       #};
 
-        $db->{$src_ip} = $match;
+        #$db->{$src_ip} = $match;
+        add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
 
-        print "OS: ip:$src_ip - $os - $details [$fingerprint] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not $prev_found;
+        #print "OS: ip:$src_ip - $os - $details [$fingerprint] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not $prev_found;
     }
     
 #   add_asset('ARP', $mac, $host, @more);
     elsif($type eq 'ARP'){
         my ($mac, $ip, @more) = @rest;
-        my $prev_found = $db->{$mac};
-        my $prev_ip = $prev_found->{'ip'} if $prev_found;
+        #my $prev_found = $db->{$mac};
+        #my $prev_ip = $prev_found->{'ip'} if $prev_found;
          
-        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
-        my $match = {
-            'mac'         => $mac,
-            'ip'          => $ip,
-            'last_seen'   => $pradshosts{'tstamp'},
-        };
-        $db->{$mac} = $match;
+        #print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+        #my $match = {
+        #    'mac'         => $mac,
+        #    'ip'          => $ip,
+        #    'last_seen'   => $pradshosts{'tstamp'},
+        #};
+        #$db->{$mac} = $match;
 
-        if ($prev_found){
-           if ( $match->{'ip'} ne $prev_ip ){
-              print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
-           }
-        }else{
-           print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
-        }
+        add_db($db, $ip, $type, $pradshosts{'tstamp'}, $mac, $mac, 'vendor', 'vendor', 'ethernet', 1, $PRADS_HOSTNAME);
+
+        #if ($prev_found){
+        #   if ( $match->{'ip'} ne $prev_ip ){
+        #      print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
+        #   }
+        #}else{
+        #   print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
+        #}
     }
 
 #   Service: ip=87.238.47.67 port=631 -> "CUPS 1.2 " timestamp=1242033096
 #   add_asset('SERVICE', $ip, $port, $vendor, $version, $info, @more);
     elsif($type eq 'SERVICE'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
-        my $prev_found = $db->{"$ip:$port"};
+        #my $prev_found = $db->{"$ip:$port"};
 
-        print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
-        my $match = {
-            'ip'          => $ip,
-            'port'        => $port,
-            'vendor'      => $vendor,
-            'version'     => $version,
-            'info'        => $info,
-            'last_seen'   => $pradshosts{'tstamp'},
-        };
-        $db->{"$ip:$port"} = $match;
+       #print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
+       #my $match = {
+       #    'ip'          => $ip,
+       #    'port'        => $port,
+       #    'vendor'      => $vendor,
+       #    'version'     => $version,
+       #    'info'        => $info,
+       #    'last_seen'   => $pradshosts{'tstamp'},
+       #};
+        add_db($db, $ip, $type, $pradshosts{'tstamp'}, $port, '', $vendor, $info, $version, 1, $PRADS_HOSTNAME);
+        #$db->{"$ip:$port"} = $match;
 
-        print "SERVICE: ip=$ip port=$port vendor=$vendor version=$version info=$info timestamp=" . $pradshosts{'tstamp'} . "\n" if not $prev_found;
+        #print "SERVICE: ip=$ip port=$port vendor=$vendor version=$version info=$info timestamp=" . $pradshosts{'tstamp'} . "\n" if not $prev_found;
     }
-
-
-
-=more types
-    my $assets = @_;
-    if($assets =~ /^OS: /) {
-#      $pradshosts{"tstamp"} = time;
-    }
-    elsif ($assets =~ /^ARP: /) {
-    }
-    elsif ($assets =~ /^SERVICE: /) {
-    }
-    elsif ($assets =~ /^OS: /) {
-    }
-=cut
 }
 
 =head1 AUTHOR
