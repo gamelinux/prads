@@ -75,7 +75,8 @@ our $OS            = 0;
 our $BPF           = q();
 our $NOPERSIST     = 0;
 
-my $DEVICE         = q(eth0);
+#my $DEVICE         = q(eth0);
+my $DEVICE;
 my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
@@ -138,7 +139,6 @@ if ($DUMP) {
 }
 
 warn "Starting prads.pl...\n";
-print "Using $DEVICE\n";
 
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE)
@@ -150,6 +150,7 @@ my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig")
               or Getopt::Long::HelpMessage();
 
 warn "Initializing device\n" if ($DEBUG>0);
+warn "Using $DEVICE\n" if $DEVICE;
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
 
@@ -163,7 +164,7 @@ my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 if (not $NOPERSIST){
-    warn "Loading persistent database ". $conf->{'db'}."\n";#if ($DEBUG>0);
+    warn "Loading persistent database ". $conf->{'db'}."\n" if ($DEBUG > 0);
     $OS_SYN_DB = load_persistent($conf->{'db'}) if $conf->{'db'};
 }
 warn "Creating object\n" if ($DEBUG>0);
@@ -345,7 +346,7 @@ sub packet_tcp {
 
         # debug info
         my $packet = "ip:$src_ip size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
-        print "OS: $packet\n" if($DEBUG);
+        print "OS: $packet\n" if($DEBUG > 2);
 
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
@@ -875,12 +876,12 @@ Net::Pcap::lookupdev method
 
 sub init_dev {
     my $dev = shift;
-#    my $err;
+    my $err;
 
-#    unless (defined $dev) {
-#       #$dev = Net::Pcap::lookupdev(\$err);
-#        die sprintf $ERROR{'init_dev'}, $err if defined $err;
-#    }
+    unless (defined $dev) {
+       $dev = Net::Pcap::lookupdev(\$err);
+       die sprintf $ERROR{'init_dev'}, $err if defined $err;
+    }
 
     return $dev;
 }
