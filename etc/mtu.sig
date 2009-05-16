@@ -11,6 +11,7 @@
 1372,"cable modem" 
 # To be investigated
 1400,"(Google/AOL)" 
+1408,"OpenVPN"
 1415,"sometimes wireless" 
 1420,"GPRS, T1, FreeS/WAN" 
 1423,"sometimes cable" 

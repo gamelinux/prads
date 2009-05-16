@@ -1089,7 +1089,7 @@ sub arp_check {
 
 sub get_mtu_link {
     my $mss = shift;
-    my $link = "UNKOWN";
+    my $link = "UNKNOWN";
 #   if ($mss =~ m/^[0-9]+$/) { 
     if ($mss =~ /^[+-]?\d+$/) {
        my $mtu = $mss + 40;
