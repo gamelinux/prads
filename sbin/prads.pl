@@ -1216,6 +1216,15 @@ sub add_asset {
 
         #print "OS: ip:$src_ip - $os - $details [$fingerprint] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not $prev_found;
     }
+
+    elsif($type eq 'SYNACK'){
+        my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
+        if(not $os){
+            $os = 'UNKNOWN';
+            $details = 'UNKNOWN';
+        }
+        add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
+    }
     
 #   add_asset('ARP', $mac, $host, @more);
     elsif($type eq 'ARP'){
