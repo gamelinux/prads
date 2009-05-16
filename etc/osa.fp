@@ -76,6 +76,7 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
 5792:64:1:60:M*,S,T,N,W8:ZA:Linux:2.6 (newer, 8)
 5792:64:1:60:M*,S,T,N,W9:ZA:Linux:2.6 (newer, 9)
 
+5672:64:0:60:M1430,S,T,N,W6:A:Linux:2.6 (Google)
 # --------------- Windows ------------------
 
 65535:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 SP4
