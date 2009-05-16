@@ -326,7 +326,7 @@ sub packet_tcp {
     my $src_port= $tcp->{'src_port'};
     my $dst_port= $tcp->{'dst_port'};
 
-    # Check if SYN is set and not ACK (Indicates an initial connection)
+    # Check if SYN is set (both SYN and SYN+ACK)
     if ($OS == 1 && ($tcpflags & SYN)){
         warn "Initial connection... Detecting OS...\n" if($DEBUG>20);
         my ($optcnt, $scale, $mss, $sackok, $ts, $optstr, @quirks) = check_tcp_options($tcpopts);
@@ -367,7 +367,11 @@ sub packet_tcp {
         # asset database: want to know the following intel:
         # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
         # maybe also add binary IP packet for audit?
-        add_asset('SYN', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+        if ($tcpflags & ACK){
+           add_asset('SYNACK', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+        }else{
+           add_asset('SYN', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+        }
     }
     ### SERVICE: DETECTION
     ### Can also do src/dst_port
