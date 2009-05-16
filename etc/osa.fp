@@ -77,6 +77,9 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
 5792:64:1:60:M*,S,T,N,W8:ZA:Linux:2.6 (newer, 8)
 5792:64:1:60:M*,S,T,N,W9:ZA:Linux:2.6 (newer, 9)
 
+# Funky - different responce when win2008s connects:
+#S4:64:1:52:M1460,N,N,S,N,W6:ZA
+
 5672:64:0:60:M1430,S,T,N,W6:A:Linux:2.6 (Google)
 # --------------- Windows ------------------
 
@@ -223,4 +226,7 @@ S12:64:1:44:M1400:A:Cequrux Firewall:4.x
 # Whatever they run. EOL boys...
 S6:128:1:48:M1460,E:PA:@Slashdot:or BusinessWeek (???)
 
-
+# Facebook
+S4:128:1:44:M1460:ZA:@Facebook:Get a life (?)
+S4:128:1:48:M1460,N,N,S:ZA:@Facebook:Get a life (??)
+5792:128:1:60:M1460,S,T,N,W9:ZA:@Facebook:Get a life(???)
