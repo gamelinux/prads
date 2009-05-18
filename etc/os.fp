@@ -569,6 +569,8 @@ T31:128:1:44:M1414:.:Windows:NT 4.0 SP6a (1)
 # were deleted and replaced with generics at the end.
 
 65535:128:1:48:M*,N,N,S:.:Windows:2000 SP4, XP SP1+
+65535:64:1:48:M*,N,N,S:.:Windows:2000 SP4, XP SP1+ (Low TTL 1)
+65535:32:1:48:M*,N,N,S:.:Windows:2000 SP4, XP SP1+ (Low TTL 2)
 %8192:128:1:48:M*,N,N,S:.:Windows:2000 SP2+, XP SP1+ (seldom 98)
 S20:128:1:48:M*,N,N,S:.:Windows:SP3
 S45:128:1:48:M*,N,N,S:.:Windows:2000 SP4, XP SP1+ (2)
