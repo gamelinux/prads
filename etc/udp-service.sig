@@ -6,7 +6,12 @@
 # the Perl Passive Asset Detection System.
 #
 # Format:
-# <service>,<version info>,<signature>
+# singel port
+# <[port]>,<version info>,<signature>
+# multiport # should this be changed ?
+# <[port,port,port,port]>,<version info>,<signature>
+# port-range
+# <[port:port]>,<version info>,<signature>
 #
 # Service:  This describes the service name used by the signature.
 # Examples would include SSH, HTTP, SMTP, etc.
@@ -24,10 +29,24 @@
 # How can we best do this ?
 # check on binary content ? and not txt?
 
-dns,v/DNS///,A\?
-#dns,v/DNS///,MX\?
-#dns,v/DNS///,NXDomain\*-\[\|domain\]
-#dns,v/DNS///,PTR\?
+# Standard Query response - no error
+53,v/DNS///,^..\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00
+# Standard Query response - no such name
+53,v/DNS///,^..\x84\x03\x00\x01\x00\x00\x00\x01\x00\x00
+
+#53,v/DNS///,A\?
+#53,v/DNS///,MX\?
+#53,v/DNS///,NXDomain\*-\[\|domain\]
+#53,v/DNS///,PTR\?
 
 
 #openvpn
+#1194,v/OpenVPN///,REGEXP
+
+# SSL Signatures
+#ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01
+#ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
+
+# SMB Sigantures
+#smb,v/Windows SMB///,\xffSMBr
+
