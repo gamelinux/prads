@@ -73,7 +73,7 @@ our $ARP           = 0;
 our $SERVICE       = 0;
 our $OS            = 0;
 our $BPF           = q();
-our $NOPERSIST     = 0;
+our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
 
 #my $DEVICE         = q(eth0);
 my $DEVICE;
@@ -103,7 +103,12 @@ for my $i (0..@ARGV-1){
 my $conf = load_config("$CONFIG");
 my $C_INIT = $CONFIG;
 
+$DATABASE = $conf->{'db'} if $conf->{'db'};
 $DEVICE   = $conf->{interface};
+$ARP      = $conf->{arp};
+$SERVICE  = $conf->{service};
+$DEBUG    = $conf->{debug};
+$OS       = $conf->{os_fingerprint};
 
 # commandline overrides config
 GetOptions(
@@ -116,7 +121,7 @@ GetOptions(
     'arp'                    => \$ARP,
     'service'                => \$SERVICE,
     'os'                     => \$OS,
-    'no-persist|np'          => \$NOPERSIST,
+    'db'          => \$DATABASE,
     # bpf filter
 );
 # if 2nd config file specified, load that one too
@@ -134,7 +139,6 @@ $PRADS_HOSTNAME ||= `hostname`;
 chomp $PRADS_HOSTNAME;
 
 my $PRADS_START = time;
-#$ARP      = $conf->{arp};
 #$DEBUG    = $conf->{debug};
 
 if ($DUMP) {
@@ -180,10 +184,8 @@ warn "Loading UDP Service signatures\n" if ($DEBUG>0);
 my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
-if (not $NOPERSIST){
-    warn "Loading persistent database ". $conf->{'db'}."\n" if ($DEBUG > 0);
-    $OS_SYN_DB = load_persistent($conf->{'db'}) if $conf->{'db'};
-}
+warn "Loading persistent database ". $DATABASE ."\n" if ($DEBUG > 0);
+$OS_SYN_DB = load_persistent($DATABASE) if $conf->{'db'};
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
 
@@ -376,7 +378,7 @@ sub packet_tcp {
 
         my ($os, $details, @more) = os_find_match(
                                 $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
-                                $winsize, $gttl, $optstr, $packet);
+                                $winsize, $gttl, $optstr, $packet,$fpstring);
 
         # Get link type
         my $link = get_mtu_link($mss);
@@ -455,7 +457,7 @@ for each signature in db:
 
 sub os_find_match{
 # Port of p0f matching code
-    my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $packet) = @_;
+    my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $packet, $fp) = @_;
     my @quirks = @$qq;
     my $sigs = $OS_SYN_SIGS; 
     my $confidence = 0;
@@ -536,12 +538,12 @@ sub os_find_match{
         }
     }
     if(not @wmatch and @fuzmatch){
-        warn "warning: $packet:\nNo exact window match. Proceeding fuzzily\n";
+        print "warning: $packet:\nNo exact window match. Proceeding fuzzily\n";
         @wmatch = @fuzmatch;
     }
     if(not @wmatch){
-        warn "ERR: $packet:\n  No window match in fp db.\n";
-        warn "Closest matches: \n";
+        print "ERR: $packet:\n  No window match in fp db.\n";
+        print "[$fp] Closest matches: \n";
         for my $s (@mssmatch){
             print Data::Dumper->Dump([$matches->{$s}],["MSS$s"]);
         }
@@ -560,7 +562,7 @@ sub os_find_match{
     }
     if(not @omatch){
         warn "ERR: $packet:\n  No match for TCP options.\n";
-        print "Closest matches: " . Dumper (@wmatch) ."\n";
+        print Data::Dumper->Dump([@wmatch],["WSS"]);
         return;
     }
 
@@ -582,8 +584,9 @@ sub os_find_match{
         }
     }
     if(not @os){
-        warn "ERR: $packet:\n  No match for TTL.\n";
-        print "Closest matches: " . Dumper (@omatch) ."\n";
+        print "ERR: $packet:\n  No match for TTL.\n";
+        print "[$fp] Closest matches: \n";
+        print Data::Dumper->Dump([@omatch],["TTL"]);
         return;
     }
 
@@ -1229,7 +1232,7 @@ sub add_asset {
     elsif($type eq 'SERVICE'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
 
-        add_db($db, $ip, $type, $pradshosts{'tstamp'}, $port, '', $vendor, $info, $version, 1, $PRADS_HOSTNAME);
+        add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
     }
 }
 

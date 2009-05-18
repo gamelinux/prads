@@ -76,6 +76,7 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
 5792:64:1:60:M*,S,T,N,W7:ZA:Linux:2.6 (newer, 7)
 5792:64:1:60:M*,S,T,N,W8:ZA:Linux:2.6 (newer, 8)
 5792:64:1:60:M*,S,T,N,W9:ZA:Linux:2.6 (newer, 9)
+5792:128:1:60:M*,S,T,N,W9:ZA:Linux:2.6 (newer, 10)
 
 # Funky - different responce when win2008s connects:
 #S4:64:1:52:M1460,N,N,S,N,W6:ZA
