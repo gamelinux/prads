@@ -91,8 +91,21 @@ my %ERROR          = (
     loop => q(Unable to perform packet capture),
 );
 
+# extract & load config before parsing rest of commandline
+for my $i (0..@ARGV-1){
+    if($ARGV[$i] =~ /^--?(config|c)$/){
+        $CONFIG = splice @ARGV, $i, $i+1;
+        print "Loading config $CONFIG\n";
+        last; # we've modified @ARGV
+    }
+}
+# loads default config if none specified
 my $conf = load_config("$CONFIG");
+my $C_INIT = $CONFIG;
+
 $DEVICE   = $conf->{interface};
+
+# commandline overrides config
 GetOptions(
     'config|c=s'             => \$CONFIG,
     'dev|d=s'                => \$DEVICE,
@@ -106,6 +119,10 @@ GetOptions(
     'no-persist|np'          => \$NOPERSIST,
     # bpf filter
 );
+# if 2nd config file specified, load that one too
+if ($C_INIT ne $CONFIG){
+    load_config("$CONFIG");
+}
 #
 #my @array = split(/\s+/, $conf->{array-param});
 #my $variable = $conf->{variable};
@@ -229,25 +246,8 @@ sub load_persistent {
 Callback function for C<Net::Pcap::loop>.
 
  * Strip ethernet encapsulation of captured packet 
- * Decode contents of TCP/IP packet contained within captured ethernet packet
- * Search through the signatures, print dst host, dst port, and ID String.
- * Collect pOSf data : ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks
-   # Fingerprint entry format:
-   #
-   # wwww:ttt:D:ss:OOO...:QQ:OS:Details
-   #
-   # wwww     - window size (can be * or %nnn or Sxx or Txx)
-   #            "Snn" (multiple of MSS) and "Tnn" (multiple of MTU) are allowed.
-   # ttt      - initial TTL 
-   # D        - don't fragment bit (0 - not set, 1 - set)
-   # ss       - overall SYN packet size (* has a special meaning)
-   # OOO      - option value and order specification (see below)
-   # QQ       - quirks list (see below)
-   # OS       - OS genre (Linux, Solaris, Windows)
-   # details  - OS description (2.0.27 on x86, etc)
-
+ * pass to protocol handlers
 =cut
-
 sub packets {
     my ($user_data, $header, $packet) = @_;
     $pradshosts{"tstamp"} = time;
@@ -310,6 +310,22 @@ sub packets {
 =head2 packet_tcp 
 
 Parse TCP packet
+ * Decode contents of TCP/IP packet contained within captured ethernet packet
+ * Search through the signatures, print dst host, dst port, and ID String.
+ * Collect pOSf data : ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks
+   # Fingerprint entry format:
+   #
+   # wwww:ttt:D:ss:OOO...:QQ:OS:Details
+   #
+   # wwww     - window size (can be * or %nnn or Sxx or Txx)
+   #            "Snn" (multiple of MSS) and "Tnn" (multiple of MTU) are allowed.
+   # ttt      - initial TTL 
+   # D        - don't fragment bit (0 - not set, 1 - set)
+   # ss       - overall SYN packet size (* has a special meaning)
+   # OOO      - option value and order specification (see below)
+   # QQ       - quirks list (see below)
+   # OS       - OS genre (Linux, Solaris, Windows)
+   # details  - OS description (2.0.27 on x86, etc)
 
 =cut
 sub packet_tcp {
@@ -1112,8 +1128,12 @@ sub get_mtu_link {
 
 sub load_config {
     my $file = shift;
-    my $config;
-    open(my $FH, "<",$file) or die "Could not open '$file': $!";
+    my $config = {};
+    if(not -r "$file"){
+        warn "Config '$file' not readable\n";
+        return $config;
+    }
+    open(my $FH, "<",$file) or die "Could not open '$file': $!\n";
     while (my $line = <$FH>) {
         chomp($line);
         $line =~ s/\#.*//;
@@ -1156,7 +1176,7 @@ sub add_db {
         }
 
        $h_update = $db->prepare_cached("UPDATE $table SET time=? WHERE ip=? AND fingerprint=?") or die "$!" if not $h_update;
-       $h_update->execute;
+       $h_update->execute($time,$ip,$fp);
     }else{
        $h_insert = $db->prepare_cached(
          "INSERT INTO $table ".
@@ -1181,95 +1201,35 @@ Adds the asset to the internal list of assets, or if it exists, just updates the
 sub add_asset {
     my $db = $OS_SYN_DB;
     my ($type, @rest) = @_;
+
     if($type eq 'SYN'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-       #my $prev_found = $db->{$src_ip};
-       #
-       #print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
-       #if ($prev_found){
-       #   if($pradshosts{'tstamp'} - $prev_found->{'last_seen'} > 200){
-       #       $prev_found = undef;
-       #   }
-       #   if($prev_found->{'fingerprint'} ne $fingerprint){
-       #       $prev_found = undef;
-       #   }
-       #}
-
 
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
-       #my $match = {
-       #    'address'     => $src_ip,
-       #    'fingerprint' => $fingerprint,
-       #    'link'        => $link,
-       #    'sense'       => $type,
-       #    'last_seen'   => $pradshosts{'tstamp'},
-       #    'os'          => $os,
-       #    'details'     => $details,
-       #    'distance'    => $dist,
-       #};
-
-        #$db->{$src_ip} = $match;
         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
-
-        #print "OS: ip:$src_ip - $os - $details [$fingerprint] distance:$dist link:$link timestamp=" . $pradshosts{"tstamp"} ."\n" if not $prev_found;
-    }
-
-    elsif($type eq 'SYNACK'){
+    }elsif($type eq 'SYNACK'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
+
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
-    }
-    
-#   add_asset('ARP', $mac, $host, @more);
-    elsif($type eq 'ARP'){
+    }elsif($type eq 'ARP'){
         my ($mac, $ip, @more) = @rest;
-        #my $prev_found = $db->{$mac};
-        #my $prev_ip = $prev_found->{'ip'} if $prev_found;
-         
-        #print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
-        #my $match = {
-        #    'mac'         => $mac,
-        #    'ip'          => $ip,
-        #    'last_seen'   => $pradshosts{'tstamp'},
-        #};
-        #$db->{$mac} = $match;
 
         add_db($db, $ip, $type, $pradshosts{'tstamp'}, $mac, $mac, 'vendor', 'vendor', 'ethernet', 1, $PRADS_HOSTNAME);
-
-        #if ($prev_found){
-        #   if ( $match->{'ip'} ne $prev_ip ){
-        #      print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
-        #   }
-        #}else{
-        #   print "ARP: mac=$mac ip=$ip timestamp=" . $pradshosts{'tstamp'} . "\n";
-        #}
     }
 
 #   Service: ip=87.238.47.67 port=631 -> "CUPS 1.2 " timestamp=1242033096
 #   add_asset('SERVICE', $ip, $port, $vendor, $version, $info, @more);
     elsif($type eq 'SERVICE'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
-        #my $prev_found = $db->{"$ip:$port"};
 
-       #print "found ". Dumper($prev_found). "\n" if $prev_found and $DEBUG;
-       #my $match = {
-       #    'ip'          => $ip,
-       #    'port'        => $port,
-       #    'vendor'      => $vendor,
-       #    'version'     => $version,
-       #    'info'        => $info,
-       #    'last_seen'   => $pradshosts{'tstamp'},
-       #};
         add_db($db, $ip, $type, $pradshosts{'tstamp'}, $port, '', $vendor, $info, $version, 1, $PRADS_HOSTNAME);
-        #$db->{"$ip:$port"} = $match;
-
-        #print "SERVICE: ip=$ip port=$port vendor=$vendor version=$version info=$info timestamp=" . $pradshosts{'tstamp'} . "\n" if not $prev_found;
     }
 }
 
