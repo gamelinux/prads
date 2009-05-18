@@ -74,6 +74,9 @@ our $SERVICE       = 0;
 our $OS            = 0;
 our $BPF           = q();
 our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
+our $DB_USERNAME;
+our $DB_PASSWORD;
+
 
 #my $DEVICE         = q(eth0);
 my $DEVICE;
@@ -92,7 +95,7 @@ my %ERROR          = (
 );
 
 # extract & load config before parsing rest of commandline
-for my $i (0..@ARGV-1){
+    for my $i (0..@ARGV-1){
     if($ARGV[$i] =~ /^--?(config|c)$/){
         $CONFIG = splice @ARGV, $i, $i+1;
         print "Loading config $CONFIG\n";
@@ -104,11 +107,15 @@ my $conf = load_config("$CONFIG");
 my $C_INIT = $CONFIG;
 
 $DATABASE = $conf->{'db'} if $conf->{'db'};
+$DB_USERNAME = $conf->{'db'} if $conf->{'db'};
+$DB_PASSWORD = $conf->{'db_username'};
 $DEVICE   = $conf->{interface};
 $ARP      = $conf->{arp};
 $SERVICE  = $conf->{service};
 $DEBUG    = $conf->{debug};
 $OS       = $conf->{os_fingerprint};
+$OS       = $conf->{os_synack_fingerprint};
+$BPF      = $conf->{bpfilter};
 
 # commandline overrides config
 GetOptions(
@@ -121,7 +128,7 @@ GetOptions(
     'arp'                    => \$ARP,
     'service'                => \$SERVICE,
     'os'                     => \$OS,
-    'db'          => \$DATABASE,
+    'db'                     => \$DATABASE,
     # bpf filter
 );
 # if 2nd config file specified, load that one too
@@ -131,10 +138,6 @@ if ($C_INIT ne $CONFIG){
 #
 #my @array = split(/\s+/, $conf->{array-param});
 #my $variable = $conf->{variable};
-$ARP      = $conf->{arp};
-$OS       = $conf->{os_synack_fingerprint};
-$SERVICE  = $conf->{service};
-$BPF      = $conf->{bpfilter};
 #$DEBUG    = $conf->{debug};
 
 my $PRADS_HOSTNAME = $conf->{hostname};
@@ -187,7 +190,8 @@ my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 warn "Loading persistent database ". $DATABASE ."\n" if ($DEBUG > 0);
-$OS_SYN_DB = load_persistent($DATABASE) if $conf->{'db'};
+$OS_SYN_DB = load_persistent($DATABASE,$DB_USERNAME,$DB_PASSWORD);
+
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
 
@@ -211,8 +215,8 @@ Load persistent database
 =cut
 
 sub load_persistent {
-    my ($db) = @_;
-    my $dbh = DBI->connect($db);
+    my ($db,$user,$password) = @_;
+    my $dbh = DBI->connect($db,$user,$password);
     my ($sql, $sth);
     eval{ 
         no warnings 'all';
@@ -380,7 +384,7 @@ sub packet_tcp {
 
         my ($os, $details, @more) = os_find_match(
                                 $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
-                                $winsize, $gttl, $optstr, $packet,$fpstring);
+                                $winsize, $gttl, $optstr, $src_ip, $fpstring);
 
         # Get link type
         my $link = get_mtu_link($mss);
@@ -459,10 +463,10 @@ for each signature in db:
 
 sub os_find_match{
 # Port of p0f matching code
-    my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $packet, $fp) = @_;
+    my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $ip, $fp) = @_;
     my @quirks = @$qq;
     my $sigs = $OS_SYN_SIGS; 
-    my $confidence = 0;
+    my $guesses = 0;
 
     #warn "Matching $packet\n" if $DEBUG;
     #sigs ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl)
@@ -476,18 +480,17 @@ sub os_find_match{
             $j++;
 
         }else{
-            warn "Packet has no match for $ec[$j]:$_\n";
-            warn "ERR: $packet\n";
+            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n";
             return;
         }
     }
     # we should have $matches now.
-    warn "ERR: $packet:\n  No match in fp db, but should have a match.\n" and return if not $matches;
+    warn "ERR: $ip [$fp] No match in fp db, but should have a match.\n" and return if not $matches;
 
     #print "INFO: p0f tot:oc:t0:frag match: " . Dumper($matches). "\n";
     if(not @quirks) {
         $matches = $matches->{'.'};
-        warn "ERR: $packet:\n  No quirks match.\n" and return if not defined $matches;
+        warn "ERR: $ip [$fp] No quirks match.\n" and return if not defined $matches;
     }else{
         my $i;
         for(keys %$matches){
@@ -503,7 +506,7 @@ sub os_find_match{
             }
             $matches = $matches->{$_} and last if $i == @quirks;
         }
-        warn "ERR: $packet:\n  No quirks match\n" and return if not $i;
+        warn "ERR: $ip [$fp]  No quirks match\n" and return if not $i;
     }
     #print "INFO: p0f quirks match: " . Dumper( $matches). "\n";
 
@@ -514,7 +517,7 @@ sub os_find_match{
             ($_ eq '*')
     } keys %$matches;
     #print "INFO: p0f mss match: " . Dumper(@mssmatch). "\n";
-    warn "ERR: $packet:\n  No mss match in fp db.\n" and return if not @mssmatch;
+    warn "ERR: $ip [$fp] No mss match in fp db.\n" and return if not @mssmatch;
 
     # WSCALE. There may be multiple simultaneous matches to search beyond this point.
     my (@wmatch,@fuzmatch);
@@ -540,12 +543,11 @@ sub os_find_match{
         }
     }
     if(not @wmatch and @fuzmatch){
-        print "warning: $packet:\nNo exact window match. Proceeding fuzzily\n";
+        $guesses++;
         @wmatch = @fuzmatch;
     }
     if(not @wmatch){
-        print "ERR: $packet:\n  No window match in fp db.\n";
-        print "[$fp] Closest matches: \n";
+        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n";
         for my $s (@mssmatch){
             print Data::Dumper->Dump([$matches->{$s}],["MSS$s"]);
         }
@@ -563,7 +565,7 @@ sub os_find_match{
         }
     }
     if(not @omatch){
-        warn "ERR: $packet:\n  No match for TCP options.\n";
+        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n";
         print Data::Dumper->Dump([@wmatch],["WSS"]);
         return;
     }
@@ -586,8 +588,7 @@ sub os_find_match{
         }
     }
     if(not @os){
-        print "ERR: $packet:\n  No match for TTL.\n";
-        print "[$fp] Closest matches: \n";
+        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n";
         print Data::Dumper->Dump([@omatch],["TTL"]);
         return;
     }
@@ -1177,7 +1178,8 @@ sub add_db {
     my ($o_ip, $o_fp, $o_time) = $h_select->fetchrow_array();
     if($o_time){
         if($o_time < $PRADS_START){
-            print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
+            printf "%11d [%-10s] ip:%16s - %s -%s [%s] distance:%d link:%s [OLD]\n", $o_time, $service, $ip, $os, $details, $fp, $dist, $link;
+            #print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
         }
 
        $h_update = $db->prepare_cached("UPDATE $table SET time=? WHERE ip=? AND fingerprint=?") or die "$!" if not $h_update;
@@ -1191,7 +1193,7 @@ sub add_db {
          #('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')") if not $h_insert;
        $h_insert->execute($ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host);
 
-       print "$time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link\n";
+       printf "%11d [%-10s] ip:%16s - %s -%s [%s] distance:%d link:%s\n", $time, $service, $ip, $os, $details, $fp, $dist, $link;
     }
 }
 }

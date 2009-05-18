@@ -815,6 +815,7 @@ S12:64:0:44:M1452:.:AXIS:Printer Server 5600 v5.64
 2048:64:0:60:W10,N,M265,T,E:PF:-*NMAP:OS detection probe w/flags (2)
 3072:64:0:60:W10,N,M265,T,E:PF:-*NMAP:OS detection probe w/flags (3)
 4096:64:0:60:W10,N,M265,T,E:PF:-*NMAP:OS detection probe w/flags (4)
+4096:64:0:60:W10,N,M265,T,S:PF:-*NMAP:OS detection probe w/flags (4)
 
 32767:64:0:40:.:.:-*NAST:syn scan
 
