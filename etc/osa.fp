@@ -246,3 +246,6 @@ S6:128:1:48:M1460,E:PA:@Slashdot:or BusinessWeek (???)
 
 # Omniture
 S3:255:1:64:M1460,N,W0,N,N,T,N,N,S:A:Omniture:DC/1.2
+
+# BeOS UC
+16384:128:0:60:M1380,N,W0,N,N,T0:A:BeOS:X.X.X UC
