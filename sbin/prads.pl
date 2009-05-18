@@ -131,15 +131,17 @@ if ($C_INIT ne $CONFIG){
 #
 #my @array = split(/\s+/, $conf->{array-param});
 #my $variable = $conf->{variable};
+$ARP      = $conf->{arp};
 $OS       = $conf->{os_synack_fingerprint};
+$SERVICE  = $conf->{service};
 $BPF      = $conf->{bpfilter};
+#$DEBUG    = $conf->{debug};
 
 my $PRADS_HOSTNAME = $conf->{hostname};
 $PRADS_HOSTNAME ||= `hostname`;
 chomp $PRADS_HOSTNAME;
 
 my $PRADS_START = time;
-#$DEBUG    = $conf->{debug};
 
 if ($DUMP) {
    print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
