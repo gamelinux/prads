@@ -75,7 +75,8 @@ our $OS            = 0;
 our $BPF           = q();
 our $NOPERSIST     = 0;
 
-my $DEVICE         = q(eth0);
+#my $DEVICE         = q(eth0);
+my $DEVICE;
 my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
@@ -90,6 +91,8 @@ my %ERROR          = (
     loop => q(Unable to perform packet capture),
 );
 
+my $conf = load_config("$CONFIG");
+$DEVICE   = $conf->{interface};
 GetOptions(
     'config|c=s'             => \$CONFIG,
     'dev|d=s'                => \$DEVICE,
@@ -104,7 +107,6 @@ GetOptions(
     # bpf filter
 );
 #
-my $conf = load_config("$CONFIG");
 #my @array = split(/\s+/, $conf->{array-param});
 #my $variable = $conf->{variable};
 $OS       = $conf->{os_synack_fingerprint};
@@ -115,7 +117,6 @@ $PRADS_HOSTNAME ||= `hostname`;
 chomp $PRADS_HOSTNAME;
 
 my $PRADS_START = time;
-#$DEVICE   = $conf->{interface};
 #$ARP      = $conf->{arp};
 #$DEBUG    = $conf->{debug};
 
@@ -138,7 +139,6 @@ if ($DUMP) {
 }
 
 warn "Starting prads.pl...\n";
-print "Using $DEVICE\n";
 
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE)
@@ -150,6 +150,7 @@ my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig")
               or Getopt::Long::HelpMessage();
 
 warn "Initializing device\n" if ($DEBUG>0);
+warn "Using $DEVICE\n" if $DEVICE;
 $DEVICE = init_dev($DEVICE)
           or Getopt::Long::HelpMessage();
 
@@ -163,7 +164,7 @@ my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 if (not $NOPERSIST){
-    warn "Loading persistent database ". $conf->{'db'}."\n";#if ($DEBUG>0);
+    warn "Loading persistent database ". $conf->{'db'}."\n" if ($DEBUG > 0);
     $OS_SYN_DB = load_persistent($conf->{'db'}) if $conf->{'db'};
 }
 warn "Creating object\n" if ($DEBUG>0);
@@ -345,7 +346,7 @@ sub packet_tcp {
 
         # debug info
         my $packet = "ip:$src_ip size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
-        print "OS: $packet\n" if($DEBUG);
+        print "OS: $packet\n" if($DEBUG > 2);
 
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
@@ -358,8 +359,8 @@ sub packet_tcp {
         # check on $db->{$ip}->{$fingerprint}
 
         my ($os, $details, @more) = os_find_match(
-                                                  $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
-                                                  $winsize, $gttl, $optstr, $packet);
+                                $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
+                                $winsize, $gttl, $optstr, $packet);
 
         # Get link type
         my $link = get_mtu_link($mss);
@@ -875,12 +876,12 @@ Net::Pcap::lookupdev method
 
 sub init_dev {
     my $dev = shift;
-#    my $err;
+    my $err;
 
-#    unless (defined $dev) {
-#       #$dev = Net::Pcap::lookupdev(\$err);
-#        die sprintf $ERROR{'init_dev'}, $err if defined $err;
-#    }
+    unless (defined $dev) {
+       $dev = Net::Pcap::lookupdev(\$err);
+       die sprintf $ERROR{'init_dev'}, $err if defined $err;
+    }
 
     return $dev;
 }
@@ -1131,44 +1132,43 @@ sub load_config {
 
 =head2 add_db
 
-Add a record to the table;
+Add an asset record to the asset table;
 
 =cut
-
-# add/update?
-#
-# TODO> CLEANUP! prepare_cached('SELECT ? foo ? bar ?)'
-#      sth->execute($table, $foo, $bar);
+{
+   my $table;
+   my $h_select;
+   my $h_update;
+   my $h_insert;
 sub add_db {
     my $db = $OS_SYN_DB;
-    my $table = 'asset';
     my ($dbh, $ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
+    $table = 'asset';
+    my $sql = "SELECT ip,fingerprint,time FROM $table WHERE ip = ? AND fingerprint = ?";
+    #print "$sql,$ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host\n";
 
-    my $sth = $db->prepare("SELECT ip,fingerprint,time FROM $table WHERE ip='$ip' AND fingerprint='$fp'");
-    $sth->execute;
-    my ($o_ip, $o_fp, $o_time) = $sth->fetchrow_array();
+    $h_select = $db->prepare_cached($sql) or die "Failed:$!" if not $h_select;
+    $h_select->execute($ip,$fp);
+    my ($o_ip, $o_fp, $o_time) = $h_select->fetchrow_array();
     if($o_time){
         if($o_time < $PRADS_START){
             print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
         }
-       my $sth = $db->prepare("UPDATE $table SET time='$time' WHERE ip='$ip' AND fingerprint='$fp'") or die "$!";
-       $sth->execute;
-    }else{
-        #($host, $mac, $service) = ('prads', 'DE:AD:BE:EF:CA:FE', 'fingerfuck') if not $mac;
-        for my $sql (
-                     "INSERT INTO $table (ip, service, time, fingerprint, mac, os, details, link, distance, reporting)
-                     VALUES ('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')",
-                     #"SELECT ip, time from $table WHERE ip='$ip",
-                     #"DELETE FROM asset WHERE service = 'SYN'",
-                    ){
 
-            #print "EXEC '$sql'\n";
-            $sth = $db->prepare($sql);
-            $sth->execute;
-            $sth->dump_results if $sth->{NUM_OF_FIELDS};
-        }
-        print "$time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link\n";
+       $h_update = $db->prepare_cached("UPDATE $table SET time=? WHERE ip=? AND fingerprint=?") or die "$!" if not $h_update;
+       $h_update->execute;
+    }else{
+       $h_insert = $db->prepare_cached(
+         "INSERT INTO $table ".
+         "(ip, service, time, fingerprint, mac, os, details,".
+          "link, distance, reporting)".
+         "VALUES (?,?,?,?,?,?,?,?,?,?)") if not $h_insert;
+         #('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')") if not $h_insert;
+       $h_insert->execute($ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host);
+
+       print "$time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link\n";
     }
+}
 }
 
 =head2 add_asset
