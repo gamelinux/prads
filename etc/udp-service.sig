@@ -33,6 +33,7 @@
 53,v/DNS///,^..\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00
 # Standard Query response - no such name
 53,v/DNS///,^..\x84\x03\x00\x01\x00\x00\x00\x01\x00\x00
+# Bind version:
 
 #53,v/DNS///,A\?
 #53,v/DNS///,MX\?
