@@ -84,6 +84,7 @@ my $CONFIG         = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
 my $OS_SYNACK_FINGERPRINT_FILE = q(/etc/prads/osa.fp);
+my $MAC_SIGNATURE_FILE = q(/etc/prads/mac.sig);
 my %pradshosts     = ();
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
@@ -116,6 +117,7 @@ $DEBUG    = $conf->{debug};
 $OS       = $conf->{os_fingerprint};
 $OS       = $conf->{os_synack_fingerprint};
 $BPF      = $conf->{bpfilter};
+$DEBUG ||= 0;
 
 # commandline overrides config
 GetOptions(
@@ -149,6 +151,10 @@ my $PRADS_START = time;
 if ($DUMP) {
    print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
+   warn "Loading MAC fingerprints\n" if ($DEBUG>0);
+   my $MAC_SIGS = load_mac($MAC_SIGNATURE_FILE);
+   print Dumper $MAC_SIGS;
+
    print "\n *** Loading OS fingerprints *** \n\n";
    my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE);
    print Dumper $OS_SYN_SIGS;
@@ -170,6 +176,9 @@ warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
 my $OS_SYN_DB = {};
+
+warn "Loading MAC fingerprints\n" if ($DEBUG>0);
+my $MAC_SIGS = load_mac($MAC_SIGNATURE_FILE);
 
 warn "Loading MTU fingerprints\n" if ($DEBUG>0);
 my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig")
@@ -238,6 +247,9 @@ sub load_persistent {
         $SIG{'__WARN__'} = $ms;
     };
     if($DEBUG){
+        #$sql = "DELETE FROM asset WHERE service = 'ARP'";
+        #$sth = $dbh->prepare($sql) or die "foo $!";
+        #$sth->execute or die "$!";
         $sql = "SELECT * from asset";
         $sth = $dbh->prepare($sql) or die "foo $!";
         $sth->execute or die "$!";
@@ -823,10 +835,18 @@ sub load_mtu {
 Loads MAC signatures from file
 
  File format:
- <MAC-Header>,<Vendor>,<Info>
+ AB:CD:EE   Vendor   # DETAILS
 
- Example:
- 1492,"pppoe (DSL)"
+ hash->{'byte'}->{'byte'}->...
+
+ on conflicts, if we have two sigs
+ 00-E0-2B          Extreme
+ 00-E0-2B-00-00-01 Extreme-EEP
+ hash->{00}->{E0}->{2B}->{00}->{00}->{01} = Extreme-EEP
+ hash->{00}->{E0}->{2B}->{_} = Extreme
+
+ if you know of a more efficient way of looking up these things,
+     look me up and we'll discuss it.
 
 =cut
 
@@ -839,28 +859,153 @@ sub load_mac {
     LINE:
     while (my $line = readline $FH) {
         chomp $line;
-        $line =~ s/\#.*//;
+        $line =~ s/^\s*\#.*//;
         next LINE unless($line); # empty line
         # One should check for a more or less sane signature file.
-        my($mac, $info) = split /,/, $line, 2;
-        $signatures->{$mac} = $info;
+        my($mac, $info, $details) = split /\s/, $line, 3;
+        $details ||= '';
+        $details =~ /\# (.*)$/;
+        $details = $1;
+        $details ||= $info;
+        #print "$mac : $info, $details\n";
+        my ($prefix, $mask) = split /\//, $mac, 2;
+        $mask ||= 48; 
+        my ($max, $rem) = ($mask / 8, $mask % 8);
+        my @bytes = split /[:\.\-]/, $prefix, $max;
+        if($rem){
+            if($max == @bytes){
+                push(@bytes, sprintf "%s/%d", pop @bytes, $rem);
+            }else{
+                push @bytes, sprintf "00/%d", $rem;
+            }
+        }
+        my $ptr = $signatures; 
+        for my $i (0..@bytes-1){
+            my $byte = lc $bytes[$i];
+            $ptr->{$byte} ||= {};
+            if(not ref $ptr->{$byte}){
+                $ptr->{$byte} = { _ => $ptr->{$byte} };
+            }
+            if($i == @bytes-1){
+                if($ptr->{$byte}->{_}){
+                    print "XXX: $info $mac crashes with ".Dumper($ptr->{$byte}->{_});
+                    last;
+                }
+                $ptr->{$byte}->{_} = [$mac, $info, $details];
+                last;
+            }
+           $ptr = $ptr->{$byte};
+        }
+
+=insanity
+
+        #print "$mac : $mask\n" if $mask;
+        #print "$mac\n";
+        print "!!11!!$mac $prefix\n" if $max != 6;
+
+        # handle mac bitmasks (in)sanely
+        my ($rest, $bits) = (0, 0);
+        my $ptr = $signatures;
+        for my $i (0..@bytes-1){
+            my $byte = lc $bytes[$i];
+            $bits += 8;
+            $rest = ($mask? $mask - $bits:0);
+                    #print Dumper $ptr ;
+            if((not $mask and $i == @bytes-1) or ($mask and $rest == 0)){
+                # ran out of bitmask or bytes
+                if(ref $ptr->{$byte}){
+                    if($ptr->{$byte}->{_}){
+                        print "ERRXXX: Clash $mac with $ptr->{$byte}->{_}\n";
+                        last;
+                    }
+                    $ptr->{$byte}->{_} = [$mac, $info, $details];
+                }else{
+                    $ptr->{$byte} = [$mac, $info, $details];
+                }
+                last;
+            }elsif($rest > 8 or not $mask){
+                # still got bytes
+                $ptr->{$byte} ||= {};
+                if(not ref $ptr->{$byte}){
+                    $ptr->{$byte} = { _ => $ptr->{$byte} };
+                }
+                $ptr = $ptr->{$byte};
+                #print "$byte;";
+            }else{
+                # $mask and $rest < 8
+                if($rest > 0){
+                    $ptr->{"$byte/$rest"} = [$mac, $info, $details];
+                }else{
+                    print "$byte/XXX/$rest/$mask;";
+                }
+                last; # because some mac strings don't terminate on the dollar.
+            }
+        }
+        if($mask and $rest > 0){
+            print "00/ZZZ/$rest";
+            $ptr->{"00/$rest"} = [$mac, $info, $details];
+        }
+        #print " $info, $details\n";
+
+        #print Data::Dumper->Dump([$ptr],["*m"]) if $mask;
+=cut
     }
+    #print Data::Dumper->Dump([$signatures],["*m"]);
     return $signatures;
 }
+
+=head2 mac_find_match
+
+Match the MAC address with our vendor prefix hash.
+
+=cut
+sub mac_find_match {
+    my ($mac,$ptr) = @_;
+    $ptr ||= $MAC_SIGS;
+    
+    my ($byte, $rest) = split /[:\.-]/, $mac,2;
+    #print "mac matching: $byte, $rest ";
+    if(ref $ptr->{$byte}){
+        #print "recurse\n";
+        my $match = mac_find_match($rest,$ptr->{$byte}) || $ptr->{$byte}->{_};
+    }else{
+        #print "reduce $ptr->{$byte}\n";
+        return $ptr->{$byte};
+    }
+=insanity
+            print ":$byte: match\n";
+            $ptr = $ptr->{$byte};
+        }else{
+            # this is end-of-line
+            my @masks = grep { /([0-9a-fA-F][0-9a-fA-F])\/(\d*)/ } keys %$ptr;
+            print Data::Dumper->Dump([$ptr ],['*ptr']);
+            for(@masks){
+                print Data::Dumper->Dump([$ptr->{$_} ],['@macmask']);
+            }
+            return $ptr; # hopefully (one or more) valid sig.
+        }
+    }
+    print "<: \n";
+    return $ptr;
+=cut
+}
+
 
 =head2 load_os_syn_fingerprints
 
 Loads SYN signatures from file
 optimize for lookup matching
 
-=cut
+ if you know of a more efficient way of looking up these things,
+     look me up and we'll discuss it.
 
+=cut
 sub load_os_syn_fingerprints {
     my @files = @_;
 #    my $file = shift;
     # Fingerprint entry format:
     # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
-    #my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x;
+    #my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x; # suuure, validate this!
     my $rules = {};
 for my $file (@files) {
     open(my $FH, "<", $file) or die "Could not open '$file': $!";
@@ -872,13 +1017,11 @@ for my $file (@files) {
         $line =~ s/\#.*//;
         next unless($line); # empty line
 
-        #my @elements = $line =~ $re;
         my @elements = split/:/,$line;
         unless(@elements == 8) {
             die "Error: Not valid fingerprint format in: '$file'";
         }
         my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
-        #print "GRRRR $wss, $ttl, $df, $ss, $oo, $qq, $os, $detail\n";
         my $oc = 0;
         my $t0 = 0;
         my ($mss, $wsc) = ('*','*');
@@ -903,7 +1046,6 @@ for my $file (@files) {
         my($details, $human) = splice @elements, -2;
 
         my $tmp = $rules;
-        #print "Floppa: /",join("/",@ary),"/\n" if $. eq 354;
         for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
             $tmp->{$e} ||= {};
             $tmp = $tmp->{$e};
@@ -1135,7 +1277,17 @@ sub arp_check {
     my $h4 = hex(substr( $aip,6,2));
     my $ip = "$h1.$h2.$h3.$h4";
 
-    add_asset('ARP', $arp->{sha}, $ip);
+    my $ash = $arp->{sha};
+    # more human readable
+    # join(':', split(/([0-9a-fA-F][0-9a-fA-F])/, $ash);
+    my $mac =
+        substr($ash,0,2) .':'.
+        substr($ash,2,2) .':'.
+        substr($ash,4,2) .':'.
+        substr($ash,6,2) .':'.
+        substr($ash,8,2) .':'.
+        substr($ash,10,2);
+    add_asset('ARP', $mac, $ip, @{mac_find_match($mac)});
 }
 
 =head2 get_mtu_link
@@ -1201,14 +1353,15 @@ sub add_db {
     my ($dbh, $ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
     $table = 'asset';
     my $sql = "SELECT ip,fingerprint,time FROM $table WHERE ip = ? AND fingerprint = ?";
-    #print "$sql,$ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host\n";
+    #print "$sql,$ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host\n" if $service eq 'ARP';
 
     $h_select = $db->prepare_cached($sql) or die "Failed:$!" if not $h_select;
     $h_select->execute($ip,$fp);
     my ($o_ip, $o_fp, $o_time) = $h_select->fetchrow_array();
     if($o_time){
         if($o_time < $PRADS_START){
-            printf "%11d [%-10s] ip:%16s - %s -%s [%s] distance:%d link:%s [OLD]\n", $o_time, $service, $ip, $os, $details, $fp, $dist, $link;
+            printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
+                   $o_time, $service, $ip, $os, $details, $fp, $dist, $link, '[OLD]';
             #print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
         }
 
@@ -1223,7 +1376,8 @@ sub add_db {
          #('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')") if not $h_insert;
        $h_insert->execute($ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host);
 
-       printf "%11d [%-10s] ip:%16s - %s -%s [%s] distance:%d link:%s\n", $time, $service, $ip, $os, $details, $fp, $dist, $link;
+       printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
+              $time, $service, $ip, $os, $details, $fp, $dist, $link, '';
     }
 }
 }
@@ -1256,9 +1410,9 @@ sub add_asset {
         }
         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
     }elsif($type eq 'ARP'){
-        my ($mac, $ip, @more) = @rest;
+        my ($mac, $ip, $prefix, $vendor, $details, @more) = @rest;
 
-        add_db($db, $ip, $type, $pradshosts{'tstamp'}, $mac, $mac, 'vendor', 'vendor', 'ethernet', 1, $PRADS_HOSTNAME);
+        add_db($db, $ip, $type, $pradshosts{'tstamp'}, $prefix, $mac, $vendor, $details, 'ethernet', 1, $PRADS_HOSTNAME);
     }
 
 #   Service: ip=87.238.47.67 port=631 -> "CUPS 1.2 " timestamp=1242033096

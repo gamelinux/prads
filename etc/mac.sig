@@ -15327,7 +15327,7 @@ EC:10:00	EnanceSour             # Enance Source Co., Ltd.	PC clones(?)
 03-00-00-00-00-02	Locate-Directory-Server # [TR?]
 03-00-00-00-00-04	Synchronous-Bandwidth-Manager-# [TR?]
 03-00-00-00-00-08	Configuration-Report-Server-# [TR?]
-03-00-00-00-00-10	Ring-Error-Monitor-# [TR?]
+#03-00-00-00-00-10	Ring-Error-Monitor-# [TR?]
 03-00-00-00-00-10	(OS/2-1.3-EE+Communications-Manager)
 03-00-00-00-00-20	Network-Server-Heartbeat-# [TR?]
 03-00-00-00-00-40	(OS/2-1.3-EE+Communications-Manager)
