@@ -209,6 +209,11 @@ S1:30:0:44:M1730:A:Cyclades:PR3000
 8192:64:1:44:M1460:A:NetApp:Data OnTap 6.x
 5792:64:1:60:W0,N,N,N,T,M1460:ZAT:FortiNet:FortiGate 50
 S1:64:1:44:M1460:A:NetCache:5.3.1
+
+# Edward - realy unsure
+S3:255:1:64:M1460,N,W0,N,N,T,S:A:NetCache: UC (Generic 1?)
+S3:255:1:64:M1460,N,W5,N,N,T,S:A:NetCache: UC (Generic 2?)
+
 S1:64:0:44:M512:A:Printer:controller (?)
 4096:128:0:40:.:A:Sequent:DYNIX 4.2.x
 S16:64:0:44:M512:A:3Com:NBX PBX (BSD/OS 2.1)
@@ -226,7 +231,6 @@ S12:64:1:44:M1400:A:Cequrux Firewall:4.x
 # Whatever they run. EOL boys...
 S6:128:1:48:M1460,E:PA:@Slashdot:or BusinessWeek (???)
 
-# Facebook
-S4:128:1:44:M1460:ZA:@Facebook:Get a life (?)
-S4:128:1:48:M1460,N,N,S:ZA:@Facebook:Get a life (??)
-5792:128:1:60:M1460,S,T,N,W9:ZA:@Facebook:Get a life(???)
+
+# Omniture
+S3:255:1:64:M1460,N,W0,N,N,T,N,N,S:A:Omniture:DC/1.2
