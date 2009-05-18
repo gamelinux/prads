@@ -817,6 +817,36 @@ sub load_mtu {
     return $signatures;
 }
 
+=head2 load_mac
+
+Loads MAC signatures from file
+
+ File format:
+ <MAC-Header>,<Vendor>,<Info>
+
+ Example:
+ 1492,"pppoe (DSL)"
+
+=cut
+
+sub load_mac {
+    my $file = shift;
+    my $signatures = {};
+
+    open(my $FH, "<", $file) or die "Could not open '$file': $!";
+
+    LINE:
+    while (my $line = readline $FH) {
+        chomp $line;
+        $line =~ s/\#.*//;
+        next LINE unless($line); # empty line
+        # One should check for a more or less sane signature file.
+        my($mac, $info) = split /,/, $line, 2;
+        $signatures->{$mac} = $info;
+    }
+    return $signatures;
+}
+
 =head2 load_os_syn_fingerprints
 
 Loads SYN signatures from file
