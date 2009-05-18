@@ -886,7 +886,7 @@ S4:64:1:48:M1460,N,W8:.:UNKNOWN:UNKNOWN
 #Packet has no match for zero timestamp:0
 8192:128:1:52:M1380,N,W2,N,N,N,N:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:0
-16384:128:0:40:.:.:UNKNOWN:UNKNOWN ULTRIX 4.5?
+16384:128:0:40:.:.:ULTRIX:4.x? UC
 #Packet has no match for option count:7
 16384:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:17

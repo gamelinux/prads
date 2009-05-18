@@ -150,6 +150,7 @@ S1:255:1:60:N,N,T,N,W0,M*:AT:Solaris:7
 57344:64:1:60:M1460,N,W0,N,N,T:AT:FreeBSD:4.6-4.8 (RFC1323)
 65535:64:1:48:M1460,S:A:FreeBSD:7.0
 65535:64:1:60:M1460,N,W3,S,T:A:FreeBSD:7.2
+S4:64:1:60:M1460,S,T,N,W6:A:FreeBSD:7.x UC
 
 # ------------------- AIX ------------------
 
@@ -249,3 +250,5 @@ S3:255:1:64:M1460,N,W0,N,N,T,N,N,S:A:Omniture:DC/1.2
 
 # BeOS UC
 16384:128:0:60:M1380,N,W0,N,N,T0:A:BeOS:X.X.X UC
+
+
