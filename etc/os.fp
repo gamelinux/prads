@@ -572,6 +572,8 @@ T31:128:1:44:M1414:.:Windows:NT 4.0 SP6a (1)
 65535:64:1:48:M*,N,N,S:.:Windows:2000 SP4, XP SP1+ (Low TTL 1)
 65535:32:1:48:M*,N,N,S:.:Windows:2000 SP4, XP SP1+ (Low TTL 2)
 %8192:128:1:48:M*,N,N,S:.:Windows:2000 SP2+, XP SP1+ (seldom 98)
+%8192:64:1:48:M*,N,N,S:.:Windows:2000 SP2+, XP SP1+ (seldom 98, Low TTL1)
+%8192:32:1:48:M*,N,N,S:.:Windows:2000 SP2+, XP SP1+ (seldom 98, Low TTL2)
 S20:128:1:48:M*,N,N,S:.:Windows:SP3
 S45:128:1:48:M*,N,N,S:.:Windows:2000 SP4, XP SP1+ (2)
 40320:128:1:48:M*,N,N,S:.:Windows:2000 SP4
@@ -832,6 +834,7 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 
 *:128:1:52:M*,N,W0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w, tstamp-)
 *:128:1:52:M*,N,W*,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
+#*:64:1:52:M*,N,N,S,N,W2:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
 *:128:1:52:M*,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w-, tstamp+)
 *:128:1:64:M*,N,W0,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w, tstamp+)
 *:128:1:64:M*,N,W*,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp+)
