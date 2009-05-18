@@ -787,7 +787,7 @@ sub load_signatures {
         chomp $line;
         $line =~ s/\#.*//;
         next LINE unless($line); # empty line
-	# One should check for a more or less sane signature file.
+        # One should check for a more or less sane signature file.
         my($service, $version, $signature) = split /,/, $line, 3;
 
         $version =~ s"^v/"";
@@ -846,7 +846,7 @@ Loads MAC signatures from file
  hash->{00}->{E0}->{2B}->{_} = Extreme
 
  if you know of a more efficient way of looking up these things,
-     look me up and we'll discuss it.
+     look me up and we'll discuss it. - kwy
 
 =cut
 
@@ -870,6 +870,7 @@ sub load_mac {
         #print "$mac : $info, $details\n";
         my ($prefix, $mask) = split /\//, $mac, 2;
         $mask ||= 48; 
+        # handle mac bitmask (in)sanely
         my ($max, $rem) = ($mask / 8, $mask % 8);
         my @bytes = split /[:\.\-]/, $prefix, $max;
         if($rem){
@@ -897,60 +898,7 @@ sub load_mac {
            $ptr = $ptr->{$byte};
         }
 
-=insanity
-
-        #print "$mac : $mask\n" if $mask;
-        #print "$mac\n";
-        print "!!11!!$mac $prefix\n" if $max != 6;
-
-        # handle mac bitmasks (in)sanely
-        my ($rest, $bits) = (0, 0);
-        my $ptr = $signatures;
-        for my $i (0..@bytes-1){
-            my $byte = lc $bytes[$i];
-            $bits += 8;
-            $rest = ($mask? $mask - $bits:0);
-                    #print Dumper $ptr ;
-            if((not $mask and $i == @bytes-1) or ($mask and $rest == 0)){
-                # ran out of bitmask or bytes
-                if(ref $ptr->{$byte}){
-                    if($ptr->{$byte}->{_}){
-                        print "ERRXXX: Clash $mac with $ptr->{$byte}->{_}\n";
-                        last;
-                    }
-                    $ptr->{$byte}->{_} = [$mac, $info, $details];
-                }else{
-                    $ptr->{$byte} = [$mac, $info, $details];
-                }
-                last;
-            }elsif($rest > 8 or not $mask){
-                # still got bytes
-                $ptr->{$byte} ||= {};
-                if(not ref $ptr->{$byte}){
-                    $ptr->{$byte} = { _ => $ptr->{$byte} };
-                }
-                $ptr = $ptr->{$byte};
-                #print "$byte;";
-            }else{
-                # $mask and $rest < 8
-                if($rest > 0){
-                    $ptr->{"$byte/$rest"} = [$mac, $info, $details];
-                }else{
-                    print "$byte/XXX/$rest/$mask;";
-                }
-                last; # because some mac strings don't terminate on the dollar.
-            }
-        }
-        if($mask and $rest > 0){
-            print "00/ZZZ/$rest";
-            $ptr->{"00/$rest"} = [$mac, $info, $details];
-        }
-        #print " $info, $details\n";
-
-        #print Data::Dumper->Dump([$ptr],["*m"]) if $mask;
-=cut
     }
-    #print Data::Dumper->Dump([$signatures],["*m"]);
     return $signatures;
 }
 
@@ -972,22 +920,6 @@ sub mac_find_match {
         #print "reduce $ptr->{$byte}\n";
         return $ptr->{$byte};
     }
-=insanity
-            print ":$byte: match\n";
-            $ptr = $ptr->{$byte};
-        }else{
-            # this is end-of-line
-            my @masks = grep { /([0-9a-fA-F][0-9a-fA-F])\/(\d*)/ } keys %$ptr;
-            print Data::Dumper->Dump([$ptr ],['*ptr']);
-            for(@masks){
-                print Data::Dumper->Dump([$ptr->{$_} ],['@macmask']);
-            }
-            return $ptr; # hopefully (one or more) valid sig.
-        }
-    }
-    print "<: \n";
-    return $ptr;
-=cut
 }
 
 
@@ -997,7 +929,7 @@ Loads SYN signatures from file
 optimize for lookup matching
 
  if you know of a more efficient way of looking up these things,
-     look me up and we'll discuss it.
+     look me up and we'll discuss it. -kwy
 
 =cut
 sub load_os_syn_fingerprints {
