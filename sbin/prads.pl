@@ -559,9 +559,9 @@ sub os_find_match{
         @wmatch = @fuzmatch;
     }
     if(not @wmatch){
-        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n";
+        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n" if $DEBUG > 0;
         for my $s (@mssmatch){
-            print Data::Dumper->Dump([$matches->{$s}],["MSS$s"]);
+            print Data::Dumper->Dump([$matches->{$s}],["MSS$s"]) if $DEBUG >0;
         }
 
         return;
@@ -600,8 +600,8 @@ sub os_find_match{
         }
     }
     if(not @os){
-        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n";
-        print Data::Dumper->Dump([@omatch],["TTL"]);
+        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n" if $DEBUG > 0;
+        print Data::Dumper->Dump([@omatch],["TTL"]) if $DEBUG > 0;
         return;
     }
 
