@@ -120,6 +120,7 @@ $SERVICE  = $conf->{service};
 $DEBUG    = $conf->{debug};
 $OS       = $conf->{os_fingerprint};
 $OS       = $conf->{os_synack_fingerprint};
+$OS       = $conf->{os_syn_fingerprint};
 $BPF      = $conf->{bpfilter};
 $DEBUG ||= 0;
 
