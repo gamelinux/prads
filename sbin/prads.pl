@@ -56,11 +56,15 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  OPTIONS:
 
  --dev|-d                : network device (default: eth0)
+ --config|-c             : path to prads configfile
  --service-signatures|-s : path to service-signatures file (default: /etc/prads/tcp-service.sig)
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages 0-255 (default: disabled(0))
  --dump                  : Dumps all signatures and fingerprints then exits 
- --arp                   : Enables ARP discover check (Default off)
+ --arp                   : Enables ARP discover check
+ --service               : Enables Service detection
+ --os                    : Enables OS detection
+ --db                    : DBI string (default: dbi:SQLite:dbname=prads.db)
  --help                  : this help message
  --version               : show prads.pl version
 
