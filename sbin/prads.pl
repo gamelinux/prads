@@ -108,8 +108,8 @@ my $conf = load_config("$CONFIG");
 my $C_INIT = $CONFIG;
 
 $DATABASE = $conf->{'db'} if $conf->{'db'};
-$DB_USERNAME = $conf->{'db'} if $conf->{'db'};
-$DB_PASSWORD = $conf->{'db_username'};
+$DB_USERNAME = $conf->{'db_username'};
+$DB_PASSWORD = $conf->{'db_password'};
 $DEVICE   = $conf->{interface};
 $ARP      = $conf->{arp};
 $SERVICE  = $conf->{service};
