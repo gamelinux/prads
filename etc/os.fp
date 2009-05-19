@@ -837,6 +837,7 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 
 *:128:1:52:M*,N,W0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w, tstamp-)
 *:128:1:52:M*,N,W*,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
+#*:32:1:52:M*,N,W3,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
 #*:64:1:52:M*,N,N,S,N,W2:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
 *:128:1:52:M*,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w-, tstamp+)
 *:128:1:64:M*,N,W0,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w, tstamp+)
