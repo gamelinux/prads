@@ -1,0 +1,22 @@
+#### PRADS README
+#  ______
+# |  __  |                  __
+# | _____|.----..------..--|  |.-----. (tm)
+# |  |    |  |-'|  __  ||  _  |__  --'
+# |__|    |__|  |____|_||_____|______| 
+#
+# Passive Real-time Asset Detection system! 
+#
+
+# Baut'
+Is a `Passive Real-time Asset Detection System`. It passively listen to network traffic and gathers information on hosts and services it sees on the network. This information can be used to map your network, letting you know what services and hosts are alive/used, or can be used together with your favorite IDS/IPS setup for "event to host/service" correlation etc. 
+
+# As is!
+This program is served 'as is'. We take no responsabuility for anything :)
+
+# Lic
+GPL v2 or better? See LICENSE
+
+# Install
+See INSTALL
+
