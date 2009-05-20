@@ -20,3 +20,45 @@ GPL v2 or better? See LICENSE
 # Install
 See INSTALL
 
+# USE
+There are several ways to use PRADS. May it sniff your network for a while,
+and then you can run $ sqlite3 prads.db "select * from asset;"
+to dump the database of assets.
+
+Examples of gamelinux.org:
+$ sqlite3 prads.db "select * from asset;"|grep SYN|grep ^87.238.45.168
+87.238.45.168|SYN|1242806866|S4:64:1:60:M1460,S,T,N,W4:.||@Linux|2.6 (Generic dfrag+)|"ethernet/modem" |7|equador
+87.238.45.168|SYNACK|1242634479|5792:64:1:60:M1460,S,T,N,W4:ZA||Linux|2.6 (newer, 4)|"ethernet/modem" |7|equador
+87.238.45.168|SYNACK|1242647505|S4:64:1:44:M1460:ZA||Linux|recent 2.4 (2)|"ethernet/modem" |8|equador
+87.238.45.168|SYNACK|1242647509|5792:64:1:60:M1460,N,N,T,N,W4:ZA||UNKNOWN|UNKNOWN|"ethernet/modem" |8|equador
+
+sqlite3 prads.db "select * from asset;"|grep SER|grep ^87.238.45.168
+87.238.45.168|SERVICE|1242634479|80||Apache|Debian|2.2.3|1|equador
+
+The tables are :
+ip|service|time|fingerprint|mac|os|details|link|distance|reporting
+
+ip          = The ip address of the asset
+service     = The "Service" detected, like: TCP-SERVICE, UDP-SERVICE, SYN, SYNACK,MAC,.....
+time        = The timestamp when the data was collected
+fingerprint = The fingerprint that the match was done on
+mac         = The MAC address of the asset (service = ARP)
+os          = The Operating System (OS) matched (service = SYN/SYNACK)
+              The MAC vendor that is matched (service = ARP)
+details     = More details on OS (service = SYN/SYNACK)
+              More details on MAC vendor (service = ARP)
+              More details on Service (service = SERVICE)
+link        = Linktype guessed (service = SYN/SYNACK)
+distance    = Distance based on guessed initial TTL (service = SYN/SYNACK)
+reporting   = Hostname of host running PRADS (For multi-prads environments)
+
+# SNORT (snort.org) / Sguil (sguil.net)
+In the future, it should be possible to generate the Snort XML for the "Host Attribute Table" which was introdused in 2.8.1:
+ http://snort.org/docs/snort_manual/node189.html
+This would be a better way then generating it by hand each time :)
+
+# WebGUI
+There will be a webgui to the database, for easy browsing of your network etc.
+
+
+

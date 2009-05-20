@@ -497,7 +497,7 @@ sub os_find_match{
             $j++;
 
         }else{
-            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n";
+            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG > 0;
             return;
         }
     }
