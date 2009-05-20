@@ -105,7 +105,7 @@ S4:64:1:52:M*,N,N,S,N,W9:ZA:Linux:2.6 (newer, 9)
 5792:64:1:60:M*,N,N,T,N,W9:ZA:Linux:2.6 (newer, 9)
 
 # Different response when *Unknown* connects:
-S4:64:1:48:M1460,N,N,S:ZA:Linux:2.6 (unknown) 
+S4:64:1:48:M1460,N,N,S:ZA:Linux:2.6 (Generic 2:SYN from Windows) 
 5672:64:0:60:M1430,S,T,N,W6:A:Linux:2.6 (Google)
 # --------------- Windows ------------------
 
