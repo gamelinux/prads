@@ -732,7 +732,7 @@ S4:64:1:60:W0,N,S,T,M1460:.:FortiNet:FortiGate 50
 
 8192:64:1:44:M1460:.:@Eagle:Secure Gateway
 
-65535:64:1:64:M1460,N,W1,N,N,T,S:A:Juniper:JunOS 9.5
+65535:64:1:64:M1460,N,W1,N,N,T,S:A:Juniper:JunOS 9.2-9-4
 
 # ------- Switches and other stuff ----------
 
