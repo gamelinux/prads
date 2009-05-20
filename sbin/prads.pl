@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w
 
+# PRADS, the Passive Real-time Asset Detection System
+package Prads;
+
 use strict;
 use warnings;
 use FindBin;
@@ -7,6 +10,7 @@ use Getopt::Long qw/:config auto_version auto_help/;
 use Net::Pcap;
 use Data::Dumper;
 use DBI;
+
 
 use constant ETH_TYPE_ARP       => 0x0806;
 use constant ARP_OPCODE_REPLY   => 2;
@@ -107,20 +111,19 @@ my %ERROR          = (
 my $conf = load_config("$CONFIG");
 my $C_INIT = $CONFIG;
 
-$DATABASE = $conf->{'db'} if $conf->{'db'};
-$DB_USERNAME = $conf->{'db_username'};
+$DATABASE = $conf->{'db'} || $DATABASE;
+$DB_USERNAME = $conf->{'db_username'} if $conf->{'db_username'};
 $DB_PASSWORD = $conf->{'db_password'};
 $DEVICE   = $conf->{interface};
-$ARP      = $conf->{arp};
-$SERVICE  = $conf->{service};
-$DEBUG    = $conf->{debug};
-$OS       = $conf->{os_fingerprint};
-$OS       = $conf->{os_synack_fingerprint};
-$BPF      = $conf->{bpfilter};
-$DEBUG ||= 0;
+$ARP      = $conf->{arp} || $ARP;
+$SERVICE  = $conf->{service} || $SERVICE;
+$DEBUG    = $conf->{debug} || $DEBUG;
+$OS       = $conf->{os_fingerprint} || $OS;
+$OS       = $conf->{os_synack_fingerprint} || $OS;
+$BPF      = $conf->{bpfilter} || $BPF;
 
 # commandline overrides config
-GetOptions(
+Getopt::Long::GetOptions(
     'config|c=s'             => \$CONFIG,
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
@@ -229,8 +232,7 @@ sub load_persistent {
     my ($sql, $sth);
     eval{ 
         no warnings 'all';
-        my $ms = $SIG{__WARN__};
-        $SIG{'__WARN__'} = sub { };
+        #$SIG{'__WARN__'} = sub { };
         #my $sql = "DROP TABLE asset";
         #my $sth = $dbh->prepare($sql);
         #$sth->execute;
@@ -244,7 +246,7 @@ sub load_persistent {
        #$dbh->{Error} = 0; 
        #
         $sth->execute;
-        $SIG{'__WARN__'} = $ms;
+        #$SIG{'__WARN__'} = undef;
     };
     if($DEBUG){
         #$sql = "DELETE FROM asset WHERE service = 'ARP'";
@@ -861,18 +863,27 @@ sub load_mac {
         chomp $line;
         $line =~ s/^\s*\#.*//;
         next LINE unless($line); # empty line
+
         # One should check for a more or less sane signature file.
         my($mac, $info, $details) = split /\s/, $line, 3;
         $details ||= '';
         $details =~ /\# (.*)$/;
         $details = $1;
         $details ||= $info;
-        #print "$mac : $info, $details\n";
+
+        # handle mac bitmask (in)sanely
         my ($prefix, $mask) = split /\//, $mac, 2;
         $mask ||= 48; 
-        # handle mac bitmask (in)sanely
-        my ($max, $rem) = ($mask / 8, $mask % 8);
-        my @bytes = split /[:\.\-]/, $prefix, $max;
+        
+        # chop off bytes outside of bitmask
+        # Sigs of the form 00:50:C2:00:70:00/36
+        # become $s->{00}->{50}->{C2}->{00}->{70/4}
+        my ($max, $rem) = (int($mask / 8)+1, $mask % 8);
+        my @bytes = split /[:\.\-]/, $prefix;
+        $max = ($max > @bytes)? @bytes: $max;
+        splice @bytes, $max;
+
+        # create remainder mask for last byte
         if($rem){
             if($max == @bytes){
                 push(@bytes, sprintf "%s/%d", pop @bytes, $rem);
@@ -902,6 +913,44 @@ sub load_mac {
     return $signatures;
 }
 
+=head2 mac_byte_mask
+
+Match a byte with a byte/mask
+
+meditate:
+perl -e 'print unpack("b8", pack("H2","08") | pack("h2", '02'))'
+01010000
+
+byte & mask == $key
+except mask is bigendian while byte is littleendian
+
+=cut
+sub mac_byte_mask {
+   my ($byte, $mask) = @_;
+
+   my ($key, $bits) = split /\//, $mask, 2;
+   my $shift = 8-$bits;
+   #print "TRY: ". (hex($byte) >> ($shift) == hex($key) >> ($shift)) ."\n";
+   #print "Match $byte with $key/$bits:". ((hex($byte) & $bits) == hex($key))."\n";
+   #print "m::". ((pack('H2', $byte) & pack('H2', $bits)) eq pack('H2', $key)) ."\n";
+   return (hex($byte) >> $shift == hex($key) >> $shift);
+}
+
+=head2 mac_map_mask
+
+check if $byte matches any mask in $ptr
+
+ for all keys with a slash in them
+   check that byte matches key/mask
+   return $ptr->{key}
+
+=cut
+
+sub mac_map_mask {
+   my ($byte, $ptr) = @_;
+   map { return $ptr->{$_}->{_} } 
+   grep { /\// and mac_byte_mask($byte,$_)} keys %$ptr;
+}
 =head2 mac_find_match
 
 Match the MAC address with our vendor prefix hash.
@@ -912,13 +961,18 @@ sub mac_find_match {
     $ptr ||= $MAC_SIGS;
     
     my ($byte, $rest) = split /[:\.-]/, $mac,2;
-    #print "mac matching: $byte, $rest ";
     if(ref $ptr->{$byte}){
         #print "recurse\n";
-        my $match = mac_find_match($rest,$ptr->{$byte}) || $ptr->{$byte}->{_};
+        return
+            # most specific match first (recurse)
+            mac_find_match($rest,$ptr->{$byte}) ||
+            # see if this node has a complete match
+            $ptr->{$byte}->{_} || 
+            # match on bitmask
+            mac_map_mask($byte,$ptr);
     }else{
-        #print "reduce $ptr->{$byte}\n";
-        return $ptr->{$byte};
+       # node leads to a leaf. 
+       return $ptr->{$byte} || mac_map_mask($byte, $ptr);
     }
 }
 
