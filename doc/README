@@ -32,10 +32,11 @@ $ sqlite3 prads.db "select * from asset;"|grep SYN|grep ^87.238.45.168
 87.238.45.168|SYNACK|1242647505|S4:64:1:44:M1460:ZA||Linux|recent 2.4 (2)|"ethernet/modem" |8|equador
 87.238.45.168|SYNACK|1242647509|5792:64:1:60:M1460,N,N,T,N,W4:ZA||UNKNOWN|UNKNOWN|"ethernet/modem" |8|equador
 
-sqlite3 prads.db "select * from asset;"|grep SER|grep ^87.238.45.168
+$ sqlite3 prads.db "select * from asset;"|grep SER|grep ^87.238.45.168
 87.238.45.168|SERVICE|1242634479|80||Apache|Debian|2.2.3|1|equador
+87.238.45.168|SERVICE|1242800627|87.238.45.168:25||Postfix SMTP|bolivia.pronix.no; |SERVICE|1|bolivia.pronix.no
 
-The tables are :
+# Database tables:
 ip|service|time|fingerprint|mac|os|details|link|distance|reporting
 
 ip          = The ip address of the asset
