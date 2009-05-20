@@ -935,9 +935,6 @@ sub mac_byte_mask {
 
    my ($key, $bits) = split /\//, $mask, 2;
    my $shift = 8-$bits;
-   #print "TRY: ". (hex($byte) >> ($shift) == hex($key) >> ($shift)) ."\n";
-   #print "Match $byte with $key/$bits:". ((hex($byte) & $bits) == hex($key))."\n";
-   #print "m::". ((pack('H2', $byte) & pack('H2', $bits)) eq pack('H2', $key)) ."\n";
    return (hex($byte) >> $shift == hex($key) >> $shift);
 }
 
