@@ -61,5 +61,12 @@ This would be a better way then generating it by hand each time :)
 # WebGUI
 There will be a webgui to the database, for easy browsing of your network etc.
 
+# Interesting stuff:
+
+Grouped count of UNKNOWN SYNACK sigs 
+$ sqlite3 prads.db "select * from asset;"|grep "SYNACK|"|grep UNKNOWN|awk -F\| '{print $4}'| sort | uniq -c |sort -g
+
+Grouped count of UNKNOWN SYN sigs
+$ sqlite3 prads.db "select * from asset;"|grep "SYN|"|grep UNKNOWN|awk -F\| '{print $4}'| sort | uniq -c |sort -g
 
 
