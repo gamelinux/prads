@@ -60,11 +60,15 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  OPTIONS:
 
  --dev|-d                : network device (default: eth0)
+ --config|-c             : path to prads configfile
  --service-signatures|-s : path to service-signatures file (default: /etc/prads/tcp-service.sig)
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages 0-255 (default: disabled(0))
  --dump                  : Dumps all signatures and fingerprints then exits 
- --arp                   : Enables ARP discover check (Default off)
+ --arp                   : Enables ARP discover check
+ --service               : Enables Service detection
+ --os                    : Enables OS detection
+ --db                    : DBI string (default: dbi:SQLite:dbname=prads.db)
  --help                  : this help message
  --version               : show prads.pl version
 
@@ -121,6 +125,7 @@ $DEBUG    = $conf->{debug} || $DEBUG;
 $OS       = $conf->{os_fingerprint} || $OS;
 $OS       = $conf->{os_synack_fingerprint} || $OS;
 $BPF      = $conf->{bpfilter} || $BPF;
+$OS       = $conf->{os_syn_fingerprint};
 
 # commandline overrides config
 Getopt::Long::GetOptions(
@@ -494,7 +499,7 @@ sub os_find_match{
             $j++;
 
         }else{
-            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n";
+            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG > 0;
             return;
         }
     }
@@ -561,9 +566,9 @@ sub os_find_match{
         @wmatch = @fuzmatch;
     }
     if(not @wmatch){
-        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n";
+        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n" if $DEBUG > 0;
         for my $s (@mssmatch){
-            print Data::Dumper->Dump([$matches->{$s}],["MSS$s"]);
+            print Data::Dumper->Dump([$matches->{$s}],["MSS$s"]) if $DEBUG >0;
         }
 
         return;
@@ -602,8 +607,8 @@ sub os_find_match{
         }
     }
     if(not @os){
-        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n";
-        print Data::Dumper->Dump([@omatch],["TTL"]);
+        print "$pradshosts{tstamp} $ip [$fp] Closest matches: \n" if $DEBUG > 0;
+        print Data::Dumper->Dump([@omatch],["TTL"]) if $DEBUG > 0;
         return;
     }
 

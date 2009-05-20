@@ -384,14 +384,14 @@ S3:64:1:60:M*,S,T,N,W2:.:Linux:2.6, seldom 2.4 (older, 3)
 S4:64:1:60:M*,S,T,N,W2:.:Linux:2.6, seldom 2.4 (older, 4)
 T4:64:1:60:M*,S,T,N,W2:.:Linux:2.6 (older, 5)
 
-S4:64:1:60:M*,S,T,N,W5:.:Linux:2.6 (newer, 1)
-S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 2)
+S4:64:1:60:M*,S,T,N,W5:.:Linux:2.6 (newer, 5)
+S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6)
 
 # added -kwy
-S2:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 2 loopback)
-S4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 3)
-T4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 4)
-S4:64:1:60:M*,S,T,N,W8:.:Linux:2.6 (newer, 5)
+S2:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6 loopback)
+S4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 7)
+T4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 7)
+S4:64:1:60:M*,S,T,N,W8:.:Linux:2.6 (newer, 8)
 #T4:64:1:60:M*,S,T,N,W8:.:Linux:2.6 (newer, 5)
 
 S20:64:1:60:M*,S,T,N,W0:.:Linux:2.2 (1)
@@ -418,6 +418,11 @@ S4:64:1:52:M*,N,N,S,N,W0:.:Linux:2.4 (tstamp-)
 S4:64:1:52:M*,N,N,S,N,W2:.:Linux:2.6 (tstamp-)
 S4:64:1:44:M*:.:Linux:2.6? (barebone, rare!)
 T4:64:1:60:M1412,S,T,N,W0:.:Linux:2.4 (rare!)
+
+#
+65535:64:0:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag-)
+65535:64:1:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag+)
+
 
 # ----------------- FreeBSD -----------------
 
@@ -837,6 +842,7 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 
 *:128:1:52:M*,N,W0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w, tstamp-)
 *:128:1:52:M*,N,W*,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
+#*:32:1:52:M*,N,W3,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
 #*:64:1:52:M*,N,N,S,N,W2:.:@Windows:XP/2000 (RFC1323+, w+, tstamp-)
 *:128:1:52:M*,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w-, tstamp+)
 *:128:1:64:M*,N,W0,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w, tstamp+)
@@ -856,6 +862,8 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 # Generic Linux
 S4:64:1:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag+)
 S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
+65535:64:1:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag+)
+65535:64:0:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag-)
 
 S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 
@@ -881,17 +889,19 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 
 # UNKNOWN:UNKNOWN - We would like to know what this is and if it is a valid fingerprint.
 # Since they can be b0rked packets - hench not interresting to match on.
-65535:128:0:44:M1360:.:UNKNOWN:UNKNOWN
-S4:64:1:48:M1460,N,W8:.:UNKNOWN:UNKNOWN
+#65535:128:0:44:M1360:.:UNKNOWN:UNKNOWN
+#S4:64:1:48:M1460,N,W8:.:UNKNOWN:UNKNOWN
 65535:128:0:48:M1460,N,N,S:A:Redline:T|X 2200
+#65535:64:0:48:M1360,N,N,S:.:UNKNOWN:UNKNOWN
+#65535:32:0:48:M1420,N,N,S:.:UNKNOWN:UNKNOWN
 #Packet has no match for zero timestamp:0
-8192:128:1:52:M1380,N,W2,N,N,N,N:.:UNKNOWN:UNKNOWN
+#8192:128:1:52:M1380,N,W2,N,N,N,N:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:0
 16384:128:0:40:.:.:ULTRIX:4.x? UC
 #Packet has no match for option count:7
-16384:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN
+#16384:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN
 #Packet has no match for option count:17
-65535:64:0:60:M1460,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N:.:UNKNOWN:UNKNOWN
+#65535:64:0:60:M1460,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N:.:UNKNOWN:UNKNOWN
 
 
 

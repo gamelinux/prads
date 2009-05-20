@@ -50,7 +50,8 @@
 # or "." can be used to separate the octets.
 #
 
-00:00:00	00:00:00	# Officially Xerox, but 0:0:0:0:0:0 is more common
+#00:00:00	00:00:00	# Officially Xerox, but 0:0:0:0:0:0 is more common
+00:00:00        Xerox                  # XEROX CORPORATION
 00:00:01	Xerox                  # XEROX CORPORATION
 00:00:02	Xerox                  # XEROX CORPORATION
 00:00:03	Xerox                  # XEROX CORPORATION

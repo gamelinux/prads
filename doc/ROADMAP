@@ -2,17 +2,23 @@
 
 From where we are now - 12 May 2009
 
-Point Release 0.1
+Point Release 0.1 - Reached 19 May 2009
  * SYN/ACK
- * Persistant DB
- * Text File Log
- * (prads2sguil.pl script)
+ * Persistant local DB (SQLite)
+ * Database (SQL via DBI)
+ * Text File Log via tee
+ * MAC sig matching
 
 Point Release 0.2
- * Database (mysql)
- * Client Sercive Fingerprinting
+ * Text File Log (default, not stdout)
+ * prads.deb and prads.rpm package 
+ (* prads2sguil.pl script)
 
 Point Release 0.3
+ * udp-service fingerprinting
+ * Client Service Fingerprinting 
+
+Point Release 0.4
  * Switch discover?
  * Router discover?
  * hops
