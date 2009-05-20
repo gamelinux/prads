@@ -80,6 +80,8 @@ our $DUMP          = 0;
 our $ARP           = 0;
 our $SERVICE       = 0;
 our $OS            = 0;
+our $ICMP          = 0;
+our $OS_ICMP       = 0;
 our $BPF           = q();
 our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
 our $DB_USERNAME;
@@ -125,7 +127,9 @@ $DEBUG    = $conf->{debug} || $DEBUG;
 $OS       = $conf->{os_fingerprint} || $OS;
 $OS       = $conf->{os_synack_fingerprint} || $OS;
 $BPF      = $conf->{bpfilter} || $BPF;
-$OS       = $conf->{os_syn_fingerprint};
+$OS       = $conf->{os_syn_fingerprint} || $OS;
+$ICMP     = $conf->{icmp} || $ICMP;
+$OS_ICMP  = $conf->{os_icmp} || $OS_ICMP;
 
 # commandline overrides config
 Getopt::Long::GetOptions(
@@ -313,26 +317,74 @@ sub packets {
     }else{
         $df = 0; # Fragment or more fragments
     }
+    
+    # Now for packet analysis - should we do TCP first, then ICMP, then UDP ?
 
+    # Check if this is a ICMP packet
+    if($ip->{proto} == 1) {
+       packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
+       return; 
+    }
     # Check if this is a TCP packet
-    if($ip->{proto} == 6) {
+    elsif($ip->{proto} == 6) {
       warn "Packet is of type TCP...\n" if($DEBUG>50);
       packet_tcp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
 
-    }elsif ($ip->{proto} == 17) {
+    }
+    # Check if this is a UDP packet
+    elsif ($ip->{proto} == 17) {
     # Can one do UDP OS detection !??!
        warn "Packet is of type UDP...\n" if($DEBUG>30);
        my $udp      = NetPacket::UDP->decode($ip->{'data'});
        if ($udp->{'data'} && $SERVICE == 1) {
           udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        }
-
+       return;
     }
-
-
-    warn "Done...\n\n" if($DEBUG>50);
+#    warn "Done...\n\n" if($DEBUG>50);
     return;
 }
+
+=head2 packet_icmp
+
+ Parse ICMP packet
+
+=cut
+
+sub packet_icmp {
+    my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
+    # Collect necessary info from ICMP packet
+    my $icmp      = NetPacket::ICMP->decode($ip->{'data'});
+    my $type = $icmp->{'type'};
+    my $code = $icmp->{'code'};
+#   my $cksum = $icmp->{'cksum'};
+    my $data = $icmp->{'data'};
+
+    my $src_ip = $ip->{'src_ip'};
+    my $dst_ip = $ip->{'dest_ip'};
+    my $flags  = $ip->{'flags'};
+    my $foffset= $ip->{'foffset'};
+
+    # We need to guess initial TTL
+    my $gttl = normalize_ttl($ttl);
+    my $dist = $gttl - $ttl;
+
+    $ipopts = "." if not $ipopts;
+
+    # Im not sure how IP should be printed :/
+    # This is work under developtment :)
+    if ($OS_ICMP == 1){
+       # Highly fuzzy - need thoughts/input 
+       # OS check to be implemented...
+       print " " . $pradshosts{"tstamp"} . " [ICMP_OS    ] ip:   $src_ip - OS - DETAILS [$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset] distance:$dist link:\"-\"\n";
+       return;
+     }else{
+       print " " . $pradshosts{"tstamp"} . " [ICMP      ] ip:   $src_ip - [$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset] distance:$dist link:\"-\"\n";
+       return;
+     }
+     return;
+}
+
 
 =head2 packet_tcp 
 
