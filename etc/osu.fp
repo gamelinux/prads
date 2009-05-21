@@ -5,10 +5,12 @@
 20:64:1:.:2:0:@Linux:2.6
 
 # Windows
-20:128:0:.:0:0:@Windows:New
-
+20:128:0:.:0:0:@Windows:MS
+20:64:0:.:0:0:@Windows:MS
+20:32:0:.:0:0:@Windows:MS
 # FreeBSD
 
 
 # UNKNOWN
 20:64:0:.:0:0:@nmap:udp scan from Linux
+
