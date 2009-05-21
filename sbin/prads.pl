@@ -377,13 +377,15 @@ sub packet_icmp {
        # asset database: want to know the following intel:
        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
        # maybe also add binary IP packet for audit?
-#       add_asset('IMCP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
-#       add_asset('SERVICE', $src_ip, $src_port, $vendor, $version, $info);
-
-       print " " . $pradshosts{"tstamp"} . " [ICMP_OS    ] ip:   $src_ip - OS - DETAILS [$fpstring] distance:$dist link:\"-\"\n";
+       my $os = 'UNKNOWN';
+       my $details = 'UNKNOWN';
+       my $link = 'Eternet';
+       #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+       add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
+#print " " . $pradshosts{"tstamp"} . " [ICMP_OS    ] ip:   $src_ip - OS - DETAILS [$fpstring] distance:$dist link:\"-\"\n";
        return;
-     }else{
-       print " " . $pradshosts{"tstamp"} . " [ICMP      ] ip:   $src_ip - [$fpstring] distance:$dist link:\"-\"\n";
+#     }else{
+#       print " " . $pradshosts{"tstamp"} . " [ICMP      ] ip:   $src_ip - [$fpstring] distance:$dist link:\"-\"\n";
        return;
      }
      return;
@@ -418,7 +420,12 @@ sub packet_udp {
     my $fplen  = $len - $ulen; 
     $fplen = 0 if $fplen < 0;
     my $fpstring = "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
-    print " " . $pradshosts{"tstamp"} . " [UDP       ] ip:   $src_ip:$src_port->$dst_ip:$dest_port - [$fpstring] distance:$dist link:\"-\"\n";
+    my $link = 'Eternet';
+    my $os = 'UNKNOWN';
+    my $details = 'UNKNOWN';
+    #add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+    add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details);
+#print " " . $pradshosts{"tstamp"} . " [UDP       ] ip:   $src_ip - [$fpstring] distance:$dist link:\"-\"\n";
 
     if ($udp->{'data'} && $SERVICE == 1) {
        udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
@@ -1516,8 +1523,11 @@ sub add_asset {
 
         add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
     }elsif($type eq 'ICMP'){
-#        my ($ip) = @rest;
-#        add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip->$dst_ip");
+        my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
+        add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint,'', $os, $details, $link, $dist, $PRADS_HOSTNAME );
+    }elsif($type eq 'UDP'){
+         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
+         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
     }
 }
 
