@@ -382,10 +382,6 @@ sub packet_icmp {
        my $link = 'Ethernet';
        #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
        add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
-#print " " . $pradshosts{"tstamp"} . " [ICMP_OS    ] ip:   $src_ip - OS - DETAILS [$fpstring] distance:$dist link:\"-\"\n";
-       return;
-#     }else{
-#       print " " . $pradshosts{"tstamp"} . " [ICMP      ] ip:   $src_ip - [$fpstring] distance:$dist link:\"-\"\n";
        return;
      }
      return;
@@ -423,9 +419,12 @@ sub packet_udp {
     my $link = 'Ethernet';
     my $os = 'UNKNOWN';
     my $details = 'UNKNOWN';
+ 
+    # Try to guess OS
+    #my ($os, $details, @more) = udp_os_find_match($fpstring);
+
     #add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
     add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details);
-#print " " . $pradshosts{"tstamp"} . " [UDP       ] ip:   $src_ip - [$fpstring] distance:$dist link:\"-\"\n";
 
     if ($udp->{'data'} && $SERVICE == 1) {
        udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
@@ -1327,8 +1326,6 @@ Prints out service if found.
 sub udp_service_check {
     my ($udp_data, $src_ip, $src_port,$tstamp) = @_;
 
-       # Make UDP asset detection here... PoC CODE at the moment.
-### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        #warn "Detecting UDP asset...\n" if($DEBUG);
        if ($src_port == 53){
           add_asset('SERVICE', $src_ip, $src_port, "-","-","DNS");
