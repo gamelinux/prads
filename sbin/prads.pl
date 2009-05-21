@@ -376,10 +376,18 @@ sub packet_icmp {
     if ($OS_ICMP == 1){
        # Highly fuzzy - need thoughts/input 
        # OS check to be implemented...
-       print " " . $pradshosts{"tstamp"} . " [ICMP_OS    ] ip:   $src_ip - OS - DETAILS [$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset] distance:$dist link:\"-\"\n";
+       # asset database: want to know the following intel:
+       # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
+       # maybe also add binary IP packet for audit?
+       my $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
+#       add_asset('IMCP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+#       add_asset('SERVICE', $src_ip, $src_port, $vendor, $version, $info);
+
+       print " " . $pradshosts{"tstamp"} . " [ICMP_OS    ] ip:   $src_ip - OS - DETAILS [$fpstring] distance:$dist link:\"-\"\n";
        return;
      }else{
-       print " " . $pradshosts{"tstamp"} . " [ICMP      ] ip:   $src_ip - [$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset] distance:$dist link:\"-\"\n";
+       my $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
+       print " " . $pradshosts{"tstamp"} . " [ICMP      ] ip:   $src_ip - [$fpstring] distance:$dist link:\"-\"\n";
        return;
      }
      return;
@@ -1464,6 +1472,9 @@ sub add_asset {
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
 
         add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+    }elsif($type eq 'ICMP'){
+#        my ($ip) = @rest;
+#        add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip->$dst_ip");
     }
 }
 
