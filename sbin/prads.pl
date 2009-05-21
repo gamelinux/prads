@@ -336,10 +336,6 @@ sub packets {
     # Can one do UDP OS detection !??!
        packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
        warn "Packet is of type UDP...\n" if($DEBUG>30);
-#       my $udp      = NetPacket::UDP->decode($ip->{'data'});
-#       if ($udp->{'data'} && $SERVICE == 1) {
-#          udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
-#       }
        return;
     }
 #    warn "Done...\n\n" if($DEBUG>50);
@@ -406,13 +402,13 @@ sub packet_udp {
     my $src_port  = $udp->{'src_port'};
     my $dest_port = $udp->{'dest_port'};
 #   my $cksum     = $udp->{'cksum'};
-    my $ulen       = $udp->{'len'};
+    my $ulen      = $udp->{'len'};
     my $data      = $udp->{'data'};
 
-    my $src_ip = $ip->{'src_ip'};
-    my $dst_ip = $ip->{'dest_ip'};
-    my $flags  = $ip->{'flags'};
-    my $foffset= $ip->{'foffset'};
+    my $src_ip  = $ip->{'src_ip'};
+    my $dst_ip  = $ip->{'dest_ip'};
+    my $flags   = $ip->{'flags'};
+    my $foffset = $ip->{'foffset'};
 
     # We need to guess initial TTL
     my $gttl = normalize_ttl($ttl);
@@ -420,6 +416,7 @@ sub packet_udp {
 
     $ipopts = "." if not $ipopts;
     my $fplen  = $len - $ulen; 
+    $fplen = 0 if $fplen < 0;
     my $fpstring = "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
     print " " . $pradshosts{"tstamp"} . " [UDP       ] ip:   $src_ip:$src_port->$dst_ip:$dest_port - [$fpstring] distance:$dist link:\"-\"\n";
 
