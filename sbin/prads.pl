@@ -334,11 +334,12 @@ sub packets {
     # Check if this is a UDP packet
     elsif ($ip->{proto} == 17) {
     # Can one do UDP OS detection !??!
+       packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
        warn "Packet is of type UDP...\n" if($DEBUG>30);
-       my $udp      = NetPacket::UDP->decode($ip->{'data'});
-       if ($udp->{'data'} && $SERVICE == 1) {
-          udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
-       }
+#       my $udp      = NetPacket::UDP->decode($ip->{'data'});
+#       if ($udp->{'data'} && $SERVICE == 1) {
+#          udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
+#       }
        return;
     }
 #    warn "Done...\n\n" if($DEBUG>50);
@@ -370,6 +371,7 @@ sub packet_icmp {
     my $dist = $gttl - $ttl;
 
     $ipopts = "." if not $ipopts;
+    my $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
 
     # Im not sure how IP should be printed :/
     # This is work under developtment :)
@@ -379,20 +381,53 @@ sub packet_icmp {
        # asset database: want to know the following intel:
        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
        # maybe also add binary IP packet for audit?
-       my $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
 #       add_asset('IMCP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
 #       add_asset('SERVICE', $src_ip, $src_port, $vendor, $version, $info);
 
        print " " . $pradshosts{"tstamp"} . " [ICMP_OS    ] ip:   $src_ip - OS - DETAILS [$fpstring] distance:$dist link:\"-\"\n";
        return;
      }else{
-       my $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
        print " " . $pradshosts{"tstamp"} . " [ICMP      ] ip:   $src_ip - [$fpstring] distance:$dist link:\"-\"\n";
        return;
      }
      return;
 }
 
+=head2 packet_udp
+
+ Parse UDP packet
+
+=cut
+
+sub packet_udp {
+    my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
+    # Collect necessary info from ICMP packet
+    my $udp       = NetPacket::UDP->decode($ip->{'data'});
+    my $src_port  = $udp->{'src_port'};
+    my $dest_port = $udp->{'dest_port'};
+#   my $cksum     = $udp->{'cksum'};
+    my $ulen       = $udp->{'len'};
+    my $data      = $udp->{'data'};
+
+    my $src_ip = $ip->{'src_ip'};
+    my $dst_ip = $ip->{'dest_ip'};
+    my $flags  = $ip->{'flags'};
+    my $foffset= $ip->{'foffset'};
+
+    # We need to guess initial TTL
+    my $gttl = normalize_ttl($ttl);
+    my $dist = $gttl - $ttl;
+
+    $ipopts = "." if not $ipopts;
+    my $fplen  = $len - $ulen; 
+    my $fpstring = "$dest_port:$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
+    print " " . $pradshosts{"tstamp"} . " [UDP       ] ip:   $src_ip:$src_port->$dst_ip:$dest_port - [$fpstring] distance:$dist link:\"-\"\n";
+
+    if ($udp->{'data'} && $SERVICE == 1) {
+       udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
+    }
+
+}
 
 =head2 packet_tcp 
 
@@ -1108,6 +1143,17 @@ for my $file (@files) {
     }
 }# for files loop
     return $rules;
+}
+
+=head2 load_os_mac_fingerprints
+
+Loads MAC signatures from file
+optimize for lookup matching
+
+=cut
+
+sub load_os_mac_fingerprints {
+    return;
 }
 
 =head2 init_dev
