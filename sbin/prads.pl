@@ -420,7 +420,7 @@ sub packet_udp {
 
     $ipopts = "." if not $ipopts;
     my $fplen  = $len - $ulen; 
-    my $fpstring = "$dest_port:$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
+    my $fpstring = "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
     print " " . $pradshosts{"tstamp"} . " [UDP       ] ip:   $src_ip:$src_port->$dst_ip:$dest_port - [$fpstring] distance:$dist link:\"-\"\n";
 
     if ($udp->{'data'} && $SERVICE == 1) {
