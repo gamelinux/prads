@@ -80,6 +80,8 @@ our $DUMP          = 0;
 our $ARP           = 0;
 our $SERVICE       = 0;
 our $OS            = 0;
+our $ICMP          = 0;
+our $OS_ICMP       = 0;
 our $BPF           = q();
 our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
 our $DB_USERNAME;
@@ -125,7 +127,9 @@ $DEBUG    = $conf->{debug} || $DEBUG;
 $OS       = $conf->{os_fingerprint} || $OS;
 $OS       = $conf->{os_synack_fingerprint} || $OS;
 $BPF      = $conf->{bpfilter} || $BPF;
-$OS       = $conf->{os_syn_fingerprint};
+$OS       = $conf->{os_syn_fingerprint} || $OS;
+$ICMP     = $conf->{icmp} || $ICMP;
+$OS_ICMP  = $conf->{os_icmp} || $OS_ICMP;
 
 # commandline overrides config
 Getopt::Long::GetOptions(
@@ -313,25 +317,119 @@ sub packets {
     }else{
         $df = 0; # Fragment or more fragments
     }
+    
+    # Now for packet analysis - should we do TCP first, then ICMP, then UDP ?
 
+    # Check if this is a ICMP packet
+    if($ip->{proto} == 1) {
+       packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
+       return; 
+    }
     # Check if this is a TCP packet
-    if($ip->{proto} == 6) {
+    elsif($ip->{proto} == 6) {
       warn "Packet is of type TCP...\n" if($DEBUG>50);
       packet_tcp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
 
-    }elsif ($ip->{proto} == 17) {
+    }
+    # Check if this is a UDP packet
+    elsif ($ip->{proto} == 17) {
     # Can one do UDP OS detection !??!
+       packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
        warn "Packet is of type UDP...\n" if($DEBUG>30);
-       my $udp      = NetPacket::UDP->decode($ip->{'data'});
-       if ($udp->{'data'} && $SERVICE == 1) {
-          udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
-       }
+       return;
+    }
+#    warn "Done...\n\n" if($DEBUG>50);
+    return;
+}
 
+=head2 packet_icmp
+
+ Parse ICMP packet
+
+=cut
+
+sub packet_icmp {
+    my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
+    # Collect necessary info from ICMP packet
+    my $icmp      = NetPacket::ICMP->decode($ip->{'data'});
+    my $type = $icmp->{'type'};
+    my $code = $icmp->{'code'};
+#   my $cksum = $icmp->{'cksum'};
+    my $data = $icmp->{'data'};
+
+    my $src_ip = $ip->{'src_ip'};
+    my $dst_ip = $ip->{'dest_ip'};
+    my $flags  = $ip->{'flags'};
+    my $foffset= $ip->{'foffset'};
+
+    # We need to guess initial TTL
+    my $gttl = normalize_ttl($ttl);
+    my $dist = $gttl - $ttl;
+
+    $ipopts = "." if not $ipopts;
+    my $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
+
+    # Im not sure how IP should be printed :/
+    # This is work under developtment :)
+    if ($OS_ICMP == 1){
+       # Highly fuzzy - need thoughts/input 
+       # OS check to be implemented...
+       # asset database: want to know the following intel:
+       # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
+       # maybe also add binary IP packet for audit?
+       my $os = 'UNKNOWN';
+       my $details = 'UNKNOWN';
+       my $link = 'Ethernet';
+       #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+       add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
+       return;
+     }
+     return;
+}
+
+=head2 packet_udp
+
+ Parse UDP packet
+
+=cut
+
+sub packet_udp {
+    my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
+    # Collect necessary info from ICMP packet
+    my $udp       = NetPacket::UDP->decode($ip->{'data'});
+    my $src_port  = $udp->{'src_port'};
+    my $dest_port = $udp->{'dest_port'};
+#   my $cksum     = $udp->{'cksum'};
+    my $ulen      = $udp->{'len'};
+    my $data      = $udp->{'data'};
+
+    my $src_ip  = $ip->{'src_ip'};
+    my $dst_ip  = $ip->{'dest_ip'};
+    my $flags   = $ip->{'flags'};
+    my $foffset = $ip->{'foffset'};
+
+    # We need to guess initial TTL
+    my $gttl = normalize_ttl($ttl);
+    my $dist = $gttl - $ttl;
+
+    $ipopts = "." if not $ipopts;
+    my $fplen  = $len - $ulen; 
+    $fplen = 0 if $fplen < 0;
+    my $fpstring = "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
+    my $link = 'Ethernet';
+    my $os = 'UNKNOWN';
+    my $details = 'UNKNOWN';
+ 
+    # Try to guess OS
+    #my ($os, $details, @more) = udp_os_find_match($fpstring);
+
+    #add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+    add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details);
+
+    if ($udp->{'data'} && $SERVICE == 1) {
+       udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
     }
 
-
-    warn "Done...\n\n" if($DEBUG>50);
-    return;
 }
 
 =head2 packet_tcp 
@@ -1047,6 +1145,17 @@ for my $file (@files) {
     return $rules;
 }
 
+=head2 load_os_mac_fingerprints
+
+Loads MAC signatures from file
+optimize for lookup matching
+
+=cut
+
+sub load_os_mac_fingerprints {
+    return;
+}
+
 =head2 init_dev
 
 Use network device passed in program arguments or if no 
@@ -1214,8 +1323,6 @@ Prints out service if found.
 sub udp_service_check {
     my ($udp_data, $src_ip, $src_port,$tstamp) = @_;
 
-       # Make UDP asset detection here... PoC CODE at the moment.
-### When ready - call udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
        #warn "Detecting UDP asset...\n" if($DEBUG);
        if ($src_port == 53){
           add_asset('SERVICE', $src_ip, $src_port, "-","-","DNS");
@@ -1409,6 +1516,12 @@ sub add_asset {
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
 
         add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+    }elsif($type eq 'ICMP'){
+        my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
+        add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint,'', $os, $details, $link, $dist, $PRADS_HOSTNAME );
+    }elsif($type eq 'UDP'){
+         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
+         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
     }
 }
 
