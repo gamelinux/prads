@@ -13,6 +13,8 @@ use DBI;
 
 
 use constant ETH_TYPE_ARP       => 0x0806;
+use constant ETH_TYPE_IP        => 0x0800;
+use constant ETH_TYPE_IPv6      => 0x86dd;
 use constant ARP_OPCODE_REPLY   => 2;
 
 BEGIN {
@@ -294,7 +296,9 @@ sub packets {
         return;
     }
 
-    unless(NetPacket::IP->decode($ethernet)) {
+    # TRY TO OPTIMIZE
+    #unless(NetPacket::IP->decode($ethernet)) {
+    if ( $eth->{type} != ETH_TYPE_IP){
         warn "Not an IP packet..\n" if($DEBUG>50);
         warn "Done...\n\n" if($DEBUG>50);
         return;
