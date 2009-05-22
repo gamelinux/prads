@@ -591,6 +591,8 @@ S44:128:1:48:M*,N,N,S:.:Windows:XP SP1+, 2000 SP3
 
 # Windows 2003 & Vista
 
+#8192:128:1:48:M1452,N,N,S:.:Windows:Vista SP2(pppoe)
+8192:128:1:48:M1460,N,N,S:.:Windows:Vista SP2
 8192:128:1:52:M*,W8,N,N,N,S:.:Windows:Vista (beta)
 8192:128:1:48:M1460,N,N,S:.:Windows:Vista SP1
 32768:32:1:52:M1460,N,W0,N,N,S:.:Windows:2003 AS

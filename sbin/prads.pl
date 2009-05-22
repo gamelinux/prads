@@ -379,7 +379,11 @@ sub packet_icmp {
        # maybe also add binary IP packet for audit?
        my $os = 'UNKNOWN';
        my $details = 'UNKNOWN';
-       my $link = 'Ethernet';
+       my $link = 'ethernet';
+
+      # Try to guess OS
+      #my ($os, $details, @more) = icmp_os_find_match($fpstring);
+    
        #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
        add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
        return;
@@ -416,7 +420,7 @@ sub packet_udp {
     my $fplen  = $len - $ulen; 
     $fplen = 0 if $fplen < 0;
     my $fpstring = "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
-    my $link = 'Ethernet';
+    my $link = 'ethernet';
     my $os = 'UNKNOWN';
     my $details = 'UNKNOWN';
  
