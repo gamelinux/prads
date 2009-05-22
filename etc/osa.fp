@@ -118,6 +118,8 @@ S6:128:1:44:M*:A:Windows:NT 4.0 SP1+
 16616:128:1:44:M*:A:Windows:2003
 16384:128:1:44:M*:A:Windows:2000 (2)
 S16:128:1:44:M*:A:Windows:2000 (3)
+8192:128:1:56:M*,S,T:A:Windows:2000 SP2+, XP SP1+ (seldom 98)
+
 # TEST SIG from  msn.no - UC=Unconfirmed
 8190:255:1:44:M1460:A:Windows:2008 Server (UC)
 
