@@ -380,6 +380,10 @@ sub packet_icmp {
        my $os = 'UNKNOWN';
        my $details = 'UNKNOWN';
        my $link = 'ethernet';
+
+      # Try to guess OS
+      #my ($os, $details, @more) = icmp_os_find_match($fpstring);
+    
        #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
        add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
        return;
