@@ -1608,6 +1608,7 @@ sub prepare_stats_dump {
 =cut
 
 sub dump_stats {
+    $dodump = 0;
     print "\n Packet capture stats:\n";
     my %d = %info;
     %info = ();
