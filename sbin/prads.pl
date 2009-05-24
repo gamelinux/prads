@@ -286,25 +286,23 @@ sub packets {
     $pradshosts{"tstamp"} = time;
     warn "Packet received - processing...\n" if($DEBUG>50);
 
-    #setup the storage hash.. could also let adding to DB be caller's job
-    my $ethernet = NetPacket::Ethernet::strip($packet);
     my $eth      = NetPacket::Ethernet->decode($packet);
 
-    # Check if arp - get mac and register...
+    # Check if ARP
     if ($ARP == 1 && $eth->{type} == ETH_TYPE_ARP) {
         arp_check ($eth, $pradshosts{"tstamp"});
+        #warn "Packet is of type ARP...\n" if($DEBUG>50);
         return;
     }
 
-    # TRY TO OPTIMIZE
-    #unless(NetPacket::IP->decode($ethernet)) {
+    # Check if IP ( also ETH_TYPE_IPv6 ?)
     if ( $eth->{type} != ETH_TYPE_IP){
         warn "Not an IP packet..\n" if($DEBUG>50);
-        warn "Done...\n\n" if($DEBUG>50);
         return;
     }
 
     # We should now have us an IP packet... good!
+    my $ethernet = NetPacket::Ethernet::strip($packet);
     my $ip       = NetPacket::IP->decode($ethernet);
 
     # OS finger printing
@@ -321,28 +319,26 @@ sub packets {
     }else{
         $df = 0; # Fragment or more fragments
     }
-    
-    # Now for packet analysis - should we do TCP first, then ICMP, then UDP ?
 
-    # Check if this is a ICMP packet
-    if($ip->{proto} == 1) {
-       packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
-       return; 
-    }
     # Check if this is a TCP packet
-    elsif($ip->{proto} == 6) {
-      warn "Packet is of type TCP...\n" if($DEBUG>50);
+    if($ip->{proto} == 6) {
+      #warn "Packet is of type TCP...\n" if($DEBUG>50);
       packet_tcp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
 
     }
-    # Check if this is a UDP packet
-    elsif ($ip->{proto} == 17) {
-    # Can one do UDP OS detection !??!
-       packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
-       warn "Packet is of type UDP...\n" if($DEBUG>30);
+    # Check if this is a ICMP packet
+    elsif($ip->{proto} == 1) {
+       packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
+       #warn "Packet is of type ICMP...\n" if($DEBUG>50);
        return;
     }
-#    warn "Done...\n\n" if($DEBUG>50);
+    # Check if this is a UDP packet
+    elsif ($ip->{proto} == 17) {
+       packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
+       #warn "Packet is of type UDP...\n" if($DEBUG>50);
+       return;
+    }
+    #warn "Done...\n\n" if($DEBUG>50);
     return;
 }
 
