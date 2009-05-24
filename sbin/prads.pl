@@ -1595,7 +1595,7 @@ sub dump_stats {
     $stats{"timestamp"} = $stamp;
     # Print stats
 #    print Dumper %stats;
-    print " $stats{timestamp}  Packages received:$stats{ps_recv}  Packages dropped:$stats{ps_drop}  Packages dropped by interface:$stats{ps_ifdrop}\n";
+    print " $stats{timestamp}  [Packages received:$stats{ps_recv}]  [Packages dropped:$stats{ps_drop}]  [Packages dropped by interface:$stats{ps_ifdrop}]\n";
 }
 
 =head2 game_over
