@@ -78,6 +78,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
 our $VERSION       = 0.1;
 our $DEBUG         = 0;
+our $DAEMON        = 0;
 our $DUMP          = 0;
 our $ARP           = 0;
 our $SERVICE       = 0;
@@ -126,6 +127,7 @@ $DEVICE   = $conf->{interface};
 $ARP      = $conf->{arp} || $ARP;
 $SERVICE  = $conf->{service} || $SERVICE;
 $DEBUG    = $conf->{debug} || $DEBUG;
+$DAEMON   = $conf->{daemon} || $DAEMON;
 $OS       = $conf->{os_fingerprint} || $OS;
 $OS       = $conf->{os_synack_fingerprint} || $OS;
 $BPF      = $conf->{bpfilter} || $BPF;
@@ -232,6 +234,29 @@ my %stats = ();
 Net::Pcap::stats ($PCAP, \%stats);
 $stats{"timestamp"} = time;
 my $inpacket = my $dodump = 0;
+
+# Prepare to meet the Daemon
+my ($name) = $0 =~ /([^\/]+)$/;
+$name =~ s/\.pl$//;
+my $pidfile = "/var/run/" . $name . ".pid";
+
+if ( $DAEMON ) {
+        print "Daemonizing...\n";
+        chdir ("/") or die "chdir /: $!\n";
+        open (STDIN, "/dev/null") or die "open /dev/null: $!\n";
+        # add log file here:
+        open (STDOUT, "> /dev/null") or die "open > /dev/null: $!\n";
+        defined (my $dpid = fork) or die "fork: $!\n";
+        if ($dpid) {
+                # Write PID file
+                open (PID, "> $pidfile") or die "open($pidfile): $!\n";
+                print PID $dpid, "\n";
+                close (PID);
+                exit 0;
+        }
+        setsid ();
+        open (STDERR, ">&STDOUT");
+}
 
 warn "Looping over object\n" if ($DEBUG>0);
 Net::Pcap::loop($PCAP, -1, \&packets, '') or die $ERROR{'loop'};
