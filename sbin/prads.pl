@@ -5,12 +5,12 @@ package Prads;
 
 use strict;
 use warnings;
+use POSIX qw(setsid);
 use FindBin;
 use Getopt::Long qw/:config auto_version auto_help/;
 use Net::Pcap;
 use Data::Dumper;
 use DBI;
-
 
 use constant ETH_TYPE_ARP       => 0x0806;
 use constant ETH_TYPE_IP        => 0x0800;
@@ -151,10 +151,6 @@ Getopt::Long::GetOptions(
 if ($C_INIT ne $CONFIG){
     load_config("$CONFIG");
 }
-#
-#my @array = split(/\s+/, $conf->{array-param});
-#my $variable = $conf->{variable};
-#$DEBUG    = $conf->{debug};
 
 my $PRADS_HOSTNAME = $conf->{hostname};
 $PRADS_HOSTNAME ||= `hostname`;
@@ -183,6 +179,15 @@ if ($DUMP) {
 
    exit 0;
 }
+
+# Signal handlers
+use vars qw(%sources);
+$SIG{"USR1"}  = \&prepare_stats_dump;
+$SIG{"HUP"}   = \&prepare_stats_dump;
+$SIG{"INT"}   = sub { prepare_stats_dump(); game_over() };
+#$SIG{"TERM"} = sub { unlink ($pidfile); exit 0 };
+$SIG{"TERM"}  = sub { prepare_stats_dump(); game_over() };
+#$SIG{"CHLD"} = 'IGNORE';
 
 warn "Starting prads.pl...\n";
 
@@ -220,6 +225,13 @@ my $PCAP = create_object($DEVICE);
 
 warn "Compiling Berkeley Packet Filter\n" if ($DEBUG>0);
 filter_object($PCAP);
+
+# Preparing stats
+my %info = ();
+my %stats = ();
+Net::Pcap::stats ($PCAP, \%stats);
+$stats{"timestamp"} = time;
+my $inpacket = my $dodump = 0;
 
 warn "Looping over object\n" if ($DEBUG>0);
 Net::Pcap::loop($PCAP, -1, \&packets, '') or die $ERROR{'loop'};
@@ -282,6 +294,9 @@ Callback function for C<Net::Pcap::loop>.
  * pass to protocol handlers
 =cut
 sub packets {
+    # Lock
+    $inpacket = 1;
+
     my ($user_data, $header, $packet) = @_;
     $pradshosts{"tstamp"} = time;
     warn "Packet received - processing...\n" if($DEBUG>50);
@@ -330,14 +345,17 @@ sub packets {
     elsif($ip->{proto} == 1) {
        packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
        #warn "Packet is of type ICMP...\n" if($DEBUG>50);
-       return;
+       #return;
     }
     # Check if this is a UDP packet
     elsif ($ip->{proto} == 17) {
        packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
        #warn "Packet is of type UDP...\n" if($DEBUG>50);
-       return;
+       #return;
     }
+    # If there was a dump request, handle it now
+    $inpacket = 0;
+    dump_stats () if ($dodump);
     #warn "Done...\n\n" if($DEBUG>50);
     return;
 }
@@ -1093,37 +1111,37 @@ optimize for lookup matching
      look me up and we'll discuss it. -kwy
 
 =cut
+
 sub load_os_syn_fingerprints {
     my @files = @_;
-#    my $file = shift;
     # Fingerprint entry format:
     # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
     #my $re   = qr{^ ([0-9%*()ST]+) : (\d+) : (\d+) : ([0-9()*]+) : ([^:]+) : ([^\s]+) : ([^:]+) : ([^:]+) }x; # suuure, validate this!
     my $rules = {};
-for my $file (@files) {
-    open(my $FH, "<", $file) or die "Could not open '$file': $!";
+    for my $file (@files) {
+       open(my $FH, "<", $file) or die "Could not open '$file': $!";
 
-    my $lineno = 0;
-    while (my $line = readline $FH) {
-        $lineno++;
-        chomp $line;
-        $line =~ s/\#.*//;
-        next unless($line); # empty line
+       my $lineno = 0;
+       while (my $line = readline $FH) {
+          $lineno++;
+          chomp $line;
+          $line =~ s/\#.*//;
+          next unless($line); # empty line
 
-        my @elements = split/:/,$line;
-        unless(@elements == 8) {
-            die "Error: Not valid fingerprint format in: '$file'";
-        }
-        my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
-        my $oc = 0;
-        my $t0 = 0;
-        my ($mss, $wsc) = ('*','*');
-        if($oo eq '.'){
-            $oc = 0;
-        }else{
-            my @opt = split /[, ]/, $oo;
-            $oc = scalar @opt;
-            for(@opt){
+          my @elements = split/:/,$line;
+          unless(@elements == 8) {
+             die "Error: Not valid fingerprint format in: '$file'";
+          }
+          my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
+          my $oc = 0;
+          my $t0 = 0;
+          my ($mss, $wsc) = ('*','*');
+          if($oo eq '.'){
+             $oc = 0;
+          }else{
+             my @opt = split /[, ]/, $oo;
+             $oc = scalar @opt;
+             for(@opt){
                 if(/([MW])([\d%*]*)/){
                     if($1 eq 'M'){
                         $mss = $2;
@@ -1137,8 +1155,8 @@ for my $file (@files) {
         }
 
         my($details, $human) = splice @elements, -2;
-
         my $tmp = $rules;
+
         for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
             $tmp->{$e} ||= {};
             $tmp = $tmp->{$e};
@@ -1147,19 +1165,30 @@ for my $file (@files) {
             print "$file:$lineno:Conflicting signature: '$line' overwrites earlier signature '$details:$tmp->{$details}'\n\n" if ($DEBUG);
         }
         $tmp->{$details} = $human;
-    }
-}# for files loop
+       }
+    }# for files loop
     return $rules;
 }
 
 =head2 load_os_mac_fingerprints
 
-Loads MAC signatures from file
+Loads MAC OS signatures from file
 optimize for lookup matching
 
 =cut
 
 sub load_os_mac_fingerprints {
+    return;
+}
+
+=head2 load_os_icmp_fingerprints
+
+Loads icmp os fingerprints from file
+optimize for lookup matching
+
+=cut
+
+sub load_os_icmp_fingerprints {
     return;
 }
 
@@ -1401,7 +1430,6 @@ sub arp_check {
 sub get_mtu_link {
     my $mss = shift;
     my $link = "UNKNOWN";
-#   if ($mss =~ m/^[0-9]+$/) { 
     if ($mss =~ /^[+-]?\d+$/) {
        my $mtu = $mss + 40;
        if (my $link = $MTU_SIGNATURES->{ $mtu }) {return $link}
@@ -1486,8 +1514,8 @@ sub add_db {
 
 =head2 add_asset
 
-Takes input: type, type-specific args, ...
-Adds the asset to the internal list of assets, or if it exists, just updates the timestamp.
+ Takes input: type, type-specific args, ...
+ Adds the asset to the internal list of assets, or if it exists, just updates the timestamp.
 
 =cut
 
@@ -1532,13 +1560,63 @@ sub add_asset {
     }
 }
 
+=head2 prepare_stats_dump
+
+ A sub that checks if packet is beeing processed. Waits for for it to be finnished
+ and then calls dump_stats.
+
+=cut
+
+sub prepare_stats_dump {
+    # If a packet is being processed, wait until it is done
+    if ($inpacket) {
+       $dodump = 1;
+       return;
+    }
+    dump_stats ();
+}
+
+=head2 dump_stats
+
+ Prints out pcap stats 
+
+=cut
+
+sub dump_stats {
+    print "\n Packet capture stats:\n";
+    my %d = %info;
+    %info = ();
+
+    my $stamp = time;
+    my %ds = %stats;
+    %stats = ();
+
+    Net::Pcap::stats ($PCAP, \%stats);
+    $stats{"timestamp"} = $stamp;
+    # Print stats
+#    print Dumper %stats;
+    print " $stats{timestamp}  Packages received:$stats{ps_recv}  Packages dropped:$stats{ps_drop}  Packages dropped by interface:$stats{ps_ifdrop}\n";
+}
+
+=head2 game_over
+
+ Closing the pcap device and exits.
+
+=cut
+
+sub game_over {
+    warn "Closing device\n" if ($DEBUG>0);
+    Net::Pcap::close($PCAP);
+    exit 0;
+}
+
 =head1 AUTHOR
 
 Edward Fjellskål
 
-Jan Henning Thorsen
-
 Kacper Wysocki
+
+Jan Henning Thorsen
 
 =head1 COPYRIGHT
 
