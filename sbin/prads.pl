@@ -854,8 +854,13 @@ sub check_tcp_options{
                 }
             }else{
                 # unrecognized
+               print "Unrecognized options may trigger weird crash. Dumping debug\n";
+               print "opts: ". unpack("B*", $opts)."\n";
+               print "optstr: $optstr\n";
+               print "option $kind: $size\n";
+               print "rest len:". length $rest ."\n";
                 $optstr .= "?$kind,";
-                ($rest) = unpack("x$size a*", $rest);
+                ($rest) = eval unpack("x$size a*", $rest);
                 print "unknown $kind:$size:" if $DEBUG & 8;
             }
             print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
