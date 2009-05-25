@@ -62,7 +62,7 @@ S22:64:1:52:M*,N,N,S,N,W0:A:Linux:2.2 w/o timestamps
 S4:64:1:44:M*:ZA:Linux:recent 2.4 (2)
 5792:64:1:44:M*:ZA:Linux:recent 2.4 (3)
 
-S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
+S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.6 or 2.4 w/o timestamps
 
 # SYNACK response when Linux talk to Linux
 #5792:64:1:60:M*,S,T,N,W*:ZA:Linux:2.6 (Generic:SYN from Linux)
@@ -80,7 +80,7 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.4 w/o timestamps
 
 # Different response when Windows talk to Linux:
 #S4:64:1:52:M*,N,N,S,N,W*:ZA:Linux:2.6 (Generic:SYN from Windows)
-S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.6 (newer, 0)
+#S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.6 (newer, 0)
 S4:64:1:52:M*,N,N,S,N,W1:ZA:Linux:2.6 (newer, 1)
 S4:64:1:52:M*,N,N,S,N,W2:ZA:Linux:2.6 (newer, 2)
 S4:64:1:52:M*,N,N,S,N,W3:ZA:Linux:2.6 (newer, 3)

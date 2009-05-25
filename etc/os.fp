@@ -419,7 +419,7 @@ S4:64:1:52:M*,N,N,S,N,W2:.:Linux:2.6 (tstamp-)
 S4:64:1:44:M*:.:Linux:2.6? (barebone, rare!)
 T4:64:1:60:M1412,S,T,N,W0:.:Linux:2.4 (rare!)
 
-#
+# Generic *nix sigs
 65535:64:0:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag-)
 65535:64:1:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag+)
 
@@ -592,9 +592,8 @@ S44:128:1:48:M*,N,N,S:.:Windows:XP SP1+, 2000 SP3
 # Windows 2003 & Vista
 
 #8192:128:1:48:M1452,N,N,S:.:Windows:Vista SP2(pppoe)
-8192:128:1:48:M1460,N,N,S:.:Windows:Vista SP2
+8192:128:1:48:M1460,N,N,S:.:Windows:Vista SP1/SP2
 8192:128:1:52:M*,W8,N,N,N,S:.:Windows:Vista (beta)
-8192:128:1:48:M1460,N,N,S:.:Windows:Vista SP1
 32768:32:1:52:M1460,N,W0,N,N,S:.:Windows:2003 AS
 65535:64:1:52:M1460,N,W2,N,N,S:.:Windows:2003 (1)
 65535:64:1:48:M1460,N,N,S:.:Windows:2003 (2)
@@ -866,8 +865,6 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 # Generic Linux
 S4:64:1:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag+)
 S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
-65535:64:1:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag+)
-65535:64:0:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag-)
 
 S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 
