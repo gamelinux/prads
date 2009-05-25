@@ -43,3 +43,7 @@ Kacper's crazy ideas:
 - switch/router topology by sniffing OSPF/BGP/RSTP
 -.geoip maps ( passive lookup )
 -.sniff DNS lookups
+
+Kacper's TODO items:
+ - investigate NetPacket slowness
+ - update UNKNOWN entries when they match.
