@@ -1623,7 +1623,9 @@ sub dump_stats {
     $stats{"timestamp"} = $stamp;
     # Print stats
 #    print Dumper %stats;
-    print " $stats{timestamp}  [Packages received:$stats{ps_recv}]  [Packages dropped:$stats{ps_drop}]  [Packages dropped by interface:$stats{ps_ifdrop}]\n";
+    my $droprate = 0;
+    $droprate = ( ($stats{ps_drop} * 100) / $stats{ps_recv}) if $stats{ps_recv} >0;
+    print " $stats{timestamp}  [Packages received:$stats{ps_recv}]  [Packages dropped:$stats{ps_drop}] [Droprate:$droprate%]  [Packages dropped by interface:$stats{ps_ifdrop}]\n";
 }
 
 =head2 game_over
