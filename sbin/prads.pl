@@ -942,6 +942,36 @@ sub check_tcp_options{
     return ($count, $scale, $mss, $sackok, $ts, $optstr, @quirks);
 }
 
+=head2 icmp_os_find_match
+
+ Try to match OS
+ input: $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
+ returns: ($os, $details, [...])
+ or undef on fail
+
+=cut
+
+sub icmp_os_find_match {
+    my ($type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset) = @_;
+    my $sigs = $ICMP_SIGS;
+    my $guesses = 0;
+    my $matches = $sigs;
+    my $j = 0;
+    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
+    for($type, $code, $gttl, $df){
+        if($matches->{$_}){
+            $matches = $matches->{$_};
+            #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
+            $j++;
+
+        }else{
+            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG > 0;
+            return;
+        }
+    }
+
+
+}
 
 =head2 load_signatures
 
