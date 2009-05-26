@@ -29,7 +29,7 @@
 #### OpenBSD
 # Echo request (8)
 # Echo reply (0)
-#0:0:255:1:.:84:2:0:@OpenBSD:4
+0:0:255:1:.:84:2:0:@OpenBSD:4
 
 #### Windows
 # Echo request (8)

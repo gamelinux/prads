@@ -439,12 +439,14 @@ sub packet_icmp {
        # asset database: want to know the following intel:
        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
        # maybe also add binary IP packet for audit?
-       my $os = 'UNKNOWN';
-       my $details = 'UNKNOWN';
+       my $OS = 'UNKNOWN';
+       my $DETAILS = 'UNKNOWN';
        my $link = 'ethernet';
 
       # Try to guess OS
-      #my ($os, $details, @more) = icmp_os_find_match($fpstring);
+      my ($os, $details) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
+      #$os  = $os || $OS;
+      #$details = $details || $DETAILS;
     
        #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
        add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
@@ -952,23 +954,25 @@ sub check_tcp_options{
 =cut
 
 sub icmp_os_find_match {
-    my ($type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset) = @_;
+    my ($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset) = @_;
     my $sigs = $ICMP_SIGS;
-    my $guesses = 0;
-    my $matches = $sigs;
-    my $j = 0;
-    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
-    for($type, $code, $gttl, $df){
-        if($matches->{$_}){
-            $matches = $matches->{$_};
-            #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
-            $j++;
-
-        }else{
-            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG > 0;
-            return;
-        }
-    }
+    my @OS = $sigs->{$type}->{$code}->{$gttl}->{$df}->{$ipopts}->{$len}->{$ipflags}->{$foffset};
+    return @OS;
+#    my $guesses = 0;
+#    my $matches = $sigs;
+#    my $j = 0;
+#    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
+#    for($type, $code, $gttl, $df){
+#        if($matches->{$_}){
+#            $matches = $matches->{$_};
+#            #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
+#            $j++;
+#
+#        }else{
+#            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG > 0;
+#            return;
+#        }
+#    }
 
 
 }
