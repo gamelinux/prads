@@ -445,8 +445,8 @@ sub packet_icmp {
 
       # Try to guess OS
       my ($os, $details) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
-      #$os  = $os || $OS;
-      #$details = $details || $DETAILS;
+      $os  = $os || $OS;
+      $details = $details || $DETAILS;
     
        #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
        add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
