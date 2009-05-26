@@ -184,11 +184,13 @@ if ($DUMP) {
 
 # Signal handlers
 use vars qw(%sources);
-$SIG{"USR1"}  = \&prepare_stats_dump;
 $SIG{"HUP"}   = \&prepare_stats_dump;
 $SIG{"INT"}   = sub { prepare_stats_dump(); game_over() };
 #$SIG{"TERM"} = sub { unlink ($pidfile); exit 0 };
 $SIG{"TERM"}  = sub { prepare_stats_dump(); game_over() };
+$SIG{"QUIT"}  = sub { prepare_stats_dump(); game_over() };
+$SIG{"KILL"}  = sub { prepare_stats_dump(); game_over() };
+
 #$SIG{"CHLD"} = 'IGNORE';
 
 warn "Starting prads.pl...\n";
@@ -1216,7 +1218,75 @@ optimize for lookup matching
 =cut
 
 sub load_os_icmp_fingerprints {
-    return;
+    # Format 8:0:64:1:.:84:2:0:@Linux:2.6
+    # icmp_type:icmp_code:initial_ttl:dont_fragment:ip_options:ip_length:ip_flags:fragment_offset
+    my @files = @_;
+    my $rules = {};
+    for my $file (@files) {
+       open(my $FH, "<", $file) or die "Could not open '$file': $!";
+
+       my $lineno = 0;
+       while (my $line = readline $FH) {
+          $lineno++;
+          chomp $line;
+          $line =~ s/\#.*//;
+          next unless($line); # empty line
+
+          my @elements = split/:/,$line;
+          unless(@elements == 9) {
+             die "Error: Not valid fingerprint format in: '$file'";
+          }
+          # Sanitize from here and down...
+          #my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
+          my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo,$os,$detail) = @elements;
+          if($io eq '.'){
+             $io = 0;
+          }
+          #else{
+          #   my @opt = split /[, ]/, $io;
+          #   $oc = scalar @opt;
+          #   for(@opt){
+          #      if(/([MW])([\d%*]*)/){
+          #          if($1 eq 'M'){
+          #              $mss = $2;
+          #          }else{
+          #              $wsc = $2;
+          #          }
+          #      }elsif(/T0/){
+          #          $t0 = 1;
+          #      }
+          #}
+          #}
+
+        my($details, $human) = splice @elements, -2;
+        my $tmp = $rules;
+
+        #for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
+        # Format 8:0:64:1:.:84:2:0:@Linux:2.6
+        # icmp_type:icmp_code:initial_ttl:dont_fragment:ip_options:ip_length:ip_flags:fragment_offset
+        # Examples of what one sees, type8+code0 :
+        # 8:0:128:0:.:61:0:0
+        # 8:0:128:0:.:64:0:0
+        # 8:0:255:0:.:28:0:0
+        # 8:0:32:0:.:28:0:0
+        # 8:0:32:0:.:40:0:0
+        # 8:0:32:0:.:60:0:0
+        # 8:0:64:0:.:64:0:0
+        # 8:0:64:0:.:69:0:0
+        # 8:0:64:0:.:84:0:0
+        # 8:0:64:1:.:48:2:0
+        # 8:0:64:1:.:84:2:0
+        for my $e ($itype,$icode,$il,$ttl,$df,$if,$fo,$io){
+            $tmp->{$e} ||= {};
+            $tmp = $tmp->{$e};
+        }
+        if($tmp->{$details}){
+            print "$file:$lineno:Conflicting signature: '$line' overwrites earlier signature '$details:$tmp->{$details}'\n\n" if ($DEBUG);
+        }
+        $tmp->{$details} = $human;
+       }
+    }# for files loop
+    return $rules;
 }
 
 =head2 init_dev
@@ -1624,8 +1694,8 @@ sub dump_stats {
     # Print stats
 #    print Dumper %stats;
     my $droprate = 0;
-    $droprate = ( ($stats{ps_drop} * 100) / $stats{ps_recv}) if $stats{ps_recv} >0;
-    print " $stats{timestamp}  [Packages received:$stats{ps_recv}]  [Packages dropped:$stats{ps_drop}] [Droprate:$droprate%]  [Packages dropped by interface:$stats{ps_ifdrop}]\n";
+    $droprate = ( ($stats{ps_drop} * 100) / $stats{ps_recv}) if $stats{ps_recv} > 0;
+    print " $stats{timestamp} [Packages received:$stats{ps_recv}]  [Packages dropped:$stats{ps_drop}] [Droprate:$droprate%]  [Packages dropped by interface:$stats{ps_ifdrop}]\n";
 }
 
 =head2 game_over

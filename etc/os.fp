@@ -735,6 +735,8 @@ S4:64:1:60:W0,N,S,T,M1460:.:FortiNet:FortiGate 50
 
 65535:64:1:64:M1460,N,W1,N,N,T,S:A:Juniper:JunOS 9.2-9-4
 
+#S4:64:1:72:M1460,S,T,N,W6,?76:.:Riverbed:RiOS 5.x
+
 # ------- Switches and other stuff ----------
 
 4128:255:0:44:M*:Z:Cisco:7200, Catalyst 3500, etc
