@@ -898,15 +898,18 @@ sub check_tcp_options{
                     $ts = $t;
                 }
             }else{
-                # unrecognized
+               # unrecognized
                print "Unrecognized options may trigger weird crash. Dumping debug\n";
                print "opts: ". unpack("B*", $opts)."\n";
+               print "hex opts: ". unpack("H*", $opts)."\n";
                print "optstr: $optstr\n";
                print "option $kind is of size:$size\n";
                print "length of rest of string:". length $rest ."\n";
-                $optstr .= "?$kind,";
-                ($rest) = eval unpack("x$size a*", $rest) or print "unpack:$!";
-                print "unknown $kind:$size:" if $DEBUG & 8;
+               print "hex rest: ". unpack("H*", $rest)."\n";
+               $optstr .= "?$kind,";
+               ($rest) = eval unpack("x$size a*", $rest) or print "unpack:$!";
+               print "unknown $kind:$size:" if $DEBUG & 8;
+               $rest = substr $rest,$size;
             }
             print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
         }
