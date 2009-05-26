@@ -93,12 +93,16 @@ our $DB_PASSWORD;
 
 #my $DEVICE         = q(eth0);
 my $DEVICE;
-my $CONFIG         = q(/etc/prads/prads.conf);
+my $LOGFILE                 = q(/dev/null);
+my $CONFIG                  = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
 my $OS_SYNACK_FINGERPRINT_FILE = q(/etc/prads/osa.fp);
-my $MAC_SIGNATURE_FILE = q(/etc/prads/mac.sig);
-my %pradshosts     = ();
+my $OS_ICMP_FINGERPRINT_FILE= q(/etc/prads/osi.fp);
+my $OS_UDP_FINGERPRINT_FILE = q(/etc/prads/osu.fp);
+my $MAC_SIGNATURE_FILE      = q(/etc/prads/mac.sig);
+my $MTU_SIGNATURE_FILE      = q(/etc/prads/mtu.sig);
+my %pradshosts              = ();
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
     lookup_net => q(Unable to look up device information for %s - %s),
@@ -134,6 +138,7 @@ $BPF      = $conf->{bpfilter} || $BPF;
 $OS       = $conf->{os_syn_fingerprint} || $OS;
 $ICMP     = $conf->{icmp} || $ICMP;
 $OS_ICMP  = $conf->{os_icmp} || $OS_ICMP;
+$LOGFILE  = $conf->{logfile} || $LOGFILE;
 
 # commandline overrides config
 Getopt::Long::GetOptions(
@@ -163,6 +168,14 @@ my $PRADS_START = time;
 if ($DUMP) {
    print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
+   warn "Loading UDP fingerprints\n" if ($DEBUG>0);
+   my $UDP_SIGS = load_os_udp_fingerprints($OS_UDP_FINGERPRINT_FILE);
+   print Dumper $UDP_SIGS;
+
+   warn "Loading ICMP fingerprints\n" if ($DEBUG>0);
+   my $ICMP_SIGS = load_os_icmp_fingerprints($OS_ICMP_FINGERPRINT_FILE);
+   print Dumper $ICMP_SIGS;
+
    warn "Loading MAC fingerprints\n" if ($DEBUG>0);
    my $MAC_SIGS = load_mac($MAC_SIGNATURE_FILE);
    print Dumper $MAC_SIGS;
@@ -176,7 +189,7 @@ if ($DUMP) {
    print Dumper @TCP_SERVICE_SIGNATURES; 
 
    print "\n *** Loading MTU signatures *** \n\n";
-   my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig");
+   my $MTU_SIGNATURES = load_mtu($MTU_SIGNATURE_FILE);
    print Dumper $MTU_SIGNATURES;
 
    exit 0;
@@ -204,8 +217,13 @@ warn "Loading MAC fingerprints\n" if ($DEBUG>0);
 my $MAC_SIGS = load_mac($MAC_SIGNATURE_FILE);
 
 warn "Loading MTU fingerprints\n" if ($DEBUG>0);
-my $MTU_SIGNATURES = load_mtu("/etc/prads/mtu.sig")
-              or Getopt::Long::HelpMessage();
+my $MTU_SIGNATURES = load_mtu($MTU_SIGNATURE_FILE);
+
+warn "Loading ICMP fingerprints\n" if ($DEBUG>0);
+my $ICMP_SIGS = load_os_icmp_fingerprints($OS_ICMP_FINGERPRINT_FILE);
+
+warn "Loading UDP fingerprints\n" if ($DEBUG>0);
+my $UDP_SIGS = load_os_udp_fingerprints($OS_UDP_FINGERPRINT_FILE);
 
 warn "Initializing device\n" if ($DEBUG>0);
 warn "Using $DEVICE\n" if $DEVICE;
@@ -246,8 +264,7 @@ if ( $DAEMON ) {
         print "Daemonizing...\n";
         chdir ("/") or die "chdir /: $!\n";
         open (STDIN, "/dev/null") or die "open /dev/null: $!\n";
-        # add log file here:
-        open (STDOUT, "> /dev/null") or die "open > /dev/null: $!\n";
+        open (STDOUT, "> $LOGFILE") or die "open > /dev/null: $!\n";
         defined (my $dpid = fork) or die "fork: $!\n";
         if ($dpid) {
                 # Write PID file
@@ -1202,15 +1219,61 @@ sub load_os_syn_fingerprints {
     return $rules;
 }
 
-=head2 load_os_mac_fingerprints
+=head2 load_os_udp_fingerprints
 
-Loads MAC OS signatures from file
+Loads UDP OS signatures from file
 optimize for lookup matching
 
 =cut
 
-sub load_os_mac_fingerprints {
-    return;
+sub load_os_udp_fingerprints {
+    # Format 20:64:1:.:2:0:@Linux:2.6
+    # $fplen:$gttl:$df:$ipopts:$ipflags:$foffset:$os:$details
+    my @files = @_;
+    my $rules = {};
+    for my $file (@files) {
+       open(my $FH, "<", $file) or die "Could not open '$file': $!";
+
+       my $lineno = 0;
+       while (my $line = readline $FH) {
+          $lineno++;
+          chomp $line;
+          $line =~ s/\#.*//;
+          next unless($line); # empty line
+
+          my @elements = split/:/,$line;
+          unless(@elements == 8) {
+             die "Error: Not valid fingerprint format in: '$file'";
+          }
+          # Sanitize from here and down... Examples of UDP sigs we see:
+          # $fplen:$gttl:$df:$ipopts:$ipflags:$foffset:$os:$details
+          # 20:128:0:.:0:0
+          # 20:128:1:.:2:0
+          # 20:255:0:.:0:0
+          # 20:255:1:.:2:0
+          # 20:32:0:.:0:0
+          # 20:64:0:.:0:0
+          # 20:64:1:.:2:0
+          # Strange:
+          # 0:64:0:.:1:1480
+
+          my ($fplen,$ttl,$df,$io,$if,$fo,$os,$detail) = @elements;
+          if($io eq '.'){
+             $io = 0;
+          }
+          my($details, $human) = splice @elements, -2;
+          my $tmp = $rules;
+          for my $e ($fplen,$ttl,$df,$if,$fo,$io){
+              $tmp->{$e} ||= {};
+              $tmp = $tmp->{$e};
+          }
+          if($tmp->{$details}){
+              print "$file:$lineno:Conflicting signature: '$line' overwrites earlier signature '$details:$tmp->{$details}'\n\n" if ($DEBUG);
+          }
+          $tmp->{$details} = $human;
+       }
+    }# for files loop
+    return $rules;
 }
 
 =head2 load_os_icmp_fingerprints
@@ -1236,7 +1299,7 @@ sub load_os_icmp_fingerprints {
           next unless($line); # empty line
 
           my @elements = split/:/,$line;
-          unless(@elements == 9) {
+          unless(@elements == 10) {
              die "Error: Not valid fingerprint format in: '$file'";
           }
           # Sanitize from here and down...
