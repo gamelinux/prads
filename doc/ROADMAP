@@ -10,19 +10,23 @@ Point Release 0.1 - Reached 19 May 2009
  * MAC sig matching
 
 Point Release 0.2
+ * UDP asset detection
+ * UDP os fingerprinting
+ * ICMP os fingerprinting
  * Text File Log (default, not stdout)
  * prads.deb and prads.rpm package 
- (* prads2sguil.pl script)
 
 Point Release 0.3
- * udp-service fingerprinting
- * Client Service Fingerprinting 
+ * udp-service fingerprinting and detection
+ * tcp-service detection
+ * Client application Fingerprinting 
 
 Point Release 0.4
  * Switch discover?
  * Router discover?
  * hops
  * NAT
+ (* prads2sguil.pl script)
 
 Point Release 0.4
  * Graphic display of network topology
