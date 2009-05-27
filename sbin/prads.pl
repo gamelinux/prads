@@ -168,11 +168,11 @@ my $PRADS_START = time;
 if ($DUMP) {
    print "\n ##### Dumps all signatures and fingerprints then exits ##### \n";
 
-   warn "Loading UDP fingerprints\n" if ($DEBUG>0);
+   print "Loading UDP fingerprints\n" if ($DEBUG>0);
    my $UDP_SIGS = load_os_udp_fingerprints($OS_UDP_FINGERPRINT_FILE);
    print Dumper $UDP_SIGS;
 
-   warn "Loading ICMP fingerprints\n" if ($DEBUG>0);
+   print "Loading ICMP fingerprints\n" if ($DEBUG>0);
    my $ICMP_SIGS = load_os_icmp_fingerprints($OS_ICMP_FINGERPRINT_FILE);
    print Dumper $ICMP_SIGS;
 
@@ -485,13 +485,15 @@ sub packet_udp {
     $fplen = 0 if $fplen < 0;
     my $fpstring = "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
     my $link = 'ethernet';
-    my $os = 'UNKNOWN';
-    my $details = 'UNKNOWN';
+    my $OS = 'UNKNOWN';
+    my $DETAILS = 'UNKNOWN';
  
     # Try to guess OS
-    #my ($os, $details, @more) = udp_os_find_match($fpstring);
-
-    #add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+    # $fplen,$ttl,$df,$io,$if,$fo
+    my $oss = udp_os_find_match($fplen,$gttl,$df,$ipopts,$ipflags,$foffset);
+    my ($os, $details) = %$oss if $oss;
+    $os  = $os || $OS;
+    $details = $details || $DETAILS;
     add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details);
 
     if ($udp->{'data'} && $SERVICE == 1) {
@@ -946,9 +948,9 @@ sub check_tcp_options{
 
 =head2 icmp_os_find_match
 
- Try to match OS
+ Try to match OS from IP/ICMP package
  input: $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
- returns: ($os, $details, [...])
+ returns: ($OS)
  or undef on fail
 
 =cut
@@ -965,6 +967,28 @@ sub icmp_os_find_match {
     $OS = $sigs->{$type}->{$code}->{$len}->{$gttl}->{$df}->{$ipflags}->{$foffset}->{$ipopts};
     return ($OS);
 }
+
+=head2 udp_os_find_match
+
+ Try to match OS from IP/UDP package
+ input: $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
+ returns: ($OS)
+ or undef on fail
+
+=cut
+
+sub udp_os_find_match {
+    my ($fplen,$ttl,$df,$io,$if,$fo) = @_;
+    my $sigs = $UDP_SIGS;
+    # $fplen,$ttl,$df,$if,$fo,$io
+    if($io eq '.'){
+       $io = 0;
+    }
+    my $OS = 0;
+    $OS = $sigs->{$fplen}->{$ttl}->{$df}->{$if}->{$fo}->{$io};
+    return ($OS);
+}
+
 
 =head2 load_signatures
 

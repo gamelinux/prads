@@ -1,5 +1,5 @@
 # If possible - UDP sigs for OS fingerprinting :)
-# $dest_port:$fplen:$gttl:$df:$ipopts:$ipflags:$foffset
+# $fplen:$gttl:$df:$ipopts:$ipflags:$foffset
 
 # Linux
 20:64:1:.:2:0:@Linux:2.6
