@@ -49,8 +49,8 @@ Kacper's TODO items:
  - update UNKNOWN entries when they match.
 
 Edward's TODO items:
- - fix up icmp OS fingerprinting
- - fic up UDP  OS fingerprinting
+ - fix up icmp OS fingerprinting # DONE
+ - fic up UDP  OS fingerprinting # DONE
  - fix SERVICE, both TCP and UDP... together with Kacper?
    Need to make it faster, and maybe drop newlines etc.?
    Kacper mentioned precompiling regexp
