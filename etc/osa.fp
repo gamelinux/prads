@@ -157,7 +157,7 @@ S1:255:1:60:N,N,T,N,W0,M*:AT:Solaris:7
 24656:64:1:44:M*:A:Solaris:8
 33304:64:1:60:N,N,T,M*,N,W1:AT:Solaris:9 (2)
 9576:255:1:64:N,N,T,N,W0,N,N,S,M*:A:Solaris:8 ?
-33304:32:1:64:N,N,T,N,W1,N,N,S,M*:A:Solaris:9 ?
+33304:64:1:64:N,N,T,N,W1,N,N,S,M*:A:Solaris:9 (3)
 
 # ----------------- FreeBSD ----------------
 
