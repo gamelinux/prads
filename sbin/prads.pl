@@ -444,7 +444,7 @@ sub packet_icmp {
 
        # Try to guess OS
        my ($oss, @more) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
-       my ($os, $details) = each(%$oss);
+       my ($os, $details) = %$oss;
        $os  = $os || $OS;
        $details = $details || $DETAILS;
     

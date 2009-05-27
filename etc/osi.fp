@@ -49,6 +49,7 @@
 
 # Echo reply (0)
 0:0:255:1:.:84:2:0:@Misc:Cisco,3com,OpenBSD
+0:0:255:0:.:84:0:0:@Misc:F5 BigIP?
 #0:0:255:1:.:84:2:0:@Cisco:IOS
 #0:0:255:1:.:84:2:0:@3com:wlan-ruter
 #0:0:255:1:.:84:2:0:@OpenBSD:4
