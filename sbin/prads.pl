@@ -435,7 +435,6 @@ sub packet_icmp {
     # This is work under developtment :)
     if ($OS_ICMP == 1){
        # Highly fuzzy - need thoughts/input 
-       # OS check to be implemented...
        # asset database: want to know the following intel:
        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
        # maybe also add binary IP packet for audit?
@@ -443,13 +442,14 @@ sub packet_icmp {
        my $DETAILS = 'UNKNOWN';
        my $link = 'ethernet';
 
-      # Try to guess OS
-      my ($os, $details) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
-      $os  = $os || $OS;
-      $details = $details || $DETAILS;
+       # Try to guess OS
+       my ($oss, @more) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
+       my ($os, $details) = each(%$oss);
+       $os  = $os || $OS;
+       $details = $details || $DETAILS;
     
-       #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
-       add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
+       #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $OS, $DETAILS, @more);
+       add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
        return;
      }
      return;
@@ -955,26 +955,14 @@ sub check_tcp_options{
 
 sub icmp_os_find_match {
     my ($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset) = @_;
+    #print "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset\n";
     my $sigs = $ICMP_SIGS;
-    my @OS = $sigs->{$type}->{$code}->{$gttl}->{$df}->{$ipopts}->{$len}->{$ipflags}->{$foffset};
-    return @OS;
-#    my $guesses = 0;
-#    my $matches = $sigs;
-#    my $j = 0;
-#    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
-#    for($type, $code, $gttl, $df){
-#        if($matches->{$_}){
-#            $matches = $matches->{$_};
-#            #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
-#            $j++;
-#
-#        }else{
-#            print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG > 0;
-#            return;
-#        }
-#    }
-
-
+    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
+    if($ipopts eq '.'){
+       $ipopts = 0;
+    }
+    my ($OS, @more) = $sigs->{$type}->{$code}->{$len}->{$gttl}->{$df}->{$ipflags}->{$foffset}->{$ipopts};
+    return ($OS, @more);
 }
 
 =head2 load_signatures
