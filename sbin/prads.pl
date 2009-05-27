@@ -443,13 +443,13 @@ sub packet_icmp {
        my $link = 'ethernet';
 
        # Try to guess OS
-       my ($oss, @more) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
-       my ($os, $details) = %$oss;
+       my $oss = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
+       my ($os, $details) = %$oss if $oss;
        $os  = $os || $OS;
        $details = $details || $DETAILS;
     
        #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $OS, $DETAILS, @more);
-       add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+       add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
        return;
      }
      return;
@@ -961,8 +961,9 @@ sub icmp_os_find_match {
     if($ipopts eq '.'){
        $ipopts = 0;
     }
-    my ($OS, @more) = $sigs->{$type}->{$code}->{$len}->{$gttl}->{$df}->{$ipflags}->{$foffset}->{$ipopts};
-    return ($OS, @more);
+    my $OS = 0;
+    $OS = $sigs->{$type}->{$code}->{$len}->{$gttl}->{$df}->{$ipflags}->{$foffset}->{$ipopts};
+    return ($OS);
 }
 
 =head2 load_signatures
