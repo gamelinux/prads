@@ -42,6 +42,10 @@
 0:0:128:1:.:84:2:0:@Windows:2000, 2003, XP, Vista, 2008
 0:0:64:1:.:84:2:0:@Windows:98
 
+#### Solaris
+0:0:32:1:.:84:2:0:@Sun:Solaris?(Pinged by Linux)
+
+
 # Misc/Wildcards/Others
 # Echo request (8)
 8:0:128:0:.:61:0:0:@Windows:MS?
@@ -52,7 +56,7 @@
 8:0:128:0:.:60:0:0:@Misc:80.202.119.47
 
 # Echo reply (0)
-0:0:255:1:.:84:2:0:@Misc:Cisco,3com,OpenBSD
+0:0:255:1:.:84:2:0:@Misc:Cisco,3com,OpenBSD,Solaris
 0:0:255:0:.:84:0:0:@Misc:F5 Big-IP?
 #0:0:255:1:.:84:2:0:@Cisco:IOS
 #0:0:255:1:.:84:2:0:@3com:wlan-ruter
