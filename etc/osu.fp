@@ -10,9 +10,13 @@
 20:32:0:.:0:0:@Windows:MS
 # FreeBSD
 
+# Sun
+20:255:1:.:2:0:@Sun:Solaris
+
 # UNKNOWN
 20:64:0:.:0:0:@nmap:udp scan from Linux
 
+#
 #20:32:1:.:2:0:?
 #20:64:1:.:2:0:?
 #0:64:0:.:1:0
