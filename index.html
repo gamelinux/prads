@@ -16,8 +16,14 @@ PRADS is under development, but it currently includes:<br><br>
  * TCP service fingerprinting (Signatures from/compatible with pads)<br>
  * TCP discovery of hosts (SYN and SYN+ACK)<br>
  * UDP discovery of hosts<br>
+ * UDP OS fingerprinting<br>
  * ARP discovery of hosts<br>
- * ICMP discovery of hosts<br>
+ * MAC vendor fingerprinting (from ARP data)<br>
+ * ICMP discovery of host<br>
+ * ICMP OS fingerprinting<br>
+ * perl DBI support (sqlite (default), MySQL, PostgreSQL, Oracle, MSSQL…)<br>
+ * Daemon mode<br>
+ * Some packet statistics (received,dropped,drop-rate and dropped by interface)<br> 
  <br>
 STDOUT and DBI (SQLite or MySQL etc) is currently used for output, but we are working on other options.
 <br><br>
