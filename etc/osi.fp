@@ -5,7 +5,10 @@
 # fragment_offset is there for testing at the moment.
 # Do we need anything else?
 
-# Some more info: http://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
+# Some more info: 
+#          http://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
+#          http://phrack.org/issues.html?issue=57&id=7#article
+#
 # icmp_type: 0 Echo Reply, 3 Destination Unreachable, 8 Echo request... 
 # icmp_code: Undercode for type 3,5,11,12
 # Example: type3,code9 = Destination Unreachable,Network administratively prohibited
