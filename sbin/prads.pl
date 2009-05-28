@@ -888,8 +888,14 @@ sub check_tcp_options{
          $optstr .= "N,";
       }else{
          ($size, $rest) = unpack("C a*", $rest);
-         #print "$kind # $size\n";
+
+         # Sanity check!
          $size = $size - 2;
+         if($size > length $rest){
+            print "hex broken options: ". unpack("H*", $rest)."\n";
+            push @quirks, '!';
+            last;
+         }
          #($data, $rest) = unpack "C${size}a", $rest;
          if($kind == 2){
             ($mss, $rest) = unpack("n a*", $rest);
@@ -904,8 +910,6 @@ sub check_tcp_options{
             $optstr .= "S,";
             print "SACKOK\n" if $DEBUG & 8;
             $sackok++;
-         }elsif($kind == 5){
-
          }elsif($kind == 8){
             # Timestamp.
             my ($c, $t, $tsize) = (0,0,$size);
@@ -931,17 +935,15 @@ sub check_tcp_options{
             }
          }else{
             # unrecognized
-            print "Unrecognized options may trigger weird crash. Dumping debug\n";
-            print "opts: ". unpack("B*", $opts)."\n";
-            print "hex opts: ". unpack("H*", $opts)."\n";
-            print "optstr: $optstr\n";
-            print "option $kind is of size:$size\n";
-            print "length of rest of string:". length $rest ."\n";
-            print "hex rest: ". unpack("H*", $rest)."\n";
+            # option 76: (weird router shit)
+            # eg: 4c 0a 0101ac1438060005 01 00 
+            #     K  SZ ------WEIRD-----NOP EOL
+            # option  5: (SACK field)
             $optstr .= "?$kind,";
-            ($rest) = eval unpack("x$size a*", $rest) or print "unpack:$!";
-            print "unknown $kind:$size:" if $DEBUG & 8;
-            $rest = substr $rest,$size;
+            print "hex weird options: ". unpack("H*", $rest)."\n";
+            #($rest) = eval unpack("x$size a*", $rest) or print "unpack:$!";
+            # apparently skipping bytes with x$size is a no-go
+            $rest = substr $rest, $size;
          }
          print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
       }
