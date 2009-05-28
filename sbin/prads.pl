@@ -577,7 +577,7 @@ sub packet_tcp {
         # TODO: make a list of previously matched OS'es (NAT ips) and
         # check on $db->{$ip}->{$fingerprint}
 
-        my ($os, $details, @more) = os_find_match(
+        my ($os, $details, @more) = tcp_os_find_match(
                                 $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
                                 $winsize, $gttl, $optstr, $src_ip, $fpstring);
 
@@ -627,7 +627,7 @@ sub match_opts {
     return @o2 == 0;
 }
 
-=head2 os_find_match
+=head2 tcp_os_find_match
 
  port of p0f find_match()
  # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
@@ -656,7 +656,7 @@ sub match_opts {
     NAT checks, unknown packets, error handling, refactor
 =cut
 
-sub os_find_match{
+sub tcp_os_find_match{
 # Port of p0f matching code
     my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $ip, $fp) = @_;
     my @quirks = @$qq;
@@ -707,9 +707,9 @@ sub os_find_match{
 
     # Maximum Segment Size
     my @mssmatch = grep {
-        (/^\%(\d)*$/ and ($mss % $_) == 0) or
-            (/^(\d)*$/ and $mss eq $_) or
-            ($_ eq '*')
+       (/^\%(\d)*$/ and ($mss % $_) == 0) or
+       (/^(\d)*$/ and $mss eq $_) or
+       ($_ eq '*')
     } keys %$matches;
     #print "INFO: p0f mss match: " . Dumper(@mssmatch). "\n";
     warn "ERR: $ip [$fp] No mss match in fp db.\n" and return if not @mssmatch;
