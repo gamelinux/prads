@@ -2,16 +2,17 @@
 #TODO Passive Real-time Asset Detection System
 ==========
 
-1. Discover host on ICMP too # DONE
-2. Discover Network Assets based on ARP. # DONE
-3. Internal table of [hosts(IP),services(port-#),ID string(banner of service or string that match),timestamp] # DONE
+1. Squil!
+
+2. inform firewall / snort / nessus / satan etc
+
+3. Stateful conntrack => trust rel
+
 4. TCP,UDP,ICMP... Statistic Information ?
 
 5. p0f - Passive OS fingerprinting...
    - Together with discovering hosts (and trying to get OS from banner strings etc.), PRADS should
      emulate p0f logic to detect OS based on tcp/icmp/udp... fingerprinting...
-   - Start with SYN fingerprinting... # DONE
-   - I believe that we should have SYN+ACK also :/ # DONE
 
 6. Goes without saying, but adding it as a point : client OS and Client programs fingerprinting:
    Like: "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.6) Gecko/2009020911 Ubuntu/8.10 (intrepid) Firefox/3.0.6 Ubiquity/0.1.5"
@@ -20,15 +21,14 @@
 
 7. Different output plugins...
    - PoC should send to stdout or/and logfile (text).
-   - Next would be mysql # DONE
    - Sguil (Add a switch to make the output better for sguil?)
 
 8. GUI - by web or "desktop"
    - See your network, different OS and services.
    - See firewalls
-
-
-
+   - summaries: severity/vuln/port/proto/ip/
+   /net class abc/mail/os/service/ssh/web server/web client/
+   /trends/.
 
 
 MAC asset detection
@@ -45,12 +45,22 @@ Kacper's crazy ideas:
 -.sniff DNS lookups
 
 Kacper's TODO items:
- - investigate NetPacket slowness
+ - OPTIMIXE: 
+   .investigate NetPacket slowness
+   .DBI optimizations> 
+   ..async DBI commits
+   ..in-mem db + persistance if $PERSIST
+   ..optimize SERVICE matching - reduce universe of regexes to match by
+   finding byte-sigs before regex.
  - update UNKNOWN entries when they match.
+ - option 76 crash
+ - trust relationships :-)
+ - active prads-informed firewall
+ - UPnP. BGP IGMP, multicast, tcp6 etc etc
+ - how to do vuln checks? / match to db
+ - PRADS console (woot. leet!)
 
 Edward's TODO items:
- - fix up icmp OS fingerprinting # DONE
- - fic up UDP  OS fingerprinting # DONE
  - fix SERVICE, both TCP and UDP... together with Kacper?
    Need to make it faster, and maybe drop newlines etc.?
    Kacper mentioned precompiling regexp
@@ -65,6 +75,15 @@ Edward's TODO items:
    # for icmp $src_port could be $type and $dst_port could be $code ? Im smart... uhh
 
 
+DONE
+1. Discover host on ICMP too # DONE
+2. Discover Network Assets based on ARP. # DONE
+3. Internal table of [hosts(IP),services(port-#),ID string(banner of service or string that match),timestamp] # DONE
+- Start with SYN fingerprinting... # DONE
+- I believe that we should have SYN+ACK also :/ # DONE
+- fix up icmp OS fingerprinting # DONE
+- fic up UDP  OS fingerprinting # DONE
+- Next would be mysql # DONE
 
 
 
