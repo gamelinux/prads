@@ -980,10 +980,10 @@ sub icmp_os_find_match {
           $matches = $matches->{$_};
           #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
           $j++;
-       }else if($matches->{'*'}){
+       }elsif($matches->{'*'}){
           $matches = $matches->{'*'};
        }else{
-          print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG;
+          print "ERR: [$type:$code:$gttl:$len:$gttl:$df:$ipflags:$foffset:$ipopts] Packet has no match for $j:$_\n" if $DEBUG;
           return;
        }
     }
