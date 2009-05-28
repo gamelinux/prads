@@ -998,14 +998,26 @@ sub icmp_os_find_match {
 
 sub udp_os_find_match {
     my ($fplen,$ttl,$df,$io,$if,$fo) = @_;
-    my $sigs = $UDP_SIGS;
-    # $fplen,$ttl,$df,$if,$fo,$io
     if($io eq '.'){
        $io = 0;
     }
-    return $sigs->{$fplen}->{$ttl}->{$df}->{$if}->{$fo}->{$io};
+    my $matches = $UDP_SIGS;
+    my $j = 0;
+    # $fplen,$ttl,$df,$if,$fo,$io
+    for($fplen,$ttl,$df,$if,$fo,$io){
+       if($matches->{$_}){
+          $matches = $matches->{$_};
+          #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
+          $j++;
+       }elsif($matches->{'*'}){
+          $matches = $matches->{'*'};
+       }else{
+          print "ERR: [$fplen,$ttl,$df,$if,$fo,$io] Packet has no ICMP match for $j:$_\n" if $DEBUG;
+          return;
+       }
+    }
+    return ($matches);
 }
-
 
 =head2 load_signatures
 
