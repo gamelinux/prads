@@ -965,17 +965,14 @@ sub check_tcp_options{
 =cut
 
 sub icmp_os_find_match {
-    my ($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset) = @_;
-    #print "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset\n";
-    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
-    if($ipopts eq '.'){
-       $ipopts = 0;
+    my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo) = @_;
+    if($io eq '.'){
+       $io = 0;
     }
-#    my $OS = 0;
     my $matches = $ICMP_SIGS;
     my $j = 0;
     # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
-    for($type, $code, $gttl, $len, $gttl, $df, $ipflags, $foffset, $ipopts){
+    for($itype, $icode, $il, $ttl, $df, $if, $fo, $io){
        if($matches->{$_}){
           $matches = $matches->{$_};
           #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
@@ -983,12 +980,10 @@ sub icmp_os_find_match {
        }elsif($matches->{'*'}){
           $matches = $matches->{'*'};
        }else{
-          print "ERR: [$type:$code:$gttl:$len:$gttl:$df:$ipflags:$foffset:$ipopts] Packet has no match for $j:$_\n" if $DEBUG;
+          print "ERR: [$itype:$icode:$ttl:$il:$ttl:$df:$if:$fo:$io] Packet has no ICMP match for $j:$_\n" if $DEBUG;
           return;
        }
     }
-    #$sigs->{$type}->{$code}->{$len}->{$gttl}->{$df}->{$ipflags}->{$foffset}->{$ipopts};
-
     return ($matches);
 }
 
