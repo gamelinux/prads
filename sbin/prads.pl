@@ -864,95 +864,97 @@ sub quirks_tostring {
 =cut
 
 sub check_tcp_options{
-    # NetPacket::IP->decode gives us binary opts
-    # so get the interesting bits here
-    my ($opts) = @_;
-    my ($scale, $mss, $sackok, $ts, $t2) = (0,undef,0,undef,0);
-    print "opts: ". unpack("B*", $opts)."\n" if $DEBUG & 8;
-    my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
-    my $optstr = '';
-    my @quirks;
-    while ($opts){
-        ($kind, $rest) = unpack("C a*", $opts);
-        last if not $kind;
-        $count++;
-        if($kind == 0){
-            print "EOL\n" if $DEBUG & 8;
-            $optstr .= "E,";
-            # quirk if opts past EOL
-            push @quirks, 'P' if $rest ne '';
-            #last;
-        }elsif($kind == 1){
-            # NOP
-            print "NOP\n" if $DEBUG & 8;
-            $optstr .= "N,";
-        }else{
-            ($size, $rest) = unpack("C a*", $rest);
-            #print "$kind # $size\n";
-            $size = $size - 2;
-            #($data, $rest) = unpack "C${size}a", $rest;
-            if($kind == 2){
-                ($mss, $rest) = unpack("n a*", $rest);
-                $optstr .= "M$mss,";
-                print "$size MSS: $mss\n" if $DEBUG & 8;
-            }elsif($kind == 3){
-                ($scale, $rest) = unpack("C a*", $rest);
-                $optstr .= "W$scale,";
-                print "WSOPT$size: $scale\n" if $DEBUG & 8;
-            }elsif($kind == 4){
-                # allsacks are OK.
-                $optstr .= "S,";
-                print "SACKOK\n" if $DEBUG & 8;
-                $sackok++;
-            }elsif($kind == 8){
-                # Timestamp.
-                my ($c, $t, $tsize) = (0,0,$size);
-                while($tsize > 0){
-                    ($c, $rest) = unpack("C a*", $rest);
-                    # hack HACK: ts is 64bit and wraps our 32bit perl ints.
-                    # it's ok tho: we don't care what the value is, as long as it's not 0
-                    $t <<= 1;
-                    $t |= $c;
-                    $tsize--;
-                }
-                print "TS$size: $t\n" if $DEBUG & 8;
-                if($t){
-                    $optstr .= "T,";
-                }else{
-                    $optstr .= "T0,";
-                }
-                if(defined $ts and $t){
-                    # non-zero second timestamp
-                    push @quirks, 'T';
-                }else{
-                    $ts = $t;
-                }
-            }else{
-               # unrecognized
-               print "Unrecognized options may trigger weird crash. Dumping debug\n";
-               print "opts: ". unpack("B*", $opts)."\n";
-               print "hex opts: ". unpack("H*", $opts)."\n";
-               print "optstr: $optstr\n";
-               print "option $kind is of size:$size\n";
-               print "length of rest of string:". length $rest ."\n";
-               print "hex rest: ". unpack("H*", $rest)."\n";
-               $optstr .= "?$kind,";
-               ($rest) = eval unpack("x$size a*", $rest) or print "unpack:$!";
-               print "unknown $kind:$size:" if $DEBUG & 8;
-               $rest = substr $rest,$size;
+   # NetPacket::IP->decode gives us binary opts
+   # so get the interesting bits here
+   my ($opts) = @_;
+   my ($scale, $mss, $sackok, $ts, $t2) = (0,undef,0,undef,0);
+   print "opts: ". unpack("B*", $opts)."\n" if $DEBUG & 8;
+   my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
+   my $optstr = '';
+   my @quirks;
+   while ($opts){
+      ($kind, $rest) = unpack("C a*", $opts);
+      last if not $kind;
+      $count++;
+      if($kind == 0){
+         print "EOL\n" if $DEBUG & 8;
+         $optstr .= "E,";
+         # quirk if opts past EOL
+         push @quirks, 'P' if $rest ne '';
+         #last;
+      }elsif($kind == 1){
+         # NOP
+         print "NOP\n" if $DEBUG & 8;
+         $optstr .= "N,";
+      }else{
+         ($size, $rest) = unpack("C a*", $rest);
+         #print "$kind # $size\n";
+         $size = $size - 2;
+         #($data, $rest) = unpack "C${size}a", $rest;
+         if($kind == 2){
+            ($mss, $rest) = unpack("n a*", $rest);
+            $optstr .= "M$mss,";
+            print "$size MSS: $mss\n" if $DEBUG & 8;
+         }elsif($kind == 3){
+            ($scale, $rest) = unpack("C a*", $rest);
+            $optstr .= "W$scale,";
+            print "WSOPT$size: $scale\n" if $DEBUG & 8;
+         }elsif($kind == 4){
+            # allsacks are OK.
+            $optstr .= "S,";
+            print "SACKOK\n" if $DEBUG & 8;
+            $sackok++;
+         }elsif($kind == 5){
+
+         }elsif($kind == 8){
+            # Timestamp.
+            my ($c, $t, $tsize) = (0,0,$size);
+            while($tsize > 0){
+               ($c, $rest) = unpack("C a*", $rest);
+               # hack HACK: ts is 64bit and wraps our 32bit perl ints.
+               # it's ok tho: we don't care what the value is, as long as it's not 0
+               $t <<= 1;
+               $t |= $c;
+               $tsize--;
             }
-            print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
-        }
-        $opts = $rest;
-        last if not defined $opts;
-    }
-    chop $optstr;
-    $optstr = '.' if $optstr eq '';
+            print "TS$size: $t\n" if $DEBUG & 8;
+            if($t){
+               $optstr .= "T,";
+            }else{
+               $optstr .= "T0,";
+            }
+            if(defined $ts and $t){
+               # non-zero second timestamp
+               push @quirks, 'T';
+            }else{
+               $ts = $t;
+            }
+         }else{
+            # unrecognized
+            print "Unrecognized options may trigger weird crash. Dumping debug\n";
+            print "opts: ". unpack("B*", $opts)."\n";
+            print "hex opts: ". unpack("H*", $opts)."\n";
+            print "optstr: $optstr\n";
+            print "option $kind is of size:$size\n";
+            print "length of rest of string:". length $rest ."\n";
+            print "hex rest: ". unpack("H*", $rest)."\n";
+            $optstr .= "?$kind,";
+            ($rest) = eval unpack("x$size a*", $rest) or print "unpack:$!";
+            print "unknown $kind:$size:" if $DEBUG & 8;
+            $rest = substr $rest,$size;
+         }
+         print "rest: ". unpack("B*", $rest)."\n" if $DEBUG & 8;
+      }
+      $opts = $rest;
+      last if not defined $opts;
+   }
+   chop $optstr;
+   $optstr = '.' if $optstr eq '';
 
-    # MSS may be undefined
-    $mss = '*' if not $mss;
+   # MSS may be undefined
+   $mss = '*' if not $mss;
 
-    return ($count, $scale, $mss, $sackok, $ts, $optstr, @quirks);
+   return ($count, $scale, $mss, $sackok, $ts, $optstr, @quirks);
 }
 
 =head2 icmp_os_find_match
