@@ -835,6 +835,8 @@ S12:64:0:44:M1452:.:AXIS:Printer Server 5600 v5.64
 
 12345:255:0:40:.:A:-p0f:sendsyn utility
 
+S4:255:0:60:M1460,T,W1,S:A:-SinFP:sinfp.pl
+
 # UFO - see tmp/*:
 56922:128:0:40:.:A:-@Mysterious:port scanner (?)
 5792:64:1:60:M1460,S,T,N,W0:T:-@Mysterious:NAT device (2nd tstamp)
