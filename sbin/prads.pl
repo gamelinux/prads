@@ -137,9 +137,9 @@ $ARP            = $conf->{arp}                   || $ARP;
 $SERVICE        = $conf->{service}               || $SERVICE;
 $DEBUG          = $conf->{debug}                 || $DEBUG;
 $DAEMON         = $conf->{daemon}                || $DAEMON;
+$BPF            = $conf->{bpfilter}              || $BPF;
 $OS             = $conf->{os_fingerprint}        || $OS;
 $OS             = $conf->{os_synack_fingerprint} || $OS;
-$BPF            = $conf->{bpfilter}              || $BPF;
 $OS             = $conf->{os_syn_fingerprint}    || $OS;
 $ICMP           = $conf->{icmp}                  || $ICMP;
 $OS_ICMP        = $conf->{os_icmp}               || $OS_ICMP;
@@ -967,14 +967,29 @@ sub check_tcp_options{
 sub icmp_os_find_match {
     my ($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset) = @_;
     #print "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset\n";
-    my $sigs = $ICMP_SIGS;
     # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
     if($ipopts eq '.'){
        $ipopts = 0;
     }
-    my $OS = 0;
-    $OS = $sigs->{$type}->{$code}->{$len}->{$gttl}->{$df}->{$ipflags}->{$foffset}->{$ipopts};
-    return ($OS);
+#    my $OS = 0;
+    my $matches = $ICMP_SIGS;
+    my $j = 0;
+    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
+    for($type, $code, $gttl, $len, $gttl, $df, $ipflags, $foffset, $ipopts){
+       if($matches->{$_}){
+          $matches = $matches->{$_};
+          #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
+          $j++;
+       }else if($matches->{'*'}){
+          $matches = $matches->{'*'};
+       }else{
+          print "ERR: $ip [$fp] Packet has no match for $ec[$j]:$_\n" if $DEBUG;
+          return;
+       }
+    }
+    #$sigs->{$type}->{$code}->{$len}->{$gttl}->{$df}->{$ipflags}->{$foffset}->{$ipopts};
+
+    return ($matches);
 }
 
 =head2 udp_os_find_match
@@ -993,9 +1008,7 @@ sub udp_os_find_match {
     if($io eq '.'){
        $io = 0;
     }
-    my $OS = 0;
-    $OS = $sigs->{$fplen}->{$ttl}->{$df}->{$if}->{$fo}->{$io};
-    return ($OS);
+    return $sigs->{$fplen}->{$ttl}->{$df}->{$if}->{$fo}->{$io};
 }
 
 
