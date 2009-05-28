@@ -53,7 +53,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
 =head1 VERSION
 
-0.1
+0.2
 
 =head1 SYNOPSIS
 
@@ -76,7 +76,11 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
 =cut
 
-our $VERSION       = 0.1;
+################################################################################
+############# C - O - N - F - I - G - U - R - A - T - I - O - N ################
+################################################################################
+
+our $VERSION       = 0.2;
 our $DEBUG         = 0;
 our $DAEMON        = 0;
 our $DUMP          = 0;
@@ -90,10 +94,9 @@ our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
 our $DB_USERNAME;
 our $DB_PASSWORD;
 
-
-#my $DEVICE         = q(eth0);
 my $DEVICE;
 my $LOGFILE                 = q(/dev/null);
+my $PIDFILE                 = q(/var/run/prads.pid);
 my $CONFIG                  = q(/etc/prads/prads.conf);
 my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
 my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
@@ -111,6 +114,8 @@ my %ERROR          = (
     compile_object_setfilter => q(Unable to set packet capture filter),
     loop => q(Unable to perform packet capture),
 );
+my $PRADS_HOSTNAME = `hostname`;
+chomp $PRADS_HOSTNAME;
 
 # extract & load config before parsing rest of commandline
     for my $i (0..@ARGV-1){
@@ -124,21 +129,23 @@ my %ERROR          = (
 my $conf = load_config("$CONFIG");
 my $C_INIT = $CONFIG;
 
-$DATABASE = $conf->{'db'} || $DATABASE;
-$DB_USERNAME = $conf->{'db_username'} if $conf->{'db_username'};
-$DB_PASSWORD = $conf->{'db_password'};
-$DEVICE   = $conf->{interface};
-$ARP      = $conf->{arp} || $ARP;
-$SERVICE  = $conf->{service} || $SERVICE;
-$DEBUG    = $conf->{debug} || $DEBUG;
-$DAEMON   = $conf->{daemon} || $DAEMON;
-$OS       = $conf->{os_fingerprint} || $OS;
-$OS       = $conf->{os_synack_fingerprint} || $OS;
-$BPF      = $conf->{bpfilter} || $BPF;
-$OS       = $conf->{os_syn_fingerprint} || $OS;
-$ICMP     = $conf->{icmp} || $ICMP;
-$OS_ICMP  = $conf->{os_icmp} || $OS_ICMP;
-$LOGFILE  = $conf->{logfile} || $LOGFILE;
+$DATABASE       = $conf->{'db'}                  || $DATABASE;
+$DB_USERNAME    = $conf->{'db_username'} if $conf->{'db_username'};
+$DB_PASSWORD    = $conf->{'db_password'};
+$DEVICE         = $conf->{interface};
+$ARP            = $conf->{arp}                   || $ARP;
+$SERVICE        = $conf->{service}               || $SERVICE;
+$DEBUG          = $conf->{debug}                 || $DEBUG;
+$DAEMON         = $conf->{daemon}                || $DAEMON;
+$OS             = $conf->{os_fingerprint}        || $OS;
+$OS             = $conf->{os_synack_fingerprint} || $OS;
+$BPF            = $conf->{bpfilter}              || $BPF;
+$OS             = $conf->{os_syn_fingerprint}    || $OS;
+$ICMP           = $conf->{icmp}                  || $ICMP;
+$OS_ICMP        = $conf->{os_icmp}               || $OS_ICMP;
+$LOGFILE        = $conf->{log_file}              || $LOGFILE;
+$PIDFILE        = $conf->{pid_file}              || $PIDFILE;
+$PRADS_HOSTNAME = $conf->{hostname}              || $PRADS_HOSTNAME;
 
 # commandline overrides config
 Getopt::Long::GetOptions(
@@ -159,9 +166,9 @@ if ($C_INIT ne $CONFIG){
     load_config("$CONFIG");
 }
 
-my $PRADS_HOSTNAME = $conf->{hostname};
-$PRADS_HOSTNAME ||= `hostname`;
-chomp $PRADS_HOSTNAME;
+################################################################################
+############# M - A - I - N ####################################################
+################################################################################
 
 my $PRADS_START = time;
 
@@ -176,7 +183,7 @@ if ($DUMP) {
    my $ICMP_SIGS = load_os_icmp_fingerprints($OS_ICMP_FINGERPRINT_FILE);
    print Dumper $ICMP_SIGS;
 
-   warn "Loading MAC fingerprints\n" if ($DEBUG>0);
+   print "Loading MAC fingerprints\n" if ($DEBUG>0);
    my $MAC_SIGS = load_mac($MAC_SIGNATURE_FILE);
    print Dumper $MAC_SIGS;
 
@@ -199,12 +206,13 @@ if ($DUMP) {
 use vars qw(%sources);
 $SIG{"HUP"}   = \&prepare_stats_dump;
 $SIG{"INT"}   = sub { prepare_stats_dump(); game_over() };
-#$SIG{"TERM"} = sub { unlink ($pidfile); exit 0 };
+#$SIG{"TERM"} = sub { unlink ($PIDFILE); exit 0 };
 $SIG{"TERM"}  = sub { prepare_stats_dump(); game_over() };
 $SIG{"QUIT"}  = sub { prepare_stats_dump(); game_over() };
 $SIG{"KILL"}  = sub { prepare_stats_dump(); game_over() };
 
 #$SIG{"CHLD"} = 'IGNORE';
+
 
 warn "Starting prads.pl...\n";
 
@@ -256,10 +264,6 @@ $stats{"timestamp"} = time;
 my $inpacket = my $dodump = 0;
 
 # Prepare to meet the Daemon
-my ($name) = $0 =~ /([^\/]+)$/;
-$name =~ s/\.pl$//;
-my $pidfile = "/var/run/" . $name . ".pid";
-
 if ( $DAEMON ) {
         print "Daemonizing...\n";
         chdir ("/") or die "chdir /: $!\n";
@@ -268,7 +272,7 @@ if ( $DAEMON ) {
         defined (my $dpid = fork) or die "fork: $!\n";
         if ($dpid) {
                 # Write PID file
-                open (PID, "> $pidfile") or die "open($pidfile): $!\n";
+                open (PID, "> $PIDFILE") or die "open($PIDFILE): $!\n";
                 print PID $dpid, "\n";
                 close (PID);
                 exit 0;
@@ -280,16 +284,19 @@ if ( $DAEMON ) {
 warn "Looping over object\n" if ($DEBUG>0);
 Net::Pcap::loop($PCAP, -1, \&packets, '') or die $ERROR{'loop'};
 
-warn "Closing device\n" if ($DEBUG>0);
-Net::Pcap::close($PCAP);
-
+# If we ever should come into this state...
+game_over();
 exit;
+
+################################################################################
+############# F - U - N - C - T - I - O - N - S - ##############################
+################################################################################
 
 =head1 FUNCTIONS
 
 =head2 load_persistent
 
-Load persistent database
+ Load persistent database
 
 =cut
 
@@ -328,15 +335,15 @@ sub load_persistent {
     return $dbh;
 }
 
-
-
 =head2 packets
 
-Callback function for C<Net::Pcap::loop>.
+ Callback function for C<Net::Pcap::loop>.
 
- * Strip ethernet encapsulation of captured packet 
- * pass to protocol handlers
+  * Strip ethernet encapsulation of captured packet 
+  * pass to protocol handlers
+
 =cut
+
 sub packets {
     # Lock
     $inpacket = 1;
@@ -504,10 +511,10 @@ sub packet_udp {
 
 =head2 packet_tcp 
 
-Parse TCP packet
- * Decode contents of TCP/IP packet contained within captured ethernet packet
- * Search through the signatures, print dst host, dst port, and ID String.
- * Collect pOSf data : ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks
+ Parse TCP packet
+  * Decode contents of TCP/IP packet contained within captured ethernet packet
+  * Search through the signatures, print dst host, dst port, and ID String.
+  * Collect pOSf data : ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks
    # Fingerprint entry format:
    #
    # wwww:ttt:D:ss:OOO...:QQ:OS:Details
@@ -523,6 +530,7 @@ Parse TCP packet
    # details  - OS description (2.0.27 on x86, etc)
 
 =cut
+
 sub packet_tcp {
     my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
     # Collect necessary info from TCP packet; if
@@ -596,7 +604,7 @@ sub packet_tcp {
 
 =head2 match_opts
 
-Function to match options
+ Function to match options
 
 =cut
 
@@ -621,13 +629,13 @@ sub match_opts {
 
 =head2 os_find_match
 
-port of p0f find_match()
-# WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
+ port of p0f find_match()
+ # WindowSize : InitialTTL : DontFragmentBit : Overall Syn Packet Size : Ordered Options Values : Quirks : OS : Details
 
-returns: ($os, $details, [...])
-or undef on fail
+ returns: ($os, $details, [...])
+ or undef on fail
 
-for each signature in db:
+ for each signature in db:
   match packet size (0 means >= PACKET_BIG (=200))
   match tcp option count
   match zero timestamp
@@ -806,10 +814,10 @@ sub os_find_match{
 
 =head2 check_quirks
 
-# Parse most quirks.
-# quirk P (opts past EOL) and T(non-zero 2nd timestamp) are implemented in
-# check_tcp_options, where it makes most sense.
-# TODO: '!' : broken opts (?)
+ # Parse most quirks.
+ # quirk P (opts past EOL) and T(non-zero 2nd timestamp) are implemented in
+ # check_tcp_options, where it makes most sense.
+ # TODO: '!' : broken opts (?)
 
 =cut
 
@@ -828,7 +836,9 @@ sub check_quirks {
 }
 
 =head2 quirks_tostring
+
  Function to make quirks into a string.
+
 =cut
 
 sub quirks_tostring {
@@ -841,10 +851,9 @@ sub quirks_tostring {
     return $quirkstring;
 }
 
-
 =head2 check_tcp_options
 
-Takes tcp options as input, and returns which args are set.
+ Takes tcp options as input, and returns which args are set.
 
  Input format:
  $tcpoptions
@@ -992,7 +1001,7 @@ sub udp_os_find_match {
 
 =head2 load_signatures
 
-Loads signatures from file
+ Loads signatures from file
 
  File format:
  <service>,<version info>,<signature>
@@ -1028,7 +1037,7 @@ sub load_signatures {
 
 =head2 load_mtu
 
-Loads MTU signatures from file
+ Loads MTU signatures from file
 
  File format:
  <MTU>,<info>
@@ -1058,7 +1067,7 @@ sub load_mtu {
 
 =head2 load_mac
 
-Loads MAC signatures from file
+ Loads MAC signatures from file
 
  File format:
  AB:CD:EE   Vendor   # DETAILS
@@ -1139,16 +1148,17 @@ sub load_mac {
 
 =head2 mac_byte_mask
 
-Match a byte with a byte/mask
+ Match a byte with a byte/mask
 
-meditate:
-perl -e 'print unpack("b8", pack("H2","08") | pack("h2", '02'))'
-01010000
+ meditate:
+ perl -e 'print unpack("b8", pack("H2","08") | pack("h2", '02'))'
+ 01010000
 
-byte & mask == $key
-except mask is bigendian while byte is littleendian
+ byte & mask == $key
+ except mask is bigendian while byte is littleendian
 
 =cut
+
 sub mac_byte_mask {
    my ($byte, $mask) = @_;
 
@@ -1159,7 +1169,7 @@ sub mac_byte_mask {
 
 =head2 mac_map_mask
 
-check if $byte matches any mask in $ptr
+ check if $byte matches any mask in $ptr
 
  for all keys with a slash in them
    check that byte matches key/mask
@@ -1172,11 +1182,13 @@ sub mac_map_mask {
    map { return $ptr->{$_}->{_} } 
    grep { /\// and mac_byte_mask($byte,$_)} keys %$ptr;
 }
+
 =head2 mac_find_match
 
-Match the MAC address with our vendor prefix hash.
+ Match the MAC address with our vendor prefix hash.
 
 =cut
+
 sub mac_find_match {
     my ($mac,$ptr) = @_;
     $ptr ||= $MAC_SIGS;
@@ -1197,14 +1209,13 @@ sub mac_find_match {
     }
 }
 
-
 =head2 load_os_syn_fingerprints
 
-Loads SYN signatures from file
-optimize for lookup matching
+ Loads SYN signatures from file
+ optimize for lookup matching
 
  if you know of a more efficient way of looking up these things,
-     look me up and we'll discuss it. -kwy
+ look me up and we'll discuss it. -kwy
 
 =cut
 
@@ -1268,8 +1279,8 @@ sub load_os_syn_fingerprints {
 
 =head2 load_os_udp_fingerprints
 
-Loads UDP OS signatures from file
-optimize for lookup matching
+ Loads UDP OS signatures from file
+ optimize for lookup matching
 
 =cut
 
@@ -1325,8 +1336,8 @@ sub load_os_udp_fingerprints {
 
 =head2 load_os_icmp_fingerprints
 
-Loads icmp os fingerprints from file
-optimize for lookup matching
+ Loads icmp os fingerprints from file
+ optimize for lookup matching
 
 =cut
 
@@ -1404,10 +1415,10 @@ sub load_os_icmp_fingerprints {
 
 =head2 init_dev
 
-Use network device passed in program arguments or if no 
-argument is passed, determine an appropriate network 
-device for packet sniffing using the 
-Net::Pcap::lookupdev method
+ Use network device passed in program arguments or if no 
+ argument is passed, determine an appropriate network 
+ device for packet sniffing using the 
+ Net::Pcap::lookupdev method
 
 =cut
 
@@ -1425,10 +1436,10 @@ sub init_dev {
 
 =head2 lookup_net
 
-Look up network address information about network 
-device using Net::Pcap::lookupnet - This also acts as a 
-check on bogus network device arguments that may be 
-passed to the program as an argument
+ Look up network address information about network 
+ device using Net::Pcap::lookupnet - This also acts as a 
+ check on bogus network device arguments that may be 
+ passed to the program as an argument
 
 =cut
 
@@ -1446,7 +1457,7 @@ sub lookup_net {
 
 =head2 create_object
 
-Create packet capture object on device
+ Create packet capture object on device
 
 =cut
 
@@ -1463,24 +1474,20 @@ sub create_object {
 
 =head2 filter_object
 
-Compile and set packet filter for packet capture 
-object - For the capture of TCP packets with the SYN 
-header flag set directed at the external interface of 
-the local host, the packet filter of '(dst IP) && (tcp
-[13] & 2 != 0)' is used where IP is the IP address of 
-the external interface of the machine. Here we use 'tcp'
-as a default BPF filter.
+ Compile and set packet filter for packet capture 
+ object - For the capture of TCP packets with the SYN 
+ header flag set directed at the external interface of 
+ the local host, the packet filter of '(dst IP) && (tcp
+ [13] & 2 != 0)' is used where IP is the IP address of 
+ the external interface of the machine. Here we use 'tcp'
+ as a default BPF filter.
 
 =cut
 
 sub filter_object {
     my $object = shift;
-#    my($address, $netmask) = lookup_net($DEVICE);
     my $filter;
     my $netmask = q(0);
-#    my $BPF = q(tcp and src net 192.168.0.0 mask 255.255.255.0);
-#    my $BPF = q(ip and src net 87.238.45.0/24);
-#   my $BPF = q(src net 0.0.0.0 mask 0.0.0.0 or dst net 0.0.0.0 mask 0.0.0.0);
 
     Net::Pcap::compile(
         $object, \$filter, $BPF, 0, $netmask
@@ -1493,9 +1500,10 @@ sub filter_object {
 
 =head2 normalize_wss
 
-Computes WSS respecive of MSS
+ Computes WSS respecive of MSS
 
 =cut
+
 sub normalize_wss {
     my ($winsize, $mss) = @_;
     my $wss = $winsize;
@@ -1513,7 +1521,7 @@ sub normalize_wss {
 
 =head2 normalize_ttl
 
-Takes a ttl value as input, and guesses intial ttl
+ Takes a ttl value as input, and guesses intial ttl
 
 =cut
 
@@ -1531,8 +1539,8 @@ sub normalize_ttl {
 
 =head2 tcp_service_check
 
-Takes input: $tcp->{'data'}, $ip->{'src_ip'}, $tcp->{'src_port'}, $pradshosts{"tstamp"}
-Prints out service if found.
+ Takes input: $tcp->{'data'}, $ip->{'src_ip'}, $tcp->{'src_port'}, $pradshosts{"tstamp"}
+ Prints out service if found.
 
 =cut
 
@@ -1547,13 +1555,6 @@ sub tcp_service_check {
         if($tcp_data =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
             add_asset('SERVICE', $src_ip, $src_port, $vendor, $version, $info);
-#            printf("Service: ip=%s port=%i -> \"%s %s %s\" timestamp=%i\n",
-#                $src_ip, $src_port,
-#                $vendor  || q(),
-#                $version || q(),
-#                $info    || q(),
-#                $tstamp || q()
-#            );
             last SIGNATURE;
         }
     }
@@ -1561,8 +1562,8 @@ sub tcp_service_check {
 
 =head2 udp_service_check
 
-Takes input: $udp->{'data'}, $ip->{'src_ip'}, $udp->{'src_port'}, $pradshosts{"tstamp"}
-Prints out service if found.
+ Takes input: $udp->{'data'}, $ip->{'src_ip'}, $udp->{'src_port'}, $pradshosts{"tstamp"}
+ Prints out service if found.
 
 =cut
 
@@ -1572,11 +1573,9 @@ sub udp_service_check {
        #warn "Detecting UDP asset...\n" if($DEBUG);
        if ($src_port == 53){
           add_asset('SERVICE', $src_ip, $src_port, "-","-","DNS");
-#         printf ("Service: ip=%s port=%i -> \"DNS\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
        }
        elsif ($src_port == 1194){
           add_asset('SERVICE', $src_ip, $src_port, "OpenVPN","-","-");
-#         printf ("Service: ip=%s port=%i -> \"OpenVPN\" timestamp=%i\n",$src_ip, $src_port, $tstamp);
        }
        else {
         warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG>20);
@@ -1603,7 +1602,7 @@ sub udp_service_check {
 
 =head2 arp_check
 
-Takes 'NetPacket::Ethernet->decode($packet)' and timestamp as input and prints out arp asset.
+ Takes 'NetPacket::Ethernet->decode($packet)' and timestamp as input and prints out arp asset.
 
 =cut
 
@@ -1667,8 +1666,7 @@ sub load_config {
         $line =~ s/\#.*//;
         next unless($line); # empty line
         if (my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/)) {
-#        my ($key, $value) = ($line =~ m/(\w+)\s*=\s*(.*)$/);
-           warn  "$key:$value\n";
+           warn  "$key:$value\n" if $DEBUG > 0;
            $config->{$key} = $value;
         }else {
           die "Error: Not valid configfile format in: '$file'";
@@ -1680,7 +1678,7 @@ sub load_config {
 
 =head2 add_db
 
-Add an asset record to the asset table;
+ Add an asset record to the asset table;
 
 =cut
 {
@@ -1788,7 +1786,7 @@ sub prepare_stats_dump {
 
 =head2 dump_stats
 
- Prints out pcap stats 
+ Prints out statistics from Net::Pcap
 
 =cut
 
@@ -1804,8 +1802,6 @@ sub dump_stats {
 
     Net::Pcap::stats ($PCAP, \%stats);
     $stats{"timestamp"} = $stamp;
-    # Print stats
-#    print Dumper %stats;
     my $droprate = 0;
     $droprate = ( ($stats{ps_drop} * 100) / $stats{ps_recv}) if $stats{ps_recv} > 0;
     print " $stats{timestamp} [Packages received:$stats{ps_recv}]  [Packages dropped:$stats{ps_drop}] [Droprate:$droprate%]  [Packages dropped by interface:$stats{ps_ifdrop}]\n";
@@ -1813,27 +1809,28 @@ sub dump_stats {
 
 =head2 game_over
 
- Closing the pcap device and exits.
+ Closing the pcap device, unlinks the pid file and exits.
 
 =cut
 
 sub game_over {
     warn "Closing device\n" if ($DEBUG>0);
     Net::Pcap::close($PCAP);
+    unlink ($PIDFILE);
     exit 0;
 }
 
 =head1 AUTHOR
 
-Edward Fjellskål
+ Edward Fjellskaal
 
-Kacper Wysocki
+ Kacper Wysocki
 
-Jan Henning Thorsen
+ Jan Henning Thorsen
 
 =head1 COPYRIGHT
 
-This library is free software, you can redistribute it and/or modify
-it under the same terms as Perl itself.
+ This library is free software, you can redistribute it and/or modify
+ it under the same terms as Perl itself.
 
 =cut

@@ -54,4 +54,19 @@ Edward's TODO items:
  - fix SERVICE, both TCP and UDP... together with Kacper?
    Need to make it faster, and maybe drop newlines etc.?
    Kacper mentioned precompiling regexp
+ - IP statistics... Some way of collecting stats about sessions..
+   $session_tracking->{$src_ip}->{$src_port}->{$dst_ip}->{$dst_port}->{ip_type}->{$src_byte}->{$dst_byte}->{$src_packets}->{$dst_packets}->{$start_timestamp}->{$end_timestamp}            ?
+   #UDP example: 
+   $session_tracking->{10.10.10.12}->{1234}->{10.10.10.14}->{53}->{17}->{102}->{433}->{5}->{21}->{1243504322}->{1243508001}
+   #TCP example:
+   $session_tracking->{10.10.10.12}->{1234}->{10.10.10.14}->{53}->{6}->{1002021}->{92311}->{39811}->{1021}->{1243504322}->{1243508001}
+   #ICMP example:
+   $session_tracking->{10.10.10.12}->{0}->{10.10.10.14}->{0}->{1}->{102}->{433}->{5}->{21}->{1243504322}->{1243508001}
+   # for icmp $src_port could be $type and $dst_port could be $code ? Im smart... uhh
+
+
+
+
+
+
 
