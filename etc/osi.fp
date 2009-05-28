@@ -10,6 +10,9 @@
 # icmp_code: Undercode for type 3,5,11,12
 # Example: type3,code9 = Destination Unreachable,Network administratively prohibited
 
+# Supports wildcarding on all fields, etc: *:*:*:*:*:*:*:*:@SomeOS:1.1
+# Example: 3:3:64:0:.:*:0:0:@Linux:2.6
+
 #### Linux
 # Echo request (8)
 8:0:64:1:.:84:2:0:@Linux:2.6
@@ -22,7 +25,8 @@
 0:0:64:0:.:60:0:0:@Linux:2.6 (Pinged by Vista (SP2))
 0:0:64:0:.:28:0:0:@Linux:2.6 (Pinged by nmap)
 0:0:64:0:.:64:0:0:@Linux:2.6 (Pinged by Superscan?)
-#3:3:64:0:.:*:0:0:@Linux:2.6
+3:3:64:0:.:*:0:0:@Linux:2.6
+3:1:64:0:.:*:0:0:@Linux:2.6
 
 #### FreeBSD
 # Echo request (8)
