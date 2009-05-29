@@ -1730,6 +1730,7 @@ sub add_db {
             printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
                    $o_time, $service, $ip, $os, $details, $fp, $dist, $link, '[OLD]';
             #print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
+            $RECORDS++;
         }
 
        $h_update = $db->prepare_cached("UPDATE $table SET time=? WHERE ip=? AND fingerprint=?") or die "$!" if not $h_update;
@@ -1745,12 +1746,13 @@ sub add_db {
 
        printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
               $time, $service, $ip, $os, $details, $fp, $dist, $link, '';
+       $RECORDS++;
     }
-    $RECORDS++;
 }
 sub commit_db {
-   print "Commiting $RECORDS records to database..\n";
-   $OS_SYN_DB->commit if $RECORDS;
+   return if not $RECORDS;
+   print "Commiting $RECORDS records to database..\n" if $DEBUG;
+   $OS_SYN_DB->commit;
    $RECORDS = 0;
 }
 }
