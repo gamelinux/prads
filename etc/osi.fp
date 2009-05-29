@@ -28,6 +28,7 @@
 0:0:64:0:.:60:0:0:@Linux:2.6 (Pinged by Vista (SP2))
 0:0:64:0:.:28:0:0:@Linux:2.6 (Pinged by nmap)
 0:0:64:0:.:64:0:0:@Linux:2.6 (Pinged by Superscan?)
+# Destination Unreachable (3)
 3:3:64:0:.:*:0:0:@Linux:2.6
 3:1:64:0:.:*:0:0:@Linux:2.6
 
