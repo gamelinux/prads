@@ -52,6 +52,9 @@
 #### Solaris
 0:0:32:1:.:84:2:0:@Sun:Solaris?(Pinged by Linux)
 
+#### HP-UX
+8:0:255:0:.:84:0:0:@HP:HP-UX 
+8:0:32:0:.:40:0:0:@HP:HP-UX traceroute
 
 # Misc/Wildcards/Others
 # Echo request (8)
