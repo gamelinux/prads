@@ -44,7 +44,8 @@
 
 #### Windows
 # Echo request (8)
-8:0:128:0:.:60:0:0:@Windows:Vista (SP2)
+8:0:128:0:.:60:0:0:@Windows:XP/Vista
+8:0:32:0:.:92:0:0:@Windows:XP/Vista tracert
 # Echo reply (0)
 0:0:128:1:.:84:2:0:@Windows:2000, 2003, XP, Vista, 2008
 0:0:64:1:.:84:2:0:@Windows:98
@@ -63,7 +64,6 @@
 8:0:64:0:.:64:0:0:@F5:Bigi-IP
 8:0:255:0:.:28:0:0:@Cisco:7200, Catalyst 3500, etc
 8:0:128:0:.:64:0:0:@Misc:87.238.157.6
-8:0:128:0:.:60:0:0:@Misc:80.202.119.47
 
 # Echo reply (0)
 0:0:255:1:.:84:2:0:@Misc:Cisco,3com,OpenBSD,Solaris
