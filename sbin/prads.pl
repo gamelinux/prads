@@ -93,6 +93,9 @@ our $BPF           = q();
 our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
 our $DB_USERNAME;
 our $DB_PASSWORD;
+our $AUTOCOMMIT = 0;
+our $TIMEOUT = 10;
+our $RECORDS = 0;
 
 my $DEVICE;
 my $LOGFILE                 = q(/dev/null);
@@ -210,6 +213,7 @@ $SIG{"INT"}   = sub { prepare_stats_dump(); game_over() };
 $SIG{"TERM"}  = sub { prepare_stats_dump(); game_over() };
 $SIG{"QUIT"}  = sub { prepare_stats_dump(); game_over() };
 $SIG{"KILL"}  = sub { prepare_stats_dump(); game_over() };
+$SIG{"ALRM"}  = sub { commit_db(); alarm $TIMEOUT; };
 
 #$SIG{"CHLD"} = 'IGNORE';
 
@@ -281,6 +285,7 @@ if ( $DAEMON ) {
         open (STDERR, ">&STDOUT");
 }
 
+alarm $TIMEOUT if not $AUTOCOMMIT;
 warn "Looping over object\n" if ($DEBUG>0);
 Net::Pcap::loop($PCAP, -1, \&packets, '') or die $ERROR{'loop'};
 
@@ -302,7 +307,7 @@ exit;
 
 sub load_persistent {
     my ($db,$user,$password) = @_;
-    my $dbh = DBI->connect($db,$user,$password);
+    my $dbh = DBI->connect($db,$user,$password, {AutoCommit => $AUTOCOMMIT});
     my ($sql, $sth);
     eval{ 
         no warnings 'all';
@@ -1741,6 +1746,12 @@ sub add_db {
        printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
               $time, $service, $ip, $os, $details, $fp, $dist, $link, '';
     }
+    $RECORDS++;
+}
+sub commit_db {
+   print "Commiting $RECORDS records to database..\n";
+   $OS_SYN_DB->commit if $RECORDS;
+   $RECORDS = 0;
 }
 }
 
@@ -1858,3 +1869,4 @@ sub game_over {
  it under the same terms as Perl itself.
 
 =cut
+#   ҈  ☃  ☠  ҉
