@@ -1883,6 +1883,7 @@ sub dump_stats {
 =cut
 
 sub game_over {
+    prepare_stats_dump();
     warn "Closing device\n" if ($DEBUG>0);
     Net::Pcap::close($PCAP);
     unlink ($PIDFILE);
