@@ -215,15 +215,13 @@ if ($DUMP) {
 # Signal handlers
 use vars qw(%sources);
 $SIG{"HUP"}   = \&prepare_stats_dump;
-$SIG{"INT"}   = sub { prepare_stats_dump(); game_over() };
-#$SIG{"TERM"} = sub { unlink ($PIDFILE); exit 0 };
-$SIG{"TERM"}  = sub { prepare_stats_dump(); game_over() };
-$SIG{"QUIT"}  = sub { prepare_stats_dump(); game_over() };
-$SIG{"KILL"}  = sub { prepare_stats_dump(); game_over() };
+$SIG{"INT"}   = sub { game_over() };
+$SIG{"TERM"}  = sub { game_over() };
+$SIG{"QUIT"}  = sub { game_over() };
+$SIG{"KILL"}  = sub { game_over() };
 $SIG{"ALRM"}  = sub { commit_db(); alarm $TIMEOUT; };
 
 #$SIG{"CHLD"} = 'IGNORE';
-
 
 warn "Starting prads.pl...\n";
 
@@ -1828,7 +1826,7 @@ sub add_asset {
 
 =head2 inpacket_dump_stats
 
- unsets the inpacket flag and calls dump_stats if dodump flag is sat.
+ unsets the inpacket flag and calls dump_stats if dodump flag is set.
 
 =cut
 
@@ -1883,7 +1881,8 @@ sub dump_stats {
 =cut
 
 sub game_over {
-    prepare_stats_dump();
+    dump_stats();
+    commit_db();
     warn "Closing device\n" if ($DEBUG>0);
     Net::Pcap::close($PCAP);
     unlink ($PIDFILE);
