@@ -239,6 +239,7 @@ S6:64:1:60:M1460,N,W0,N,N,T:AT:BSD/OS:4.0.x
 ###########################################
 
 16384:64:1:44:M1460:A:F5:BigIP LB 4.1.x (sometimes FreeBSD)
+S3:255:1:60:M1380,N,W0,N,N,T:A:F5:Big-IP X
 4128:255:0:44:M*:ZA:Cisco:Catalyst 2900 12.0(5)
 4096:60:0:44:M*:A:Brother:HL-1270N
 S1:30:0:44:M1730:A:Cyclades:PR3000

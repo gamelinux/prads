@@ -85,8 +85,12 @@ our $DEBUG         = 0;
 our $DAEMON        = 0;
 our $DUMP          = 0;
 our $ARP           = 0;
-our $SERVICE       = 0;
+our $SERVICE_TCP   = 0;
+our $SERVICE_UDP   = 0;
 our $OS            = 0;
+our $OS_SYN        = 0;
+our $OS_SYNACK     = 0;
+our $OS_UDP        = 0;
 our $ICMP          = 0;
 our $OS_ICMP       = 0;
 our $BPF           = q();
@@ -137,13 +141,15 @@ $DB_USERNAME    = $conf->{'db_username'} if $conf->{'db_username'};
 $DB_PASSWORD    = $conf->{'db_password'};
 $DEVICE         = $conf->{interface};
 $ARP            = $conf->{arp}                   || $ARP;
-$SERVICE        = $conf->{service}               || $SERVICE;
+$SERVICE_TCP    = $conf->{service_tcp}           || $SERVICE_TCP;
+$SERVICE_UDP    = $conf->{service_udp}           || $SERVICE_UDP;
 $DEBUG          = $conf->{debug}                 || $DEBUG;
 $DAEMON         = $conf->{daemon}                || $DAEMON;
 $BPF            = $conf->{bpfilter}              || $BPF;
 $OS             = $conf->{os_fingerprint}        || $OS;
-$OS             = $conf->{os_synack_fingerprint} || $OS;
-$OS             = $conf->{os_syn_fingerprint}    || $OS;
+$OS_SYNACK      = $conf->{os_synack_fingerprint} || $OS;
+$OS_SYN         = $conf->{os_syn_fingerprint}    || $OS;
+$OS_UDP         = $conf->{os_udp_fingerprint}    || $OS;
 $ICMP           = $conf->{icmp}                  || $ICMP;
 $OS_ICMP        = $conf->{os_icmp}               || $OS_ICMP;
 $LOGFILE        = $conf->{log_file}              || $LOGFILE;
@@ -159,7 +165,8 @@ Getopt::Long::GetOptions(
     'debug=s'                => \$DEBUG,
     'dump'                   => \$DUMP,
     'arp'                    => \$ARP,
-    'service'                => \$SERVICE,
+    'service-tcp'            => \$SERVICE_TCP,
+    'service-udp'            => \$SERVICE_UDP,
     'os'                     => \$OS,
     'db'                     => \$DATABASE,
     # bpf filter
@@ -360,15 +367,19 @@ sub packets {
     my $eth      = NetPacket::Ethernet->decode($packet);
 
     # Check if ARP
-    if ($ARP == 1 && $eth->{type} == ETH_TYPE_ARP) {
-        arp_check ($eth, $pradshosts{"tstamp"});
-        #warn "Packet is of type ARP...\n" if($DEBUG>50);
+    if ($eth->{type} == ETH_TYPE_ARP) {
+        warn "Packet is of type ARP...\n" if($DEBUG>50);
+        if ($ARP == 1) {
+            arp_check ($eth, $pradshosts{"tstamp"});
+        }
+        inpacket_dump_stats();
         return;
     }
 
     # Check if IP ( also ETH_TYPE_IPv6 ?)
     if ( $eth->{type} != ETH_TYPE_IP){
-        warn "Not an IP packet..\n" if($DEBUG>50);
+        warn "Not an IP packet... Ethernet_type = $eth->{type} \n" if($DEBUG>50);
+        inpacket_dump_stats();
         return;
     }
 
@@ -393,26 +404,27 @@ sub packets {
 
     # Check if this is a TCP packet
     if($ip->{proto} == 6) {
-      #warn "Packet is of type TCP...\n" if($DEBUG>50);
+      warn "Packet is of type TCP...\n" if($DEBUG>50);
       packet_tcp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
-
+      inpacket_dump_stats();
+      return;
     }
     # Check if this is a ICMP packet
     elsif($ip->{proto} == 1) {
        packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
-       #warn "Packet is of type ICMP...\n" if($DEBUG>50);
-       #return;
+       warn "Packet is of type ICMP...\n" if($DEBUG>50);
+       inpacket_dump_stats();
+       return;
     }
     # Check if this is a UDP packet
     elsif ($ip->{proto} == 17) {
        packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
-       #warn "Packet is of type UDP...\n" if($DEBUG>50);
-       #return;
+       warn "Packet is of type UDP...\n" if($DEBUG>50);
+       inpacket_dump_stats();
+       return;
     }
-    # If there was a dump request, handle it now
-    $inpacket = 0;
-    dump_stats () if ($dodump);
-    #warn "Done...\n\n" if($DEBUG>50);
+
+    inpacket_dump_stats();
     return;
 }
 
@@ -474,44 +486,49 @@ sub packet_icmp {
 =cut
 
 sub packet_udp {
+    return if ($SERVICE_UDP != 1 || $OS_UDP != 1);
+
     my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
-    # Collect necessary info from ICMP packet
+
+    # Collect necessary info from UDP packet
     my $udp       = NetPacket::UDP->decode($ip->{'data'});
-    my $src_port  = $udp->{'src_port'};
-    my $dest_port = $udp->{'dest_port'};
-#   my $cksum     = $udp->{'cksum'};
-    my $ulen      = $udp->{'len'};
-    my $data      = $udp->{'data'};
-
     my $src_ip  = $ip->{'src_ip'};
-    my $dst_ip  = $ip->{'dest_ip'};
-    my $flags   = $ip->{'flags'};
-    my $foffset = $ip->{'foffset'};
 
-    # We need to guess initial TTL
-    my $gttl = normalize_ttl($ttl);
-    my $dist = $gttl - $ttl;
-
-    $ipopts = "." if not $ipopts;
-    my $fplen  = $len - $ulen; 
-    $fplen = 0 if $fplen < 0;
-    my $fpstring = "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset";
-    my $link = 'ethernet';
-    my $OS = 'UNKNOWN';
-    my $DETAILS = 'UNKNOWN';
- 
-    # Try to guess OS
-    # $fplen,$ttl,$df,$io,$if,$fo
-    my $oss = udp_os_find_match($fplen,$gttl,$df,$ipopts,$ipflags,$foffset);
-    my ($os, $details) = %$oss if $oss;
-    $os  = $os || $OS;
-    $details = $details || $DETAILS;
-    add_asset('UDP', $src_ip, $fpstring, $dist, $link, $os, $details);
-
-    if ($udp->{'data'} && $SERVICE == 1) {
-       udp_service_check ($udp->{'data'},$ip->{'src_ip'},$udp->{'src_port'},$pradshosts{"tstamp"});
+    if ($SERVICE_UDP == 1) {
+        #my $src_port  = $udp->{'src_port'};
+        #my $data      = $udp->{'data'};
+        #my $dest_port = $udp->{'dest_port'};
+        #my $cksum     = $udp->{'cksum'};
+    
+        my $ulen      = $udp->{'len'};
+        #my $data      = $udp->{'data'};
+        my $foffset   = $ip->{'foffset'};
+    
+        # We need to guess initial TTL
+        my $gttl = normalize_ttl($ttl);
+        my $dist = $gttl - $ttl;
+    
+        $ipopts = "." if not $ipopts;
+        my $fplen  = $len - $ulen; 
+        $fplen = 0 if $fplen < 0;
+        my $link = 'ethernet';
+        my $OS = 'UNKNOWN';
+        my $DETAILS = 'UNKNOWN';
+     
+        # Try to guess OS
+        # Fingerprint format: $fplen,$ttl,$df,$io,$if,$fo
+        my $oss = udp_os_find_match($fplen,$gttl,$df,$ipopts,$ipflags,$foffset);
+        my ($os, $details) = %$oss if $oss;
+        $os  = $os || $OS;
+        $details = $details || $DETAILS;
+        add_asset('UDP', $src_ip, "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset", $dist, $link, $os, $details);
     }
-
+    # UDP SERVICE CHECK
+    elsif ( (my $data = $udp->{'data'}) && $SERVICE_UDP == 1) {
+       udp_service_check ($data,$src_ip,$udp->{'src_port'},$pradshosts{"tstamp"});
+       return;
+    }
+    return;
 }
 
 =head2 packet_tcp 
@@ -592,19 +609,21 @@ sub packet_tcp {
         # asset database: want to know the following intel:
         # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
         # maybe also add binary IP packet for audit?
-        if ($tcpflags & ACK){
+        if (($tcpflags & ACK) && $OS_SYNACK == 1) {
            add_asset('SYNACK', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
-        }else{
+        }elsif ($OS_SYN == 1){
            add_asset('SYN', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
         }
     }
+
     ### SERVICE: DETECTION
     ### Can also do src/dst_port
-    if ($tcp->{'data'} && $SERVICE == 1) {
+    if ($tcp->{'data'} && $SERVICE_TCP == 1) {
        # Check content(TCP data) against signatures
+       warn "TCP service matching..." if $DEBUG >50;
        tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
     }
-
+    return;
 }
 
 =head2 match_opts
@@ -1583,7 +1602,7 @@ sub tcp_service_check {
 
         if($tcp_data =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
-            add_asset('SERVICE', $src_ip, $src_port, $vendor, $version, $info);
+            add_asset('SERVICE_TCP', $src_ip, $src_port, $vendor, $version, $info);
             last SIGNATURE;
         }
     }
@@ -1601,10 +1620,10 @@ sub udp_service_check {
 
        #warn "Detecting UDP asset...\n" if($DEBUG);
        if ($src_port == 53){
-          add_asset('SERVICE', $src_ip, $src_port, "-","-","DNS");
+          add_asset('SERVICE_UDP', $src_ip, $src_port, "-","-","DNS");
        }
        elsif ($src_port == 1194){
-          add_asset('SERVICE', $src_ip, $src_port, "OpenVPN","-","-");
+          add_asset('SERVICE_UDP', $src_ip, $src_port, "OpenVPN","-","-");
        }
        else {
         warn "UDP ASSET DETECTION IS NOT IMPLEMENTED YET...\n" if($DEBUG>20);
@@ -1657,6 +1676,7 @@ sub arp_check {
         substr($ash,8,2) .':'.
         substr($ash,10,2);
     add_asset('ARP', $mac, $ip, @{mac_find_match($mac)});
+    return;
 }
 
 =head2 get_mtu_link
@@ -1770,39 +1790,51 @@ sub add_asset {
 
     if($type eq 'SYN'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
+
     }elsif($type eq 'SYNACK'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
+
     }elsif($type eq 'ARP'){
         my ($mac, $ip, $prefix, $vendor, $details, @more) = @rest;
-
         add_db($db, $ip, $type, $pradshosts{'tstamp'}, $prefix, $mac, $vendor, $details, 'ethernet', 1, $PRADS_HOSTNAME);
-    }
 
-#   Service: ip=87.238.47.67 port=631 -> "CUPS 1.2 " timestamp=1242033096
-#   add_asset('SERVICE', $ip, $port, $vendor, $version, $info, @more);
-    elsif($type eq 'SERVICE'){
+    }elsif($type eq 'SERVICE_TCP'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
-
         add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+
+    }elsif($type eq 'SERVICE_UDP'){
+        my ($ip, $port, $vendor, $version, $info, @more) = @rest;
+        add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+
     }elsif($type eq 'ICMP'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint,'', $os, $details, $link, $dist, $PRADS_HOSTNAME );
+
     }elsif($type eq 'UDP'){
          my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
          add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
     }
+}
+
+=head2 inpacket_dump_stats
+
+ unsets the inpacket flag and calls dump_stats if dodump flag is sat.
+
+=cut
+
+sub inpacket_dump_stats {
+    $inpacket = 0;
+    dump_stats () if ($dodump);
 }
 
 =head2 prepare_stats_dump
