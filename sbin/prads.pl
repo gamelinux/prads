@@ -87,6 +87,7 @@ our $DUMP          = 0;
 our $ARP           = 0;
 our $SERVICE_TCP   = 0;
 our $SERVICE_UDP   = 0;
+our $UDP           = 0;
 our $OS            = 0;
 our $OS_SYN        = 0;
 our $OS_SYNACK     = 0;
@@ -156,6 +157,7 @@ $PIDFILE        = $conf->{pid_file}              || $PIDFILE;
 $PRADS_HOSTNAME = $conf->{hostname}              || $PRADS_HOSTNAME;
 
 $OS = 1 if ($OS_SYNACK == 1 || $OS_SYN ==1 );
+$UDP = 1 if ($SERVICE_UDP != 1 || $OS_UDP != 1);
 
 # commandline overrides config
 Getopt::Long::GetOptions(
@@ -484,7 +486,7 @@ sub packet_icmp {
 =cut
 
 sub packet_udp {
-    return if ($SERVICE_UDP != 1 || $OS_UDP != 1);
+    return if $UDP != 1;
 
     my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
 
