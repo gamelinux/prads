@@ -378,7 +378,7 @@ sub packets {
 
     # Check if IP ( also ETH_TYPE_IPv6 ?)
     if ( $eth->{type} != ETH_TYPE_IP){
-        warn "Not an IP packet... Ethernet_type = $eth->{type} \n" if($DEBUG>50);
+        warn "Not an IPv4 packet... Ethernet_type = $eth->{type} \n" if($DEBUG>50);
         inpacket_dump_stats();
         return;
     }
@@ -411,19 +411,19 @@ sub packets {
     }
     # Check if this is a ICMP packet
     elsif($ip->{proto} == 1) {
-       packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
        warn "Packet is of type ICMP...\n" if($DEBUG>50);
+       packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
        inpacket_dump_stats();
        return;
     }
     # Check if this is a UDP packet
     elsif ($ip->{proto} == 17) {
-       packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
        warn "Packet is of type UDP...\n" if($DEBUG>50);
+       packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
        inpacket_dump_stats();
        return;
     }
-
+    warn "Packet is of type $ip->{proto}...\n" if($DEBUG>50);
     inpacket_dump_stats();
     return;
 }
