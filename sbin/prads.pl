@@ -146,7 +146,6 @@ $SERVICE_UDP    = $conf->{service_udp}           || $SERVICE_UDP;
 $DEBUG          = $conf->{debug}                 || $DEBUG;
 $DAEMON         = $conf->{daemon}                || $DAEMON;
 $BPF            = $conf->{bpfilter}              || $BPF;
-$OS             = $conf->{os_fingerprint}        || $OS;
 $OS_SYNACK      = $conf->{os_synack_fingerprint} || $OS;
 $OS_SYN         = $conf->{os_syn_fingerprint}    || $OS;
 $OS_UDP         = $conf->{os_udp_fingerprint}    || $OS;
@@ -155,6 +154,8 @@ $OS_ICMP        = $conf->{os_icmp}               || $OS_ICMP;
 $LOGFILE        = $conf->{log_file}              || $LOGFILE;
 $PIDFILE        = $conf->{pid_file}              || $PIDFILE;
 $PRADS_HOSTNAME = $conf->{hostname}              || $PRADS_HOSTNAME;
+
+$OS = 1 if ($OS_SYNACK == 1 || $OS_SYN ==1 );
 
 # commandline overrides config
 Getopt::Long::GetOptions(
@@ -460,17 +461,16 @@ sub packet_icmp {
        # asset database: want to know the following intel:
        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
        # maybe also add binary IP packet for audit?
-       my $OS = 'UNKNOWN';
+       my $IOS = 'UNKNOWN';
        my $DETAILS = 'UNKNOWN';
        my $link = 'ethernet';
 
        # Try to guess OS
        my $oss = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
        my ($os, $details) = %$oss if $oss;
-       $os  = $os || $OS;
+       $os  = $os || $IOS;
        $details = $details || $DETAILS;
     
-       #add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $OS, $DETAILS, @more);
        add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
        return;
      }
@@ -510,14 +510,14 @@ sub packet_udp {
         my $fplen  = $len - $ulen; 
         $fplen = 0 if $fplen < 0;
         my $link = 'ethernet';
-        my $OS = 'UNKNOWN';
+        my $UOS = 'UNKNOWN';
         my $DETAILS = 'UNKNOWN';
      
         # Try to guess OS
         # Fingerprint format: $fplen,$ttl,$df,$io,$if,$fo
         my $oss = udp_os_find_match($fplen,$gttl,$df,$ipopts,$ipflags,$foffset);
         my ($os, $details) = %$oss if $oss;
-        $os  = $os || $OS;
+        $os  = $os || $UOS;
         $details = $details || $DETAILS;
         add_asset('UDP', $src_ip, "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset", $dist, $link, $os, $details);
     }
