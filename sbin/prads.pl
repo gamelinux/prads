@@ -620,7 +620,7 @@ sub packet_tcp {
     ### Can also do src/dst_port
     if ($tcp->{'data'} && $SERVICE_TCP == 1) {
        # Check content(TCP data) against signatures
-       warn "TCP service matching..." if $DEBUG >50;
+       warn "TCP service matching...\n" if $DEBUG >50;
        tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
     }
     return;
