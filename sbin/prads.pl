@@ -167,6 +167,7 @@ Getopt::Long::GetOptions(
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
     'debug=s'                => \$DEBUG,
     'dump'                   => \$DUMP,
+    'daemon'                 => \$DAEMON,
     'arp'                    => \$ARP,
     'service-tcp'            => \$SERVICE_TCP,
     'service-udp'            => \$SERVICE_UDP,
@@ -1863,11 +1864,9 @@ sub dump_stats {
     $dodump = 0;
     print "\n Packet capture stats:\n";
     my %d = %info;
-    %info = ();
 
     my $stamp = time;
     my %ds = %stats;
-    %stats = ();
 
     Net::Pcap::stats ($PCAP, \%stats);
     $stats{"timestamp"} = $stamp;
