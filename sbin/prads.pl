@@ -465,18 +465,12 @@ sub packet_icmp {
        # asset database: want to know the following intel:
        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
        # maybe also add binary IP packet for audit?
-       my $IOS = 'UNKNOWN';
-       my $DETAILS = 'UNKNOWN';
        my $link = 'ethernet';
 
        # Try to guess OS
        #print "TEST [$tos:$type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset]\n";
-       my $oss = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
-       my ($os, $details) = %$oss if $oss;
-       $os  = $os || $IOS;
-       $details = $details || $DETAILS;
-    
-       add_asset('ICMP', $src_ip, $fpstring, $dist, $link, $os, $details);
+       my ($os, $details, $fp) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
+       add_asset('ICMP', $src_ip, $fp, $dist, $link, $os, $details);
        return;
      }
      return;
@@ -997,6 +991,10 @@ sub check_tcp_options{
 
 sub icmp_os_find_match {
     my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo) = @_;
+    my $IOS = 'UNKNOWN';
+    my $DETAILS = 'UNKNOWN';
+    my $ifp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo";
+
     if($io eq '.'){
        $io = 0;
     }
@@ -1010,12 +1008,20 @@ sub icmp_os_find_match {
           $j++;
        }elsif($matches->{'*'}){
           $matches = $matches->{'*'};
+          $_='*';
+          $j++;
        }else{
-          print "ERR: [$itype:$icode:$ttl:$il:$ttl:$df:$if:$fo:$io] Packet has no ICMP match for $j:$_\n" if $DEBUG;
-          return;
+          print "ERR: [$itype:$icode:$ttl:$df:$io:$il:$if:$fo] Packet has no ICMP match for $j:$_\n" if $DEBUG;
+          return ($IOS, $DETAILS, $ifp);
        }
     }
-    return ($matches);
+
+    my ($os, $details) = %$matches if $matches;
+    $os  = $os || $IOS;
+    $details = $details || $DETAILS;
+    my $fp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo";
+    
+    return ($os, $details, $fp);
 }
 
 =head2 udp_os_find_match
