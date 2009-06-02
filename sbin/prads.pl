@@ -449,6 +449,7 @@ sub packet_icmp {
     my $dst_ip = $ip->{'dest_ip'};
     my $flags  = $ip->{'flags'};
     my $foffset= $ip->{'foffset'};
+    #my $tos    = $ip->{'tos'};
 
     # We need to guess initial TTL
     my $gttl = normalize_ttl($ttl);
@@ -469,6 +470,7 @@ sub packet_icmp {
        my $link = 'ethernet';
 
        # Try to guess OS
+       #print "TEST [$tos:$type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset]\n";
        my $oss = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
        my ($os, $details) = %$oss if $oss;
        $os  = $os || $IOS;
