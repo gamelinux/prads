@@ -449,7 +449,7 @@ sub packet_icmp {
     my $dst_ip = $ip->{'dest_ip'};
     my $flags  = $ip->{'flags'};
     my $foffset= $ip->{'foffset'};
-    #my $tos    = $ip->{'tos'};
+    my $tos    = $ip->{'tos'};
 
     # We need to guess initial TTL
     my $gttl = normalize_ttl($ttl);
@@ -469,7 +469,7 @@ sub packet_icmp {
 
        # Try to guess OS
        #print "TEST [$tos:$type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset]\n";
-       my ($os, $details, $fp) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset);
+       my ($os, $details, $fp) = icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset,$tos);
        add_asset('ICMP', $src_ip, $fp, $dist, $link, $os, $details);
        return;
      }
@@ -990,18 +990,18 @@ sub check_tcp_options{
 =cut
 
 sub icmp_os_find_match {
-    my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo) = @_;
+    my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo,$tos) = @_;
     my $IOS = 'UNKNOWN';
     my $DETAILS = 'UNKNOWN';
-    my $ifp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo";
+    my $ifp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo:$tos";
 
     if($io eq '.'){
        $io = 0;
     }
     my $matches = $ICMP_SIGS;
     my $j = 0;
-    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io
-    for($itype, $icode, $il, $ttl, $df, $if, $fo, $io){
+    # $itype,$icode,$il,$ttl,$df,$if,$fo,$io, $tos
+    for($itype, $icode, $il, $ttl, $df, $if, $fo, $io, $tos){
        if($matches->{$_}){
           $matches = $matches->{$_};
           #print "REDUCE: $j:$_: " . Dumper($matches). "\n";
@@ -1011,7 +1011,7 @@ sub icmp_os_find_match {
           $_='*';
           $j++;
        }else{
-          print "ERR: [$itype:$icode:$ttl:$df:$io:$il:$if:$fo] Packet has no ICMP match for $j:$_\n" if $DEBUG;
+          print "ERR: [$itype:$icode:$ttl:$df:$io:$il:$if:$fo:$tos] Packet has no ICMP match for $j:$_\n" if $DEBUG;
           return ($IOS, $DETAILS, $ifp);
        }
     }
@@ -1019,7 +1019,7 @@ sub icmp_os_find_match {
     my ($os, $details) = %$matches if $matches;
     $os  = $os || $IOS;
     $details = $details || $DETAILS;
-    my $fp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo";
+    my $fp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo:$tos";
     
     return ($os, $details, $fp);
 }
@@ -1399,8 +1399,8 @@ sub load_os_udp_fingerprints {
 =cut
 
 sub load_os_icmp_fingerprints {
-    # Format 8:0:64:1:.:84:2:0:@Linux:2.6
-    # icmp_type:icmp_code:initial_ttl:dont_fragment:ip_options:ip_length:ip_flags:fragment_offset
+    # Format 8:0:64:1:.:84:2:0:*:@Linux:2.6
+    # icmp_type:icmp_code:initial_ttl:dont_fragment:ip_options:ip_length:ip_flags:fragment_offset:ip_TOS
     my @files = @_;
     my $rules = {};
     for my $file (@files) {
@@ -1414,50 +1414,19 @@ sub load_os_icmp_fingerprints {
           next unless($line); # empty line
 
           my @elements = split/:/,$line;
-          unless(@elements == 10) {
+          unless(@elements == 11) {
              die "Error: Not valid fingerprint format in: '$file'";
           }
           # Sanitize from here and down...
-          #my ($wss,$ttl,$df,$ss,$oo,$qq,$os,$detail) = @elements;
-          my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo,$os,$detail) = @elements;
+          my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo,$tos,$os,$detail) = @elements;
           if($io eq '.'){
              $io = 0;
           }
-          #else{
-          #   my @opt = split /[, ]/, $io;
-          #   $oc = scalar @opt;
-          #   for(@opt){
-          #      if(/([MW])([\d%*]*)/){
-          #          if($1 eq 'M'){
-          #              $mss = $2;
-          #          }else{
-          #              $wsc = $2;
-          #          }
-          #      }elsif(/T0/){
-          #          $t0 = 1;
-          #      }
-          #}
-          #}
 
         my($details, $human) = splice @elements, -2;
         my $tmp = $rules;
 
-        #for my $e ($ss,$oc,$t0,$df,$qq,$mss,$wsc,$wss,$oo,$ttl){
-        # Format 8:0:64:1:.:84:2:0:@Linux:2.6
-        # icmp_type:icmp_code:initial_ttl:dont_fragment:ip_options:ip_length:ip_flags:fragment_offset
-        # Examples of what one sees, type8+code0 :
-        # 8:0:128:0:.:61:0:0
-        # 8:0:128:0:.:64:0:0
-        # 8:0:255:0:.:28:0:0
-        # 8:0:32:0:.:28:0:0
-        # 8:0:32:0:.:40:0:0
-        # 8:0:32:0:.:60:0:0
-        # 8:0:64:0:.:64:0:0
-        # 8:0:64:0:.:69:0:0
-        # 8:0:64:0:.:84:0:0
-        # 8:0:64:1:.:48:2:0
-        # 8:0:64:1:.:84:2:0
-        for my $e ($itype,$icode,$il,$ttl,$df,$if,$fo,$io){
+        for my $e ($itype,$icode,$il,$ttl,$df,$if,$fo,$io,$tos){
             $tmp->{$e} ||= {};
             $tmp = $tmp->{$e};
         }
