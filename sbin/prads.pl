@@ -456,7 +456,6 @@ sub packet_icmp {
     my $dist = $gttl - $ttl;
 
     $ipopts = "." if not $ipopts;
-    my $fpstring = "$type:$code:$gttl:$df:$ipopts:$len:$ipflags:$foffset";
 
     # Im not sure how IP should be printed :/
     # This is work under developtment :)
@@ -993,7 +992,8 @@ sub icmp_os_find_match {
     my ($itype,$icode,$ttl,$df,$io,$il,$if,$fo,$tos) = @_;
     my $IOS = 'UNKNOWN';
     my $DETAILS = 'UNKNOWN';
-    my $ifp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo:$tos";
+    my $ipopts = $io;
+    my $ifp = "$itype:$icode:$ttl:$df:$ipopts:$il:$if:$fo:$tos";
 
     if($io eq '.'){
        $io = 0;
@@ -1011,7 +1011,7 @@ sub icmp_os_find_match {
           $_='*';
           $j++;
        }else{
-          print "ERR: [$itype:$icode:$ttl:$df:$io:$il:$if:$fo:$tos] Packet has no ICMP match for $j:$_\n" if $DEBUG;
+          print "ERR: [$itype:$icode:$ttl:$df:$ipopts:$il:$if:$fo:$tos] Packet has no ICMP match for $j:$_\n" if $DEBUG;
           return ($IOS, $DETAILS, $ifp);
        }
     }
@@ -1019,7 +1019,7 @@ sub icmp_os_find_match {
     my ($os, $details) = %$matches if $matches;
     $os  = $os || $IOS;
     $details = $details || $DETAILS;
-    my $fp = "$itype:$icode:$ttl:$df:$io:$il:$if:$fo:$tos";
+    my $fp = "$itype:$icode:$ttl:$df:$ipopts:$il:$if:$fo:$tos";
     
     return ($os, $details, $fp);
 }
