@@ -22,6 +22,10 @@
 # $Id: ppads-signature-list,v 0.1 2008/09/09 22:18:09 edward Exp $
 #
 ############################################################################
+# Test sigs for Client applications
+#www,v/Mozilla Gecko/$2/$1,Mozilla/[.\d]+ \((.*)\) Gecko\/([.\d]+)
+#www,v/Perl LWP/$1/$2,lwp-request/([.\d]+) libwww-perl/([.\d]+)
+
 ssh,v/OpenSSH/$2/Protocol $1/,SSH-([.\d]+)-OpenSSH[_-](\S+)
 ssh,v/Cisco SSH/$2/Protocol $1/,SSH-([.\d]+)-Cisco[_-](\S+)
 ssh,v/Sun SSH/$2/Protocol $1/,SSH-([.\d]+)-Sun_SSH[_-](\S+)
