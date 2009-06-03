@@ -1725,7 +1725,7 @@ sub add_db {
     my ($o_ip, $o_fp, $o_time) = $h_select->fetchrow_array();
     if($o_time){
         if($o_time < $PRADS_START){
-            printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
+            printf "%11d [%-11s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
                    $o_time, $service, $ip, $os, $details, $fp, $dist, $link, '[OLD]';
             #print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
             $RECORDS++;

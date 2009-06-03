@@ -31,8 +31,9 @@
 0:0:64:0:.:28:0:0:0:@Linux:2.6 (Pinged by nmap)
 0:0:64:0:.:64:0:0:0:@Linux:2.6 (Pinged by Superscan?)
 # Destination Unreachable (3)
-3:3:64:0:.:*:0:0:192:@Linux:2.6
-3:1:64:0:.:*:0:0:192:@Linux:2.6
+3:3:64:0:.:*:0:0:192:@Linux:2.6 (3)
+3:1:64:0:.:*:0:0:192:@Linux:2.6 (1)
+3:0:64:0:.:*:0:0:192:@Linux:2.6 (0)
 #
 11:0:64:0:.:*:0:0:0:@Linux:2.6
 
@@ -52,6 +53,7 @@
 #### Windows
 # Echo request (8)
 8:0:128:0:.:60:0:0:0:@Windows:XP/Vista
+8:0:128:0:.:61:0:0:32:@Windows:122.121.26.114
 8:0:32:0:.:92:0:0:0:@Windows:XP/Vista tracert
 8:0:32:0:.:60:0:0:0:@Windows:Vista
 # Echo reply (0)

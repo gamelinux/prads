@@ -249,6 +249,7 @@ S1:30:0:44:M1730:A:Cyclades:PR3000
 S1:64:1:44:M1460:A:NetCache:5.3.1
 8192:64:0:44:M1380:A:Juniper:NetScreen UC
 2048:64:0:44:M1460:A:Radware: UC
+S32:64:0:48:M512,N,W0:A:SonicWALL: UC
 
 # Edward
 S3:255:1:64:M1460,N,W0,N,N,T,S:A:NetCache: UC (Generic 1?)
