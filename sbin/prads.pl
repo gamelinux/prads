@@ -95,12 +95,16 @@ our $OS_UDP        = 0;
 our $ICMP          = 0;
 our $OS_ICMP       = 0;
 our $BPF           = q();
+our $PERSIST       = 1;
+
+# Database globals.
+our %ASSET;
 our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
 our $DB_USERNAME;
 our $DB_PASSWORD;
 our $AUTOCOMMIT = 0;
 our $TIMEOUT = 10;
-our $RECORDS = 0;
+our $DB_LAST_UPDATE = 0;
 
 my $DEVICE;
 my $LOGFILE                 = q(/dev/null);
@@ -126,40 +130,46 @@ my $PRADS_HOSTNAME = `hostname`;
 chomp $PRADS_HOSTNAME;
 
 # extract & load config before parsing rest of commandline
-    for my $i (0..@ARGV-1){
-    if($ARGV[$i] =~ /^--?(config|c)$/){
-        $CONFIG = splice @ARGV, $i, $i+1;
-        print "Loading config $CONFIG\n";
-        last; # we've modified @ARGV
-    }
+for my $i (0..@ARGV-1){
+   if($ARGV[$i] =~ /^--?(config|c)$/){
+      $CONFIG = splice @ARGV, $i, $i+1;
+      print "Loading config $CONFIG\n";
+      last; # we've modified @ARGV
+   }
 }
+
 # loads default config if none specified
 my $conf = load_config("$CONFIG");
 my $C_INIT = $CONFIG;
 
-$DATABASE       = $conf->{'db'}                  || $DATABASE;
-$DB_USERNAME    = $conf->{'db_username'} if $conf->{'db_username'};
-$DB_PASSWORD    = $conf->{'db_password'};
-$DEVICE         = $conf->{interface};
-$ARP            = $conf->{arp}                   || $ARP;
-$SERVICE_TCP    = $conf->{service_tcp}           || $SERVICE_TCP;
-$SERVICE_UDP    = $conf->{service_udp}           || $SERVICE_UDP;
-$DEBUG          = $conf->{debug}                 || $DEBUG;
-$DAEMON         = $conf->{daemon}                || $DAEMON;
-$BPF            = $conf->{bpfilter}              || $BPF;
-$OS_SYNACK      = $conf->{os_synack_fingerprint} || $OS;
-$OS_SYN         = $conf->{os_syn_fingerprint}    || $OS;
-$OS_UDP         = $conf->{os_udp_fingerprint}    || $OS;
-$ICMP           = $conf->{icmp}                  || $ICMP;
-$OS_ICMP        = $conf->{os_icmp}               || $OS_ICMP;
-$LOGFILE        = $conf->{log_file}              || $LOGFILE;
-$PIDFILE        = $conf->{pid_file}              || $PIDFILE;
-$PRADS_HOSTNAME = $conf->{hostname}              || $PRADS_HOSTNAME;
+sub default_config {
+   my $conf = shift;
+   $DATABASE       = $conf->{'db'}                  || $DATABASE;
+   $DB_USERNAME    = $conf->{'db_username'} if $conf->{'db_username'};
+   $DB_PASSWORD    = $conf->{'db_password'};
+   $DEVICE         = $conf->{interface};
+   $ARP            = $conf->{arp}                   || $ARP;
+   $SERVICE_TCP    = $conf->{service_tcp}           || $SERVICE_TCP;
+   $SERVICE_UDP    = $conf->{service_udp}           || $SERVICE_UDP;
+   $DEBUG          = $conf->{debug}                 || $DEBUG;
+   $DAEMON         = $conf->{daemon}                || $DAEMON;
+   $BPF            = $conf->{bpfilter}              || $BPF;
+   $OS_SYNACK      = $conf->{os_synack_fingerprint} || $OS;
+   $OS_SYN         = $conf->{os_syn_fingerprint}    || $OS;
+   $OS_UDP         = $conf->{os_udp_fingerprint}    || $OS;
+   $ICMP           = $conf->{icmp}                  || $ICMP;
+   $OS_ICMP        = $conf->{os_icmp}               || $OS_ICMP;
+   $LOGFILE        = $conf->{log_file}              || $LOGFILE;
+   $PIDFILE        = $conf->{pid_file}              || $PIDFILE;
+   $PRADS_HOSTNAME = $conf->{hostname}              || $PRADS_HOSTNAME;
+   $PERSIST        ||= $conf->{persist};
+}
+default_config($conf);
 
 $OS = 1 if ($OS_SYNACK == 1 || $OS_SYN ==1 );
 $UDP = 1 if ($SERVICE_UDP != 1 || $OS_UDP != 1);
 
-# commandline overrides config
+# commandline overrides config & defaults
 Getopt::Long::GetOptions(
     'config|c=s'             => \$CONFIG,
     'dev|d=s'                => \$DEVICE,
@@ -223,7 +233,7 @@ $SIG{"INT"}   = sub { game_over() };
 $SIG{"TERM"}  = sub { game_over() };
 $SIG{"QUIT"}  = sub { game_over() };
 $SIG{"KILL"}  = sub { game_over() };
-$SIG{"ALRM"}  = sub { commit_db(); alarm $TIMEOUT; };
+$SIG{"ALRM"}  = sub { if($PERSIST) { asset_db(); commit_db(); } alarm $TIMEOUT; };
 
 #$SIG{"CHLD"} = 'IGNORE';
 
@@ -260,8 +270,8 @@ warn "Loading UDP Service signatures\n" if ($DEBUG>0);
 my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
-warn "Loading persistent database ". $DATABASE ."\n" if ($DEBUG > 0);
-$OS_SYN_DB = load_persistent($DATABASE,$DB_USERNAME,$DB_PASSWORD);
+warn "Setting up database ". $DATABASE ."\n" if ($DEBUG > 0);
+$OS_SYN_DB = setup_db($DATABASE,$DB_USERNAME,$DB_PASSWORD);
 
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
@@ -308,45 +318,32 @@ exit;
 
 =head1 FUNCTIONS
 
-=head2 load_persistent
+=head2 setup_db
 
  Load persistent database
 
 =cut
 
-sub load_persistent {
-    my ($db,$user,$password) = @_;
-    my $dbh = DBI->connect($db,$user,$password, {AutoCommit => $AUTOCOMMIT});
-    my ($sql, $sth);
-    eval{ 
-        no warnings 'all';
-        #$SIG{'__WARN__'} = sub { };
-        #my $sql = "DROP TABLE asset";
-        #my $sth = $dbh->prepare($sql);
-        #$sth->execute;
-        $sql = "CREATE TABLE asset (ip TEXT, service TEXT, time TEXT, fingerprint TEXT,".
-                     "mac TEXT, os TEXT, details TEXT, link TEXT, distance TEXT, reporting TEXT)";
-        $sth = $dbh->prepare($sql);
-       #$dbh->{PrintError} = 0;
-       #$dbh->{RaiseError} = 0; 
-       #$dbh->{PrintWarn} = 0; 
-       #$dbh->{Warn} = 0; 
-       #$dbh->{Error} = 0; 
-       #
-        $sth->execute;
-        #$SIG{'__WARN__'} = undef;
-    };
-    if($DEBUG){
-        #$sql = "DELETE FROM asset WHERE service = 'ARP'";
-        #$sth = $dbh->prepare($sql) or die "foo $!";
-        #$sth->execute or die "$!";
-        $sql = "SELECT * from asset";
-        $sth = $dbh->prepare($sql) or die "foo $!";
-        $sth->execute or die "$!";
-        $sth->dump_results;
-    }
-    #$dbh->{'RaiseError'} = 1;
-    return $dbh;
+sub setup_db {
+   my ($db,$user,$password) = @_;
+   my $print_error = $DEBUG ? 1 : 0;
+   my $dbh = DBI->connect($db,$user,$password, 
+                          {AutoCommit => $AUTOCOMMIT, 
+                          RaiseError => 1, PrintError=> $print_error});
+   my ($sql, $sth);
+   eval{ 
+      $sql = "CREATE TABLE asset (ip TEXT, service TEXT, time TEXT, fingerprint TEXT,".
+         "mac TEXT, os TEXT, details TEXT, link TEXT, distance TEXT, reporting TEXT)";
+      $sth = $dbh->prepare($sql);
+      $sth->execute;
+   };
+   if($DEBUG){
+      $sql = "SELECT * from asset";
+      $sth = $dbh->prepare($sql) or die "foo $!";
+      $sth->execute or die "$!";
+      $sth->dump_results;
+   }
+   return $dbh;
 }
 
 =head2 packets
@@ -1707,32 +1704,34 @@ sub load_config {
 
  Add an asset record to the asset table;
 
+# optimizations: $stm = "select foo from bar where baz = :baz"
+# $sth->bind_param(':baz', $baz)
+# in-mem db + persistence + merge records.
+
 =cut
 {
-   my $table;
+   # store prepared statements for re-execution
    my $h_select;
    my $h_update;
    my $h_insert;
+   my $records;
+   my $table;
 sub add_db {
     my $db = $OS_SYN_DB;
-    my ($dbh, $ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
+    my ($ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
     $table = 'asset';
-    my $sql = "SELECT ip,fingerprint,time FROM $table WHERE ip = ? AND fingerprint = ?";
+    my $sql = "SELECT ip,fingerprint,time FROM $table WHERE service = ? AND ip = ? AND fingerprint = ?";
     #print "$sql,$ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host\n" if $service eq 'ARP';
 
     $h_select = $db->prepare_cached($sql) or die "Failed:$!" if not $h_select;
-    $h_select->execute($ip,$fp);
+    $h_select->execute($service, $ip, $fp);
     my ($o_ip, $o_fp, $o_time) = $h_select->fetchrow_array();
-    if($o_time){
-        if($o_time < $PRADS_START){
-            printf "%11d [%-11s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
-                   $o_time, $service, $ip, $os, $details, $fp, $dist, $link, '[OLD]';
-            #print "$o_time [$service] ip:$ip - $os - $details [$fp] distance:$dist link:$link [OLD]\n";
-            $RECORDS++;
-        }
 
-       $h_update = $db->prepare_cached("UPDATE $table SET time=? WHERE ip=? AND fingerprint=?") or die "$!" if not $h_update;
-       $h_update->execute($time,$ip,$fp);
+    # update record if fp matches, otherwise insert
+    # XXX: link, distance may have changed
+    if($o_time){
+       $h_update = $db->prepare_cached("UPDATE $table SET time=?,os=?,details=? WHERE ip=? AND fingerprint=?") or die "$!" if not $h_update;
+       $h_update->execute($time,$ip,$fp,$os,$details);
     }else{
        $h_insert = $db->prepare_cached(
          "INSERT INTO $table ".
@@ -1740,25 +1739,73 @@ sub add_db {
           "link, distance, reporting)".
          "VALUES (?,?,?,?,?,?,?,?,?,?)") if not $h_insert;
          #('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')") if not $h_insert;
-       $h_insert->execute($ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host);
-
-       printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s %s\n",
-              $time, $service, $ip, $os, $details, $fp, $dist, $link, '';
-       $RECORDS++;
+       $h_insert->execute($ip,$service,$time,$fp,$mac,$os,$details,
+                          $link,$dist,$host);
+       $records++;
     }
 }
 sub commit_db {
-   return if not $RECORDS;
-   print "Commiting $RECORDS records to database..\n" if $DEBUG;
+   return if not $records;
+   print "Commiting $records records to database..\n" if $DEBUG;
    $OS_SYN_DB->commit;
-   $RECORDS = 0;
+   $records = 0;
 }
 }
+
+=head2 update_asset
+
+ Update the in-memory asset cache.
+
+=cut
+sub update_asset {
+   my ($ip, $type, $time, $fp, $mac, $os, $details, $link, $dist) = @_;
+   my $entry = { 
+      'ip' => $ip,
+      'service' => $type,
+      'time' => $time,
+      'fingerprint' => $fp,
+      'mac' => $mac,
+      'os' => $os,
+      'details' => $details,
+      'link' => $link,
+      'dist' => $dist,
+   };
+   my $key = "$type:$ip:$fp";
+   if(not $ASSET{$key}){
+      printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s\n",
+             $time, $type, $ip, $os, $details, $fp, $dist, $link;
+   }
+   $ASSET{$key} = $entry;
+
+   return $ASSET{$key};
+}
+
+=head2 asset_db
+
+ Go through in-memory asset cache and poke updated records 
+ into the persistent database.
+
+=cut
+sub asset_db {
+   my $e;
+   for my $key (keys %ASSET){
+      $e = $ASSET{$key};
+      next if $e->{'time'} < $DB_LAST_UPDATE;
+      add_db($e->{'ip'}, $e->{'type'}, $e->{'time'},
+         $e->{'fingerprint'},
+         $e->{'mac'},
+         $e->{'os'}, $e->{'details'},
+         $e->{'link'}, $e->{'dist'});
+   }
+   $DB_LAST_UPDATE = time;
+}
+
 
 =head2 add_asset
 
  Takes input: type, type-specific args, ...
- Adds the asset to the internal list of assets, or if it exists, just updates the timestamp.
+ Adds the asset to the internal list of assets,
+    or if it exists, just updates the timestamp.
 
 =cut
 
@@ -1772,7 +1819,7 @@ sub add_asset {
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
-        add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
+        update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
 
     }elsif($type eq 'SYNACK'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
@@ -1780,27 +1827,27 @@ sub add_asset {
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
-        add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
+        update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
 
     }elsif($type eq 'ARP'){
         my ($mac, $ip, $prefix, $vendor, $details, @more) = @rest;
-        add_db($db, $ip, $type, $pradshosts{'tstamp'}, $prefix, $mac, $vendor, $details, 'ethernet', 1, $PRADS_HOSTNAME);
+        update_asset($ip, $type, $pradshosts{'tstamp'}, $prefix, $mac, $vendor, $details, 'ethernet', 1, $PRADS_HOSTNAME);
 
     }elsif($type eq 'SERVICE_TCP'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
-        add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+        update_asset($ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
 
     }elsif($type eq 'SERVICE_UDP'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
-        add_db($db, $ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+        update_asset($ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
 
     }elsif($type eq 'ICMP'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-        add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint,'', $os, $details, $link, $dist, $PRADS_HOSTNAME );
+        update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint,'', $os, $details, $link, $dist, $PRADS_HOSTNAME );
 
     }elsif($type eq 'UDP'){
          my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-         add_db($db, $src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
+         update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
     }
 }
 
@@ -1859,8 +1906,12 @@ sub dump_stats {
 =cut
 
 sub game_over {
+    print "Exiting\n";
     dump_stats();
-    commit_db();
+    if($PERSIST){
+      asset_db();
+      commit_db();
+    }
     warn "Closing device\n" if ($DEBUG>0);
     Net::Pcap::close($PCAP);
     unlink ($PIDFILE);
