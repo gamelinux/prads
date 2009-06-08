@@ -47,13 +47,8 @@ Kacper's crazy ideas:
 Kacper's TODO items:
  - OPTIMIXE: 
    .investigate NetPacket slowness
-   .DBI optimizations> 
-   ..async DBI commits
-   ..in-mem db + persistance if $PERSIST
-   ..optimize SERVICE matching - reduce universe of regexes to match by
+   .optimize SERVICE matching - reduce universe of regexes to match by
    finding byte-sigs before regex.
- - update UNKNOWN entries when they match.
- - option 76 crash
  - trust relationships :-)
  - active prads-informed firewall
  - UPnP. BGP IGMP, multicast, tcp6 etc etc
@@ -84,8 +79,11 @@ DONE
 - fix up icmp OS fingerprinting # DONE
 - fic up UDP  OS fingerprinting # DONE
 - Next would be mysql # DONE
-
-
-
+   .DBI optimizations> 
+   ..async DBI commits
+   ..in-mem db + persistance if $PERSIST
+ - update UNKNOWN entries when they match.
+ - option 76 crash
+ - CREATE TABLE failed blah error message.
 
 
