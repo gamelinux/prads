@@ -270,8 +270,8 @@ warn "Loading UDP Service signatures\n" if ($DEBUG>0);
 my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
-warn "Setting up database ". $DATABASE ."\n" if ($DEBUG > 0);
-$OS_SYN_DB = setup_db($DATABASE,$DB_USERNAME,$DB_PASSWORD);
+warn "Setting up database ". $DATABASE ."\n" if $PERSIST and ($DEBUG > 0);
+$OS_SYN_DB = setup_db($DATABASE,$DB_USERNAME,$DB_PASSWORD) if $PERSIST;
 
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
@@ -1718,6 +1718,7 @@ sub load_config {
    my $table;
 sub add_db {
     my $db = $OS_SYN_DB;
+    warn "Prads::add_db: ERROR: Database not set up, check prads.conf" and return if not $db;
     my ($ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
     $table = 'asset';
     my $sql = "SELECT ip,fingerprint,time FROM $table WHERE service = ? AND ip = ? AND fingerprint = ?";
@@ -1810,7 +1811,6 @@ sub asset_db {
 =cut
 
 sub add_asset {
-    my $db = $OS_SYN_DB;
     my ($type, @rest) = @_;
 
     if($type eq 'SYN'){
