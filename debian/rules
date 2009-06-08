@@ -49,16 +49,7 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/prads.
-	#$(MAKE) DESTDIR=$(CURDIR)/debian/prads install
-	install -D sbin/prads.pl $(CURDIR)/debian/prads/usr/bin/
-	install -m 644 -D etc/os.fp $(CURDIR)/debian/prads/etc/prads/
-	install -m 644 -D etc/osa.fp $(CURDIR)/debian/prads/etc/prads/
-	install -m 644 -D etc/mtu.sig $(CURDIR)/debian/prads/etc/prads/
-	install -m 644 -D etc/mac.sig $(CURDIR)/debian/prads/etc/prads/
-	install -m 644 -D etc/tcp-clients.sig $(CURDIR)/debian/prads/etc/prads/
-	install -m 644 -D etc/tcp-service.sig $(CURDIR)/debian/prads/etc/prads/
-	install -m 644 -D etc/udp-service.sig $(CURDIR)/debian/prads/etc/prads/
-	install -m 644 -D etc/prads.conf $(CURDIR)/debian/prads/etc/prads/
+	$(MAKE) PREFIX=/usr CONFDIR=/etc/prads PMDIR=/usr/share/perl5 DESTDIR=$(CURDIR)/debian/prads install
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -71,24 +62,15 @@ binary-arch: build install
 	dh_installchangelogs 
 	dh_installdocs
 	dh_installexamples
-#	dh_install
-#	dh_installmenu
-#	dh_installdebconf	
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installpam
-#	dh_installmime
-#	dh_python
+	dh_install
 #	dh_installinit
 #	dh_installcron
-#	dh_installinfo
 	dh_installman
 	dh_link
 	dh_strip
 	dh_compress
 	dh_fixperms
 	dh_perl
-#	dh_makeshlibs
 	dh_installdeb
 	dh_shlibdeps
 	dh_gencontrol

@@ -18,6 +18,7 @@
    Like: "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.6) Gecko/2009020911 Ubuntu/8.10 (intrepid) Firefox/3.0.6 Ubiquity/0.1.5"
          "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.6) Gecko/2009011913 Firefox/3.0.6"
          "Mozilla/5.0 (Windows; U; Windows NT 6.0; fr; rv:1.9.0.6) Gecko/2009011913 Firefox/3.0.6"
+         "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_5_7; nb-no) AppleWebKit/525.28.3 (KHTML, like Gecko) Version/3.2.3 Safari/525.28.3"
 
 7. Different output plugins...
    - PoC should send to stdout or/and logfile (text).

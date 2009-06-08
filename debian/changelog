@@ -1,6 +1,10 @@
 prads (0.1.1-1) unstable; urgency=low
 
+  [ Kacper Wysocki (Redpill-Linpro) ]
   * Initial release
 
- -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Wed, 20 May 2009 14:10:12 +0200
+  [ Stig Sandbeck Mathisen ]
+  * debian/control: Adding VCS fields, rewriting description
+  * debian/: removing example files
 
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Fri, 05 Jun 2009 23:18:24 +0200

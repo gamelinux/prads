@@ -1,3 +1,4 @@
-etc
 etc/prads
-usr/bin
+usr/sbin
+usr/share/perl5/NetPacket
+var/lib/prads
