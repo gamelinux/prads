@@ -375,8 +375,9 @@ sub packets {
     elsif ( $eth->{type} == ETH_TYPE_802Q1MT ){
         (my $mvid, my $tpid, my $vid, $eth->{type}, $eth->{data}) = unpack('nnna*' , $eth->{data});
     }
+
     # Check if ARP
-    elsif ($eth->{type} == ETH_TYPE_ARP) {
+    if ($eth->{type} == ETH_TYPE_ARP) {
         warn "Packet is of type ARP...\n" if($DEBUG>50);
         if ($ARP == 1) {
             arp_check ($eth, $pradshosts{"tstamp"});
