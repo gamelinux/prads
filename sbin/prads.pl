@@ -13,6 +13,8 @@ use Data::Dumper;
 use DBI;
 
 use constant ETH_TYPE_ARP       => 0x0806;
+use constant ETH_TYPE_802Q1T    => 0x8100;
+use constant ETH_TYPE_802Q1MT   => 0x9100;
 use constant ETH_TYPE_IP        => 0x0800;
 use constant ETH_TYPE_IPv6      => 0x86dd;
 use constant ARP_OPCODE_REPLY   => 2;
@@ -84,6 +86,7 @@ our $VERSION       = 0.2;
 our $DEBUG         = 0;
 our $DAEMON        = 0;
 our $DUMP          = 0;
+our $VLAN          = 0;
 our $ARP           = 0;
 our $SERVICE_TCP   = 0;
 our $SERVICE_UDP   = 0;
@@ -361,12 +364,19 @@ sub packets {
 
     my ($user_data, $header, $packet) = @_;
     $pradshosts{"tstamp"} = time;
-    warn "Packet received - processing...\n" if($DEBUG>50);
-
+    warn "Ethernet Packet received - processing...\n" if($DEBUG>50);
     my $eth      = NetPacket::Ethernet->decode($packet);
-
+   
+    # if VLAN Tag - strip VLANID
+    if ( $eth->{type} == ETH_TYPE_802Q1T  ){
+        (my $vid, $eth->{type}, $eth->{data}) = unpack('nna*' , $eth->{data});
+    }
+    # If VLAN MetroTag - strip MetroTag,TPID,VLANID 
+    elsif ( $eth->{type} == ETH_TYPE_802Q1MT ){
+        (my $mvid, my $tpid, my $vid, $eth->{type}, $eth->{data}) = unpack('nnna*' , $eth->{data});
+    }
     # Check if ARP
-    if ($eth->{type} == ETH_TYPE_ARP) {
+    elsif ($eth->{type} == ETH_TYPE_ARP) {
         warn "Packet is of type ARP...\n" if($DEBUG>50);
         if ($ARP == 1) {
             arp_check ($eth, $pradshosts{"tstamp"});
@@ -374,17 +384,17 @@ sub packets {
         inpacket_dump_stats();
         return;
     }
-
     # Check if IP ( also ETH_TYPE_IPv6 ?)
-    if ( $eth->{type} != ETH_TYPE_IP){
+    elsif ( $eth->{type} != ETH_TYPE_IP){
         warn "Not an IPv4 packet... Ethernet_type = $eth->{type} \n" if($DEBUG>50);
         inpacket_dump_stats();
         return;
     }
 
     # We should now have us an IP packet... good!
-    my $ethernet = NetPacket::Ethernet::strip($packet);
-    my $ip       = NetPacket::IP->decode($ethernet);
+    #my $ethernet = NetPacket::Ethernet::strip($packet);
+    #my $ip       = NetPacket::IP->decode($ethernet);
+    my $ip       = NetPacket::IP->decode($eth->{data});
 
     # OS finger printing
     # Collect necessary info from IP packet; if
