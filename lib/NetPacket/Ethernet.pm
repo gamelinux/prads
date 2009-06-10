@@ -45,6 +45,13 @@ BEGIN {
     @EXPORT = qw(
     );
 
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME SRC_MAC DEST_MAC TYPE DATA/) {
+        use constant "ETH_$name" => $i;
+        push @EXPORT, "ETH_$name";
+        $i++;
+    }
+
 # Other items we are prepared to export if requested
 
     @EXPORT_OK = qw(eth_strip 
@@ -75,14 +82,6 @@ use constant ETH_TYPE_RARP      => 0x8035;
 use constant ETH_TYPE_SNMP      => 0x814c;
 use constant ETH_TYPE_IPv6      => 0x86dd;
 use constant ETH_TYPE_PPP       => 0x880b;
-
-BEGIN {
-    my $i = 0;
-    for my $name (qw/_PARENT _FRAME SRC_MAC DEST_MAC TYPE DATA/) {
-        use constant "ARP_$name" => $i;
-        $i++;
-    }
-}
 
 #
 # Decode the packet

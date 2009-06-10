@@ -46,6 +46,13 @@ BEGIN {
     @EXPORT = qw(
     );
 
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME HTYPE PROTO HLEN PLEN OPCODE SHA SPA THA TPA DATA/) {
+        use constant "ARP_$name" => $i;
+        push @EXPORT, "ARP_$name";
+        $i++;
+    }
+
 # Other items we are prepared to export if requested
 
     @EXPORT_OK = qw(arp_strip
@@ -72,14 +79,6 @@ use constant ARP_OPCODE_REQUEST  => 1;
 use constant ARP_OPCODE_REPLY    => 2;
 use constant RARP_OPCODE_REQUEST => 3;
 use constant RARP_OPCODE_REPLY   => 4;
-
-BEGIN {
-    my $i = 0;
-    for my $name (qw/_PARENT _FRAME HTYPE PROTO HLEN PLEN OPCODE SHA SPA THA TPA DATA/) {
-        use constant "ARP_$name" => $i;
-        $i++;
-    }
-}
 
 #
 # Decode the packet

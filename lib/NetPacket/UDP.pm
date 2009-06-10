@@ -40,14 +40,6 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use NetPacket;
 use NetPacket::IP;
 
-BEGIN {
-    my $i = 0;
-    for my $name (qw/_PARENT _FRAME DEST_PORT SRC_PORT SEQNUM CKSUM OPTIONS URG ACKNUM DATA WINSIZE HLEN RESERVED FLAG/) {
-        use constant "ARP_$name" => $i;
-        $i++;
-    }
-}
-
 our $VERSION = '0.41.1';
 
 BEGIN {
@@ -58,6 +50,14 @@ BEGIN {
 
     @EXPORT = qw(
     );
+
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME DEST_PORT SRC_PORT SEQNUM CKSUM OPTIONS URG ACKNUM DATA WINSIZE HLEN RESERVED FLAG/) {
+        use constant "UDP_$name" => $i;
+        push @EXPORT, "UDP_$name";
+        $i++;
+    }
+
 
 # Other items we are prepared to export if requested
 

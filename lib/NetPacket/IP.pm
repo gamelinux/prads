@@ -39,14 +39,6 @@ use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use NetPacket;
 
-BEGIN {
-    my $i = 0;
-    for my $name (qw/_PARENT _FRAME TOS LEN FOFFSET TTL PROTO CKSUM SRC_IP DST_IP OPTIONS/) {
-        use constant "IP_$name" => $i;
-        $i++;
-    }
-}
-
 our $VERSION = '0.41.1';
 
 BEGIN {
@@ -57,6 +49,13 @@ BEGIN {
 
     @EXPORT = qw(
     );
+
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME TOS LEN FOFFSET TTL PROTO CKSUM SRC_IP DST_IP OPTIONS/) {
+        use constant "IP_$name" => $i;
+        push @EXPORT, "IP_$name";
+        $i++;
+    }
 
 # Other items we are prepared to export if requested
 

@@ -53,14 +53,6 @@ use constant URG => 0x20;
 use constant ECE => 0x40;
 use constant CWR => 0x80;
 
-BEGIN {
-    my $i = 0;
-    for my $name (qw/_PARENT _FRAME DEST_PORT SRC_PORT SEQNUM CKSUM OPTIONS URG ACKNUM DATA WINSIZE HLEN RESERVED FLAG/) {
-        use constant "ARP_$name" => $i;
-        $i++;
-    }
-}
-
 our $VERSION = '0.41.1';
 
 BEGIN {
@@ -71,6 +63,13 @@ BEGIN {
 
     @EXPORT = qw(FIN SYN RST PSH ACK URG ECE CWR
     );
+
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME DEST_PORT SRC_PORT SEQNUM CKSUM OPTIONS URG ACKNUM DATA WINSIZE HLEN RESERVED FLAG/) {
+        use constant "TCP_$name" => $i;
+        push @EXPORT, "TCP_$name";
+        $i++;
+    }
 
 # Other items we are prepared to export if requested
 

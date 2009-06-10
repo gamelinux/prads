@@ -53,6 +53,13 @@ BEGIN {
 
 # Other items we are prepared to export if requested
 
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME TYPE CODE CKSUM DATA/) {
+        use constant "ICMP_$name" => $i;
+        push @EXPORT, "ICMP_$name";
+        $i++;
+    }
+
     @EXPORT_OK = qw(icmp_strip
                     ICMP_ECHOREPLY ICMP_UNREACH ICMP_SOURCEQUENCH
                     ICMP_REDIRECT ICMP_ECHO ICMP_ROUTERADVERT
@@ -92,14 +99,6 @@ use constant ICMP_IREQ            => 15;
 use constant ICMP_IREQREPLY       => 16;
 use constant ICMP_MASKREQ         => 17;
 use constant ICMP_MASKREPLY       => 18;
-
-BEGIN {
-    my $i = 0;
-    for my $name (qw/_PARENT _FRAME TYPE CODE CKSUM DATA/) {
-        use constant "ICMP_$name" => $i;
-        $i++;
-    }
-}
 
 #
 # Decode the packet
