@@ -76,6 +76,14 @@ use constant ETH_TYPE_SNMP      => 0x814c;
 use constant ETH_TYPE_IPv6      => 0x86dd;
 use constant ETH_TYPE_PPP       => 0x880b;
 
+BEGIN {
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME SRC_MAC DEST_MAC TYPE DATA/) {
+        use constant "ARP_$name" => $i;
+        $i++;
+    }
+}
+
 #
 # Decode the packet
 #
@@ -87,8 +95,8 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[ETH__PARENT] = $parent;
+    $self->[ETH__FRAME] = $pkt;
 
     # Decode ethernet packet
 
@@ -96,14 +104,14 @@ sub decode {
 
 	my($sm_lo, $sm_hi, $dm_lo, $dm_hi);
 
-	($dm_hi, $dm_lo, $sm_hi, $sm_lo, $self->{type}, $self->{data}) = 
+	($dm_hi, $dm_lo, $sm_hi, $sm_lo, $self->[ETH_TYPE], $self->[ETH_DATA]) = 
 	    unpack('NnNnna*' , $pkt);
 
 	# Convert MAC addresses to hex string to avoid representation
 	# problems
 
-	$self->{src_mac} = sprintf("%08x%04x", $sm_hi, $sm_lo);
-	$self->{dest_mac} = sprintf("%08x%04x", $dm_hi, $dm_lo);
+	$self->[ETH_SRC_MAC] = sprintf("%08x%04x", $sm_hi, $sm_lo);
+	$self->[ETH_DEST_MAC] = sprintf("%08x%04x", $dm_hi, $dm_lo);
     }
 
     # Return a blessed object
@@ -123,7 +131,7 @@ sub strip {
     my ($pkt, @rest) = @_;
 
     my $eth_obj = NetPacket::Ethernet->decode($pkt);
-    return $eth_obj->{data};
+    return $eth_obj->[ETH_DATA];
 }   
 
 #
@@ -272,7 +280,7 @@ to standard output.
       my($arg, $hdr, $pkt) = @_;
 
       my $eth_obj = NetPacket::Ethernet->decode($pkt);
-      print("$eth_obj->{src_mac}:$eth_obj->{dest_mac} $eth_obj->{type}\n");
+      print("$eth_obj->[ETH_SRC_MAC]:$eth_obj->[ETH_DEST_MAC] $eth_obj->[ETH_TYPE]\n");
   }
 
   Net::PcapUtils::loop(\&process_pkt);

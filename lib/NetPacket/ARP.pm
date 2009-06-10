@@ -73,6 +73,14 @@ use constant ARP_OPCODE_REPLY    => 2;
 use constant RARP_OPCODE_REQUEST => 3;
 use constant RARP_OPCODE_REPLY   => 4;
 
+BEGIN {
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME HTYPE PROTO HLEN PLEN OPCODE SHA SPA THA TPA DATA/) {
+        use constant "ARP_$name" => $i;
+        $i++;
+    }
+}
+
 #
 # Decode the packet
 #
@@ -80,23 +88,23 @@ use constant RARP_OPCODE_REPLY   => 4;
 sub decode {
     my $class = shift;
     my($pkt, $parent, @rest) = @_;
-    my $self = {};
+    my $self = [];
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[ARP__PARENT] = $parent;
+    $self->[ARP__FRAME] = $pkt;
 
     # Decode ARP packet
 
     if (defined($pkt)) {
 
-	($self->{htype}, $self->{proto}, $self->{hlen}, $self->{plen},
-	 $self->{opcode}, $self->{sha}, $self->{spa}, $self->{tha},
-	 $self->{tpa}) = 
+	($self->[ARP_HTYPE], $self->[ARP_PROTO], $self->[ARP_HLEN], $self->[ARP_PLEN],
+	 $self->[ARP_OPCODE], $self->[ARP_SHA], $self->[ARP_SPA], $self->[ARP_THA],
+	 $self->[ARP_TPA]) = 
 	     unpack('nnCCnH12H8H12H8' , $pkt);
 
-	$self->{data} = undef;
+	$self->[ARP_DATA] = undef;
     }
 
     # Return a blessed object

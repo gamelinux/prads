@@ -39,6 +39,14 @@ use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use NetPacket;
 
+BEGIN {
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME TOS LEN FOFFSET TTL PROTO CKSUM SRC_IP DST_IP OPTIONS/) {
+        use constant "IP_$name" => $i;
+        $i++;
+    }
+}
+
 our $VERSION = '0.41.1';
 
 BEGIN {
@@ -103,6 +111,7 @@ use constant IP_MAXPACKET => 65535;
 
 # Convert 32-bit IP address to dotted quad notation
 
+
 sub to_dotquad {
     my($net) = @_ ;
     my($na, $nb, $nc, $nd);
@@ -126,48 +135,48 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[IP__PARENT] = $parent;
+    $self->[IP__FRAME] = $pkt;
 
     # Decode IP packet
 
     if (defined($pkt)) {
 	my $tmp;
 
-	($tmp, $self->{tos},$self->{len}, $self->{id}, $self->{foffset},
-	 $self->{ttl}, $self->{proto}, $self->{cksum}, $self->{src_ip},
-	 $self->{dest_ip}, $self->{options}) = unpack('CCnnnCCnNNa*' , $pkt);
+	($tmp, $self->[IP_TOS],$self->[IP_LEN], $self->[IP_ID], $self->[IP_FOFFSET],
+	 $self->[IP_TTL], $self->[IP_PROTO], $self->[IP_CKSUM], $self->[IP_SRC_IP],
+	 $self->[IP_DEST_IP], $self->[IP_OPTIONS]) = unpack('CCnnnCCnNNa*' , $pkt);
 
 	# Extract bit fields
 	
-	$self->{ver} = ($tmp & 0xf0) >> 4;
-	$self->{hlen} = $tmp & 0x0f;
+	$self->[IP_VER] = ($tmp & 0xf0) >> 4;
+	$self->[IP_HLEN] = $tmp & 0x0f;
 	
-	$self->{flags} = $self->{foffset} >> 13;
-	$self->{foffset} = ($self->{foffset} & 0x1fff) << 3;
+	$self->[IP_FLAGS] = $self->[IP_FOFFSET] >> 13;
+	$self->[IP_FOFFSET] = ($self->[IP_FOFFSET] & 0x1fff) << 3;
 
 	# Decode variable length header options and remaining data in field
 
-	my $olen = $self->{hlen} - 5;
+	my $olen = $self->[IP_HLEN] - 5;
 	$olen = 0, if ($olen < 0);  # Check for bad hlen
 
 	# Option length is number of 32 bit words
 
         $olen = $olen * 4;
 
-	($self->{options}, $self->{data}) = unpack("a" . $olen .
-						   "a*", $self->{options});
+	($self->[IP_OPTIONS], $self->[IP_DATA]) = unpack("a" . $olen .
+						   "a*", $self->[IP_OPTIONS]);
 
-    my $length = $self->{hlen};
+    my $length = $self->[IP_HLEN];
     $length = 5 if $length < 5;  # precaution against bad header
 
     # truncate data to the length given by the header
-    $self->{data} = substr $self->{data}, 0, $self->{len} - 4 * $length;
+    $self->[IP_DATA] = substr $self->[IP_DATA], 0, $self->[IP_LEN] - 4 * $length;
 
 	# Convert 32 bit ip addresses to dotted quad notation
 
-	$self->{src_ip} = to_dotquad($self->{src_ip});
-	$self->{dest_ip} = to_dotquad($self->{dest_ip});
+	$self->[IP_SRC_IP] = to_dotquad($self->[IP_SRC_IP]);
+	$self->[IP_DEST_IP] = to_dotquad($self->[IP_DEST_IP]);
     }
 
     return bless $self, $class;
@@ -184,7 +193,7 @@ sub strip {
     my ($pkt, @rest) = @_;
 
     my $ip_obj = NetPacket::IP->decode($pkt);
-    return $ip_obj->{data};
+    return $ip_obj->[IP_DATA];
 }   
 
 #
@@ -201,30 +210,30 @@ sub encode {
     $zero = 0;
 
     # adjust the length of the packet 
-    $self->{len} = ($self->{hlen} * 4) + length($self->{data});
+    $self->[IP_LEN] = ($self->[IP_HLEN] * 4) + length($self->[IP_DATA]);
 
-    $tmp = $self->{hlen} & 0x0f;
-    $tmp = $tmp | (($self->{ver} << 4) & 0xf0);
+    $tmp = $self->[IP_HLEN] & 0x0f;
+    $tmp = $tmp | (($self->[IP_VER] << 4) & 0xf0);
 
-    $offset = $self->{flags} << 13;
-    $offset = $offset | (($self->{foffset} >> 3) & 0x1fff);
+    $offset = $self->[IP_FLAGS] << 13;
+    $offset = $offset | (($self->[IP_FOFFSET] >> 3) & 0x1fff);
 
     # convert the src and dst ip
-    $src_ip = gethostbyname($self->{src_ip});
-    $dest_ip = gethostbyname($self->{dest_ip});
+    $src_ip = gethostbyname($self->[IP_SRC_IP]);
+    $dest_ip = gethostbyname($self->[IP_DEST_IP]);
 
     # construct header to calculate the checksum
-    $hdr = pack('CCnnnCCna4a4a*', $tmp, $self->{tos},$self->{len}, 
-         $self->{id}, $offset, $self->{ttl}, $self->{proto}, 
-         $zero, $src_ip, $dest_ip, $self->{options});
+    $hdr = pack('CCnnnCCna4a4a*', $tmp, $self->[IP_TOS],$self->[IP_LEN], 
+         $self->[IP_ID], $offset, $self->[IP_TTL], $self->[IP_PROTO], 
+         $zero, $src_ip, $dest_ip, $self->[IP_OPTIONS]);
 
-    $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($hdr));
+    $self->[IP_CKSUM] = NetPacket::htons(NetPacket::in_cksum($hdr));
 
     # make the entire packet
-    $packet = pack('CCnnnCCna4a4a*a*', $tmp, $self->{tos},$self->{len}, 
-         $self->{id}, $offset, $self->{ttl}, $self->{proto}, 
-         $self->{cksum}, $src_ip, $dest_ip, $self->{options},
-         $self->{data});
+    $packet = pack('CCnnnCCna4a4a*a*', $tmp, $self->[IP_TOS],$self->[IP_LEN], 
+         $self->[IP_ID], $offset, $self->[IP_TTL], $self->[IP_PROTO], 
+         $self->[IP_CKSUM], $src_ip, $dest_ip, $self->[IP_OPTIONS],
+         $self->[IP_DATA]);
 
     return($packet);
 
@@ -414,7 +423,7 @@ to standard output.
       my ($user, $hdr, $pkt) = @_;
 
       my $ip_obj = NetPacket::IP->decode(eth_strip($pkt));
-      print("$ip_obj->{src_ip}:$ip_obj->{dest_ip} $ip_obj->{proto}\n");
+      print("$ip_obj->[IP_SRC_IP]:$ip_obj->[IP_DEST_IP] $ip_obj->[IP_PROTO]\n");
   }
 
   Net::PcapUtils::loop(\&process_pkt, FILTER => 'ip');

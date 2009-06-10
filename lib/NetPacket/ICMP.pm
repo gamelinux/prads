@@ -93,6 +93,14 @@ use constant ICMP_IREQREPLY       => 16;
 use constant ICMP_MASKREQ         => 17;
 use constant ICMP_MASKREPLY       => 18;
 
+BEGIN {
+    my $i = 0;
+    for my $name (qw/_PARENT _FRAME TYPE CODE CKSUM DATA/) {
+        use constant "ICMP_$name" => $i;
+        $i++;
+    }
+}
+
 #
 # Decode the packet
 #
@@ -104,14 +112,14 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[ICMP__PARENT] = $parent;
+    $self->[ICMP__FRAME] = $pkt;
 
     # Decode ICMP packet
 
     if (defined($pkt)) {
 
-	($self->{type}, $self->{code}, $self->{cksum}, $self->{data}) =
+	($self->[ICMP_TYPE], $self->[ICMP_CODE], $self->[ICMP_CKSUM], $self->[ICMP_DATA]) =
 	    unpack("CCna*", $pkt);
     }
 
@@ -148,8 +156,8 @@ sub encode {
     $self->checksum();
 
     # Put the packet together
-    $packet = pack("CCna*", $self->{type}, $self->{code}, 
-                $self->{cksum}, $self->{data});
+    $packet = pack("CCna*", $self->[ICMP_TYPE], $self->[ICMP_CODE], 
+                $self->[ICMP_CKSUM], $self->[ICMP_DATA]);
 
     return($packet); 
 }
@@ -164,10 +172,10 @@ sub checksum {
 
     # Put the packet together for checksumming
     $zero = 0;
-    $packet = pack("CCna*", $self->{type}, $self->{code},
-                $zero, $self->{data});
+    $packet = pack("CCna*", $self->[ICMP_TYPE], $self->[ICMP_CODE],
+                $zero, $self->[ICMP_DATA]);
 
-    $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($packet));
+    $self->[ICMP_CKSUM] = NetPacket::htons(NetPacket::in_cksum($packet));
 }
 
 

@@ -144,31 +144,31 @@ sub packets {
     }
 
     my $ip       = NetPacket::IP->decode($ethernet);
-#    my $tcp      = NetPacket::TCP->decode($ip->{'data'});
-#    my $udp      = NetPacket::UDP->decode($ip->{'data'});
+#    my $tcp      = NetPacket::TCP->decode($ip->[DATA]);
+#    my $udp      = NetPacket::UDP->decode($ip->[DATA]);
 
     #### Should check ifdef $ip, $tcp, $udp... then do...
 
     # OS finger printing
     # Collect necessary info from IP packet; if
-    my $ttl    = $ip->{'ttl'};
-    my $ipflags  = $ip->{'flags'}; # 2=dont fragment/1=more fragments, 0=nothing set
-    my $ipopts   = $ip->{'options'}; # Not used in p0f
+    my $ttl    = $ip->[TTL];
+    my $ipflags  = $ip->[FLAGS]; # 2=dont fragment/1=more fragments, 0=nothing set
+    my $ipopts   = $ip->[OPTIONS]; # Not used in p0f
 
 #    my $tstamp = $ip->{'hmm implement'}; # or get it from $tcp options
 
     # Check if this is a TCP packet
-    if($ip->{proto} == 6) {
+    if($ip->[PROTO] == 6) {
       warn "Packet is of type TCP...\n" if($DEBUG);
       # Collect necessary info from TCP packet; if
-      my $tcp      = NetPacket::TCP->decode($ip->{'data'});
-      my $winsize = $tcp->{'winsize'}; #
-      my $tcpflags= $tcp->{'flags'};
-      my $tcpopts = $tcp->{'options'}; # binary crap 'CEUAPRSF' 
+      my $tcp      = NetPacket::TCP->decode($ip->[DATA]);
+      my $winsize = $tcp->[WINSIZE]; #
+      my $tcpflags= $tcp->[FLAGS];
+      my $tcpopts = $tcp->[OPTIONS]; # binary crap 'CEUAPRSF' 
       my $hex = unpack("H*", pack ("B*", $tcpopts));
 
       # Check if SYN is set and not ACK (Indicates an initial connection)
-      if ($tcp->{'flags'} & SYN && $tcp->{'flags'} | ACK ) { 
+      if ($tcp->[FLAGS] & SYN && $tcp->[FLAGS] | ACK ) { 
         warn "Initial connection... Detecting OS...\n" if($DEBUG);
         my $fragment;
         if($ipflags == 2){
@@ -177,49 +177,49 @@ sub packets {
           $fragment=0; # Fragment or more fragments
         }
       ##### THIS IS WHERE THE PASSIVE OS FINGERPRINTING MAGIC SHOULD BE
-      warn "OS: ip:$ip->{'src_ip'} ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
+      warn "OS: ip:$ip->[SRC_IP] ttl=$ttl, DF=$fragment, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, tcpoptsinhex=$hex\n" if($DEBUG);
 
       # Bogus/weak test, PoC - REWRITE
       # LINUX/*NIX
       if((64 >= $ttl) && ($ttl > 32)) {
          if ($fragment == 1) {
             if((5840 >= $winsize) && ($winsize >= 5488)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Linux 2.6 \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS Fingerprint: $ip->[SRC_IP]:$tcp->[SRC_PORT] - Linux 2.6 \n";
+               print "                $ip->[DEST_IP]:$tcp->[DEST_PORT] - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Linux ? \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS Fingerprint: $ip->[SRC_IP]:$tcp->[SRC_PORT] - UNNKOWN / Linux ? \n";
+               print "                $ip->[DEST_IP]:$tcp->[DEST_PORT] - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
          }elsif ($fragment == 0) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Fragment / *NIX ? \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS Fingerprint: $ip->[SRC_IP]:$tcp->[SRC_PORT] - UNNKOWN / Fragment / *NIX ? \n";
+               print "                $ip->[DEST_IP]:$tcp->[DEST_PORT] - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
          }
       # WINDOWS
       }elsif ((128 >= $ttl) && ($ttl > 64)) {
         if ($fragment == 1) {
            if((65535 >= $winsize ) && ($winsize >= 60000)) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - Windows 2000/2003/XP \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS Fingerprint: $ip->[SRC_IP]:$tcp->[SRC_PORT] - Windows 2000/2003/XP \n";
+               print "                $ip->[DEST_IP]:$tcp->[DEST_PORT] - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Windows ? \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS Fingerprint: $ip->[SRC_IP]:$tcp->[SRC_PORT] - UNNKOWN / Windows ? \n";
+               print "                $ip->[DEST_IP]:$tcp->[DEST_PORT] - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
             }
          }elsif ($fragment == 0) {
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / Fragment / *Windows ? \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS Fingerprint: $ip->[SRC_IP]:$tcp->[SRC_PORT] - UNNKOWN / Fragment / *Windows ? \n";
+               print "                $ip->[DEST_IP]:$tcp->[DEST_PORT] - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
          }
        # Others
        }else{
-               print "OS Fingerprint: $ip->{'src_ip'}:$tcp->{'src_port'} - UNNKOWN / UNKNOWN \n";
-               print "                $ip->{'dest_ip'}:$tcp->{'dest_port'} - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
+               print "OS Fingerprint: $ip->[SRC_IP]:$tcp->[SRC_PORT] - UNNKOWN / UNKNOWN \n";
+               print "                $ip->[DEST_IP]:$tcp->[DEST_PORT] - (ttl: $ttl, winsize:$winsize, DF=$fragment) \n";
        }
  
     }else{
       warn "Not an initial connection... Skipping OS detection\n" if($DEBUG);
     }
 #    # Skip further check for services
-#    unless($tcp->{'data'} or $udp->{'data'}) {
-    unless($tcp->{'data'}) {
+#    unless($tcp->[DATA] or $udp->[DATA]) {
+    unless($tcp->[DATA]) {
         warn "No TCP data - Skipping asset detection\n" if($DEBUG);
         warn "Done...\n\n" if($DEBUG);
         return;
@@ -230,11 +230,11 @@ sub packets {
     for my $s (@SIGNATURES) {
         my $re = $s->[2];
 #
-        if($tcp->{'data'} =~ /$re/) {
+        if($tcp->[DATA] =~ /$re/) {
             my($vendor, $version, $info) = split m"/", eval $s->[1];
             printf("(%s) %s:%i -> (%s) %s:%i -> %s %s %s\n",
-                $eth->{'src_mac'},  $ip->{'src_ip'},  $tcp->{'src_port'},
-                $eth->{'dest_mac'}, $ip->{'dest_ip'}, $tcp->{'dest_port'},
+                $eth->[SRC_MAC],  $ip->[SRC_IP],  $tcp->[SRC_PORT],
+                $eth->[DEST_MAC], $ip->[DEST_IP], $tcp->[DEST_PORT],
                 $vendor  || q(),
                 $version || q(),
                 $info    || q()
@@ -242,10 +242,10 @@ sub packets {
             last SIGNATURE;
         }
     }
-    }elsif ($ip->{proto} == 17) {
+    }elsif ($ip->[PROTO] == 17) {
        warn "Packet is of type UDP...\n" if($DEBUG);
-       my $udp      = NetPacket::UDP->decode($ip->{'data'});
-       unless($udp->{'data'}) {
+       my $udp      = NetPacket::UDP->decode($ip->[DATA]);
+       unless($udp->[DATA]) {
           warn "No UDP data - Skipping asset detection\n" if($DEBUG);
           warn "Done...\n\n" if($DEBUG);
           return;
