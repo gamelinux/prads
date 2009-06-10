@@ -61,8 +61,22 @@ BEGIN {
 # Items to export into callers namespace by default
 # (move infrequently used names to @EXPORT_OK below)
 
-    @EXPORT = qw(FIN SYN RST PSH ACK URG ECE CWR
-    );
+    @EXPORT = qw( _FRAME _PARENT ACKNUM CKSUM DATA DEST_IP
+                  DEST_PORT FLAGS HLEN OPTIONS PROTO RESERVED
+                  SEQNUM SRC_IP SRC_PORT WINSIZE );
+
+    my $i = 0;
+    for my $name (@EXPORT) {
+        eval "use constant $name => $1; 1";
+        $name = "TCP_$name";
+        $i++;
+    }
+
+    # cannot overwrite &URG
+    use constant TCP_URG => $i;
+    push @EXPORT, 'TCP_URG';
+
+    push @EXPORT, qw(FIN SYN RST PSH ACK URG ECE CWR);
 
 # Other items we are prepared to export if requested
 
@@ -89,7 +103,7 @@ sub strip {
     my ($pkt, @rest) = @_;
 
     my $tcp_obj = NetPacket::TCP->decode($pkt);
-    return $tcp_obj->{data};
+    return $tcp_obj->[DATA];
 }   
 
 #
@@ -103,36 +117,36 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[_PARENT] = $parent;
+    $self->[_FRAME] = $pkt;
 
     # Decode TCP packet
 
     if (defined($pkt)) {
 	my $tmp;
 
-	($self->{src_port}, $self->{dest_port}, $self->{seqnum}, 
-	 $self->{acknum}, $tmp, $self->{winsize}, $self->{cksum}, 
-	 $self->{urg}, $self->{options}) =
+	($self->[SRC_PORT], $self->[DEST_PORT], $self->[SEQNUM], 
+	 $self->[ACKNUM], $tmp, $self->[WINSIZE], $self->[CKSUM], 
+	 $self->[TCP_URG], $self->[OPTIONS]) =
 	     unpack("nnNNnnnna*", $pkt);
 
 	# Extract flags
 	
-	$self->{hlen}     = ($tmp & 0xf000) >> 12;
-	$self->{reserved} = ($tmp & 0x0f00) >> 8;
-	$self->{flags}    =  $tmp & 0x00ff;
+	$self->[HLEN]     = ($tmp & 0xf000) >> 12;
+	$self->[RESERVED] = ($tmp & 0x0f00) >> 8;
+	$self->[FLAGS]    =  $tmp & 0x00ff;
 	
 	# Decode variable length header and remaining data
 
-	my $olen = $self->{hlen} - 5;
+	my $olen = $self->[HLEN] - 5;
 	$olen = 0 if $olen < 0;  # Check for bad hlen
 
         # Option length is number of 32 bit words
 
     $olen *= 4;
 
-	( $self->{options}, $self->{data} ) 
-        = unpack( 'a' . $olen .  'a*', $self->{options});
+	( $self->[OPTIONS], $self->[DATA] ) 
+        = unpack( 'a' . $olen .  'a*', $self->[OPTIONS]);
     }
 
     # Return a blessed object
@@ -154,15 +168,15 @@ sub encode {
     # First of all, fix the checksum
     $self->checksum($ip);
 
-    $tmp = $self->{hlen} << 12;
-    $tmp = $tmp | (0x0f00 & ($self->{reserved} << 8));
-    $tmp = $tmp | (0x00ff & $self->{flags});
+    $tmp = $self->[HLEN] << 12;
+    $tmp = $tmp | (0x0f00 & ($self->[RESERVED] << 8));
+    $tmp = $tmp | (0x00ff & $self->[FLAGS]);
 
     # Put the packet together
     $packet = pack('n n N N n n n n a* a*',
-            $self->{src_port}, $self->{dest_port}, $self->{seqnum},
-            $self->{acknum}, $tmp, $self->{winsize}, $self->{cksum},
-            $self->{urg}, $self->{options},$self->{data});
+            $self->[SRC_PORT], $self->[DEST_PORT], $self->[SEQNUM],
+            $self->[ACKNUM], $tmp, $self->[WINSIZE], $self->[CKSUM],
+            $self->[TCP_URG], $self->[OPTIONS],$self->[DATA]);
 
 
     return($packet);
@@ -182,28 +196,28 @@ sub checksum {
 
     $zero = 0;
     $proto = 6;
-    $tcplen = ($self->{hlen} * 4)+ length($self->{data});
+    $tcplen = ($self->[HLEN] * 4)+ length($self->[DATA]);
 
     no warnings qw/ uninitialized /;
-    $tmp = $self->{hlen} << 12;
-    $tmp = $tmp | (0x0f00 & ($self->{reserved} << 8));
-    $tmp = $tmp | (0x00ff & $self->{flags});
+    $tmp = $self->[HLEN] << 12;
+    $tmp = $tmp | (0x0f00 & ($self->[RESERVED] << 8));
+    $tmp = $tmp | (0x00ff & $self->[FLAGS]);
 
     # Pack pseudo-header for tcp checksum
 
-    $src_ip = gethostbyname($ip->{src_ip});
-    $dest_ip = gethostbyname($ip->{dest_ip});
+    $src_ip = gethostbyname($ip->[SRC_IP]);
+    $dest_ip = gethostbyname($ip->[DEST_IP]);
 
     $packet = pack('a4a4nnnnNNnnnna*a*',
             $src_ip,$dest_ip,$proto,$tcplen,
-            $self->{src_port}, $self->{dest_port}, $self->{seqnum},
-            $self->{acknum}, $tmp, $self->{winsize}, $zero,
-            $self->{urg}, $self->{options},$self->{data});
+            $self->[SRC_PORT], $self->[DEST_PORT], $self->[SEQNUM],
+            $self->[ACKNUM], $tmp, $self->[WINSIZE], $zero,
+            $self->[TCP_URG], $self->[OPTIONS],$self->[DATA]);
 
     # pad packet if odd-sized
     $packet .= "\x00" if length( $packet ) % 2;
 
-    $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($packet));
+    $self->[CKSUM] = NetPacket::htons(NetPacket::in_cksum($packet));
 }
 
 #
@@ -373,8 +387,8 @@ The following script is a primitive pop3 sniffer.
 
       my $tcp_obj = NetPacket::TCP->decode(ip_strip(eth_strip($pkt)));
 
-      if (($tcp_obj->{src_port} == 110) or ($tcp_obj->{dest_port} == 110)) {
-	  print($tcp_obj->{data});
+      if (($tcp_obj->[SRC_PORT] == 110) or ($tcp_obj->[DEST_PORT] == 110)) {
+	  print($tcp_obj->[DATA]);
       }
   }
 
@@ -401,16 +415,16 @@ flag to all TCP packets passing through:
       $ip_obj = NetPacket::IP->decode($packet);
 
       # check if this is a TCP packet
-      if($ip_obj->{proto} == IP_PROTO_TCP) {
+      if($ip_obj->[PROTO] == IP_PROTO_TCP) {
 
           # decode the TCP header
-          $tcp_obj = NetPacket::TCP->decode($ip_obj->{data});
+          $tcp_obj = NetPacket::TCP->decode($ip_obj->[DATA]);
 
           # set the syn flag
-          $tcp_obj->{flags} |= SYN;
+          $tcp_obj->[FLAGS] |= SYN;
 
           # construct the new ip packet
-          $ip_obj->{data} = $tcp_obj->encode($ip_obj);
+          $ip_obj->[DATA] = $tcp_obj->encode($ip_obj);
           $packet = $ip_obj->encode;
 
       }

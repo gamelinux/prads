@@ -48,8 +48,14 @@ BEGIN {
 # Items to export into callers namespace by default
 # (move infrequently used names to @EXPORT_OK below)
 
-    @EXPORT = qw(
-    );
+    @EXPORT = qw( _PARENT _FRAME CKSUM CODE DATA TYPE );
+
+    my $i = 0;
+    for my $name (@EXPORT) {
+        eval "use constant $name => $i";
+        $name = "ICMP_$name";
+        $i++;
+    }
 
 # Other items we are prepared to export if requested
 
@@ -104,14 +110,14 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[_PARENT] = $parent;
+    $self->[_FRAME] = $pkt;
 
     # Decode ICMP packet
 
     if (defined($pkt)) {
 
-	($self->{type}, $self->{code}, $self->{cksum}, $self->{data}) =
+	($self->[TYPE], $self->[CODE], $self->[CKSUM], $self->[DATA]) =
 	    unpack("CCna*", $pkt);
     }
 
@@ -148,8 +154,8 @@ sub encode {
     $self->checksum();
 
     # Put the packet together
-    $packet = pack("CCna*", $self->{type}, $self->{code}, 
-                $self->{cksum}, $self->{data});
+    $packet = pack("CCna*", $self->[TYPE], $self->[CODE], 
+                $self->[CKSUM], $self->[DATA]);
 
     return($packet); 
 }
@@ -164,10 +170,10 @@ sub checksum {
 
     # Put the packet together for checksumming
     $zero = 0;
-    $packet = pack("CCna*", $self->{type}, $self->{code},
-                $zero, $self->{data});
+    $packet = pack("CCna*", $self->[TYPE], $self->[CODE],
+                $zero, $self->[DATA]);
 
-    $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($packet));
+    $self->[CKSUM] = NetPacket::htons(NetPacket::in_cksum($packet));
 }
 
 

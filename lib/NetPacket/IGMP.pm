@@ -43,8 +43,15 @@ BEGIN {
 # Items to export into callers namespace by default
 # (move infrequently used names to @EXPORT_OK below)
 
-    @EXPORT = qw(
-    );
+    @EXPORT = qw( _PARENT _FRAME CKSUM DATA GROUP_ADDR
+                  DEST_IP SRC_IP SUBTYPE TYPE VERSION );
+
+    my $i = 0;
+    for my $name (@EXPORT) {
+        eval "use constant $name => $i; 1";
+        $name = "IGMP_$name";
+        $i++;
+    }
 
 # Other items we are prepared to export if requested
 
@@ -115,25 +122,25 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[_PARENT] = $parent;
+    $self->[_FRAME] = $pkt;
 
     # Decode IGMP packet
 
     if (defined($pkt)) {
 	my $tmp;
 
-	($tmp, $self->{subtype}, $self->{cksum}, $self->{group_addr}, 
-	 $self->{data}) = unpack('CCnNa*', $pkt);
+	($tmp, $self->[SUBTYPE], $self->[CKSUM], $self->[GROUP_ADDR], 
+	 $self->[DATA]) = unpack('CCnNa*', $pkt);
     
 	# Extract bit fields
 	
-	$self->{version} = ($tmp & 0xf0) >> 4;
-	$self->{type} = $tmp & 0x0f;
+	$self->[VERSION] = ($tmp & 0xf0) >> 4;
+	$self->[TYPE] = $tmp & 0x0f;
 	
 	# Convert to dq notation
 	
-	$self->{group_addr} = to_dotquad($self->{group_addr});
+	$self->[GROUP_ADDR] = to_dotquad($self->[GROUP_ADDR]);
     }
 
     # Return a blessed object
@@ -316,11 +323,11 @@ to standard output.
       my($arg, $hdr, $pkt) = @_;
 
       my $ip_obj = NetPacket::IP->decode(eth_strip($pkt));
-      my $igmp_obj = NetPacket::IGMP->decode($ip_obj->{data});
+      my $igmp_obj = NetPacket::IGMP->decode($ip_obj->[DATA]);
 
-      print("$ip_obj->{src_ip} -> $ip_obj->{dest_ip} ",
-	    "$igmp_obj->{type}/$igmp_obj->{subtype} ",
-	    "$igmp_obj->{group_addr}\n");
+      print("$ip_obj->[SRC_IP] -> $ip_obj->[DEST_IP] ",
+	    "$igmp_obj->[TYPE]/$igmp_obj->[SUBTYPE] ",
+	    "$igmp_obj->[GROUP_ADDR]\n");
   }
 
   Net::PcapUtils::loop(\&process_pkt, FILTER => 'igmp');

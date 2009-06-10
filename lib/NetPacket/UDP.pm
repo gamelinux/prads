@@ -53,8 +53,17 @@ BEGIN {
 
 # Other items we are prepared to export if requested
 
-    @EXPORT_OK = qw(udp_strip
-    );
+    @EXPORT = qw( _FRAME _PARENT ACKNUM CKSUM DATA DEST_IP DEST_PORT
+                  FLAGS LEN PROTO SRC_IP SRC_PORT );
+
+    my $i = 0;
+    for my $name (@EXPORT) {
+        eval "use constant $name => $i";
+        $name = "UDP_$name";
+        $i++;
+    }
+
+    @EXPORT_OK = qw(udp_strip);
 
 # Tags:
 
@@ -76,15 +85,15 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[_PARENT] = $parent;
+    $self->[_FRAME] = $pkt;
 
     # Decode UDP packet
 
     if (defined($pkt)) {
 
-	($self->{src_port}, $self->{dest_port}, $self->{len}, $self->{cksum},
-	 $self->{data}) = unpack("nnnna*", $pkt);
+	($self->[SRC_PORT], $self->[DEST_PORT], $self->[LEN], $self->[CKSUM],
+	 $self->[DATA]) = unpack("nnnna*", $pkt);
     }
 
     # Return a blessed object
@@ -118,14 +127,14 @@ sub encode {
     my ($packet);
 
     # Adjust the length accodingly
-    $self->{len} = 8 + length($self->{data});
+    $self->[LEN] = 8 + length($self->[DATA]);
 
     # First of all, fix the checksum
     $self->checksum($ip);
 
     # Put the packet together
-    $packet = pack("nnnna*", $self->{src_port},$self->{dest_port},
-                $self->{len}, $self->{cksum}, $self->{data});
+    $packet = pack("nnnna*", $self->[SRC_PORT],$self->[DEST_PORT],
+                $self->[LEN], $self->[CKSUM], $self->[DATA]);
 
     return($packet); 
 }
@@ -142,8 +151,8 @@ sub checksum {
 
     # Pack pseudo-header for udp checksum
 
-    my $src_ip = gethostbyname($ip->{src_ip});
-    my $dest_ip = gethostbyname($ip->{dest_ip});
+    my $src_ip = gethostbyname($ip->[SRC_IP]);
+    my $dest_ip = gethostbyname($ip->[DEST_IP]);
 
     no warnings;
 
@@ -154,15 +163,15 @@ sub checksum {
 	    0,
 	    $proto,
 	    		# proper UDP part
-            $self->{src_port}, 
-	    $self->{dest_port}, 
-            $self->{len},
+            $self->[SRC_PORT], 
+	    $self->[DEST_PORT], 
+            $self->[LEN],
 	    0,
-	    $self->{data};
+	    $self->[DATA];
 
     $packet .= "\x00" if length($packet) % 2;
 
-    $self->{cksum} = NetPacket::htons(NetPacket::in_cksum($packet)); 
+    $self->[CKSUM] = NetPacket::htons(NetPacket::in_cksum($packet)); 
 
 }
 
@@ -319,11 +328,11 @@ standard output.
       my($arg, $hdr, $pkt) = @_;
 
       my $ip_obj = NetPacket::IP->decode(eth_strip($pkt));
-      my $udp_obj = NetPacket::UDP->decode($ip_obj->{data});
+      my $udp_obj = NetPacket::UDP->decode($ip_obj->[DATA]);
 
-      print("$ip_obj->{src_ip}:$udp_obj->{src_port} -> ",
-	    "$ip_obj->{dest_ip}:$udp_obj->{dest_port} ",
-	    "$udp_obj->{len}\n");
+      print("$ip_obj->[SRC_IP]:$udp_obj->[SRC_PORT] -> ",
+	    "$ip_obj->[DEST_IP]:$udp_obj->[DEST_PORT] ",
+	    "$udp_obj->[LEN]\n");
   }
 
   Net::PcapUtils::loop(\&process_pkt, FILTER => 'udp');
@@ -349,16 +358,16 @@ sub alterPacket
 
     $ip_obj = NetPacket::IP->decode($data);
 
-    if($ip_obj->{proto} == IP_PROTO_UDP) {
+    if($ip_obj->[PROTO] == IP_PROTO_UDP) {
 
         # decode the UDP header
-        $udp_obj = NetPacket::UDP->decode($ip_obj->{data});
+        $udp_obj = NetPacket::UDP->decode($ip_obj->[DATA]);
 
         # replace foo in the payload with bar
-        $udp_obj->{data} =~ s/foo/bar/g;
+        $udp_obj->[DATA] =~ s/foo/bar/g;
 
         # reencode the packet
-        $ip_obj->{data} = $udp_obj->encode($ip_obj);
+        $ip_obj->[DATA] = $udp_obj->encode($ip_obj);
         $data = $ip_obj->encode;
 
     }

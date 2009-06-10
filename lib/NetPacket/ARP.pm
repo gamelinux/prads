@@ -43,8 +43,15 @@ BEGIN {
 # Items to export into callers namespace by default
 # (move infrequently used names to @EXPORT_OK below)
 
-    @EXPORT = qw(
-    );
+    @EXPORT = qw( _PARENT _FRAME DATA HLEN HTYPE OPCODE PLEN
+                  PROTO SHA SPA THA TPA TYPE );
+
+    my $i = 0;
+    for my $name (@EXPORT) {
+        eval "use constant $name => $i; 1";
+        $name = "ARP_$name";
+        $i++;
+    }
 
 # Other items we are prepared to export if requested
 
@@ -84,19 +91,19 @@ sub decode {
 
     # Class fields
 
-    $self->{_parent} = $parent;
-    $self->{_frame} = $pkt;
+    $self->[_PARENT] = $parent;
+    $self->[_FRAME] = $pkt;
 
     # Decode ARP packet
 
     if (defined($pkt)) {
 
-	($self->{htype}, $self->{proto}, $self->{hlen}, $self->{plen},
-	 $self->{opcode}, $self->{sha}, $self->{spa}, $self->{tha},
-	 $self->{tpa}) = 
+	($self->[HTYPE], $self->[PROTO], $self->[HLEN], $self->[PLEN],
+	 $self->[OPCODE], $self->[SHA], $self->[SPA], $self->[THA],
+	 $self->[TPA]) = 
 	     unpack('nnCCnH12H8H12H8' , $pkt);
 
-	$self->{data} = undef;
+	$self->[DATA] = undef;
     }
 
     # Return a blessed object
@@ -279,10 +286,10 @@ Print out arp requests on the local network.
 
     my $eth_obj = NetPacket::Ethernet->decode($pkt);
 
-    if ($eth_obj->{type} == ETH_TYPE_ARP) {
-	my $arp_obj = NetPacket::ARP->decode($eth_obj->{data}, $eth_obj);
-	print("source hw addr=$arp_obj->{sha}, " .
-	      "dest hw addr=$arp_obj->{tha}\n");
+    if ($eth_obj->[TYPE] == ETH_TYPE_ARP) {
+	my $arp_obj = NetPacket::ARP->decode($eth_obj->[DATA], $eth_obj);
+	print("source hw addr=$arp_obj->[SHA], " .
+	      "dest hw addr=$arp_obj->[THA]\n");
     }
   }
 
