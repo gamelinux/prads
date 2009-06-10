@@ -113,7 +113,7 @@ sub strip {
 sub decode {
     my $class = shift;
     my($pkt, $parent, @rest) = @_;
-    my $self = {};
+    my $self = [];
 
     # Class fields
 
@@ -160,7 +160,6 @@ sub decode {
 #
 
 sub encode {
-
     my $self = shift;
     my ($ip) = @_;
     my ($packet,$tmp);
@@ -188,7 +187,6 @@ sub encode {
 #
 
 sub checksum {
-
     my $self = shift;
     my ($ip) = @_;
     my ($packet,$zero,$tcplen,$tmp);

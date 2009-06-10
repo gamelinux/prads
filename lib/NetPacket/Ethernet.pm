@@ -89,7 +89,7 @@ use constant ETH_TYPE_PPP       => 0x880b;
 sub decode {
     my $class = shift;
     my($pkt, $parent, @rest) = @_;
-    my $self = {};
+    my $self = [];
 
     # Class fields
 

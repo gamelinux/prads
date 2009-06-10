@@ -81,7 +81,7 @@ BEGIN {
 sub decode {
     my $class = shift;
     my($pkt, $parent, @rest) = @_;
-    my $self = {};
+    my $self = [];
 
     # Class fields
 
@@ -121,7 +121,6 @@ sub strip {
 #
 
 sub encode {
-
     my $self = shift;
     my ($ip) = @_;
     my ($packet);

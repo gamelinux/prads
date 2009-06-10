@@ -106,7 +106,7 @@ use constant ICMP_MASKREPLY       => 18;
 sub decode {
     my $class = shift;
     my($pkt, $parent, @rest) = @_;
-    my $self = {};
+    my $self = [];
 
     # Class fields
 

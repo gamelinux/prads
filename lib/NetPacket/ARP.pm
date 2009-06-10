@@ -87,7 +87,7 @@ use constant RARP_OPCODE_REPLY   => 4;
 sub decode {
     my $class = shift;
     my($pkt, $parent, @rest) = @_;
-    my $self = {};
+    my $self = [];
 
     # Class fields
 
