@@ -42,12 +42,12 @@ BEGIN {
 # Items to export into callers namespace by default
 # (move infrequently used names to @EXPORT_OK below)
 
-    @EXPORT = qw( _PARENT _FRAME DATA DEST_MAC SRC_MAC TYPE );
+    @EXPORT = qw( PARENT FRAME DATA DEST_MAC SRC_MAC TYPE );
 
     my $i = 0;
     for my $name (@EXPORT) {
-        eval "use constant $name => $i; 1";
         $name = "ETH_$name";
+        eval "use constant $name => $i";
         $i++;
     }
 
@@ -93,8 +93,8 @@ sub decode {
 
     # Class fields
 
-    $self->[_PARENT] = $parent;
-    $self->[_FRAME] = $pkt;
+    $self->[ETH_PARENT] = $parent;
+    $self->[ETH_FRAME] = $pkt;
 
     # Decode ethernet packet
 
@@ -102,14 +102,14 @@ sub decode {
 
 	my($sm_lo, $sm_hi, $dm_lo, $dm_hi);
 
-	($dm_hi, $dm_lo, $sm_hi, $sm_lo, $self->[TYPE], $self->[DATA]) = 
+	($dm_hi, $dm_lo, $sm_hi, $sm_lo, $self->[ETH_TYPE], $self->[ETH_DATA]) = 
 	    unpack('NnNnna*' , $pkt);
 
 	# Convert MAC addresses to hex string to avoid representation
 	# problems
 
-	$self->[SRC_MAC] = sprintf("%08x%04x", $sm_hi, $sm_lo);
-	$self->[DEST_MAC] = sprintf("%08x%04x", $dm_hi, $dm_lo);
+	$self->[ETH_SRC_MAC] = sprintf("%08x%04x", $sm_hi, $sm_lo);
+	$self->[ETH_DEST_MAC] = sprintf("%08x%04x", $dm_hi, $dm_lo);
     }
 
     # Return a blessed object
@@ -129,7 +129,7 @@ sub strip {
     my ($pkt, @rest) = @_;
 
     my $eth_obj = NetPacket::Ethernet->decode($pkt);
-    return $eth_obj->[DATA];
+    return $eth_obj->[ETH_DATA];
 }   
 
 #
@@ -278,7 +278,7 @@ to standard output.
       my($arg, $hdr, $pkt) = @_;
 
       my $eth_obj = NetPacket::Ethernet->decode($pkt);
-      print("$eth_obj->[SRC_MAC]:$eth_obj->[DEST_MAC] $eth_obj->[TYPE]\n");
+      print("$eth_obj->[ETH_SRC_MAC]:$eth_obj->[ETH_DEST_MAC] $eth_obj->[ETH_TYPE]\n");
   }
 
   Net::PcapUtils::loop(\&process_pkt);
