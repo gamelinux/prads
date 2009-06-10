@@ -368,16 +368,16 @@ sub packets {
     my $eth      = NetPacket::Ethernet->decode($packet);
    
     # if VLAN Tag - strip VLANID
-    if ( $eth->{type} == ETH_TYPE_802Q1T  ){
-        (my $vid, $eth->{type}, $eth->{data}) = unpack('nna*' , $eth->{data});
+    if ( $eth->[ETH_TYPE] == ETH_TYPE_802Q1T  ){
+        (my $vid, $eth->[ETH_TYPE], $eth->[ETH_DATA]) = unpack('nna*' , $eth->[ETH_DATA]);
     }
     # If VLAN MetroTag - strip MetroTag,TPID,VLANID 
-    elsif ( $eth->{type} == ETH_TYPE_802Q1MT ){
-        (my $mvid, my $tpid, my $vid, $eth->{type}, $eth->{data}) = unpack('nnna*' , $eth->{data});
+    elsif ( $eth->[ETH_TYPE] == ETH_TYPE_802Q1MT ){
+        (my $mvid, my $tpid, my $vid, $eth->[ETH_TYPE], $eth->[ETH_DATA]) = unpack('nnna*' , $eth->[ETH_DATA]);
     }
 
     # Check if ARP
-    if ($eth->{type} == ETH_TYPE_ARP) {
+    if ($eth->[ETH_TYPE] == ETH_TYPE_ARP) {
         warn "Packet is of type ARP...\n" if($DEBUG>50);
         if ($ARP == 1) {
             arp_check ($eth, $pradshosts{"tstamp"});
@@ -386,8 +386,8 @@ sub packets {
         return;
     }
     # Check if IP ( also ETH_TYPE_IPv6 ?)
-    elsif ( $eth->{type} != ETH_TYPE_IP){
-        warn "Not an IPv4 packet... Ethernet_type = $eth->{type} \n" if($DEBUG>50);
+    elsif ( $eth->[ETH_TYPE] != ETH_TYPE_IP){
+        warn "Not an IPv4 packet... Ethernet_type = $eth->[ETH_TYPE] \n" if($DEBUG>50);
         inpacket_dump_stats();
         return;
     }
@@ -395,16 +395,16 @@ sub packets {
     # We should now have us an IP packet... good!
     #my $ethernet = NetPacket::Ethernet::strip($packet);
     #my $ip       = NetPacket::IP->decode($ethernet);
-    my $ip       = NetPacket::IP->decode($eth->{data});
+    my $ip       = NetPacket::IP->decode($eth->[ETH_DATA]);
 
     # OS finger printing
     # Collect necessary info from IP packet; if
-    my $ttl      = $ip->{'ttl'};
-    my $ipopts   = $ip->{'options'}; # Not used in p0f
-    my $len      = $ip->{'len'};     # total length of packet
-    my $id       = $ip->{'id'};
+    my $ttl      = $ip->[IP_TTL];
+    my $ipopts   = $ip->[IP_OPTIONS]; # Not used in p0f
+    my $len      = $ip->[IP_LEN];     # total length of packet
+    my $id       = $ip->[IP_ID];
 
-    my $ipflags  = $ip->{'flags'};   # 2=dont fragment/1=more fragments, 0=nothing set
+    my $ipflags  = $ip->[IP_FLAGS];   # 2=dont fragment/1=more fragments, 0=nothing set
     my $df;
     if($ipflags == 2){
         $df = 1; # Dont fragment
@@ -413,27 +413,27 @@ sub packets {
     }
 
     # Check if this is a TCP packet
-    if($ip->{proto} == 6) {
+    if($ip->[IP_PROTO] == 6) {
       warn "Packet is of type TCP...\n" if($DEBUG>50);
       packet_tcp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
       inpacket_dump_stats();
       return;
     }
     # Check if this is a ICMP packet
-    elsif($ip->{proto} == 1) {
+    elsif($ip->[IP_PROTO] == 1) {
        warn "Packet is of type ICMP...\n" if($DEBUG>50);
        packet_icmp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) if $ICMP == 1;
        inpacket_dump_stats();
        return;
     }
     # Check if this is a UDP packet
-    elsif ($ip->{proto} == 17) {
+    elsif ($ip->[IP_PROTO] == 17) {
        warn "Packet is of type UDP...\n" if($DEBUG>50);
        packet_udp($ip, $ttl, $ipopts, $len, $id, $ipflags, $df);
        inpacket_dump_stats();
        return;
     }
-    warn "Packet is of type $ip->{proto}...\n" if($DEBUG>50);
+    warn "Packet is of type $ip->[IP_PROTO]...\n" if($DEBUG>50);
     inpacket_dump_stats();
     return;
 }
@@ -447,17 +447,17 @@ sub packets {
 sub packet_icmp {
     my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
     # Collect necessary info from ICMP packet
-    my $icmp      = NetPacket::ICMP->decode($ip->{'data'});
-    my $type = $icmp->{'type'};
-    my $code = $icmp->{'code'};
-#   my $cksum = $icmp->{'cksum'};
-    my $data = $icmp->{'data'};
+    my $icmp      = NetPacket::ICMP->decode($ip->[IP_DATA]);
+    my $type = $icmp->[ICMP_TYPE];
+    my $code = $icmp->[ICMP_CODE];
+#   my $cksum = $icmp->[ICMP_CKSUM];
+    my $data = $icmp->[ICMP_DATA];
 
-    my $src_ip = $ip->{'src_ip'};
-    my $dst_ip = $ip->{'dest_ip'};
-    my $flags  = $ip->{'flags'};
-    my $foffset= $ip->{'foffset'};
-    my $tos    = $ip->{'tos'};
+    my $src_ip = $ip->[IP_SRC_IP];
+    my $dst_ip = $ip->[IP_DEST_IP];
+    my $flags  = $ip->[IP_FLAGS];
+    my $foffset= $ip->[IP_FOFFSET];
+    my $tos    = $ip->[IP_TOS];
 
     # We need to guess initial TTL
     my $gttl = normalize_ttl($ttl);
@@ -495,18 +495,18 @@ sub packet_udp {
     my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
 
     # Collect necessary info from UDP packet
-    my $udp       = NetPacket::UDP->decode($ip->{'data'});
-    my $src_ip  = $ip->{'src_ip'};
+    my $udp       = NetPacket::UDP->decode($ip->[IP_DATA]);
+    my $src_ip  = $ip->[IP_SRC_IP];
 
     if ($SERVICE_UDP == 1) {
-        #my $src_port  = $udp->{'src_port'};
-        #my $data      = $udp->{'data'};
-        #my $dest_port = $udp->{'dest_port'};
-        #my $cksum     = $udp->{'cksum'};
+        #my $src_port  = $udp->[UDP_SRC_PORT];
+        #my $data      = $udp->[UDP_DATA];
+        #my $dest_port = $udp->[UDP_DEST_PORT];
+        #my $cksum     = $udp->[UDP_CKSUM];
     
-        my $ulen      = $udp->{'len'};
-        #my $data      = $udp->{'data'};
-        my $foffset   = $ip->{'foffset'};
+        my $ulen      = $udp->[UDP_LEN];
+        #my $data      = $udp->[UDP_DATA];
+        my $foffset   = $ip->[IP_FOFFSET];
     
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
@@ -528,8 +528,8 @@ sub packet_udp {
         add_asset('UDP', $src_ip, "$fplen:$gttl:$df:$ipopts:$ipflags:$foffset", $dist, $link, $os, $details);
     }
     # UDP SERVICE CHECK
-    elsif ( (my $data = $udp->{'data'}) && $SERVICE_UDP == 1) {
-       udp_service_check ($data,$src_ip,$udp->{'src_port'},$pradshosts{"tstamp"});
+    elsif ( (my $data = $udp->[UDP_DATA]) && $SERVICE_UDP == 1) {
+       udp_service_check ($data,$src_ip,$udp->[UDP_SRC_PORT],$pradshosts{"tstamp"});
        return;
     }
     return;
@@ -560,17 +560,17 @@ sub packet_udp {
 sub packet_tcp {
     my ($ip, $ttl, $ipopts, $len, $id, $ipflags, $df) = @_;
     # Collect necessary info from TCP packet; if
-    my $tcp      = NetPacket::TCP->decode($ip->{'data'});
-    my $winsize = $tcp->{'winsize'};
-    my $tcpflags= $tcp->{'flags'};
-    my $tcpopts = $tcp->{'options'};
-    my $seq     = $tcp->{'seqnum'};
-    my $ack     = $tcp->{'acknum'};
-    my $urg     = $tcp->{'urg'};
-    my $data    = $tcp->{'data'};
-    my $reserved= $tcp->{'reserved'};
-    my $src_port= $tcp->{'src_port'};
-    my $dst_port= $tcp->{'dst_port'};
+    my $tcp      = NetPacket::TCP->decode($ip->[IP_DATA]);
+    my $winsize = $tcp->[TCP_WINSIZE];
+    my $tcpflags= $tcp->[TCP_FLAGS];
+    my $tcpopts = $tcp->[TCP_OPTIONS];
+    my $seq     = $tcp->[TCP_SEQNUM];
+    my $ack     = $tcp->[TCP_ACKNUM];
+    my $urg     = $tcp->[TCP_URG];
+    my $data    = $tcp->[TCP_DATA];
+    my $reserved= $tcp->[TCP_RESERVED];
+    my $src_port= $tcp->[TCP_SRC_PORT];
+    my $dst_port= $tcp->[TCP_DST_PORT];
 
     # Check if SYN is set (both SYN and SYN+ACK)
     if ($OS == 1 && ($tcpflags & SYN)){
@@ -587,7 +587,7 @@ sub packet_tcp {
         push @quirks, check_quirks($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data);
         my $quirkstring = quirks_tostring(@quirks);
 
-        my $src_ip = $ip->{'src_ip'};
+        my $src_ip = $ip->[IP_SRC_IP];
 
         # debug info
         my $packet = "ip:$src_ip size=$len ttl=$ttl, DF=$df, ipflags=$ipflags, winsize=$winsize, tcpflags=$tcpflags, OC:$optcnt, WSC:$scale, MSS:$mss, SO:$sackok,T0:$t0, Q:$quirkstring O: $optstr ($seq/$ack) tstamp=" . $pradshosts{"tstamp"};
@@ -622,10 +622,10 @@ sub packet_tcp {
 
     ### SERVICE: DETECTION
     ### Can also do src/dst_port
-    if ($tcp->{'data'} && $SERVICE_TCP == 1) {
+    if ($tcp->[TCP_DATA] && $SERVICE_TCP == 1) {
        # Check content(TCP data) against signatures
        warn "TCP service matching...\n" if $DEBUG >50;
-       tcp_service_check ($tcp->{'data'},$ip->{'src_ip'},$tcp->{'src_port'},$pradshosts{"tstamp"});
+       tcp_service_check ($tcp->[TCP_DATA],$ip->[IP_SRC_IP],$tcp->[TCP_SRC_PORT],$pradshosts{"tstamp"});
     }
     return;
 }
@@ -1573,7 +1573,7 @@ sub normalize_ttl {
 
 =head2 tcp_service_check
 
- Takes input: $tcp->{'data'}, $ip->{'src_ip'}, $tcp->{'src_port'}, $pradshosts{"tstamp"}
+ Takes input: $tcp->[TCP_DATA], $ip->[IP_SRC_IP], $tcp->[TCP_SRC_PORT], $pradshosts{"tstamp"}
  Prints out service if found.
 
 =cut
@@ -1596,7 +1596,7 @@ sub tcp_service_check {
 
 =head2 udp_service_check
 
- Takes input: $udp->{'data'}, $ip->{'src_ip'}, $udp->{'src_port'}, $pradshosts{"tstamp"}
+ Takes input: $udp->[UDP_DATA], $ip->[IP_SRC_IP], $udp->[UDP_SRC_PORT], $pradshosts{"tstamp"}
  Prints out service if found.
 
 =cut
@@ -1643,15 +1643,15 @@ sub udp_service_check {
 sub arp_check {
     my ($eth,$tstamp) = @_;
 
-    my $arp = NetPacket::ARP->decode($eth->{data}, $eth);
-    my $aip = $arp->{spa};
+    my $arp = NetPacket::ARP->decode($eth->[ETH_DATA], $eth);
+    my $aip = $arp->[ARP_SPA];
     my $h1 = hex(substr( $aip,0,2));
     my $h2 = hex(substr( $aip,2,2));
     my $h3 = hex(substr( $aip,4,2));
     my $h4 = hex(substr( $aip,6,2));
     my $ip = "$h1.$h2.$h3.$h4";
 
-    my $ash = $arp->{sha};
+    my $ash = $arp->[ARP_SHA];
     # more human readable
     # join(':', split(/([0-9a-fA-F][0-9a-fA-F])/, $ash);
     my $mac =
