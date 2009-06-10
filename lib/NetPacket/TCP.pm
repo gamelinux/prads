@@ -61,13 +61,13 @@ BEGIN {
 # Items to export into callers namespace by default
 # (move infrequently used names to @EXPORT_OK below)
 
-    @EXPORT = qw( _FRAME _PARENT ACKNUM CKSUM DATA DEST_IP
-                  DEST_PORT FLAGS HLEN OPTIONS PROTO RESERVED
+    @EXPORT = qw( _FRAME _PARENT ACKNUM CKSUM DATA DST_IP
+                  DST_PORT FLAGS HLEN OPTIONS PROTO RESERVED
                   SEQNUM SRC_IP SRC_PORT WINSIZE );
 
     my $i = 0;
     for my $name (@EXPORT) {
-        eval "use constant $name => $1; 1";
+        eval "use constant $name => $i";
         $name = "TCP_$name";
         $i++;
     }
@@ -125,7 +125,7 @@ sub decode {
     if (defined($pkt)) {
 	my $tmp;
 
-	($self->[SRC_PORT], $self->[DEST_PORT], $self->[SEQNUM], 
+	($self->[SRC_PORT], $self->[DST_PORT], $self->[SEQNUM], 
 	 $self->[ACKNUM], $tmp, $self->[WINSIZE], $self->[CKSUM], 
 	 $self->[TCP_URG], $self->[OPTIONS]) =
 	     unpack("nnNNnnnna*", $pkt);
@@ -174,7 +174,7 @@ sub encode {
 
     # Put the packet together
     $packet = pack('n n N N n n n n a* a*',
-            $self->[SRC_PORT], $self->[DEST_PORT], $self->[SEQNUM],
+            $self->[SRC_PORT], $self->[DST_PORT], $self->[SEQNUM],
             $self->[ACKNUM], $tmp, $self->[WINSIZE], $self->[CKSUM],
             $self->[TCP_URG], $self->[OPTIONS],$self->[DATA]);
 
@@ -206,11 +206,11 @@ sub checksum {
     # Pack pseudo-header for tcp checksum
 
     $src_ip = gethostbyname($ip->[SRC_IP]);
-    $dest_ip = gethostbyname($ip->[DEST_IP]);
+    $dest_ip = gethostbyname($ip->[DST_IP]);
 
     $packet = pack('a4a4nnnnNNnnnna*a*',
             $src_ip,$dest_ip,$proto,$tcplen,
-            $self->[SRC_PORT], $self->[DEST_PORT], $self->[SEQNUM],
+            $self->[SRC_PORT], $self->[DST_PORT], $self->[SEQNUM],
             $self->[ACKNUM], $tmp, $self->[WINSIZE], $zero,
             $self->[TCP_URG], $self->[OPTIONS],$self->[DATA]);
 
@@ -387,7 +387,7 @@ The following script is a primitive pop3 sniffer.
 
       my $tcp_obj = NetPacket::TCP->decode(ip_strip(eth_strip($pkt)));
 
-      if (($tcp_obj->[SRC_PORT] == 110) or ($tcp_obj->[DEST_PORT] == 110)) {
+      if (($tcp_obj->[SRC_PORT] == 110) or ($tcp_obj->[DST_PORT] == 110)) {
 	  print($tcp_obj->[DATA]);
       }
   }
