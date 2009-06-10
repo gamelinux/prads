@@ -98,7 +98,7 @@ our $OS_UDP        = 0;
 our $ICMP          = 0;
 our $OS_ICMP       = 0;
 our $BPF           = q();
-our $PERSIST       = 1;
+our $PERSIST       = 0;
 
 # Database globals.
 our %ASSET;
@@ -274,7 +274,7 @@ my @UDP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE)
                  or Getopt::Long::HelpMessage();
 
 warn "Setting up database ". $DATABASE ."\n" if $PERSIST and ($DEBUG > 0);
-$OS_SYN_DB = setup_db($DATABASE,$DB_USERNAME,$DB_PASSWORD) if $PERSIST;
+#$OS_SYN_DB = setup_db($DATABASE,$DB_USERNAME,$DB_PASSWORD) if $PERSIST;
 
 warn "Creating object\n" if ($DEBUG>0);
 my $PCAP = create_object($DEVICE);
@@ -1661,7 +1661,7 @@ sub arp_check {
         substr($ash,6,2) .':'.
         substr($ash,8,2) .':'.
         substr($ash,10,2);
-    add_asset('ARP', $mac, $ip, @{mac_find_match($mac)});
+    #add_asset('ARP', $mac, $ip, @{mac_find_match($mac)});
     return;
 }
 
