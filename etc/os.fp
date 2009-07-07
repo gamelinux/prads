@@ -419,7 +419,7 @@ S4:64:1:52:M*,N,N,S,N,W2:.:Linux:2.6 (tstamp-)
 S4:64:1:44:M*:.:Linux:2.6? (barebone, rare!)
 T4:64:1:60:M1412,S,T,N,W0:.:Linux:2.4 (rare!)
 
-S4:64:1:60:S,T,M1460,N,W1:.:Linux:Android 1.5
+S4:64:1:60:S,T,M1460,N,W1:.:Linux:2.6.27 (Android 1.5)
 
 # Generic *nix sigs
 65535:64:0:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag-)
