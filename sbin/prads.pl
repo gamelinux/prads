@@ -1500,7 +1500,7 @@ sub create_object {
     my($err, $object);
     my $promisc = 1;    
 
-    $object = Net::Pcap::open_live($dev, 1500, $promisc, 0, \$err)
+    $object = Net::Pcap::open_live($dev, 65535, $promisc, 500, \$err)
               or die sprintf $ERROR{'create_object'}, $dev, $err;
     warn "create_object : $dev\n" if($DEBUG>0);
     return $object;

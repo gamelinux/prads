@@ -419,6 +419,8 @@ S4:64:1:52:M*,N,N,S,N,W2:.:Linux:2.6 (tstamp-)
 S4:64:1:44:M*:.:Linux:2.6? (barebone, rare!)
 T4:64:1:60:M1412,S,T,N,W0:.:Linux:2.4 (rare!)
 
+S4:64:1:60:S,T,M1460,N,W1:.:Linux:Android 1.5
+
 # Generic *nix sigs
 65535:64:0:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag-)
 65535:64:1:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag+)
@@ -618,8 +620,10 @@ S6:255:1:48:M536,N,N,S:.:Windows:95 winsock 2
 # ----------------- HP/UX -------------------
 
 32768:64:1:44:M*:.:HP-UX:B.10.20 
-32768:64:1:48:M*,W0,N:.:HP-UX:11.00-11.11
+32768:64:0:48:M*,W0,N:.:HP-UX:11.00
+32768:64:1:48:M*,W0,N:.:HP-UX:11.10-11.11
 32768:64:0:48:M536,W0,N:.:HP-UX:11.11
+
 
 # Whoa. Hardcore WSS.
 0:64:0:48:M*,W0,N:.:HP-UX:B.11.00 A (RFC1323+)
