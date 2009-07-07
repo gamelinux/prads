@@ -10,6 +10,7 @@ Something too look at:
 
 "Jakarta Commons-HttpClient/3.1"
 
+"Mozilla/5.0 (Linux; U; Android 1.5; en-ie; HTC Magic Build/CUPCAKE) AppleWebKit/528.5+ (KHTML, like Gecko) Version/3.1.2 Mobile Safari/525.20.1"
 
 "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.1) Gecko/2008070208 Firefox/3.0.1"
 
