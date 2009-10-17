@@ -40,6 +40,8 @@
 #53,v/DNS///,NXDomain\*-\[\|domain\]
 #53,v/DNS///,PTR\?
 
+#UDP port 137 NETBIOS
+#137,v/NETBIOS///,REGEXP
 
 #openvpn
 #1194,v/OpenVPN///,REGEXP
