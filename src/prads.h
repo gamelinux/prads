@@ -23,16 +23,9 @@
 /*  I N C L U D E S  **********************************************************/
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.9.1"
+#define VERSION                       "0.1.1"
 #define TIMEOUT                       60
-/* for   5K connectinos -> bucket should be: [min   50 -> max  100] */
-/* for  10K connections -> bucket should be: [min  100 -> max  200] */
-/* for  20K connections -> bucket should be: [min  200 -> max  400] */
-/* for  50K connections -> bucket should be: [min  500 -> max 1000] */
-/* for 100K connections -> bucket should be: [min 1000 -> max 2000] */
 #define BUCKET_SIZE                   1669 
-/* #define BUCKET_SIZE                   101   */
-/* #define BUCKET_SIZE                   31321 */
 
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806
@@ -303,13 +296,17 @@ typedef struct _icmp6_header {
  * Structure for connections
  */
 
+/* rename to host or something */
 typedef struct _connection {
         int ipversion;                     /* IP version (4/6) */
         u_int8_t  proto;                   /* IP protocoll type */
+
         uint32_t s_ip4;                    /* source address */
         uint32_t d_ip4;                    /* destination address */
+/* We should use in6_addr for both IPv4 and IPv6 storage */
         struct in6_addr s_ip6;             /* source address */
         struct in6_addr d_ip6;             /* destination address */
+
         u_int16_t s_port;                  /* source port */
         u_int16_t d_port;                  /* destination port */
         u_int64_t s_total_pkts;            /* total source packets */
@@ -321,6 +318,18 @@ typedef struct _connection {
         time_t start_time;                 /* connection start time */
         time_t last_pkt_time;              /* last seen packet time */
         u_int64_t cxid;                    /* connection id */
+
+/* PRADS */
+/*
+ * OS_FP_IP_TCP
+ * OS_FP_IP_UDP
+ * OS_FP_IP_ICMP
+ * MAC_FP
+ * SERVICE_FP_TCP
+ * SERVICE_FP_UDP
+ */
+/* PRADS END */
+
         struct _connection *prev;
         struct _connection *next;
 } connection;
