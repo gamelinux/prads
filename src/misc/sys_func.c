@@ -1,9 +1,14 @@
-
-
-
+void bucket_keys_NULL();
+static int set_chroot(void);
+static int drop_privs(void);
+static int is_valid_path(char *path);
+static int create_pid_file(char *path, char *filename);
+int daemonize();
+static int go_daemon();
 
 void bucket_keys_NULL() {
    int cxkey;
+   extern connection *bucket[BUCKET_SIZE];
 
    for ( cxkey = 0; cxkey < BUCKET_SIZE; cxkey++ ) {
       bucket[cxkey] = NULL;
@@ -14,6 +19,7 @@ static int set_chroot(void) {
    char *absdir;
    char *logdir;
    int abslen;
+   extern char chroot_dir;
 
    /* logdir = get_abs_path(logpath); */
 

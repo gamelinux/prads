@@ -1,3 +1,8 @@
+void end_sessions();
+void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,
+               uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
+void del_connection (connection*, connection**);
+
 /* For prads, I guess cx_track needs to return a value, which can
  * be used for evaluating if we should do some fingerprinting
  */
@@ -20,12 +25,14 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
                + ip_dst.s6_addr32[0] + ip_dst.s6_addr32[1] + ip_dst.s6_addr32[2] + ip_dst.s6_addr32[3]
              )) % BUCKET_SIZE;
    }
+   extern connection *bucket[BUCKET_SIZE];
    cxt = bucket[hash];
    head = cxt;
 
    while ( cxt != NULL ) {
       if (af = AF_INET) {
-         if ( cxt->s_ip4 == ip_src && cxt->d_ip4 == ip_dst && cxt->s_port == src_port && cxt->d_port == dst_port ) {
+         if ( cxt->s_ip6.s6_addr32[0] == ip_src && cxt->d_ip6.s6_addr32[0] == ip_dst 
+              && cxt->s_port == src_port && cxt->d_port == dst_port ) {
             cxt->s_tcpFlags    |= tcpflags;
             cxt->s_total_bytes += p_bytes;
             cxt->s_total_pkts  += 1;
@@ -38,7 +45,9 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
             */
             return;
          }
-         else if ( cxt->s_ip4 == ip_dst && cxt->d_ip4 == ip_src && cxt->d_port == src_port && cxt->s_port == dst_port ) {
+//         else if ( cxt->s_ip6.s6_addr32[0] == ip_dst && cxt->d_ip6.s6_addr32[0] == ip_src
+//                   && cxt->d_port == src_port && cxt->s_port == dst_port ) {
+         else if ( memcmp(&cxt->s_ip6,&ip_src,4) ) {
             cxt->d_tcpFlags    |= tcpflags;
             cxt->d_total_bytes += p_bytes;
             cxt->d_total_pkts  += 1;
@@ -60,7 +69,7 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
                cxt->s_total_pkts  += 1;
                cxt->last_pkt_time  = tstamp;
                return;
-            }else
+            } else
             if ( memcmp(&cxt->s_ip6,&ip_dst,16) && memcmp(&cxt->d_ip6,&ip_src,16) &&
                  cxt->d_port == src_port && cxt->s_port == dst_port ) {
                cxt->d_tcpFlags    |= tcpflags;
@@ -74,6 +83,7 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
    }
 
    if ( cxt == NULL ) {
+      extern u_int64_t cxtrackerid;
       cxtrackerid += 1;
       cxt = (connection*) calloc(1, sizeof(connection));
       if (head != NULL ) {
@@ -122,7 +132,6 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
    /* Should never be here! */
    return;
 }
-
 /*
  This sub marks sessions as ENDED on different criterias:
 */

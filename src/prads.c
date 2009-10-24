@@ -49,7 +49,7 @@ pcap_t       *handle;
 connection   *bucket[BUCKET_SIZE];
 connection   *cxtbuffer = NULL;
 static char  src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
-static char  *dev,*dpath;
+static char  *dev,*dpath,*chroot_dir;
 static char  *group_name, *user_name, *true_pid_name;
 static char  *pidfile = "prads.pid";
 static char  *pidpath = "/var/run";
@@ -57,8 +57,7 @@ static int   verbose, inpacket, gameover, use_syslog;
 
 /*  I N T E R N A L   P R O T O T Y P E S  ************************************/
 void move_connection (connection*, connection**);
-void cx_track4(uint64_t ip_src,uint16_t src_port,uint64_t ip_dst,uint16_t dst_port,uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
-void cx_track6(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
+void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
 void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char *packet);
 void end_sessions();
 void cxtbuffer_write();
