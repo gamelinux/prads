@@ -53,6 +53,7 @@ static int drop_privs(void) {
    int do_setgid = 0;
    unsigned long groupid = 0;
    unsigned long userid = 0;
+   extern char *group_name, *user_name;
 
    if ( group_name != NULL ) {
       do_setgid = 1;
@@ -124,6 +125,7 @@ static int create_pid_file(char *path, char *filename) {
    struct flock lock;
    int rval;
    int fd;
+   extern char *pidfile,*pidpath,*true_pid_name;
 
    memset(filepath, 0, STDBUF);
 
@@ -180,6 +182,8 @@ static int create_pid_file(char *path, char *filename) {
 int daemonize() {
    pid_t pid;
    int fd;
+   extern int use_syslog;
+   extern char *pidfile,*pidpath;
 
    pid = fork();
 

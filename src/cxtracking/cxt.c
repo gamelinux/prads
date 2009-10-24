@@ -122,10 +122,6 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
       /* New connections are pushed on to the head of bucket[s_hash] */
       bucket[hash] = cxt;
 
-      if ( ((tstamp - timecnt) > TIMEOUT) ) {
-         timecnt = time(NULL);
-         end_sessions();
-      }
       /* Return value should be X, telling to do fingerprinting */
       return;
    }
@@ -144,6 +140,7 @@ void end_sessions() {
    int cxkey, xpir;
    uint32_t curcxt  = 0;
    uint32_t expired = 0;
+   extern connection *cxtbuffer,*bucket[BUCKET_SIZE];
    cxtbuffer = NULL;
 
    for ( cxkey = 0; cxkey < BUCKET_SIZE; cxkey++ ) {
