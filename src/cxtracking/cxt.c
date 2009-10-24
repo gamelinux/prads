@@ -122,3 +122,119 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
    /* Should never be here! */
    return;
 }
+
+/*
+ This sub marks sessions as ENDED on different criterias:
+*/
+
+void end_sessions() {
+
+   connection *cxt;
+   time_t check_time;
+   check_time = time(NULL);
+   int cxkey, xpir;
+   uint32_t curcxt  = 0;
+   uint32_t expired = 0;
+   cxtbuffer = NULL;
+
+   for ( cxkey = 0; cxkey < BUCKET_SIZE; cxkey++ ) {
+      cxt = bucket[cxkey];
+      xpir = 0;
+      while ( cxt != NULL ) {
+         curcxt++;
+         /* TCP */
+         if ( cxt->proto == IP_PROTO_TCP ) {
+           /* FIN from both sides */
+           if ( cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN && (check_time - cxt->last_pkt_time) > 5 ) {
+              xpir = 1;
+           }
+           /* RST from eather side */
+           else if ( (cxt->s_tcpFlags & TF_RST || cxt->d_tcpFlags & TF_RST) && (check_time - cxt->last_pkt_time) > 5) {
+              xpir = 1;
+           }
+           /* if not a complete TCP 3-way handshake */
+           else if ( !cxt->s_tcpFlags&TF_SYNACK || !cxt->d_tcpFlags&TF_SYNACK && (check_time - cxt->last_pkt_time) > 10) {
+              xpir = 1;
+           }
+           /* Ongoing timout */
+           else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
+              xpir = 1;
+           }
+           else if ( (check_time - cxt->last_pkt_time) > 600 ) {
+              xpir = 1;
+           }
+         }
+         else if ( cxt->proto == IP_PROTO_UDP && (check_time - cxt->last_pkt_time) > 60 ) {
+            xpir = 1;
+         }
+         else if ( cxt->proto == IP_PROTO_ICMP || cxt->proto == IP6_PROTO_ICMP ) {
+            if ( (check_time - cxt->last_pkt_time) > 60 ) {
+               xpir = 1;
+            }
+         }
+         else if ( (check_time - cxt->last_pkt_time) > 300 ) {
+            xpir = 1;
+         }
+
+         if ( xpir == 1 ) {
+            expired++;
+            xpir = 0;
+            connection *tmp = cxt;
+            if (cxt == cxt->next) {
+               cxt->next == NULL;
+            }
+            cxt = cxt->next;
+            del_connection(tmp, &bucket[cxkey]);
+         }else{
+            cxt = cxt->next;
+         }
+      }
+   }
+   /* printf("Expired: %u of %u total connections:\n",expired,curcxt); */
+}
+
+void del_connection (connection* cxt, connection **bucket_ptr ){
+   /* remove cxt from bucket */
+   connection *prev = cxt->prev; /* OLDER connections */
+   connection *next = cxt->next; /* NEWER connections */
+   if(prev == NULL){
+      // beginning of list
+      *bucket_ptr = next;
+      // not only entry
+      if(next)
+         next->prev = NULL;
+   } else if(next == NULL){
+      // at end of list!
+      prev->next = NULL;
+   } else {
+      // a node.
+      prev->next = next;
+      next->prev = prev;
+   }
+
+   /* Free and set to NULL */
+   free(cxt);
+   cxt=NULL;
+}
+
+void end_all_sessions() {
+   connection *cxt;
+   int cxkey;
+   int expired = 0;
+
+   for ( cxkey = 0; cxkey < BUCKET_SIZE; cxkey++ ) {
+      cxt = bucket[cxkey];
+      while ( cxt != NULL ) {
+         expired++;
+         connection *tmp = cxt;
+         cxt = cxt->next;
+         move_connection(tmp, &bucket[cxkey]);
+         if ( cxt == NULL ) {
+            bucket[cxkey] = NULL;
+         }
+      }
+   }
+   /* printf("Expired: %d.\n",expired); */
+}
+
+

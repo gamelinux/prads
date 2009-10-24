@@ -40,6 +40,7 @@
 #include <errno.h>
 #include "prads.h"
 #include "misc/sys_func.c"
+#include "cxtracking/cxt.c"
 
 /*  G L O B A L E S  **********************************************************/
 u_int64_t    cxtrackerid;
@@ -94,12 +95,15 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       ip4_header *ip4;
       ip4 = (ip4_header *) (packet + eth_header_len);
       p_bytes = (ip4->ip_len - (IP_HL(ip4)*4));
+      struct in6_addr ip_src, ip_dst;
+      ip_src.s6_addr32[0] = ip4->ip_src;
+      ip_dst.s6_addr32[0] = ip4->ip_dst;
 
       if ( ip4->ip_p == IP_PROTO_TCP ) {
          tcp_header *tcph;
          tcph = (tcp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IPv4 PROTOCOL TYPE TCP:\n"); */
-         cx_track4(ip4->ip_src, tcph->src_port, ip4->ip_dst, tcph->dst_port, ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
+         cx_track4(ip_src, tcph->src_port, ip_dst, tcph->dst_port, ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
          /*packet_tcp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
@@ -108,7 +112,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          udp_header *udph;
          udph = (udp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IPv4 PROTOCOL TYPE UDP:\n"); */
-         cx_track4(ip4->ip_src, udph->src_port, ip4->ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         cx_track4(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          /*packet_udp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
@@ -117,14 +121,14 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          icmp_header *icmph;
          icmph = (icmp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IP PROTOCOL TYPE ICMP\n"); */
-         cx_track4(ip4->ip_src, icmph->s_icmp_id, ip4->ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         cx_track4(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          /*packet_icmp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
       }
       else {
          /* printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); */
-         cx_track4(ip4->ip_src, ip4->ip_p, ip4->ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         cx_track4(ip_src, ip4->ip_p, ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          inpacket = 0;
          return;
       }
@@ -182,133 +186,6 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
    /* } */
 }
 
-/*
- This sub marks sessions as ENDED on different criterias:
-*/
-
-void end_sessions() {
-
-   connection *cxt;
-   time_t check_time;
-   check_time = time(NULL);
-   int cxkey, xpir;
-   uint32_t curcxt  = 0;
-   uint32_t expired = 0;
-   cxtbuffer = NULL;
-   
-   for ( cxkey = 0; cxkey < BUCKET_SIZE; cxkey++ ) {
-      cxt = bucket[cxkey];
-      xpir = 0;
-      while ( cxt != NULL ) {
-         curcxt++;
-         /* TCP */
-         if ( cxt->proto == IP_PROTO_TCP ) {
-           /* FIN from both sides */
-           if ( cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN && (check_time - cxt->last_pkt_time) > 5 ) {
-              xpir = 1;
-           }
-           /* RST from eather side */
-           else if ( (cxt->s_tcpFlags & TF_RST || cxt->d_tcpFlags & TF_RST) && (check_time - cxt->last_pkt_time) > 5) {
-              xpir = 1;
-           }
-           /* if not a complete TCP 3-way handshake */
-           else if ( !cxt->s_tcpFlags&TF_SYNACK || !cxt->d_tcpFlags&TF_SYNACK && (check_time - cxt->last_pkt_time) > 10) {
-              xpir = 1;
-           }
-           /* Ongoing timout */
-           else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
-              xpir = 1;
-           }
-           else if ( (check_time - cxt->last_pkt_time) > 600 ) {
-              xpir = 1;
-           }
-         }
-         else if ( cxt->proto == IP_PROTO_UDP && (check_time - cxt->last_pkt_time) > 60 ) {
-            xpir = 1;
-         }
-         else if ( cxt->proto == IP_PROTO_ICMP || cxt->proto == IP6_PROTO_ICMP ) {
-            if ( (check_time - cxt->last_pkt_time) > 60 ) {
-               xpir = 1;
-            }
-         }
-         else if ( (check_time - cxt->last_pkt_time) > 300 ) {
-            xpir = 1;
-         }
-
-         if ( xpir == 1 ) {
-            expired++;
-            xpir = 0;
-            connection *tmp = cxt;
-            if (cxt == cxt->next) {
-               cxt->next == NULL;
-            }
-            cxt = cxt->next;
-            del_connection(tmp, &bucket[cxkey]);
-         }else{
-            cxt = cxt->next;
-         }
-      }
-   }
-   /* printf("Expired: %u of %u total connections:\n",expired,curcxt); */
-   
-   /* Not needed here */
-   /* cxtbuffer_write();  */
-}
-
-void del_connection (connection* cxt, connection **bucket_ptr ){
-   /* remove cxt from bucket */
-   connection *prev = cxt->prev; /* OLDER connections */
-   connection *next = cxt->next; /* NEWER connections */
-   if(prev == NULL){
-      // beginning of list
-      *bucket_ptr = next;
-      // not only entry
-      if(next)
-         next->prev = NULL;
-   } else if(next == NULL){
-      // at end of list!
-      prev->next = NULL;
-   } else {
-      // a node.
-      prev->next = next;
-      next->prev = prev;
-   }
-
-   /* Free and set to NULL */
-   free(cxt);
-   cxt=NULL;
-}
-
-void end_all_sessions() {
-   connection *cxt;
-   int cxkey;
-   int expired = 0;
-
-   for ( cxkey = 0; cxkey < BUCKET_SIZE; cxkey++ ) {
-      cxt = bucket[cxkey];
-      while ( cxt != NULL ) {
-         expired++;
-         connection *tmp = cxt;
-         cxt = cxt->next;           
-         move_connection(tmp, &bucket[cxkey]);
-         if ( cxt == NULL ) {
-            bucket[cxkey] = NULL;
-         }
-      }
-   }
-   /* printf("Expired: %d.\n",expired); */
-}
-
-void game_over() {
-   gameover = 1;
-   if (inpacket == 0) {
-      end_all_sessions();
-      cxtbuffer_write();
-      pcap_close(handle);
-      exit (0);
-   }
-}
-
 static void usage() {
     printf("USAGE:\n");
     printf(" $ prads [options]\n");
@@ -347,7 +224,6 @@ int main(int argc, char *argv[]) {
    signal(SIGINT,  game_over);
    signal(SIGQUIT, game_over);
    signal(SIGALRM, end_sessions);
-   /* alarm(TIMEOUT); */
 
    while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:v")) != -1)
    switch (ch) {
