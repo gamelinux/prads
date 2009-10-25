@@ -304,8 +304,8 @@ typedef struct _connection {
         uint32_t s_ip4;                    /* source address */
         uint32_t d_ip4;                    /* destination address */
 /* We should use in6_addr for both IPv4 and IPv6 storage */
-        struct in6_addr s_ip6;             /* source address */
-        struct in6_addr d_ip6;             /* destination address */
+        struct in6_addr s_ip;             /* source address */
+        struct in6_addr d_ip;             /* destination address */
 
         u_int16_t s_port;                  /* source port */
         u_int16_t d_port;                  /* destination port */

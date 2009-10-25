@@ -49,14 +49,15 @@ pcap_t       *handle;
 connection   *bucket[BUCKET_SIZE];
 connection   *cxtbuffer = NULL;
 static char  src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
-static char  *dev,*dpath,*chroot_dir;
-static char  *group_name, *user_name, *true_pid_name;
-static char  *pidfile = "prads.pid";
-static char  *pidpath = "/var/run";
-static int   verbose, inpacket, gameover, use_syslog;
+static char  *dev,*dpath;
+char         *chroot_dir;
+char  *group_name, *user_name, *true_pid_name;
+char  *pidfile = "prads.pid";
+char  *pidpath = "/var/run";
+int   verbose, inpacket, gameover, use_syslog;
 
 /*  I N T E R N A L   P R O T O T Y P E S  ************************************/
-void move_connection (connection*, connection**);
+//void move_connection (connection*, connection**);
 void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
 void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char *packet);
 void end_sessions();
@@ -64,7 +65,7 @@ void cxtbuffer_write();
 void game_over();
 
 void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char *packet) {
-   if ( gameover == 1 ) { game_over(); }
+   //if ( gameover == 1 ) { game_over(); }
    inpacket = 1;
    tstamp = time(NULL);
    u_short p_bytes;
@@ -102,7 +103,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          tcp_header *tcph;
          tcph = (tcp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IPv4 PROTOCOL TYPE TCP:\n"); */
-         cx_track4(ip_src, tcph->src_port, ip_dst, tcph->dst_port, ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
+         //cx_track4(ip_src, tcph->src_port, ip_dst, tcph->dst_port, ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
          /*packet_tcp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
@@ -111,7 +112,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          udp_header *udph;
          udph = (udp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IPv4 PROTOCOL TYPE UDP:\n"); */
-         cx_track4(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         //cx_track4(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          /*packet_udp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
@@ -120,14 +121,14 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          icmp_header *icmph;
          icmph = (icmp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IP PROTOCOL TYPE ICMP\n"); */
-         cx_track4(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         //cx_track4(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          /*packet_icmp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
       }
       else {
          /* printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); */
-         cx_track4(ip_src, ip4->ip_p, ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         //cx_track4(ip_src, ip4->ip_p, ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          inpacket = 0;
          return;
       }
@@ -141,7 +142,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          tcp_header *tcph;
          tcph = (tcp_header *) (packet + eth_header_len + ip6->len);
          /* printf("[*] IPv6 PROTOCOL TYPE TCP:\n"); */
-         cx_track6(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port, ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
+         //cx_track6(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port, ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
          /*packet_tcp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
@@ -150,7 +151,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          udp_header *udph;
          udph = (udp_header *) (packet + eth_header_len + ip6->len);
          /* printf("[*] IPv6 PROTOCOL TYPE UDP:\n"); */
-         cx_track6(ip6->ip_src, udph->src_port, ip6->ip_dst, udph->dst_port, ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         //cx_track6(ip6->ip_src, udph->src_port, ip6->ip_dst, udph->dst_port, ip6->next, ip6->len, 0, tstamp, AF_INET6);
          /*packet_udp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
@@ -159,14 +160,14 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          icmp6_header *icmph;
          icmph = (icmp6_header *) (packet + eth_header_len + ip6->len);
          /* printf("[*] IPv6 PROTOCOL TYPE ICMP\n"); */
-         cx_track6(ip6->ip_src, ip6->hop_lmt, ip6->ip_dst, ip6->hop_lmt, ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         //cx_track6(ip6->ip_src, ip6->hop_lmt, ip6->ip_dst, ip6->hop_lmt, ip6->next, ip6->len, 0, tstamp, AF_INET6);
          /*packet_icmp(ip, ttl, ipopts, len, id, ipflags, df);*/
          inpacket = 0;
          return;
       }
       else {
          /* printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n",ip6->next); */
-         cx_track6(ip6->ip_src, ip6->next, ip6->ip_dst, ip6->next, ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         //cx_track6(ip6->ip_src, ip6->next, ip6->ip_dst, ip6->next, ip6->next, ip6->len, 0, tstamp, AF_INET6);
          inpacket = 0;
          return;
       }
@@ -219,9 +220,9 @@ int main(int argc, char *argv[]) {
    inpacket = gameover = 0;
    timecnt = time(NULL);
 
-   signal(SIGTERM, game_over);
-   signal(SIGINT,  game_over);
-   signal(SIGQUIT, game_over);
+   //signal(SIGTERM, game_over);
+   //signal(SIGINT,  game_over);
+   //signal(SIGQUIT, game_over);
    signal(SIGALRM, end_sessions);
 
    while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:v")) != -1)

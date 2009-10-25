@@ -19,7 +19,7 @@ static int set_chroot(void) {
    char *absdir;
    char *logdir;
    int abslen;
-   extern char chroot_dir;
+   extern char *chroot_dir;
 
    /* logdir = get_abs_path(logpath); */
 

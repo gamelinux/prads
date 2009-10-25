@@ -2,6 +2,7 @@ void end_sessions();
 void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,
                uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
 void del_connection (connection*, connection**);
+void move_connection (connection*, connection**);
 
 /* For prads, I guess cx_track needs to return a value, which can
  * be used for evaluating if we should do some fingerprinting
@@ -31,7 +32,7 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
 
    while ( cxt != NULL ) {
       if (af = AF_INET) {
-         if ( cxt->s_ip6.s6_addr32[0] == ip_src && cxt->d_ip6.s6_addr32[0] == ip_dst 
+         if ( cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0] && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0] 
               && cxt->s_port == src_port && cxt->d_port == dst_port ) {
             cxt->s_tcpFlags    |= tcpflags;
             cxt->s_total_bytes += p_bytes;
@@ -47,7 +48,7 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
          }
 //         else if ( cxt->s_ip6.s6_addr32[0] == ip_dst && cxt->d_ip6.s6_addr32[0] == ip_src
 //                   && cxt->d_port == src_port && cxt->s_port == dst_port ) {
-         else if ( memcmp(&cxt->s_ip6,&ip_src,4) ) {
+         else if ( memcmp(&cxt->s_ip,&ip_src,4) ) {
             cxt->d_tcpFlags    |= tcpflags;
             cxt->d_total_bytes += p_bytes;
             cxt->d_total_pkts  += 1;
@@ -62,7 +63,7 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
          }
       } else
       if (af = AF_INET) {
-            if ( memcmp(&cxt->s_ip6,&ip_src,16) && memcmp(&cxt->d_ip6,&ip_dst,16) &&
+            if ( memcmp(&cxt->s_ip,&ip_src,16) && memcmp(&cxt->d_ip,&ip_dst,16) &&
                  cxt->s_port == src_port && cxt->d_port == dst_port ) {
                cxt->s_tcpFlags    |= tcpflags;
                cxt->s_total_bytes += p_bytes;
@@ -70,7 +71,7 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
                cxt->last_pkt_time  = tstamp;
                return;
             } else
-            if ( memcmp(&cxt->s_ip6,&ip_dst,16) && memcmp(&cxt->d_ip6,&ip_src,16) &&
+            if ( memcmp(&cxt->s_ip,&ip_dst,16) && memcmp(&cxt->d_ip,&ip_src,16) &&
                  cxt->d_port == src_port && cxt->s_port == dst_port ) {
                cxt->d_tcpFlags    |= tcpflags;
                cxt->d_total_bytes += p_bytes;
@@ -101,19 +102,19 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
       cxt->start_time     = tstamp;
       cxt->last_pkt_time  = tstamp;
 
-/* ADD IF CHECK FOR IPv4 or IPv6 */
-      cxt->s_ip4          = ip_src;
-      cxt->s_ip6.s6_addr32[0]          = 0;
+      cxt->s_ip          = ip_src;
+      cxt->d_ip          = ip_dst;
+
+      /* if (af = AF_INET) { */
       /* cxt->s_ip6.s6_addr32[1]          = 0; */
       /* cxt->s_ip6.s6_addr32[2]          = 0; */
       /* cxt->s_ip6.s6_addr32[3]          = 0; */
-      cxt->s_port         = src_port;
-      cxt->d_ip4          = ip_dst;
-      cxt->d_ip6.s6_addr32[0]          = 0;
       /* cxt->d_ip6.s6_addr32[1]          = 0; */
       /* cxt->d_ip6.s6_addr32[2]          = 0; */
       /* cxt->d_ip6.s6_addr32[3]          = 0; */
+      /* } */
 
+      cxt->s_port         = src_port;
       cxt->d_port         = dst_port;
       cxt->proto          = ip_proto;
       cxt->next           = head;
@@ -199,7 +200,7 @@ void end_sessions() {
    /* printf("Expired: %u of %u total connections:\n",expired,curcxt); */
 }
 
-void del_connection (connection* cxt, connection **bucket_ptr ){
+void del_connection (connection *cxt, connection **bucket_ptr ){
    /* remove cxt from bucket */
    connection *prev = cxt->prev; /* OLDER connections */
    connection *next = cxt->next; /* NEWER connections */
@@ -223,10 +224,39 @@ void del_connection (connection* cxt, connection **bucket_ptr ){
    cxt=NULL;
 }
 
+void move_connection (connection* cxt, connection **bucket_ptr ){
+   /* remove cxt from bucket */
+   extern connection *cxtbuffer;
+   connection *prev = cxt->prev; /* OLDER connections */
+   connection *next = cxt->next; /* NEWER connections */
+   if(prev == NULL){
+      // beginning of list
+      *bucket_ptr = next;
+      // not only entry
+      if(next)
+         next->prev = NULL;
+   } else if(next == NULL){
+      // at end of list!
+      prev->next = NULL;
+   } else {
+      // a node.
+      prev->next = next;
+      next->prev = prev;
+   }
+
+   /* add cxt to expired list cxtbuffer 
+    - if head is null -> head = cxt;
+    */
+   cxt->next = cxtbuffer; // next = head
+   cxt->prev = NULL;
+   cxtbuffer = cxt;       // head = cxt. result: newhead = cxt->oldhead->list...
+}
+
 void end_all_sessions() {
    connection *cxt;
    int cxkey;
    int expired = 0;
+   extern connection *bucket[BUCKET_SIZE];
 
    for ( cxkey = 0; cxkey < BUCKET_SIZE; cxkey++ ) {
       cxt = bucket[cxkey];
