@@ -68,6 +68,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  --service-signatures|-s : path to service-signatures file (default: /etc/prads/tcp-service.sig)
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages 0-255 (default: disabled(0))
+ --verbose               : debug 1
  --dump                  : Dumps all signatures and fingerprints then exits 
  --arp                   : Enables ARP discover check
  --service               : Enables Service detection
@@ -82,7 +83,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 ############# C - O - N - F - I - G - U - R - A - T - I - O - N ################
 ################################################################################
 
-our $VERSION       = 0.2;
+our $VERSION       = 0.92;
 our $DEBUG         = 0;
 our $DAEMON        = 0;
 our $DUMP          = 0;
@@ -179,6 +180,7 @@ Getopt::Long::GetOptions(
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
     'debug=s'                => \$DEBUG,
+    'verbose'                => \$DEBUG,
     'dump'                   => \$DUMP,
     'daemon'                 => \$DAEMON,
     'arp'                    => \$ARP,
@@ -1661,7 +1663,12 @@ sub arp_check {
         substr($ash,6,2) .':'.
         substr($ash,8,2) .':'.
         substr($ash,10,2);
-    add_asset('ARP', $mac, $ip, @{mac_find_match($mac)});
+    my $matchref = mac_find_match($mac);
+    my @match = ( );
+    if(ref $matchref){
+       @match = @{$matchref};
+    }
+    add_asset('ARP', $mac, $ip, @match);
     return;
 }
 
@@ -1771,6 +1778,12 @@ sub commit_db {
 =cut
 sub update_asset {
    my ($ip, $type, $time, $fp, $mac, $os, $details, $link, $dist) = @_;
+   if(not $os){
+      ($os, $details) = ('?','?');
+   }
+   if(not $fp){
+      $fp = '?';
+   }
    my $entry = { 
       'ip' => $ip,
       'service' => $type,
