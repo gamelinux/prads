@@ -57,12 +57,9 @@ char  *pidpath = "/var/run";
 int   verbose, inpacket, gameover, use_syslog;
 
 /*  I N T E R N A L   P R O T O T Y P E S  ************************************/
-//void move_connection (connection*, connection**);
-void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
-void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char *packet);
-void end_sessions();
-void cxtbuffer_write();
-void game_over();
+static void usage();
+
+/* F U N C T I O N S  *********************************************************/
 
 void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char *packet) {
    //if ( gameover == 1 ) { game_over(); }
