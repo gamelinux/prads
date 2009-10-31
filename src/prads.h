@@ -296,9 +296,9 @@ typedef struct _icmp6_header {
  * Structure for connections
  */
 
-/* rename to host or something */
 typedef struct _connection {
-        int af;                     /* IP version (4/6) AF_INET*/
+        u_int64_t cxid;                    /* connection id */
+        int af;                            /* IP version (4/6) AF_INET*/
         u_int8_t  proto;                   /* IP protocoll type */
         struct in6_addr s_ip;              /* source address */
         struct in6_addr d_ip;              /* destination address */
@@ -312,46 +312,51 @@ typedef struct _connection {
         u_int8_t d_tcpFlags;               /* tcpflags sent by destination */
         time_t start_time;                 /* connection start time */
         time_t last_pkt_time;              /* last seen packet time */
-        u_int64_t cxid;                    /* connection id */
-
         struct _connection *prev;
         struct _connection *next;
 } connection;
 
-typedef struct _asset_os {
-   
-} asset_os;
-
 /* Holds one entery for an ARP/NDP or IPv4/IPv6 asset */
 typedef struct _asset {
-   int               af;               /* IP AF_INET */
-   struct in6_addr   ip_addr;          /* IP asset address */
-   struct in6_addr   ip_addr;          /* Asset IP address */
-   unsigned char     mac_addr[MAC_LEN];/* Asset MAC address */
-   bstring           mac_resolved;     /* Asset MAC vendor name */
-
-/* make a service_struct, so we can hold lots of services */
-   unsigned short    proto;            /* Asset protocol */
-   u_int16_t         port;             /* Asset port */
-   bstring           service;          /* Asset service (i.e. SSH, WWW, ICMP etc.) */
-   bstring           application;      /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
-   /* next and prev */
-/* end service_struct */
-
-/* make a os_struct. so we can hold lots of OS discoveries */
-   bstring           vendor;           // Vendor (Microsuck,Linux,Sun...)
-   bstring           os;               // OS (WinXP SP2, 2.4/2.6, 10.2..)
-   bstring           detection;        // Detection metod (TCPSYN/TCPSYNACK/UDP/ICMP)
-   bstring           raw_fingerprint;  // The raw fingerprint [*:*:*:*:*:*:....]
-   bstring           matched_fingerprint// The FP that matched [*:*:*:*.*:*:---]
-   /* next and prev */
-/* end os_struct */
-
-   time_t            discovered;       /* Time at which asset was first seen. */
-   unsigned short    i_attempts;       /* Attempts at identifying the asset. */
-   struct _ip_asset  *prev;            /* Prev ip_asset structure */
-   struct _ip_asset  *next;            /* Next ip_asset structure */
+   int                  af;               /* IP AF_INET */
+   struct in6_addr      ip_addr;          /* IP asset address */
+   struct in6_addr      ip_addr;          /* Asset IP address */
+   unsigned char        mac_addr[MAC_LEN];/* Asset MAC address */
+   bstring              mac_resolved;     /* Asset MAC vendor name */
+   struct serv_asset    services;         /* Linked list with services detected */
+   struct os_asset      os;               /* Linked list with OSes detected */
+   time_t               first_seen;       /* Time at which asset was first seen. */
+   time_t               last_seen;        /* Time at which asset was last seen. */
+   unsigned short       i_attempts;       /* Attempts at identifying the asset. */
+   struct _ip_asset     *prev;            /* Prev ip_asset structure */
+   struct _ip_asset     *next;            /* Next ip_asset structure */
 }  asset;
+
+typedef struct _serv_asset {
+   time_t               first_seen;       /* Time at which service_asset was first seen. */
+   time_t               last_seen;        /* Time at which service_asset was last seen. */
+   unsigned short       proto;            /* Asset protocol */
+   u_int16_t            port;             /* Asset port */
+   bstring              service;          /* Asset service (i.e. SSH, WWW, ICMP etc.) */
+   bstring              application;      /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
+   unsigned short       i_attempts;       /* Attempts at identifying the service_asset. */
+   struct _serv_asset   *prev;            /* Prev serv_asset structure */
+   struct _serv_asset   *next;            /* Next serv_asset structure */
+} serv_asset;
+
+typedef struct _os_asset {
+   time_t            first_seen;          /* Time at which os_asset was first detected. */
+   time_t            last_seen;           /* Time at which os_asset was last detected. */
+   bstring           vendor;              /* Vendor (MS,Linux,Sun,HP...) */
+   bstring           os;                  /* OS (WinXP SP2, 2.4/2.6, 10.2..) */
+   bstring           detection;           /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
+   bstring           raw_fp;              /* The raw fingerprint [*:*:*:*:*:*:....] */
+   bstring           matched_fp           /* The FP that matched [*:*:*:*.*:*:---] */
+   unsigned short    i_attempts;          /* Attempts at identifying the os_asset. */
+   struct _os_asset  *prev;               /* Prev os_asset structure */
+   struct _os_asset  *next;               /* Next os_asset structure */
+} os_asset;
+
 
 /*  P R O T O T Y P E S  ******************************************************/
 
