@@ -54,7 +54,7 @@ char         *chroot_dir;
 char  *group_name, *user_name, *true_pid_name;
 char  *pidfile = "prads.pid";
 char  *pidpath = "/var/run";
-int   verbose, inpacket, gameover, use_syslog,intr_flag;
+int   verbose,inpacket,gameover,use_syslog,intr_flag,s_check;
 
 /*  I N T E R N A L   P R O T O T Y P E S  ************************************/
 static void usage();
@@ -103,16 +103,20 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          tcph = (tcp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IPv4 PROTOCOL TYPE TCP:\n"); */
 
-         //cx_track(ip_src, tcph->src_port, ip_dst, tcph->dst_port, ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
+         s_check = cx_track(ip_src, tcph->src_port, ip_dst, tcph->dst_port,
+                            ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             /* fp_tcp(ip, ttl, ipopts, len, id, ipflags, df); */
             printf("SYN from CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
             printf("SYNACK from SERVER: src_port:%d\n",ntohs(tcph->src_port));
          }
-         /* if (cx_track) { */
+         if (s_check == 0) { 
+            printf("CHECKING PACKAGE\n");
          /* service_tcp(*ip4,*tcph)*/
-         /* } */
+         }else{
+            printf("NOT CHECKING PACKAGE\n");
+         } 
          inpacket = 0;
          return;
       }

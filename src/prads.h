@@ -21,11 +21,16 @@
 */
 
 /*  I N C L U D E S  **********************************************************/
+#include "misc/bstrlib.c"
+#include "misc/bstrlib.h"
+#include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.1"
 #define TIMEOUT                       60
 #define BUCKET_SIZE                   1669 
+#define MAX_BYTE_CHECK                50000
+#define MAX_PKT_CHECK                 10
 
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806
@@ -46,6 +51,7 @@
 #define TCP_HEADER_LEN                20
 #define UDP_HEADER_LEN                8
 #define ICMP_HEADER_LEN               4
+#define MAC_ADDR_LEN                   6
 #define ETHERNET_HEADER_LEN           14
 #define ETHERNET_8021Q_HEADER_LEN     18
 #define ETHERNET_802Q1MT_HEADER_LEN   22
@@ -320,11 +326,10 @@ typedef struct _connection {
 typedef struct _asset {
    int                  af;               /* IP AF_INET */
    struct in6_addr      ip_addr;          /* IP asset address */
-   struct in6_addr      ip_addr;          /* Asset IP address */
-   unsigned char        mac_addr[MAC_LEN];/* Asset MAC address */
+   unsigned char        mac_addr[MAC_ADDR_LEN];/* Asset MAC address */
    bstring              mac_resolved;     /* Asset MAC vendor name */
-   struct serv_asset    services;         /* Linked list with services detected */
-   struct os_asset      os;               /* Linked list with OSes detected */
+   struct serv_asset    *services;        /* Linked list with services detected */
+   struct os_asset      *os;              /* Linked list with OSes detected */
    time_t               first_seen;       /* Time at which asset was first seen. */
    time_t               last_seen;        /* Time at which asset was last seen. */
    unsigned short       i_attempts;       /* Attempts at identifying the asset. */
@@ -351,11 +356,29 @@ typedef struct _os_asset {
    bstring           os;                  /* OS (WinXP SP2, 2.4/2.6, 10.2..) */
    bstring           detection;           /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
    bstring           raw_fp;              /* The raw fingerprint [*:*:*:*:*:*:....] */
-   bstring           matched_fp           /* The FP that matched [*:*:*:*.*:*:---] */
+   bstring           matched_fp;          /* The FP that matched [*:*:*:*.*:*:---] */
    unsigned short    i_attempts;          /* Attempts at identifying the os_asset. */
    struct _os_asset  *prev;               /* Prev os_asset structure */
    struct _os_asset  *next;               /* Next os_asset structure */
 } os_asset;
+
+typedef struct _signature {
+   bstring service;               /* Service (i.e. SSH, WWW, etc.) */
+   struct {                       /* Application Title, broken up into 3 parts. */
+      bstring app;
+      bstring ver;
+      bstring misc;
+   }  title;
+   pcre              *regex;      /* Signature - Compiled Regular Expression */
+   pcre_extra        *study;      /* Studied version of the compiled regex. */
+   struct _signature *next;       /* Next record in the list. */
+}  signature;
+
+typedef struct _vendor {
+   unsigned int   mac;                    /* MAC ADDRESS */
+   bstring        vendor;                 /* Vendor */
+   struct _vendor *next;                  /* Next vendor structure */
+}  vendor;
 
 
 /*  P R O T O T Y P E S  ******************************************************/

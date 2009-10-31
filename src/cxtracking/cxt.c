@@ -1,5 +1,5 @@
 void end_sessions();
-void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,
+int  cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,
                uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
 void del_connection (connection*, connection**);
 void move_connection (connection*, connection**);
@@ -11,7 +11,7 @@ void move_connection (connection*, connection**);
 /* void cx_track(uint64_t ip_src,uint16_t src_port,uint64_t ip_dst,uint16_t dst_port,
                uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af) { */
 
-void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,
+int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,
                uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af) {
 
    connection *cxt = NULL;
@@ -38,13 +38,10 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
             cxt->s_total_bytes += p_bytes;
             cxt->s_total_pkts  += 1;
             cxt->last_pkt_time  = tstamp;
-            /* Check if :
-            * cxt->s_total_bytes > MAX_BYTE_CHECK
-            *  or
-            * cxt->s_total_pkts > MAX_PACKET_CHECK
-            * If so, return value should indicate not to do fingerprinting.
-            */
-            return;
+            if (cxt->s_total_bytes > MAX_BYTE_CHECK || cxt->s_total_pkts > MAX_PKT_CHECK) {
+               return 1;
+            }
+            return 0;
          }
 //         else if ( cxt->s_ip6.s6_addr32[0] == ip_dst && cxt->d_ip6.s6_addr32[0] == ip_src
 //                   && cxt->d_port == src_port && cxt->s_port == dst_port ) {
@@ -53,13 +50,10 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
             cxt->d_total_bytes += p_bytes;
             cxt->d_total_pkts  += 1;
             cxt->last_pkt_time  = tstamp;
-            /* Check if :
-            * cxt->s_total_bytes > MAX_BYTE_CHECK
-            *  or
-            * cxt->s_total_pkts > MAX_PACKET_CHECK
-            * If so, return value should indicate not to do fingerprinting.
-            */
-            return;
+            if (cxt->d_total_bytes > MAX_BYTE_CHECK || cxt->d_total_pkts > MAX_PKT_CHECK) {
+               return 1;
+            }
+            return 0;
          }
       } else
       if (af = AF_INET) {
@@ -69,7 +63,10 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
                cxt->s_total_bytes += p_bytes;
                cxt->s_total_pkts  += 1;
                cxt->last_pkt_time  = tstamp;
-               return;
+               if (cxt->s_total_bytes > MAX_BYTE_CHECK || cxt->s_total_pkts > MAX_PKT_CHECK) {
+                  return 1;
+               }
+               return 0;
             } else
             if ( memcmp(&cxt->s_ip,&ip_dst,16) && memcmp(&cxt->d_ip,&ip_src,16) &&
                  cxt->d_port == src_port && cxt->s_port == dst_port ) {
@@ -77,7 +74,10 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
                cxt->d_total_bytes += p_bytes;
                cxt->d_total_pkts  += 1;
                cxt->last_pkt_time  = tstamp;
-               return;
+               if (cxt->d_total_bytes > MAX_BYTE_CHECK || cxt->d_total_pkts > MAX_PKT_CHECK) {
+                  return 1;
+               }
+               return 0;
             }
       }
       cxt = cxt->next;
@@ -92,7 +92,7 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
       }
       /* printf("[*] New connection...\n"); */
       cxt->cxid           = cxtrackerid;
-      cxt->ipversion      = af;
+      cxt->af             = af;
       cxt->s_tcpFlags     = tcpflags;
       cxt->d_tcpFlags     = 0x00;
       cxt->s_total_bytes  = p_bytes;
@@ -123,11 +123,11 @@ void cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,ui
       /* New connections are pushed on to the head of bucket[s_hash] */
       bucket[hash] = cxt;
 
-      /* Return value should be X, telling to do fingerprinting */
-      return;
+      /* Return value should be 1, telling to not do service fingerprinting */
+      return 1;
    }
    /* Should never be here! */
-   return;
+   return 0;
 }
 /*
  This sub marks sessions as ENDED on different criterias:
