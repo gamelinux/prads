@@ -298,15 +298,10 @@ typedef struct _icmp6_header {
 
 /* rename to host or something */
 typedef struct _connection {
-        int ipversion;                     /* IP version (4/6) */
+        int af;                     /* IP version (4/6) AF_INET*/
         u_int8_t  proto;                   /* IP protocoll type */
-
-        uint32_t s_ip4;                    /* source address */
-        uint32_t d_ip4;                    /* destination address */
-/* We should use in6_addr for both IPv4 and IPv6 storage */
-        struct in6_addr s_ip;             /* source address */
-        struct in6_addr d_ip;             /* destination address */
-
+        struct in6_addr s_ip;              /* source address */
+        struct in6_addr d_ip;              /* destination address */
         u_int16_t s_port;                  /* source port */
         u_int16_t d_port;                  /* destination port */
         u_int64_t s_total_pkts;            /* total source packets */
@@ -319,20 +314,44 @@ typedef struct _connection {
         time_t last_pkt_time;              /* last seen packet time */
         u_int64_t cxid;                    /* connection id */
 
-/* PRADS */
-/*
- * OS_FP_IP_TCP
- * OS_FP_IP_UDP
- * OS_FP_IP_ICMP
- * MAC_FP
- * SERVICE_FP_TCP
- * SERVICE_FP_UDP
- */
-/* PRADS END */
-
         struct _connection *prev;
         struct _connection *next;
 } connection;
+
+typedef struct _asset_os {
+   
+} asset_os;
+
+/* Holds one entery for an ARP/NDP or IPv4/IPv6 asset */
+typedef struct _asset {
+   int               af;               /* IP AF_INET */
+   struct in6_addr   ip_addr;          /* IP asset address */
+   struct in6_addr   ip_addr;          /* Asset IP address */
+   unsigned char     mac_addr[MAC_LEN];/* Asset MAC address */
+   bstring           mac_resolved;     /* Asset MAC vendor name */
+
+/* make a service_struct, so we can hold lots of services */
+   unsigned short    proto;            /* Asset protocol */
+   u_int16_t         port;             /* Asset port */
+   bstring           service;          /* Asset service (i.e. SSH, WWW, ICMP etc.) */
+   bstring           application;      /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
+   /* next and prev */
+/* end service_struct */
+
+/* make a os_struct. so we can hold lots of OS discoveries */
+   bstring           vendor;           // Vendor (Microsuck,Linux,Sun...)
+   bstring           os;               // OS (WinXP SP2, 2.4/2.6, 10.2..)
+   bstring           detection;        // Detection metod (TCPSYN/TCPSYNACK/UDP/ICMP)
+   bstring           raw_fingerprint;  // The raw fingerprint [*:*:*:*:*:*:....]
+   bstring           matched_fingerprint// The FP that matched [*:*:*:*.*:*:---]
+   /* next and prev */
+/* end os_struct */
+
+   time_t            discovered;       /* Time at which asset was first seen. */
+   unsigned short    i_attempts;       /* Attempts at identifying the asset. */
+   struct _ip_asset  *prev;            /* Prev ip_asset structure */
+   struct _ip_asset  *next;            /* Next ip_asset structure */
+}  asset;
 
 /*  P R O T O T Y P E S  ******************************************************/
 
