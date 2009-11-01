@@ -123,8 +123,8 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
       /* New connections are pushed on to the head of bucket[s_hash] */
       bucket[hash] = cxt;
 
-      /* Return value should be 1, telling to not do service fingerprinting */
-      return 1;
+      /* Return value should be 0, telling to do service fingerprinting */
+      return 0;
    }
    /* Should never be here! */
    return 0;

@@ -65,6 +65,7 @@ static void check_interupt();
 void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char *packet) {
    if ( intr_flag != 0 ) { check_interupt(); }
    inpacket = 1;
+   s_check = 0; // do we need to ?
    tstamp = time(NULL);
    u_short p_bytes;
 
@@ -90,7 +91,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
    }
 
    if ( eth_type == ETHERNET_TYPE_IP ) {
-      /* printf("[*] Got IPv4 Packet...\n"); */
+      printf("[*] Got IPv4 Packet...\n"); 
       ip4_header *ip4;
       ip4 = (ip4_header *) (packet + eth_header_len);
       p_bytes = (ip4->ip_len - (IP_HL(ip4)*4));
@@ -105,17 +106,18 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check = cx_track(ip_src, tcph->src_port, ip_dst, tcph->dst_port,
                             ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
+
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             /* fp_tcp(ip, ttl, ipopts, len, id, ipflags, df); */
-            printf("SYN from CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
+            printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
-            printf("SYNACK from SERVER: src_port:%d\n",ntohs(tcph->src_port));
+            printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
          }
          if (s_check == 0) { 
-            printf("CHECKING PACKAGE\n");
+            printf("[*] - CHECKING TCP PACKAGE\n");
          /* service_tcp(*ip4,*tcph)*/
          }else{
-            printf("NOT CHECKING PACKAGE\n");
+            printf("[*] - NOT CHECKING TCP PACKAGE\n");
          } 
          inpacket = 0;
          return;
@@ -125,9 +127,14 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          udph = (udp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IPv4 PROTOCOL TYPE UDP:\n"); */
 
-         //cx_track(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
-         /* if (cx_track) {*/
-         /*fp_udp(ip, ttl, ipopts, len, id, ipflags, df);*/
+         s_check = cx_track(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         if (s_check == 0) {
+            printf("[*] - CHECKING UDP PACKAGE\n");
+         /* service_udp(*ip4,*tcph) */
+         /* fp_udp(ip, ttl, ipopts, len, id, ipflags, df); */
+         }else{
+            printf("[*] - NOT CHECKING UDP PACKAGE\n");
+         }
          inpacket = 0;
          return;
       }
@@ -136,22 +143,35 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          icmph = (icmp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
          /* printf("[*] IP PROTOCOL TYPE ICMP\n"); */
 
-         //cx_track(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
-         /*packet_icmp(ip, ttl, ipopts, len, id, ipflags, df);*/
+         s_check = cx_track(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         if (s_check == 0) {
+            printf("[*] - CHECKING ICMP PACKAGE\n");
+         /* service_icmp(*ip4,*tcph) */
+         /* fp_icmp(ip, ttl, ipopts, len, id, ipflags, df); */
+         }else{
+            printf("[*] - NOT CHECKING ICMP PACKAGE\n");
+         }
          inpacket = 0;
          return;
       }
       else {
          /* printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); */
 
-         //cx_track(ip_src, ip4->ip_p, ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         s_check  = cx_track(ip_src, ip4->ip_p, ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         if (s_check == 0) {
+            printf("[*] - CHECKING OTHER PACKAGE\n");
+         /* service_other(*ip4,*tcph) */
+         /* fp_other(ip, ttl, ipopts, len, id, ipflags, df); */
+         }else{
+            printf("[*] - NOT CHECKING OTHER PACKAGE\n");
+         }
          inpacket = 0;
          return;
       }
    }
 
    else if ( eth_type == ETHERNET_TYPE_IPV6) {
-      /* printf("[*] Got IPv6 Packet...\n"); */
+      printf("[*] Got IPv6 Packet...\n"); 
       ip6_header *ip6;
       ip6 = (ip6_header *) (packet + eth_header_len);
       if ( ip6->next == IP_PROTO_TCP ) {
@@ -159,8 +179,20 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          tcph = (tcp_header *) (packet + eth_header_len + ip6->len);
          /* printf("[*] IPv6 PROTOCOL TYPE TCP:\n"); */
 
-         //cx_track(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port, ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
-         /*packet_tcp(ip, ttl, ipopts, len, id, ipflags, df);*/
+         s_check = cx_track(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port,
+                            ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
+         if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
+            /* fp_tcp(ip6, ttl, ipopts, len, id, ipflags, df); */
+            printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
+         } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
+            printf("[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
+         }
+         if (s_check == 0) {
+            printf("[*] - CHECKING TCP PACKAGE\n");
+         /* service_tcp(*ip6,*tcph)*/
+         }else{
+            printf("[*] - NOT CHECKING TCP PACKAGE\n");
+         }
          inpacket = 0;
          return;
       }
@@ -169,8 +201,15 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          udph = (udp_header *) (packet + eth_header_len + ip6->len);
          /* printf("[*] IPv6 PROTOCOL TYPE UDP:\n"); */
 
-         //cx_track(ip6->ip_src, udph->src_port, ip6->ip_dst, udph->dst_port, ip6->next, ip6->len, 0, tstamp, AF_INET6);
-         /*packet_udp(ip, ttl, ipopts, len, id, ipflags, df);*/
+         s_check = cx_track(ip6->ip_src, udph->src_port, ip6->ip_dst, udph->dst_port,
+                            ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         if (s_check == 0) {
+            printf("[*] - CHECKING UDP PACKAGE\n");
+         /* service_udp(*ip6,*tcph) */
+         /* fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); */
+         }else{
+            printf("[*] - NOT CHECKING UDP PACKAGE\n");
+         }
          inpacket = 0;
          return;
       }
@@ -179,21 +218,36 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          icmph = (icmp6_header *) (packet + eth_header_len + ip6->len);
          /* printf("[*] IPv6 PROTOCOL TYPE ICMP\n"); */
 
-         //cx_track(ip6->ip_src, ip6->hop_lmt, ip6->ip_dst, ip6->hop_lmt, ip6->next, ip6->len, 0, tstamp, AF_INET6);
-         /*packet_icmp(ip, ttl, ipopts, len, id, ipflags, df);*/
+         s_check = cx_track(ip6->ip_src, ip6->hop_lmt, ip6->ip_dst,
+                            ip6->hop_lmt, ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         if (s_check == 0) {
+            printf("[*] - CHECKING ICMP PACKAGE\n");
+         /* service_icmp(*ip6,*tcph) */
+         /* fp_icmp(ip6, ttl, ipopts, len, id, ipflags, df); */
+         }else{
+            printf("[*] - NOT CHECKING ICMP PACKAGE\n");
+         }
          inpacket = 0;
          return;
       }
       else {
          /* printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n",ip6->next); */
 
-         //cx_track(ip6->ip_src, ip6->next, ip6->ip_dst, ip6->next, ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         s_check = cx_track(ip6->ip_src, ip6->next, ip6->ip_dst, ip6->next,
+                            ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         if (s_check == 0) {
+            printf("[*] - CHECKING OTHER PACKAGE\n");
+         /* service_other(*ip4,*tcph) */
+         /* fp_other(ip, ttl, ipopts, len, id, ipflags, df); */
+         }else{
+            printf("[*] - NOT CHECKING OTHER PACKAGE\n");
+         }
          inpacket = 0;
          return;
       }
    }
    if ( ntohs(eth_type) == ETHERNET_TYPE_ARP ) {
-      /* printf("[*] Got ARP Packet...\n"); */
+      printf("[*] Got ARP Packet...\n"); 
       /* arp_check(eth_hdr,tstamp); */
       return;
    }
