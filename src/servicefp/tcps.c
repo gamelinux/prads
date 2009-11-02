@@ -58,9 +58,11 @@ void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload,int plen) {
    const char *err = NULL;     /* PCRE */
    int        erroffset,ret,rc;   /* PCRE */
    int        ovector[15];
-   const char *stringr = "Server: Apache";
+   //const char *stringr = "Server: Apache/2.2.3";
+   bstring    stringr = NULL;
+   stringr->data = "Server: Apache\\/(\\d\\.\\d\\.\\d)";
 
-   if ( (regex = pcre_compile (stringr, 0, &err, &erroffset, NULL)) == NULL) {
+   if ( (regex = pcre_compile ((char *)bdata(stringr), 0, &err, &erroffset, NULL)) == NULL) {
       printf("Unable to compile signature.");
       ret = -1;
    }
@@ -74,7 +76,9 @@ void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload,int plen) {
    rc = pcre_exec(regex, study, payload, plen, 0, 0, ovector, 15);
 
    if (rc != -1) {
-      printf("MATCH: %s\n",stringr);
+      char expr[100];
+      pcre_copy_substring(payload, ovector, rc, 1, expr, sizeof(expr));
+      printf("MATCH: %s:%s\n",(char *)stringr,expr);
       return ;
    }
    //else {
