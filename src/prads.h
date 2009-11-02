@@ -21,16 +21,21 @@
 */
 
 /*  I N C L U D E S  **********************************************************/
+//#include "misc/sys_func.c"
+//#include "cxtracking/cxt.c"
+//#include "servicefp/tcps.c"
+
 #include "misc/bstrlib.c"
 #include "misc/bstrlib.h"
+
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.1"
 #define TIMEOUT                       60
 #define BUCKET_SIZE                   1669 
-#define MAX_BYTE_CHECK                50000
-#define MAX_PKT_CHECK                 10
+#define MAX_BYTE_CHECK                100000
+#define MAX_PKT_CHECK                 20
 
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806

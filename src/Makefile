@@ -7,13 +7,13 @@ PCFLAGS=-g -pg
 
 
 all:
-	gcc -o prads prads.c -lpcap $(OCFLAGS)
+	gcc -o prads prads.c -lpcap -lpcre $(OCFLAGS)
 
 debug:
-	gcc -o prads prads.c -lpcap $(DCFLAGS)
+	gcc -o prads prads.c -lpcap -lpcre $(DCFLAGS)
 
 profile:
-	gcc -o prads prads.c -lpcap $(PCFLAGS)
+	gcc -o prads prads.c -lpcap -lpcre  $(PCFLAGS)
 
 clean:
 	rm prads 
