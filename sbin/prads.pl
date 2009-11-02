@@ -1777,7 +1777,7 @@ sub commit_db {
 
 =cut
 sub update_asset {
-   my ($ip, $type, $time, $fp, $mac, $os, $details, $link, $dist) = @_;
+   my ($ip, $service, $time, $fp, $mac, $os, $details, $link, $dist) = @_;
    if(not $os){
       ($os, $details) = ('?','?');
    }
@@ -1786,7 +1786,7 @@ sub update_asset {
    }
    my $entry = { 
       'ip' => $ip,
-      'service' => $type,
+      'service' => $service,
       'time' => $time,
       'fingerprint' => $fp,
       'mac' => $mac,
@@ -1795,10 +1795,10 @@ sub update_asset {
       'link' => $link,
       'dist' => $dist,
    };
-   my $key = "$type:$ip:$fp";
+   my $key = "$service:$ip:$fp";
    if(not $ASSET{$key}){
       printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s\n",
-             $time, $type, $ip, $os, $details, $fp, $dist, $link;
+             $time, $service, $ip, $os, $details, $fp, $dist, $link;
    }
    $ASSET{$key} = $entry;
 
@@ -1816,11 +1816,12 @@ sub asset_db {
    for my $key (keys %ASSET){
       $e = $ASSET{$key};
       next if $e->{'time'} < $DB_LAST_UPDATE;
-      add_db($e->{'ip'}, $e->{'type'}, $e->{'time'},
+      add_db($e->{'ip'}, $e->{'service'}, $e->{'time'},
          $e->{'fingerprint'},
          $e->{'mac'},
          $e->{'os'}, $e->{'details'},
-         $e->{'link'}, $e->{'dist'});
+         $e->{'link'}, $e->{'dist'},
+         $PRADS_HOSTNAME);
    }
    $DB_LAST_UPDATE = time;
 }
@@ -1835,43 +1836,43 @@ sub asset_db {
 =cut
 
 sub add_asset {
-    my ($type, @rest) = @_;
+    my ($service, @rest) = @_;
 
-    if($type eq 'SYN'){
+    if($service eq 'SYN'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
-        update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
+        update_asset($src_ip, $service, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
 
-    }elsif($type eq 'SYNACK'){
+    }elsif($service eq 'SYNACK'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
         if(not $os){
             $os = 'UNKNOWN';
             $details = 'UNKNOWN';
         }
-        update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
+        update_asset($src_ip, $service, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME);
 
-    }elsif($type eq 'ARP'){
+    }elsif($service eq 'ARP'){
         my ($mac, $ip, $prefix, $vendor, $details, @more) = @rest;
-        update_asset($ip, $type, $pradshosts{'tstamp'}, $prefix, $mac, $vendor, $details, 'ethernet', 1, $PRADS_HOSTNAME);
+        update_asset($ip, $service, $pradshosts{'tstamp'}, $prefix, $mac, $vendor, $details, 'ethernet', 1, $PRADS_HOSTNAME);
 
-    }elsif($type eq 'SERVICE_TCP'){
+    }elsif($service eq 'SERVICE_TCP'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
-        update_asset($ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+        update_asset($ip, $service, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
 
-    }elsif($type eq 'SERVICE_UDP'){
+    }elsif($service eq 'SERVICE_UDP'){
         my ($ip, $port, $vendor, $version, $info, @more) = @rest;
-        update_asset($ip, $type, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
+        update_asset($ip, $service, $pradshosts{'tstamp'}, "$ip:$port", '', $vendor, "$info; $version","SERVICE", 1, $PRADS_HOSTNAME);
 
-    }elsif($type eq 'ICMP'){
+    }elsif($service eq 'ICMP'){
         my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-        update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint,'', $os, $details, $link, $dist, $PRADS_HOSTNAME );
+        update_asset($src_ip, $service, $pradshosts{'tstamp'}, $fingerprint,'', $os, $details, $link, $dist, $PRADS_HOSTNAME );
 
-    }elsif($type eq 'UDP'){
+    }elsif($service eq 'UDP'){
          my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-         update_asset($src_ip, $type, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
+         update_asset($src_ip, $service, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
     }
 }
 
