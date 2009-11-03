@@ -194,7 +194,9 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }
          if (s_check == 0) {
             printf("[*] - CHECKING TCP PACKAGE\n");
-         /* service_tcp6(*ip6,*tcph)*/
+            char *payload;
+            payload = (char *) (packet + eth_header_len + sizeof(ip6_header) );
+            service_tcp6(ip6,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
          }else{
             printf("[*] - NOT CHECKING TCP PACKAGE\n");
          }
