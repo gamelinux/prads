@@ -43,6 +43,7 @@
 #include "cxtracking/cxt.c"
 #include "servicefp/servicefp.c"
 #include "servicefp/tcps.c"
+#include "servicefp/udps.c"
 
 /*  G L O B A L E S  **********************************************************/
 u_int64_t    cxtrackerid;
@@ -212,8 +213,10 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                             ip6->next, ip6->len, 0, tstamp, AF_INET6);
          if (s_check == 0) {
             printf("[*] - CHECKING UDP PACKAGE\n");
-         /* service_udp(*ip6,*tcph) */
          /* fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); */
+            char *payload;
+            payload = (char *) (packet + eth_header_len + sizeof(ip6_header) );
+            service_udp6(ip6,udph,payload,(pheader->caplen - sizeof(udp_header) - eth_header_len));
          }else{
             printf("[*] - NOT CHECKING UDP PACKAGE\n");
          }
