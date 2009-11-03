@@ -41,6 +41,7 @@
 #include "prads.h"
 #include "misc/sys_func.c"
 #include "cxtracking/cxt.c"
+#include "servicefp/servicefp.c"
 #include "servicefp/tcps.c"
 
 /*  G L O B A L E S  **********************************************************/
@@ -49,6 +50,7 @@ time_t       timecnt,tstamp;
 pcap_t       *handle;
 connection   *bucket[BUCKET_SIZE];
 connection   *cxtbuffer = NULL;
+signature    *signatures = NULL;
 char  src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
 static char  *dev,*dpath;
 char         *chroot_dir;
@@ -92,7 +94,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
    }
 
    if ( eth_type == ETHERNET_TYPE_IP ) {
-      printf("[*] Got IPv4 Packet...\n"); 
+      //printf("[*] Got IPv4 Packet...\n"); 
       ip4_header *ip4;
       ip4 = (ip4_header *) (packet + eth_header_len);
       p_bytes = (ip4->ip_len - (IP_HL(ip4)*4));
@@ -110,17 +112,17 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             /* fp_tcp(ip, ttl, ipopts, len, id, ipflags, df); */
-            printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
+            //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
-            printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
+            //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
          }
          if (s_check == 0) { 
-            printf("[*] - CHECKING TCP PACKAGE\n");
+            //printf("[*] - CHECKING TCP PACKAGE\n");
          char *payload;
          payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4));
          service_tcp4(ip4,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
          }else{
-            printf("[*] - NOT CHECKING TCP PACKAGE\n");
+            //printf("[*] - NOT CHECKING TCP PACKAGE\n");
          } 
          inpacket = 0;
          return;
@@ -132,11 +134,11 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check = cx_track(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if (s_check == 0) {
-            printf("[*] - CHECKING UDP PACKAGE\n");
+            //printf("[*] - CHECKING UDP PACKAGE\n");
          /* service_udp(*ip4,*tcph) */
          /* fp_udp(ip, ttl, ipopts, len, id, ipflags, df); */
          }else{
-            printf("[*] - NOT CHECKING UDP PACKAGE\n");
+            //printf("[*] - NOT CHECKING UDP PACKAGE\n");
          }
          inpacket = 0;
          return;
@@ -352,6 +354,7 @@ int main(int argc, char *argv[]) {
    }
 
    printf("[*] Running prads %s\n",VERSION);
+   load_servicefp_file();
 
    errbuf[0] = '\0';
    /* look up an availible device if non specified */

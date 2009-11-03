@@ -43,48 +43,28 @@
 
 #include <pcre.h>
 
-//if (ret != -1) {
-//   study = pcre_study (regex, 0, &err);
-//   if (err != NULL)
-//      printf("Unable to study signature:  %s", err);
-//}
-
-
-/* service_tcp(*ip6,*tcph)*/
 void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload,int plen) {
 
-   pcre       *regex;
-   pcre_extra *study;
-   const char *err = NULL;     /* PCRE */
-   int        erroffset,ret,rc;   /* PCRE */
-   int        ovector[15];
-   //const char *stringr = "Server: Apache/2.2.3";
-   bstring    stringr = NULL;
-   stringr->data = "Server: Apache\\/(\\d\\.\\d\\.\\d)";
+   const char        *err = NULL;        /* PCRE */
+   int               erroffset,ret,rc;   /* PCRE */
+   int               ovector[15];
+   extern signature  *signatures;
+   signature         *tmpsig;
 
-   if ( (regex = pcre_compile ((char *)bdata(stringr), 0, &err, &erroffset, NULL)) == NULL) {
-      printf("Unable to compile signature.");
-      ret = -1;
+   ret = 0;
+   tmpsig = signatures;
+   while ( tmpsig != NULL ) {
+      rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
+      ret ++;
+      if (rc != -1) {
+         char expr [100];
+         pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
+         printf("[*] MATCH: %s\n",expr);
+         //printf("[*] checked %d signatures.\n",ret);
+         return;
+      }
+      tmpsig = tmpsig->next;
    }
-
-   if (ret != -1) {
-      study = pcre_study (regex, 0, &err);
-      if (err != NULL)
-         printf("Unable to study signature:  %s", err);
-   }
-
-   rc = pcre_exec(regex, study, payload, plen, 0, 0, ovector, 15);
-
-   if (rc != -1) {
-      char expr[100];
-      pcre_copy_substring(payload, ovector, rc, 1, expr, sizeof(expr));
-      printf("MATCH: %s:%s\n",(char *)stringr,expr);
-      return ;
-   }
-   //else {
-   //   printf("%s",payload);
-   //}
-   return;
 }
 
 void service_tcp6 (ip6_header *ip6, tcp_header *tcph) {

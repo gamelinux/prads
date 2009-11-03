@@ -27,14 +27,13 @@
 
 #include "misc/bstrlib.c"
 #include "misc/bstrlib.h"
-
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.1"
 #define TIMEOUT                       60
 #define BUCKET_SIZE                   1669 
-#define MAX_BYTE_CHECK                100000
+#define MAX_BYTE_CHECK                500000
 #define MAX_PKT_CHECK                 20
 
 #define ETHERNET_TYPE_IP              0x0800
@@ -73,9 +72,12 @@
 #define TF_NORESERVED (TF_FIN|TF_SYN|TF_RST|TF_PUSH|TF_ACK|TF_URG)
 #define TF_FLAGS      (TF_FIN|TF_SYN|TF_RST|TF_ACK|TF_URG|TF_ECE|TF_CWR)
 
-#define SUCCESS     0
-#define ERROR       1
-#define STDBUF      1024
+#define SUCCESS                        0
+#define ERROR                          1
+#define STDBUF                         1024
+
+#define INSTALL_SYSCONFDIR             ""
+#define TCP_SIGNATURE_LIST             "/../etc/tcp-service.sig" 
 
 /*  D A T A  S T R U C T U R E S  *********************************************/
 
@@ -384,7 +386,6 @@ typedef struct _vendor {
    bstring        vendor;                 /* Vendor */
    struct _vendor *next;                  /* Next vendor structure */
 }  vendor;
-
 
 /*  P R O T O T Y P E S  ******************************************************/
 
