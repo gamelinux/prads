@@ -136,7 +136,9 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          s_check = cx_track(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if (s_check == 0) {
             //printf("[*] - CHECKING UDP PACKAGE\n");
-         /* service_udp(*ip4,*tcph) */
+         char *payload;
+         payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4));
+         service_udp4(ip4,udph,payload,(pheader->caplen - sizeof(udp_header) - eth_header_len));
          /* fp_udp(ip, ttl, ipopts, len, id, ipflags, df); */
          }else{
             //printf("[*] - NOT CHECKING UDP PACKAGE\n");
