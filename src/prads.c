@@ -160,7 +160,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          return;
       }
       else {
-         /* printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); */
+         printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); 
 
          s_check  = cx_track(ip_src, ip4->ip_p, ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if (s_check == 0) {
