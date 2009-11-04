@@ -48,7 +48,7 @@
  * RETURN       : -1 - Error
  *              : 0 - Normal Return
  * ---------------------------------------------------------- */
-int load_servicefp_file() {
+int load_servicefp_file(int storage, char *sigfile) {
 
    FILE *fp;
    bstring filename;
@@ -56,31 +56,24 @@ int load_servicefp_file() {
    struct bstrList *lines;
    int i;
 
-   //TAILQ_INIT(&signatures);
-printf("TEST\n");
-
    /* Check for a PADS_SIGNATURE_LIST file within the current directory.  */
    if ((fp = fopen(TCP_SIGNATURE_LIST, "r")) != NULL) {
-      filename = bformat("./%s", TCP_SIGNATURE_LIST);
+      filename = bformat("./%s", sigfile);
       fclose(fp);
-//   } else  if (gc.sig_file != NULL) {
-//      filename = bstrcpy(gc.sig_file);
-
    } else {
-   //   filename = bformat("%s/%s", INSTALL_SYSCONFDIR, TCP_SIGNATURE_LIST);
-      filename = bformat("../etc/tcp-service.sig");
+      filename = bformat(sigfile);
    }
 
    /* Open Signature File */
    if ((fp = fopen((char *)bdata(filename), "r")) == NULL) {
       printf("Unable to open signature file - %s", bdata(filename));
    }
-printf("OK\n");
+
    /* Read file into 'filedata' and process it accordingly. */
    filedata = bread ((bNread) fread, fp);
    if ((lines = bsplit(filedata, '\n')) != NULL) {
       for (i = 0; i < lines->qty; i++) {
-         parse_raw_signature(lines->entry[i], i + 1);
+         parse_raw_signature(lines->entry[i], i + 1, storage);
       }
    }
 
@@ -103,11 +96,10 @@ printf("OK\n");
  * RETURN       : 0 - Success
  *              : -1 - Error
  * ---------------------------------------------------------- */
-int parse_raw_signature (bstring line, int lineno) {
+int parse_raw_signature (bstring line, int lineno, int storage) {
    struct bstrList *raw_sig = NULL;
    struct bstrList *title = NULL;
    signature *sig, *head;
-   extern signature *signatures;
    sig = head = NULL;
    bstring pcre_string = NULL;
    const char *err = NULL;     /* PCRE */
@@ -178,11 +170,22 @@ int parse_raw_signature (bstring line, int lineno) {
       }
 
       /* Add signature to 'signature_list' data structure. */
-      if (ret != -1)
+      if (ret != -1) {
          //add_signature (sig);
-         head = signatures;
-         sig->next  = head;
-         signatures = sig;
+         if (storage == 1) {
+            extern signature *sig_serv_tcp;
+            head = sig_serv_tcp;
+            sig->next  = head;
+            sig_serv_tcp = sig;
+         } else
+         if (storage == 2) {
+            extern signature *sig_serv_udp;
+            head = sig_serv_udp;
+            sig->next  = head;
+            sig_serv_udp = sig;
+         }
+         printf("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage);
+      }
    }
 
    /* Garbage Collection */

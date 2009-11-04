@@ -48,11 +48,11 @@ void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
    const char        *err = NULL;        /* PCRE */
    int               erroffset,ret,rc;   /* PCRE */
    int               ovector[15];
-   extern signature  *signatures;
+   extern signature  *sig_serv_tcp;
    signature         *tmpsig;
 
    ret = 0;
-   tmpsig = signatures;
+   tmpsig = sig_serv_tcp;
    while ( tmpsig != NULL ) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
       ret ++;
@@ -60,7 +60,7 @@ void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
          char expr [100];
          pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
          printf("[*] MATCH: %s\n",expr);
-         //printf("[*] checked %d signatures.\n",ret);
+         //printf("[*] checked %d sig_serv_tcp.\n",ret);
          return;
       }
       tmpsig = tmpsig->next;
@@ -71,11 +71,11 @@ void service_tcp6 (ip6_header *ip6, tcp_header *tcph, char *payload, int plen) {
    const char        *err = NULL;        /* PCRE */
    int               erroffset,ret,rc;   /* PCRE */
    int               ovector[15];
-   extern signature  *signatures;
+   extern signature  *sig_serv_tcp;
    signature         *tmpsig;
 
    ret = 0;
-   tmpsig = signatures;
+   tmpsig = sig_serv_tcp;
    while ( tmpsig != NULL ) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
       ret ++;
@@ -83,7 +83,7 @@ void service_tcp6 (ip6_header *ip6, tcp_header *tcph, char *payload, int plen) {
          char expr [100];
          pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
          printf("[*] MATCH: %s\n",expr);
-         //printf("[*] checked %d signatures.\n",ret);
+         //printf("[*] checked %d sig_serv_tcp.\n",ret);
          return;
       }
       tmpsig = tmpsig->next;

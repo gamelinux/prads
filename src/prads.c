@@ -51,7 +51,8 @@ time_t       timecnt,tstamp;
 pcap_t       *handle;
 connection   *bucket[BUCKET_SIZE];
 connection   *cxtbuffer = NULL;
-signature    *signatures = NULL;
+signature    *sig_serv_tcp = NULL;
+signature    *sig_serv_udp = NULL;
 char  src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
 static char  *dev,*dpath;
 char         *chroot_dir;
@@ -361,7 +362,8 @@ int main(int argc, char *argv[]) {
    }
 
    printf("[*] Running prads %s\n",VERSION);
-   load_servicefp_file();
+   load_servicefp_file(1,"../etc/tcp-service.sig");
+   load_servicefp_file(2,"../etc/udp-service.sig");
 
    errbuf[0] = '\0';
    /* look up an availible device if non specified */
