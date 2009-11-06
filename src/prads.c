@@ -368,7 +368,7 @@ int main(int argc, char *argv[]) {
    printf("[*] Running prads %s\n",VERSION);
    load_servicefp_file(1,"../etc/tcp-service.sig");
    load_servicefp_file(2,"../etc/udp-service.sig");
-   load_servicefp_file(3,"./tcp-client.sig");
+   load_servicefp_file(3,"../etc/tcp-client.sig");
    //load_servicefp_file(4,"../etc/udp-client.sig");
 
    errbuf[0] = '\0';
