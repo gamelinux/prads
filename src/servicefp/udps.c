@@ -59,7 +59,7 @@ void service_udp4 (ip4_header *ip4, udp_header *udph, char *payload, int plen) {
       if (rc != -1) {
          char expr [100];
          pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH: %s\n",(char *)bdata(tmpsig->title.app));
+         printf("[*] MATCH IPv4/UPD: %s\n",(char *)bdata(tmpsig->title.app));
          //printf("[*] checked %d sig_serv_udp.\n",ret);
          return;
       }
@@ -82,7 +82,7 @@ void service_udp6 (ip6_header *ip6, udp_header *udph, char *payload, int plen) {
       if (rc != -1) {
          char expr [100];
          pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH: %s\n",(char *)bdata(tmpsig->title.app));
+         printf("[*] MATCH IPv6/UDP: %s\n",(char *)bdata(tmpsig->title.app));
          //printf("[*] checked %d sig_serv_udp.\n",ret);
          return;
       }

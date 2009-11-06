@@ -31,11 +31,10 @@
 
 # Standard Query response - no error
 #53,v/DNS///,^..\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00
-#dns,v/DNS SQR: No Error///,\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00
-53,v/DNS///,\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00
+dns,v/DNS SQR No Error///,\x81\x80\x00\x01\x00
 # Standard Query response - no such name
 #53,v/DNS///,^..\x84\x03\x00\x01\x00\x00\x00\x01\x00\x00
-53,v/DNS///,\x84\x03\x00\x01\x00\x00\x00\x01\x00\x00
+53,v/DNS SQR No Such Name///,\x84\x03\x00\x01\x00\x00\x00
 # Bind version:
 
 #53,v/DNS///,A\?
@@ -50,8 +49,8 @@
 #1194,v/OpenVPN///,REGEXP
 
 # SSL Signatures
-#ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01
-#ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
+ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01
+ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
 
 # SMB Sigantures
 #smb,v/Windows SMB///,\xffSMBr

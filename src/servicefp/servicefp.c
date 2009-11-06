@@ -184,7 +184,19 @@ int parse_raw_signature (bstring line, int lineno, int storage) {
             sig->next  = head;
             sig_serv_udp = sig;
          }
-         printf("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage);
+        if (storage == 3) {
+            extern signature *sig_client_tcp;
+            head = sig_client_tcp;
+            sig->next  = head;
+            sig_client_tcp = sig;
+         }
+        if (storage == 4) {
+            extern signature *sig_client_udp;
+            head = sig_client_udp;
+            sig->next  = head;
+            sig_client_udp = sig;
+         }
+        /* printf("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); */
       }
    }
 

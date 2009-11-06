@@ -59,7 +59,7 @@ void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
       if (rc != -1) {
          char expr [100];
          pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH: %s\n",expr);
+         printf("[*] MATCH SERVICE IPv4/TCP: %s - %s",(char *)bdata(tmpsig->service),expr);
          //printf("[*] checked %d sig_serv_tcp.\n",ret);
          return;
       }
@@ -82,7 +82,7 @@ void service_tcp6 (ip6_header *ip6, tcp_header *tcph, char *payload, int plen) {
       if (rc != -1) {
          char expr [100];
          pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH: %s\n",expr);
+         printf("[*] MATCH SERVICE IPv6/TCP: %s - %s\n",(char *)bdata(tmpsig->service),expr);
          //printf("[*] checked %d sig_serv_tcp.\n",ret);
          return;
       }

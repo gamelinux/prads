@@ -43,6 +43,7 @@
 #include "cxtracking/cxt.c"
 #include "servicefp/servicefp.c"
 #include "servicefp/tcps.c"
+#include "servicefp/tcpc.c"
 #include "servicefp/udps.c"
 
 /*  G L O B A L E S  **********************************************************/
@@ -53,6 +54,8 @@ connection   *bucket[BUCKET_SIZE];
 connection   *cxtbuffer = NULL;
 signature    *sig_serv_tcp = NULL;
 signature    *sig_serv_udp = NULL;
+signature    *sig_client_tcp = NULL;
+signature    *sig_client_udp = NULL;
 char  src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
 static char  *dev,*dpath;
 char         *chroot_dir;
@@ -121,8 +124,9 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          if (s_check == 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
          char *payload;
-         payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4));
+         payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + TCP_HEADER_LEN);
          service_tcp4(ip4,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
+         client_tcp4(ip4,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
          }else{
             //printf("[*] - NOT CHECKING TCP PACKAGE\n");
          } 
@@ -138,8 +142,8 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          if (s_check == 0) {
             //printf("[*] - CHECKING UDP PACKAGE\n");
          char *payload;
-         payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4));
-         service_udp4(ip4,udph,payload,(pheader->caplen - sizeof(udp_header) - eth_header_len));
+         payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + UDP_HEADER_LEN);
+         service_udp4(ip4,udph,payload,(pheader->caplen - UDP_HEADER_LEN - (IP_HL(ip4)*4) - eth_header_len));
          /* fp_udp(ip, ttl, ipopts, len, id, ipflags, df); */
          }else{
             //printf("[*] - NOT CHECKING UDP PACKAGE\n");
@@ -166,7 +170,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       else {
          printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); 
 
-         s_check  = cx_track(ip_src, ip4->ip_p, ip_dst, ip4->ip_p, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         s_check  = cx_track(ip_src, 0, ip_dst, 0, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if (s_check == 0) {
             printf("[*] - CHECKING OTHER PACKAGE\n");
          /* service_other(*ip4,*tcph) */
@@ -244,16 +248,16 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          return;
       }
       else {
-         /* printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n",ip6->next); */
+         printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n",ip6->next); 
 
-         s_check = cx_track(ip6->ip_src, ip6->next, ip6->ip_dst, ip6->next,
+         s_check = cx_track(ip6->ip_src, 0, ip6->ip_dst, 0,
                             ip6->next, ip6->len, 0, tstamp, AF_INET6);
          if (s_check == 0) {
-            printf("[*] - CHECKING OTHER PACKAGE\n");
+         /* printf("[*] - CHECKING OTHER PACKAGE\n"); */
          /* service_other(*ip4,*tcph) */
          /* fp_other(ip, ttl, ipopts, len, id, ipflags, df); */
          }else{
-            printf("[*] - NOT CHECKING OTHER PACKAGE\n");
+         /*  printf("[*] - NOT CHECKING OTHER PACKAGE\n"); */
          }
          inpacket = 0;
          return;
@@ -364,6 +368,8 @@ int main(int argc, char *argv[]) {
    printf("[*] Running prads %s\n",VERSION);
    load_servicefp_file(1,"../etc/tcp-service.sig");
    load_servicefp_file(2,"../etc/udp-service.sig");
+   load_servicefp_file(3,"./tcp-client.sig");
+   //load_servicefp_file(4,"../etc/udp-client.sig");
 
    errbuf[0] = '\0';
    /* look up an availible device if non specified */

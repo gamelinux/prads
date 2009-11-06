@@ -55,7 +55,7 @@
 #define TCP_HEADER_LEN                20
 #define UDP_HEADER_LEN                8
 #define ICMP_HEADER_LEN               4
-#define MAC_ADDR_LEN                   6
+#define MAC_ADDR_LEN                  6
 #define ETHERNET_HEADER_LEN           14
 #define ETHERNET_8021Q_HEADER_LEN     18
 #define ETHERNET_802Q1MT_HEADER_LEN   22
@@ -370,11 +370,14 @@ typedef struct _os_asset {
 } os_asset;
 
 typedef struct _signature {
-   bstring service;               /* Service (i.e. SSH, WWW, etc.) */
+   bstring           service;     /* Service (i.e. SSH, WWW, etc.) */
+   u_int16_t         port;        /* Port to check for this service, or 0 for all */
+                                  /* Should be able to spesify range, and such... */
+                                  /* Snort style : [80,8080,100-200,20-30,!22] */
    struct {                       /* Application Title, broken up into 3 parts. */
-      bstring app;
-      bstring ver;
-      bstring misc;
+      bstring        app;
+      bstring        ver;
+      bstring        misc;
    }  title;
    pcre              *regex;      /* Signature - Compiled Regular Expression */
    pcre_extra        *study;      /* Studied version of the compiled regex. */
