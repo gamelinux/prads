@@ -10,15 +10,35 @@ CREATE TABLE IF NOT EXISTS `asset` (
    `sensorID`       INT UNSIGNED NOT NULL default '0',
    `timestamp`      DATETIME NOT NULL default '0000-00-00 00:00:00',
    `ipaddress`      decimal(39,0) unsigned default NULL,
+   `mac_address`    VARCHAR(20) NOT NULL default '',
+   `mac_vendor`     VARCHAR(50) NOT NULL default '',
+   `os`             VARCHAR(20) NOT NULL default '',
+   `os_details`     VARCHAR(255) NOT NULL default '',
+   `os_fingerprint` VARCHAR(255) NOT NULL default '',
+   `link`           VARCHAR(20) NOT NULL default '',
+   `distance`       INT UNSIGNED NOT NULL default '0',
    `service`        VARCHAR(50) NOT NULL default '',
    `application`    VARCHAR(255) NOT NULL default '',
    `port`           INT UNSIGNED NOT NULL default '0',
    `protocol`       TINYINT UNSIGNED NOT NULL default '0',
-   `application`    VARCHAR(255) NOT NULL default '',
    `hex_payload`    VARCHAR(255) default '',
    UNIQUE           KEY `unique_row_key` (`ipaddress`,`port`,`protocol`,`service`,`application`),
    PRIMARY          KEY (`sensorID`,`assetID`)
 ) TYPE=InnoDB;
+
+## sqlight
+#CREATE TABLE asset (
+#  ip TEXT,
+#  service TEXT,
+#  time TEXT,
+#  fingerprint TEXT,
+#  mac TEXT,
+#  os TEXT,
+#  details TEXT,
+#  link TEXT,
+#  distance TEXT,
+#  reporting TEXT
+#)
 
 CREATE TABLE IF NOT EXISTS `protocol` (
   `protoID`         TINYINT UNSIGNED NOT NULL default '',
