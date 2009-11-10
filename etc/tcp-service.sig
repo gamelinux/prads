@@ -67,7 +67,7 @@ www,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
 www,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
 #www,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 #www,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
-www,v/$1///,Server: (.*)\r\n
+www,v/Server: $1///,Server: (.*)\r\n
 
 wwwproxy,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 wwwproxy,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]

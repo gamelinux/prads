@@ -46,22 +46,29 @@
 void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
 
    const char        *err = NULL;        /* PCRE */
-   int               erroffset,ret,rc;   /* PCRE */
+   int               erroffset,rc;   /* PCRE */
    int               ovector[15];
    extern signature  *sig_serv_tcp;
    signature         *tmpsig;
+   bstring           app;
 
-   ret = 0;
    tmpsig = sig_serv_tcp;
    while ( tmpsig != NULL ) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      ret ++;
-      if (rc != -1) {
-         char expr [100];
-         pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH SERVICE IPv4/TCP: %s - %s",(char *)bdata(tmpsig->service),expr);
-         //printf("[*] checked %d sig_serv_tcp.\n",ret);
+      if (rc >= 0) {
+         app = get_app_name(tmpsig, payload, ovector, rc);
+         printf("[*] MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
+         struct in6_addr ip_addr;
+         ip_addr.s6_addr32[0] = ip4->ip_src;
+         update_asset_service(ip_addr, tcph->src_port, ip4->ip_p, tmpsig->service, app, AF_INET);
+         bdestroy(app);
          return;
+      }
+      else if ( rc == PCRE_ERROR_NOMATCH) {
+         //printf("pcre nomatch \n");
+      }
+      else {
+         printf("pcre error: %d \n",rc);
       }
       tmpsig = tmpsig->next;
    }
@@ -69,21 +76,20 @@ void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
 
 void service_tcp6 (ip6_header *ip6, tcp_header *tcph, char *payload, int plen) {
    const char        *err = NULL;        /* PCRE */
-   int               erroffset,ret,rc;   /* PCRE */
+   int               erroffset,rc;   /* PCRE */
    int               ovector[15];
    extern signature  *sig_serv_tcp;
    signature         *tmpsig;
+   bstring           app;
 
-   ret = 0;
    tmpsig = sig_serv_tcp;
    while ( tmpsig != NULL ) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      ret ++;
-      if (rc != -1) {
-         char expr [100];
-         pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH SERVICE IPv6/TCP: %s - %s\n",(char *)bdata(tmpsig->service),expr);
-         //printf("[*] checked %d sig_serv_tcp.\n",ret);
+      if (rc >= 0) {
+         app = get_app_name(tmpsig, payload, ovector, rc);
+         printf("[*] MATCH SERVICE IPv6/TCP: %s\n",(char *)bdata(app));
+         //update_asset(ip_addr, port, proto, rec->service, app);
+         bdestroy(app);
          return;
       }
       tmpsig = tmpsig->next;

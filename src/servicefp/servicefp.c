@@ -39,6 +39,71 @@
  * Old school...
  */
 
+/* ----------------------------------------------------------
+ * FUNCTION     : strlcpy
+ * DESCRIPTION  : Replacement for strncpy.  This function is
+ *              : native in *BSD.  This function was taken
+ *              : from Secure Programming Cookbook by
+ *              : O'Reilly.
+ * INPUT        : 0 - Destination String
+ *              : 1 - Source String
+ *              : 2 - Size
+ * RETURN       : Length of String Created
+ *  ---------------------------------------------------------- */
+#ifndef HAVE_STRLCPY
+size_t
+strlcpy(char *dst, const char *src, size_t size) {
+  char       *dstptr = dst;
+  size_t     tocopy  = size;
+  const char *srcptr = src;
+
+  if (tocopy && --tocopy) {
+    do {
+      if (!(*dstptr++ = *srcptr++)) break;
+    } while (--tocopy);
+  }
+  if (!tocopy) {
+    if (size) *dstptr = 0;
+    while (*srcptr++);
+  }
+
+  return (srcptr - src - 1);
+}
+#endif
+
+/* ----------------------------------------------------------
+ * FUNCTION     : strlcat
+ * DESCRIPTION  : Replacement for strcat.  This function is
+ *              : native in *BSD.  This function was taken
+ *              : from Secure Programming Cookbook by
+ *              : O'Reilly.
+ * INPUT        : 0 - Destination String
+ *              : 1 - Source String
+ *              : 2 - Size
+ * RETURN       : Length of String Created
+ * ---------------------------------------------------------- */
+#ifndef HAVE_STRLCAT
+size_t
+strlcat(char *dst, const char *src, size_t len) {
+  char       *dstptr = dst;
+  size_t     dstlen, tocopy = len;
+  const char *srcptr = src;
+
+  while (tocopy-- && *dstptr) dstptr++;
+  dstlen = dstptr - dst;
+  if (!(tocopy = len - dstlen)) return (dstlen + strlen(src));
+  while (*srcptr) {
+    if (tocopy != 1) {
+      *dstptr++ = *srcptr;
+      tocopy--;
+    }
+    srcptr++;
+  }
+  *dstptr = 0;
+
+  return (dstlen + (srcptr - src));
+}
+#endif
 
 /* ----------------------------------------------------------
  * FUNCTION     : init_identification
@@ -183,14 +248,14 @@ int parse_raw_signature (bstring line, int lineno, int storage) {
             head = sig_serv_udp;
             sig->next  = head;
             sig_serv_udp = sig;
-         }
-        if (storage == 3) {
+         } else
+         if (storage == 3) {
             extern signature *sig_client_tcp;
             head = sig_client_tcp;
             sig->next  = head;
             sig_client_tcp = sig;
-         }
-        if (storage == 4) {
+         } else
+         if (storage == 4) {
             extern signature *sig_client_udp;
             head = sig_client_udp;
             sig->next  = head;
@@ -209,5 +274,81 @@ int parse_raw_signature (bstring line, int lineno, int storage) {
       bdestroy(pcre_string);
 
    return ret;
+}
+
+/* ----------------------------------------------------------
+ * FUNCTION     : get_app_name
+ * DESCRIPTION  : This function will take the results of a
+ *              : pcre match and compile the application name
+ *              : based off of the signature.
+ * INPUT        : 0 - Signature Pointer
+ *              : 1 - payload
+ *              : 2 - ovector
+ *              : 3 - rc (return from pcre_exec)
+ * RETURN       : processed app name
+ * ---------------------------------------------------------- */
+bstring
+get_app_name (signature *sig,
+            const char *payload,
+            int *ovector,
+            int rc)
+{
+    char sub[100];
+    char app[5000];
+    char expr[100];
+    bstring retval;
+    int i = 0;
+    int n = 0;
+    int x = 0;
+    int z = 0;
+
+    /* Create Application string using the values in signature[i].title.  */
+    if (sig->title.app != NULL) {
+        strlcpy(app, (char *)bdata(sig->title.app), MAX_APP);
+    }
+    if (sig->title.ver != NULL) {
+        if (sig->title.ver->slen > 0) {
+            strcat(app, " ");
+            strlcat(app, (char *)bdata(sig->title.ver), MAX_VER);
+        }
+    }
+    if (sig->title.misc != NULL) {
+        if (sig->title.misc->slen > 0) {
+            strcat(app, " (");
+            strlcat(app, (char *)bdata(sig->title.misc), MAX_MISC);
+            strcat(app, ")");
+        }
+    }
+
+    /* Replace $1, $2, etc. with the appropriate substring.  */
+    while (app[i] != '\0' && z < (sizeof(sub) - 1)) {
+        /* Check to see if the string contains a $? mark variable. */
+        if (app[i] == '$') {
+            /* Yes it does, replace it with the appropriate match string. */
+            i++;
+            n = atoi(&app[i]);
+
+            pcre_copy_substring(payload, ovector, rc, n, expr, sizeof(expr));
+            x = 0;
+            while (expr[x] != '\0' && z < (sizeof(sub) - 1)) {
+                sub[z] = expr[x];
+                z++;
+                x++;
+            }
+            for (x = 0; x < sizeof(expr); x++)
+                expr[x] = '\0';
+            i++;
+        } else {
+            /* No it doesn't, copy to new string. */
+            sub[z] = app[i];
+            i++;
+            z++;
+        }
+    }
+    sub[z] = '\0';
+
+    retval = bfromcstr(sub);
+    return retval;
+
 }
 

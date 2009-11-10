@@ -46,21 +46,20 @@
 void service_udp4 (ip4_header *ip4, udp_header *udph, char *payload, int plen) {
 
    const char        *err = NULL;        /* PCRE */
-   int               erroffset,ret,rc;   /* PCRE */
+   int               erroffset,rc;   /* PCRE */
    int               ovector[15];
    extern signature  *sig_serv_udp;
    signature         *tmpsig;
+   bstring           app;
 
-   ret = 0;
    tmpsig = sig_serv_udp;
    while ( tmpsig != NULL ) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      ret ++;
       if (rc != -1) {
-         char expr [100];
-         pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH IPv4/UPD: %s\n",(char *)bdata(tmpsig->title.app));
-         //printf("[*] checked %d sig_serv_udp.\n",ret);
+         app = get_app_name(tmpsig, payload, ovector, rc);
+         printf("[*] MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
+         //update_asset(ip_addr, port, proto, rec->service, app);
+         bdestroy(app);
          return;
       }
       tmpsig = tmpsig->next;
@@ -69,21 +68,20 @@ void service_udp4 (ip4_header *ip4, udp_header *udph, char *payload, int plen) {
 
 void service_udp6 (ip6_header *ip6, udp_header *udph, char *payload, int plen) {
    const char        *err = NULL;        /* PCRE */
-   int               erroffset,ret,rc;   /* PCRE */
+   int               erroffset,rc;       /* PCRE */
    int               ovector[15];
    extern signature  *sig_serv_udp;
    signature         *tmpsig;
+   bstring           app;
 
-   ret = 0;
    tmpsig = sig_serv_udp;
    while ( tmpsig != NULL ) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      ret ++;
       if (rc != -1) {
-         char expr [100];
-         pcre_copy_substring(payload, ovector, rc, 0, expr, sizeof(expr));
-         printf("[*] MATCH IPv6/UDP: %s\n",(char *)bdata(tmpsig->title.app));
-         //printf("[*] checked %d sig_serv_udp.\n",ret);
+         app = get_app_name(tmpsig, payload, ovector, rc);
+         printf("[*] MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
+         //update_asset(ip_addr, port, proto, rec->service, app);
+         bdestroy(app);
          return;
       }
       tmpsig = tmpsig->next;

@@ -40,6 +40,7 @@
 #include <errno.h>
 #include "prads.h"
 #include "misc/sys_func.c"
+#include "misc/assets.c"
 #include "cxtracking/cxt.c"
 #include "servicefp/servicefp.c"
 #include "servicefp/tcps.c"
@@ -52,6 +53,7 @@ time_t       timecnt,tstamp;
 pcap_t       *handle;
 connection   *bucket[BUCKET_SIZE];
 connection   *cxtbuffer = NULL;
+asset        *passet = NULL;
 signature    *sig_serv_tcp = NULL;
 signature    *sig_serv_udp = NULL;
 signature    *sig_client_tcp = NULL;

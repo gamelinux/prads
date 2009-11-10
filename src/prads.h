@@ -79,6 +79,10 @@
 #define INSTALL_SYSCONFDIR             ""
 #define TCP_SIGNATURE_LIST             "/../etc/tcp-service.sig" 
 
+#define MAX_APP                        100
+#define MAX_VER                        25
+#define MAX_MISC                       100
+
 /*  D A T A  S T R U C T U R E S  *********************************************/
 
 /* 
@@ -329,21 +333,6 @@ typedef struct _connection {
         struct _connection *next;
 } connection;
 
-/* Holds one entery for an ARP/NDP or IPv4/IPv6 asset */
-typedef struct _asset {
-   int                  af;               /* IP AF_INET */
-   struct in6_addr      ip_addr;          /* IP asset address */
-   unsigned char        mac_addr[MAC_ADDR_LEN];/* Asset MAC address */
-   bstring              mac_resolved;     /* Asset MAC vendor name */
-   struct serv_asset    *services;        /* Linked list with services detected */
-   struct os_asset      *os;              /* Linked list with OSes detected */
-   time_t               first_seen;       /* Time at which asset was first seen. */
-   time_t               last_seen;        /* Time at which asset was last seen. */
-   unsigned short       i_attempts;       /* Attempts at identifying the asset. */
-   struct _ip_asset     *prev;            /* Prev ip_asset structure */
-   struct _ip_asset     *next;            /* Next ip_asset structure */
-}  asset;
-
 typedef struct _serv_asset {
    time_t               first_seen;       /* Time at which service_asset was first seen. */
    time_t               last_seen;        /* Time at which service_asset was last seen. */
@@ -368,6 +357,21 @@ typedef struct _os_asset {
    struct _os_asset  *prev;               /* Prev os_asset structure */
    struct _os_asset  *next;               /* Next os_asset structure */
 } os_asset;
+
+/* Holds one entery for an ARP/NDP or IPv4/IPv6 asset */
+typedef struct _asset {
+   int                  af;               /* IP AF_INET */
+   struct in6_addr      ip_addr;          /* IP asset address */
+   unsigned char        mac_addr[MAC_ADDR_LEN];/* Asset MAC address */
+   bstring              mac_resolved;     /* Asset MAC vendor name */
+   serv_asset           *services;        /* Linked list with services detected */
+   os_asset             *os;              /* Linked list with OSes detected */
+   time_t               first_seen;       /* Time at which asset was first seen. */
+   time_t               last_seen;        /* Time at which asset was last seen. */
+   unsigned short       i_attempts;       /* Attempts at identifying the asset. */
+   struct _asset        *prev;            /* Prev ip_asset structure */
+   struct _asset        *next;            /* Next ip_asset structure */
+}  asset;
 
 typedef struct _signature {
    bstring           service;     /* Service (i.e. SSH, WWW, etc.) */
