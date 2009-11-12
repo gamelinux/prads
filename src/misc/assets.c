@@ -13,7 +13,7 @@ update_asset (int af, struct in6_addr ip_addr) {
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2]
          && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
 
-         printf("[*] ASSET Timestamp updated\n");
+         /* printf("[*] ASSET Timestamp updated\n"); */
          rec->last_seen = time(NULL);
          return;
       }
@@ -76,7 +76,7 @@ update_asset_service ( struct in6_addr ip_addr,
             new_sa->prev = NULL;
             //head_sa->prev = new_sa; <-- head_sa->prev does not exist!
             rec->services = new_sa;
-            printf("[*] ADDED NEW SERVICE ASSET\n");
+            printf("[*] ADDED NEW SERVICE TO ASSET\n");
             return 0;
          }
          while ( tmp_sa != NULL ) {
@@ -105,19 +105,22 @@ update_asset_service ( struct in6_addr ip_addr,
                new_sa->prev = NULL;
                head_sa->prev = new_sa;
                rec->services = new_sa;
-               printf("[*] ADDED NEW SERVICE ASSET\n");
+               printf("[*] ADDED NEW SERVICE TO ASSET\n");
                return 0;
             }
+         tmp_sa = tmp_sa->next;
          }
       }
    rec = rec->next;
    }
 
    if (asset_match == 1) {
-      printf("[*] NEED TO ADD SERVICE: Should not be here!\n");
+      printf("[*] NEED TO ADD SERVICE: Should not be here!\n"); // Service should have been added above
+      return 1;
    }
    else if (asset_match == 0 ) {
-      add_asset (af, ip_addr, time(NULL));
+      update_asset (af, ip_addr);
+      //add_asset (af, ip_addr, time(NULL)); // <-- this should not be nessesary!
       update_asset_service(ip_addr, port, proto, service, application, af);
       return 0;
    }
@@ -145,6 +148,7 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
    rec->af = af;
    rec->i_attempts = 0;
 
+   /* Should remove/rewrite this: */
    if (!discovered) {
       rec->first_seen = rec->last_seen = time(NULL);
    } else {
@@ -161,7 +165,82 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
    rec->prev           = NULL;
    passet = rec;
 
-   printf("[*] ASSET ADDED\n");
+   /* verbose info for sanity checking */
+   static char ip_addr_s[INET6_ADDRSTRLEN];
+   if ( af == AF_INET) {
+      if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+         perror("Something died in inet_ntop");
+   }
+   else if ( af == AF_INET6) {
+      if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+         perror("Something died in inet_ntop");
+   }
+   printf("[*] ASSET ADDED: %s\n",ip_addr_s);
+   return;
+}
+
+void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
+
+   extern asset *passet;
+   asset *rec = passet;
+   struct in6_addr ip_addr;
+   memcpy(&ip_addr.s6_addr32[0], arp_spa, sizeof(u_int8_t) * 4);
+
+   /* Check the ARP data structure for an existing entry. */
+   while ( rec != NULL ) {
+      if ( rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] ) { 
+         if ( memcmp(rec->mac_addr, arp_sha, MAC_ADDR_LEN) == 0)  {
+            /* UPDATE TIME STAMP */
+            //rec->mac_addr = ;
+            rec->last_seen = time(NULL);
+            return;
+         }
+         else {
+            /* UPDATE MAC AND TIME STAMP */
+            memcpy(&rec->mac_addr, arp_sha, MAC_ADDR_LEN);
+            rec->last_seen = time(NULL);
+            /* For verbos sanity checking */
+            static char ip_addr_s[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+            printf("[*] ADDED MAC-ADDRESS TO AN EXISTING ASSET: %s\n",ip_addr_s);
+            return;
+         }
+      }
+   rec = rec->next;
+   }
+
+   /* ELSE add arp asset */
+   asset *new = NULL;
+   //bstring mac_resolved = NULL;
+
+   new = (asset*) calloc(1,sizeof(asset));
+   new->ip_addr.s6_addr32[0] = ip_addr.s6_addr32[0];
+   new->ip_addr.s6_addr32[1] = 0;
+   new->ip_addr.s6_addr32[2] = 0;
+   new->ip_addr.s6_addr32[3] = 0;
+
+   memcpy(&new->mac_addr, arp_sha, MAC_ADDR_LEN);
+
+   /* Attempt to resolve the vendor name of the MAC address. */
+   //#ifndef DISABLE_VENDOR
+   //mac_resolved = (bstring) get_vendor(mac_addr);
+   //rec->mac_resolved = bstrcpy(mac_resolved);
+   //#else
+   new->mac_resolved = NULL;
+   //#endif
+
+   new->first_seen = time(NULL);
+   new->last_seen = time(NULL);
+
+   /* Insert ARP record into data structure. */
+   //TAILQ_INSERT_HEAD(&arpassets, rec, next);
+   new->next           = passet;
+   new->prev           = NULL;
+   passet = new;
+
+   static char ip_addr_s[INET6_ADDRSTRLEN];
+   inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+   printf("[*] ARP ASSET ADDED: %s\n",ip_addr_s);
    return;
 }
 

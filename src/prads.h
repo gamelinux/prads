@@ -30,7 +30,7 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.1.1"
+#define VERSION                       "0.1.2"
 #define TIMEOUT                       60
 #define BUCKET_SIZE                   1669 
 #define MAX_BYTE_CHECK                5000000
@@ -44,6 +44,14 @@
 #define ETHERNET_TYPE_802Q1MT2        0x9200
 #define ETHERNET_TYPE_802Q1MT3        0x9300
 #define ETHERNET_TYPE_8021AD          0x88a8
+#define ARPOP_REQUEST                 1      /* ARP request.  */
+#define ARPOP_REPLY                   2      /* ARP reply.  */
+#define ARPOP_RREQUEST                3      /* RARP request.  */
+#define ARPOP_RREPLY                  4      /* RARP reply.  */
+#define ARPOP_InREQUEST               8      /* InARP request.  */
+#define ARPOP_InREPLY                 9      /* InARP reply.  */
+#define ARPOP_NAK                     10     /* (ATM)ARP NAK.  */
+
 
 #define IP_PROTO_TCP                  6
 #define IP_PROTO_UDP                  17
@@ -131,22 +139,46 @@ typedef struct _ether_header {
 
 }       ether_header;
 
+typedef struct _arphdr {
+   unsigned short int ar_hrd;      /* Format of hardware address.  */
+   unsigned short int ar_pro;      /* Format of protocol address.  */
+   unsigned char ar_hln;           /* Length of hardware address.  */
+   unsigned char ar_pln;           /* Length of protocol address.  */
+   unsigned short int ar_op;       /* ARP opcode (command).  */
+#if 0
+   /* Ethernet looks like this : This bit is variable sized
+      however...  */
+   unsigned char __ar_sha[MAC_ADDR_LEN];  /* Sender hardware address.  */
+   unsigned char __ar_sip[4];             /* Sender IP address.  */
+   unsigned char __ar_tha[MAC_ADDR_LEN];  /* Target hardware address.  */
+   unsigned char __ar_tip[4];             /* Target IP address.  */
+#endif
+}  arphdr;
+
+typedef struct _ether_arp {
+   arphdr   ea_hdr;                 /* fixed-size header */
+   u_int8_t arp_sha[MAC_ADDR_LEN];  /* sender hardware address */
+   u_int8_t arp_spa[4];             /* sender protocol address */
+   u_int8_t arp_tha[MAC_ADDR_LEN];  /* target hardware address */
+   u_int8_t arp_tpa[4];             /* target protocol address */
+}  ether_arp;
+
 /* 
  * IPv4 header
  */
 
 typedef struct _ip4_header {
-        uint8_t  ip_vhl;                 /* version << 4 | header length >> 2 */
-        uint8_t  ip_tos;                 /* type of service */
-        uint16_t ip_len;                 /* total length */
-        uint16_t ip_id;                  /* identification */
-        uint16_t ip_off;                 /* fragment offset field */
-        uint8_t  ip_ttl;                 /* time to live */
-        uint8_t  ip_p;                   /* protocol */
-        uint16_t ip_csum;                /* checksum */
-        uint32_t ip_src;                 /* source address */
-        uint32_t ip_dst;                 /* dest address */
-}       ip4_header;
+   uint8_t  ip_vhl;                 /* version << 4 | header length >> 2 */
+   uint8_t  ip_tos;                 /* type of service */
+   uint16_t ip_len;                 /* total length */
+   uint16_t ip_id;                  /* identification */
+   uint16_t ip_off;                 /* fragment offset field */
+   uint8_t  ip_ttl;                 /* time to live */
+   uint8_t  ip_p;                   /* protocol */
+   uint16_t ip_csum;                /* checksum */
+   uint32_t ip_src;                 /* source address */
+   uint32_t ip_dst;                 /* dest address */
+}  ip4_header;
 
 #define IP_RF 0x8000                     /* reserved fragment flag */
 #define IP_DF 0x4000                     /* dont fragment flag */

@@ -126,12 +126,16 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             /* fp_tcp(ip, ttl, ipopts, len, id, ipflags, df); */
             //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
-         } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
+            update_asset(AF_INET,ip_src);
+         } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
+            update_asset(AF_INET,ip_src);
+         } else if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
+            update_asset(AF_INET,ip_src);
          }
          if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
-            update_asset(AF_INET,ip_src);
+            //update_asset(AF_INET,ip_src);
             char *payload;
             payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + TCP_HEADER_LEN);
             if (s_check == 2) {
@@ -223,15 +227,15 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             char *payload;
             payload = (char *) (packet + eth_header_len + sizeof(ip6_header) );
             if (s_check == 2) {
-               printf("[*] - CHECKING TCP SERVER PACKAGE\n");
+               /* printf("[*] - CHECKING TCP SERVER PACKAGE\n"); */
                service_tcp6(ip6,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
             }
             else {
-               printf("[*] - CHECKING TCP CLIENT PACKAGE\n");
+               /* printf("[*] - CHECKING TCP CLIENT PACKAGE\n"); */
                client_tcp6(ip6,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
             }
          }else{
-            printf("[*] - NOT CHECKING TCP PACKAGE\n");
+            /* printf("[*] - NOT CHECKING TCP PACKAGE\n"); */
          }
          inpacket = 0;
          return;
@@ -244,14 +248,14 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          s_check = cx_track(ip6->ip_src, udph->src_port, ip6->ip_dst, udph->dst_port,
                             ip6->next, ip6->len, 0, tstamp, AF_INET6);
          if (s_check != 0) {
-            printf("[*] - CHECKING UDP PACKAGE\n");
+            /* printf("[*] - CHECKING UDP PACKAGE\n"); */
             update_asset(AF_INET6,ip6->ip_src);
          /* fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); */
             char *payload;
             payload = (char *) (packet + eth_header_len + sizeof(ip6_header) );
             service_udp6(ip6,udph,payload,(pheader->caplen - sizeof(udp_header) - eth_header_len));
          }else{
-            printf("[*] - NOT CHECKING UDP PACKAGE\n");
+            /* printf("[*] - NOT CHECKING UDP PACKAGE\n"); */
          }
          inpacket = 0;
          return;
@@ -291,10 +295,18 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          return;
       }
    }
-   if ( ntohs(eth_type) == ETHERNET_TYPE_ARP ) {
-      printf("[*] Got ARP Packet...\n"); 
-      /* update_asset_arp(); */
+   if ( eth_type == ETHERNET_TYPE_ARP ) {
+      /* printf("[*] Got ARP Packet...\n"); */
+      ether_arp *arph;
+      arph = (ether_arp *)(packet + eth_header_len);
+
+      if (ntohs(arph->ea_hdr.ar_op) == ARPOP_REPLY) {
+         update_asset_arp(arph->arp_sha,arph->arp_spa); 
       /* arp_check(eth_hdr,tstamp); */
+      }
+      else {
+         /* printf("ARP TYPE: %d\n",ntohs(arph->ea_hdr.ar_op)); */
+      }
       return;
    }
 
