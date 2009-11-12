@@ -68,7 +68,6 @@ int   verbose,inpacket,gameover,use_syslog,intr_flag,s_check;
 
 /*  I N T E R N A L   P R O T O T Y P E S  ************************************/
 static void usage();
-static void check_interupt();
 
 /* F U N C T I O N S  *********************************************************/
 
@@ -318,10 +317,6 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
    /* } */
 }
 
-static void check_interupt() {
-   return;
-}
-
 static void usage() {
     printf("USAGE:\n");
     printf(" $ prads [options]\n");
@@ -356,9 +351,9 @@ int main(int argc, char *argv[]) {
    inpacket = gameover = intr_flag = 0;
    timecnt = time(NULL);
 
-   //signal(SIGTERM, game_over);
-   //signal(SIGINT,  game_over);
-   //signal(SIGQUIT, game_over);
+   signal(SIGTERM, game_over);
+   signal(SIGINT,  game_over);
+   signal(SIGQUIT, game_over);
    signal(SIGALRM, end_sessions);
 
    while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:v")) != -1)

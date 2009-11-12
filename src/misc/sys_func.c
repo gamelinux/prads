@@ -3,6 +3,9 @@ static int set_chroot(void);
 static int drop_privs(void);
 static int is_valid_path(char *path);
 static int create_pid_file(char *path, char *filename);
+void game_over();
+void end_all_sessions();
+void del_assets (int ctime);
 int daemonize();
 static int go_daemon();
 
@@ -14,6 +17,38 @@ void bucket_keys_NULL() {
       bucket[cxkey] = NULL;
    }
 }
+
+void check_interupt() {
+   extern int intr_flag;
+
+   if ( intr_flag == 1 ) {
+      game_over();
+   }
+/*   else if ( intr_flag == 2 ) {
+      dump_active();
+   }
+   else if ( intr_flag == 3 ) {
+      set_end_sessions();
+   }
+   else {
+      intr_flag = 0;
+   }*/
+}
+
+void game_over() {
+   extern int inpacket,intr_flag;
+   
+   if ( inpacket == 0 ) {
+      extern pcap_t *handle;
+      end_all_sessions();
+      pcap_close(handle);
+      //del_assets(0);
+      printf("\nprads ended\n");
+      exit (0);
+   }
+   intr_flag = 1;
+}
+
 
 static int set_chroot(void) {
    char *absdir;

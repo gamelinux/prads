@@ -1,6 +1,9 @@
 //#include "prads.h"
 
 void add_asset (int af, struct in6_addr ip_addr, time_t discovered);
+void del_asset (asset *passet, asset **bucket_ptr);
+void del_os_assets (asset *passet);
+void del_serv_assets (asset *passet);
 
 /* looks to see if asset exists and update timestamp. If not, create the asset */
 update_asset (int af, struct in6_addr ip_addr) {
@@ -56,6 +59,7 @@ update_asset_service ( struct in6_addr ip_addr,
       if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1] 
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
          printf("[*] FOUND ASSET\n");
+         rec->last_seen = time(NULL);
          asset_match = 1;
          serv_asset *tmp_sa = NULL;
          serv_asset *head_sa = NULL;
@@ -242,5 +246,84 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
    inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
    printf("[*] ARP ASSET ADDED: %s\n",ip_addr_s);
    return;
+}
+
+void del_assets (int ctime) {
+   extern asset *passet;
+   time_t check_time = time(NULL);
+   //extern asset *bucket[BUCKET_SIZE];
+   //for ( int akey = 0; akey < BUCKET_SIZE; akey++ ) {
+   //   passet = bucket[akey];
+   //   xpir = 0;
+   while ( passet != NULL ) {
+      if ( (passet->last_seen - check_time) >= ctime ) {
+         del_serv_assets(passet);
+         del_os_assets(passet);
+         //del_asset(passet, &bucket[akey]);
+      }
+   }   
+}
+
+void del_os_assets (asset *passet) {
+   os_asset *tmp_oa = NULL;
+   os_asset *next_oa = NULL;
+   tmp_oa = passet->os;
+
+   while ( tmp_oa != NULL ) {
+      bdestroy(tmp_oa->vendor);
+      bdestroy(tmp_oa->os);
+      bdestroy(tmp_oa->detection);
+      bdestroy(tmp_oa->raw_fp);
+      bdestroy(tmp_oa->matched_fp);
+
+      next_oa = tmp_oa->next;
+      free(tmp_oa);
+      tmp_oa=NULL;
+      tmp_oa = next_oa;
+   }
+   return;
+
+}
+
+void del_serv_assets (asset *passet) {
+   
+   serv_asset *tmp_sa = NULL;
+   serv_asset *next_sa = NULL;
+   tmp_sa = passet->services;
+
+   while ( tmp_sa != NULL ) {
+printf("A\n");
+      bdestroy(tmp_sa->service);
+      bdestroy(tmp_sa->application);
+      next_sa = tmp_sa->next;
+      free(tmp_sa);
+      tmp_sa=NULL;
+      tmp_sa = next_sa;
+   }
+   return;
+}
+
+void del_asset (asset *passet, asset **bucket_ptr ){
+   /* remove cxt from bucket */
+   asset *prev = passet->prev; /* OLDER connections */
+   asset *next = passet->next; /* NEWER connections */
+   if(prev == NULL){
+      // beginning of list
+      *bucket_ptr = next;
+      // not only entry
+      if(next)
+         next->prev = NULL;
+   } else if(next == NULL){
+      // at end of list!
+      prev->next = NULL;
+   } else {
+      // a node.
+      prev->next = next;
+      next->prev = prev;
+   }
+
+   /* Free and set to NULL */
+   free(passet);
+   passet=NULL;
 }
 
