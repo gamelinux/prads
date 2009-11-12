@@ -6,6 +6,10 @@ void move_connection (connection*, connection**);
 
 /* For prads, I guess cx_track needs to return a value, which can
  * be used for evaluating if we should do some fingerprinting
+ * I suggest:
+ * 0 : NEVER CHECK PACKAGE
+ * 1 : Check package - (Package commes from Client)
+ * 2 : Check package - (Package commes from Server)
  */
 
 /* void cx_track(uint64_t ip_src,uint16_t src_port,uint64_t ip_dst,uint16_t dst_port,
@@ -18,10 +22,10 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
    connection *head = NULL;
    uint64_t hash;
 
-   if (af = AF_INET) {
+   if (af == AF_INET) {
       hash = (( ip_src.s6_addr32[0] + ip_dst.s6_addr32[0] )) % BUCKET_SIZE;
    } else 
-   if (af = AF_INET6) {
+   if (af == AF_INET6) {
       hash = ((  ip_src.s6_addr32[0] + ip_src.s6_addr32[1] + ip_src.s6_addr32[2] + ip_src.s6_addr32[3]
                + ip_dst.s6_addr32[0] + ip_dst.s6_addr32[1] + ip_dst.s6_addr32[2] + ip_dst.s6_addr32[3]
              )) % BUCKET_SIZE;
@@ -31,55 +35,73 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
    head = cxt;
 
    while ( cxt != NULL ) {
-      if (af = AF_INET) {
-//         if ( cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0] && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0] 
-//              && cxt->s_port == src_port && cxt->d_port == dst_port ) {
-         if ( memcmp(&cxt->s_ip,&ip_src,4) && memcmp(&cxt->d_ip,&ip_dst,4) && cxt->s_port == src_port && cxt->d_port == dst_port ) {
+      if (af == AF_INET) {
+         if ( cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0] && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0] 
+              && cxt->s_port == src_port && cxt->d_port == dst_port ) {
             cxt->s_tcpFlags    |= tcpflags;
             cxt->s_total_bytes += p_bytes;
             cxt->s_total_pkts  += 1;
             cxt->last_pkt_time  = tstamp;
             if (cxt->s_total_bytes > MAX_BYTE_CHECK || cxt->s_total_pkts > MAX_PKT_CHECK) {
-               return 1;
+               return 0; // Dont check!
             }
-            return 0;
+            return 1; // Client should send the first packet (TCP/SYN - UDP?), hence this is a client
          }
-//         else if ( cxt->s_ip6.s6_addr32[0] == ip_dst && cxt->d_ip6.s6_addr32[0] == ip_src
-//                   && cxt->d_port == src_port && cxt->s_port == dst_port ) {
-         else if ( memcmp(&cxt->s_ip,&ip_dst,4) && memcmp(&cxt->d_ip,&ip_src,4) && cxt->d_port == src_port && cxt->s_port == dst_port ) {
+         else if ( cxt->s_ip.s6_addr32[0] == ip_dst.s6_addr32[0] && cxt->d_ip.s6_addr32[0] == ip_src.s6_addr32[0]
+                   && cxt->d_port == src_port && cxt->s_port == dst_port ) {
             cxt->d_tcpFlags    |= tcpflags;
             cxt->d_total_bytes += p_bytes;
             cxt->d_total_pkts  += 1;
             cxt->last_pkt_time  = tstamp;
             if (cxt->d_total_bytes > MAX_BYTE_CHECK || cxt->d_total_pkts > MAX_PKT_CHECK) {
-               return 1;
+               return 0; // Dont check!
             }
-            return 0;
+            return 2; // This should be a server (Maybe not when we start up but in the long run)
          }
-      } else
-      if (af = AF_INET) {
-            if ( memcmp(&cxt->s_ip,&ip_src,16) && memcmp(&cxt->d_ip,&ip_dst,16) &&
-                 cxt->s_port == src_port && cxt->d_port == dst_port ) {
+      }
+      else if (af == AF_INET6) {
+         if (  cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0]
+            && cxt->s_ip.s6_addr32[1] == ip_src.s6_addr32[1]
+            && cxt->s_ip.s6_addr32[2] == ip_src.s6_addr32[2]
+            && cxt->s_ip.s6_addr32[3] == ip_src.s6_addr32[3]
+
+            && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
+            && cxt->d_ip.s6_addr32[1] == ip_dst.s6_addr32[1]
+            && cxt->d_ip.s6_addr32[2] == ip_dst.s6_addr32[2]
+            && cxt->d_ip.s6_addr32[3] == ip_dst.s6_addr32[3]
+
+            && cxt->s_port == src_port && cxt->d_port == dst_port ) {
+
                cxt->s_tcpFlags    |= tcpflags;
                cxt->s_total_bytes += p_bytes;
                cxt->s_total_pkts  += 1;
                cxt->last_pkt_time  = tstamp;
                if (cxt->s_total_bytes > MAX_BYTE_CHECK || cxt->s_total_pkts > MAX_PKT_CHECK) {
-                  return 1;
+                  return 0; // Dont Check!
                }
-               return 0;
-            } else
-            if ( memcmp(&cxt->s_ip,&ip_dst,16) && memcmp(&cxt->d_ip,&ip_src,16) &&
-                 cxt->d_port == src_port && cxt->s_port == dst_port ) {
+               return 1; // Client
+         } 
+         else if (  cxt->s_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
+                 && cxt->s_ip.s6_addr32[1] == ip_dst.s6_addr32[1]
+                 && cxt->s_ip.s6_addr32[2] == ip_dst.s6_addr32[2]
+                 && cxt->s_ip.s6_addr32[3] == ip_dst.s6_addr32[3]
+
+                 && cxt->d_ip.s6_addr32[0] == ip_src.s6_addr32[0]
+                 && cxt->d_ip.s6_addr32[1] == ip_src.s6_addr32[1]
+                 && cxt->d_ip.s6_addr32[2] == ip_src.s6_addr32[2]
+                 && cxt->d_ip.s6_addr32[3] == ip_src.s6_addr32[3]
+                 
+                 && cxt->d_port == src_port && cxt->s_port == dst_port ) {
+
                cxt->d_tcpFlags    |= tcpflags;
                cxt->d_total_bytes += p_bytes;
                cxt->d_total_pkts  += 1;
                cxt->last_pkt_time  = tstamp;
                if (cxt->d_total_bytes > MAX_BYTE_CHECK || cxt->d_total_pkts > MAX_PKT_CHECK) {
-                  return 1;
+                  return 0; // Dont Check!
                }
-               return 0;
-            }
+               return 2; // Server
+         }
       }
       cxt = cxt->next;
    }
@@ -124,8 +146,8 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
       /* New connections are pushed on to the head of bucket[s_hash] */
       bucket[hash] = cxt;
 
-      /* Return value should be 0, telling to do service fingerprinting */
-      return 0;
+      /* Return value should be 1, telling to do client service fingerprinting */
+      return 1; // Client - check!
    }
    /* Should never be here! */
    return 0;

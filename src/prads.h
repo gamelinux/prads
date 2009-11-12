@@ -33,7 +33,7 @@
 #define VERSION                       "0.1.1"
 #define TIMEOUT                       60
 #define BUCKET_SIZE                   1669 
-#define MAX_BYTE_CHECK                500000
+#define MAX_BYTE_CHECK                5000000
 #define MAX_PKT_CHECK                 20
 
 #define ETHERNET_TYPE_IP              0x0800

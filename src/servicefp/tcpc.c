@@ -57,7 +57,7 @@ void client_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
       if (rc != -1) {
          app = get_app_name(tmpsig, payload, ovector, rc);
-         printf("[*] MATCH CLIENT IPv4/TCP: %s\n",(char *)bdata(app));
+         printf("[*] - MATCH CLIENT IPv4/TCP: %s\n",(char *)bdata(app));
          struct in6_addr ip_addr;
          ip_addr.s6_addr32[0] = ip4->ip_src;
          update_asset_service(ip_addr, tcph->src_port, ip4->ip_p, tmpsig->service, app, AF_INET);
@@ -81,7 +81,7 @@ void client_tcp6 (ip6_header *ip6, tcp_header *tcph, char *payload, int plen) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
       if (rc != -1) {
          app = get_app_name(tmpsig, payload, ovector, rc);
-         printf("[*] MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
+         printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
          //update_asset(ip_addr, port, proto, rec->service, app);
          bdestroy(app);
          return;

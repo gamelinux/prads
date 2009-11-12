@@ -129,13 +129,18 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
          }
-         if (s_check == 0) { 
+         if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
             update_asset(AF_INET,ip_src);
             char *payload;
             payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + TCP_HEADER_LEN);
-            service_tcp4(ip4,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
-            client_tcp4(ip4,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
+            if (s_check == 2) {
+               service_tcp4(ip4,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
+            }
+            /* if (s_check == 1) { */
+            else {
+               client_tcp4(ip4,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
+            }
          }else{
             //printf("[*] - NOT CHECKING TCP PACKAGE\n");
          } 
@@ -148,7 +153,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          /* printf("[*] IPv4 PROTOCOL TYPE UDP:\n"); */
 
          s_check = cx_track(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
-         if (s_check == 0) {
+         if (s_check != 0) {
             //printf("[*] - CHECKING UDP PACKAGE\n");
             update_asset(AF_INET,ip_src);
             char *payload;
@@ -167,13 +172,13 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          /* printf("[*] IP PROTOCOL TYPE ICMP\n"); */
 
          s_check = cx_track(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
-         if (s_check == 0) {
-            printf("[*] - CHECKING ICMP PACKAGE\n");
+         if (s_check != 0) {
+            /* printf("[*] - CHECKING ICMP PACKAGE\n"); */
             update_asset(AF_INET,ip_src);
          /* service_icmp(*ip4,*tcph) */
          /* fp_icmp(ip, ttl, ipopts, len, id, ipflags, df); */
          }else{
-            printf("[*] - NOT CHECKING ICMP PACKAGE\n");
+            /* printf("[*] - NOT CHECKING ICMP PACKAGE\n"); */
          }
          inpacket = 0;
          return;
@@ -182,13 +187,13 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); 
 
          s_check  = cx_track(ip_src, 0, ip_dst, 0, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
-         if (s_check == 0) {
-            printf("[*] - CHECKING OTHER PACKAGE\n");
+         if (s_check != 0) {
+            /* printf("[*] - CHECKING OTHER PACKAGE\n"); */
             update_asset(AF_INET,ip_src);
          /* service_other(*ip4,*tcph) */
          /* fp_other(ip, ttl, ipopts, len, id, ipflags, df); */
          }else{
-            printf("[*] - NOT CHECKING OTHER PACKAGE\n");
+            /* printf("[*] - NOT CHECKING OTHER PACKAGE\n"); */
          }
          inpacket = 0;
          return;
@@ -196,28 +201,35 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
    }
 
    else if ( eth_type == ETHERNET_TYPE_IPV6) {
-      printf("[*] Got IPv6 Packet...\n"); 
+      /* printf("[*] Got IPv6 Packet...\n"); */
       ip6_header *ip6;
       ip6 = (ip6_header *) (packet + eth_header_len);
       if ( ip6->next == IP_PROTO_TCP ) {
          tcp_header *tcph;
-         tcph = (tcp_header *) (packet + eth_header_len + ip6->len);
+         tcph = (tcp_header *) (packet + eth_header_len + IP6_HEADER_LEN);
          /* printf("[*] IPv6 PROTOCOL TYPE TCP:\n"); */
 
          s_check = cx_track(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port,
                             ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             /* fp_tcp(ip6, ttl, ipopts, len, id, ipflags, df); */
-            printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
+            /* printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port)); */
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
-            printf("[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
+            /* printf("[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port)); */
          }
-         if (s_check == 0) {
-            printf("[*] - CHECKING TCP PACKAGE\n");
+         if (s_check != 0) {
+            /* printf("[*] - CHECKING TCP PACKAGE\n"); */
             update_asset(AF_INET6,ip6->ip_src);
             char *payload;
             payload = (char *) (packet + eth_header_len + sizeof(ip6_header) );
-            service_tcp6(ip6,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
+            if (s_check == 2) {
+               printf("[*] - CHECKING TCP SERVER PACKAGE\n");
+               service_tcp6(ip6,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
+            }
+            else {
+               printf("[*] - CHECKING TCP CLIENT PACKAGE\n");
+               client_tcp6(ip6,tcph,payload,(pheader->caplen - (TCP_OFFSET(tcph))*4 - eth_header_len));
+            }
          }else{
             printf("[*] - NOT CHECKING TCP PACKAGE\n");
          }
@@ -226,12 +238,12 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       }
       else if (ip6->next == IP_PROTO_UDP) {
          udp_header *udph;
-         udph = (udp_header *) (packet + eth_header_len + ip6->len);
+         udph = (udp_header *) (packet + eth_header_len + IP6_HEADER_LEN);
          /* printf("[*] IPv6 PROTOCOL TYPE UDP:\n"); */
 
          s_check = cx_track(ip6->ip_src, udph->src_port, ip6->ip_dst, udph->dst_port,
                             ip6->next, ip6->len, 0, tstamp, AF_INET6);
-         if (s_check == 0) {
+         if (s_check != 0) {
             printf("[*] - CHECKING UDP PACKAGE\n");
             update_asset(AF_INET6,ip6->ip_src);
          /* fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); */
@@ -246,18 +258,18 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       }
       else if (ip6->next == IP6_PROTO_ICMP) {
          icmp6_header *icmph;
-         icmph = (icmp6_header *) (packet + eth_header_len + ip6->len);
+         icmph = (icmp6_header *) (packet + eth_header_len + IP6_HEADER_LEN);
          /* printf("[*] IPv6 PROTOCOL TYPE ICMP\n"); */
 
          s_check = cx_track(ip6->ip_src, ip6->hop_lmt, ip6->ip_dst,
                             ip6->hop_lmt, ip6->next, ip6->len, 0, tstamp, AF_INET6);
-         if (s_check == 0) {
-            printf("[*] - CHECKING ICMP PACKAGE\n");
+         if (s_check != 0) {
+            /* printf("[*] - CHECKING ICMP PACKAGE\n"); */
             update_asset(AF_INET6,ip6->ip_src);
          /* service_icmp(*ip6,*tcph) */
          /* fp_icmp(ip6, ttl, ipopts, len, id, ipflags, df); */
          }else{
-            printf("[*] - NOT CHECKING ICMP PACKAGE\n");
+            /* printf("[*] - NOT CHECKING ICMP PACKAGE\n"); */
          }
          inpacket = 0;
          return;
@@ -267,7 +279,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check = cx_track(ip6->ip_src, 0, ip6->ip_dst, 0,
                             ip6->next, ip6->len, 0, tstamp, AF_INET6);
-         if (s_check == 0) {
+         if (s_check != 0) {
          /* printf("[*] - CHECKING OTHER PACKAGE\n"); */
             update_asset(AF_INET6,ip6->ip_src);
          /* service_other(*ip4,*tcph) */

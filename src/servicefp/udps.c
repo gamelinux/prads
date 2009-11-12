@@ -57,7 +57,7 @@ void service_udp4 (ip4_header *ip4, udp_header *udph, char *payload, int plen) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
       if (rc != -1) {
          app = get_app_name(tmpsig, payload, ovector, rc);
-         printf("[*] MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
+         printf("[*] - MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
          //update_asset(ip_addr, port, proto, rec->service, app);
          bdestroy(app);
          return;
@@ -79,7 +79,7 @@ void service_udp6 (ip6_header *ip6, udp_header *udph, char *payload, int plen) {
       rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
       if (rc != -1) {
          app = get_app_name(tmpsig, payload, ovector, rc);
-         printf("[*] MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
+         printf("[*] - MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
          //update_asset(ip_addr, port, proto, rec->service, app);
          bdestroy(app);
          return;
