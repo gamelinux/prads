@@ -80,7 +80,19 @@ update_asset_service ( struct in6_addr ip_addr,
             new_sa->prev = NULL;
             //head_sa->prev = new_sa; <-- head_sa->prev does not exist!
             rec->services = new_sa;
-            printf("[*] ADDED NEW SERVICE TO ASSET\n");
+
+            /* verbose info for sanity checking */
+            static char ip_addr_s[INET6_ADDRSTRLEN];
+            if ( af == AF_INET) {
+               if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+                  perror("Something died in inet_ntop");
+            }
+            else if ( af == AF_INET6) {
+               if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+                  perror("Something died in inet_ntop");
+            }
+            printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+
             return 0;
          }
          while ( tmp_sa != NULL ) {
@@ -109,7 +121,19 @@ update_asset_service ( struct in6_addr ip_addr,
                new_sa->prev = NULL;
                head_sa->prev = new_sa;
                rec->services = new_sa;
-               printf("[*] ADDED NEW SERVICE TO ASSET\n");
+
+               /* verbose info for sanity checking */
+               static char ip_addr_s[INET6_ADDRSTRLEN];
+               if ( af == AF_INET) {
+                  if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+                     perror("Something died in inet_ntop");
+               }
+               else if ( af == AF_INET6) {
+                  if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+                     perror("Something died in inet_ntop");
+               }
+               printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+
                return 0;
             }
          tmp_sa = tmp_sa->next;

@@ -92,7 +92,6 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       eth_type = ntohs(eth_hdr->eth_8_ip_type); 
       eth_header_len +=4;
    }
-
    else if ( eth_type == (ETHERNET_TYPE_802Q1MT|ETHERNET_TYPE_802Q1MT2|ETHERNET_TYPE_802Q1MT3|ETHERNET_TYPE_8021AD) ) {
       /* printf("[*] ETHERNET TYPE 802Q1MT\n"); */
       eth_type = ntohs(eth_hdr->eth_82_ip_type);
@@ -279,22 +278,23 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       }
       else {
          printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n",ip6->next); 
-
+         /*
          s_check = cx_track(ip6->ip_src, 0, ip6->ip_dst, 0,
                             ip6->next, ip6->len, 0, tstamp, AF_INET6);
-         if (s_check != 0) {
+         */
+         /* if (s_check != 0) { */
          /* printf("[*] - CHECKING OTHER PACKAGE\n"); */
-            update_asset(AF_INET6,ip6->ip_src);
+         /*   update_asset(AF_INET6,ip6->ip_src); */
          /* service_other(*ip4,*tcph) */
          /* fp_other(ip, ttl, ipopts, len, id, ipflags, df); */
-         }else{
+         /* }else{ */
          /*  printf("[*] - NOT CHECKING OTHER PACKAGE\n"); */
-         }
+         /* } */
          inpacket = 0;
          return;
       }
    }
-   if ( eth_type == ETHERNET_TYPE_ARP ) {
+   else if ( eth_type == ETHERNET_TYPE_ARP ) {
       /* printf("[*] Got ARP Packet...\n"); */
       ether_arp *arph;
       arph = (ether_arp *)(packet + eth_header_len);
@@ -306,15 +306,14 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       else {
          /* printf("ARP TYPE: %d\n",ntohs(arph->ea_hdr.ar_op)); */
       }
+      inpacket = 0;
       return;
    }
-
-   inpacket = 0;
-   return;
-   /* else { */
+   else {
       /* printf("[*] ETHERNET TYPE : %x\n", eth_hdr->eth_ip_type); */
-   /*   return; */
-   /* } */
+      inpacket = 0;
+      return;
+   }
 }
 
 static void usage() {

@@ -56,7 +56,11 @@
 #define IP_PROTO_TCP                  6
 #define IP_PROTO_UDP                  17
 #define IP_PROTO_ICMP                 1
+#define IP6_PROTO_HOPOPT              0
+#define IP6_PROTO_ROUTE               43
+#define IP6_PROTO_FRAG                44
 #define IP6_PROTO_ICMP                58
+#define IP6_PROTO_NONXT               59
 
 #define IP4_HEADER_LEN                20
 #define IP6_HEADER_LEN                40
