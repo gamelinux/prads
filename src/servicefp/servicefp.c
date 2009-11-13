@@ -132,6 +132,7 @@ int load_servicefp_file(int storage, char *sigfile) {
    /* Open Signature File */
    if ((fp = fopen((char *)bdata(filename), "r")) == NULL) {
       printf("Unable to open signature file - %s", bdata(filename));
+      return 1;
    }
 
    /* Read file into 'filedata' and process it accordingly. */
@@ -177,6 +178,7 @@ int parse_raw_signature (bstring line, int lineno, int storage) {
       return -1;
 
    /* Split Line */
+   //if ((raw_sig = bsplitstr(line, bformat("||") )) == NULL)
    if ((raw_sig = bsplit(line, ',')) == NULL)
       return -1;
 
@@ -187,6 +189,7 @@ int parse_raw_signature (bstring line, int lineno, int storage) {
    } else if (raw_sig->qty > 3) {
       pcre_string = bstrcpy(raw_sig->entry[2]);
       for (i = 3; i < raw_sig->qty; i++) {
+         //bstring tmp = bfromcstr("||");
          bstring tmp = bfromcstr(",");
          if ((bconcat(pcre_string, tmp)) == BSTR_ERR)
             ret = -1;

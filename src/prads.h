@@ -385,7 +385,7 @@ typedef struct _os_asset {
    bstring           detection;           /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
    bstring           raw_fp;              /* The raw fingerprint [*:*:*:*:*:*:....] */
    bstring           matched_fp;          /* The FP that matched [*:*:*:*.*:*:---] */
-   unsigned short    i_attempts;          /* Attempts at identifying the os_asset. */
+   unsigned short    i_attempts;          /* Failed attempts at identifying the os_asset. (hench just unknown) */
    struct _os_asset  *prev;               /* Prev os_asset structure */
    struct _os_asset  *next;               /* Next os_asset structure */
 } os_asset;
@@ -410,10 +410,12 @@ typedef struct _signature {
    u_int16_t         port;        /* Port to check for this service, or 0 for all */
                                   /* Should be able to spesify range, and such... */
                                   /* Snort style : [80,8080,100-200,20-30,!22] */
+                                  /* Not sure how to do that... yet.... */
+
    struct {                       /* Application Title, broken up into 3 parts. */
-      bstring        app;
-      bstring        ver;
-      bstring        misc;
+      bstring        app;         /* Application */
+      bstring        ver;         /* Version */
+      bstring        misc;        /* Misc info */
    }  title;
    pcre              *regex;      /* Signature - Compiled Regular Expression */
    pcre_extra        *study;      /* Studied version of the compiled regex. */
