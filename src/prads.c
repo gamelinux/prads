@@ -42,6 +42,8 @@
 #include "misc/sys_func.c"
 #include "misc/assets.c"
 #include "cxtracking/cxt.c"
+#include "ipfp/ipfp.c"
+#include "ipfp/tcp_fp.c"
 #include "servicefp/servicefp.c"
 #include "servicefp/tcps.c"
 #include "servicefp/tcpc.c"
@@ -122,13 +124,40 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                             ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
 
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
-            /* fp_tcp(ip, ttl, ipopts, len, id, ipflags, df); */
-            //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
             update_asset(AF_INET,ip_src);
+            /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_tcp4(ip4, tcph, end_ptr, TF_SYN);
+            //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
             update_asset(AF_INET,ip_src);
+           /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_tcp4(ip4, tcph, end_ptr, TF_SYNACK);
          } else if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
+            //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
+           /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_tcp4(ip4, tcph, end_ptr, TF_ACK);
             update_asset(AF_INET,ip_src);
          }
          if (s_check != 0) { 
@@ -411,7 +440,7 @@ int main(int argc, char *argv[]) {
    if (dev == 0x0) dev = pcap_lookupdev(errbuf);
    printf("[*] Device: %s\n", dev);
 
-   if ((handle = pcap_open_live(dev, 65535, 1, 500, errbuf)) == NULL) {
+   if ((handle = pcap_open_live(dev, SNAPLENGTH, 1, 500, errbuf)) == NULL) {
       printf("[*] Error pcap_open_live: %s \n", errbuf);
       exit(1);
    }

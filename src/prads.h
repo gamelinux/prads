@@ -33,6 +33,7 @@
 #define VERSION                       "0.1.2"
 #define TIMEOUT                       60
 #define BUCKET_SIZE                   1669 
+#define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
 #define MAX_PKT_CHECK                 20
 
@@ -83,6 +84,33 @@
 #define TF_SYNACK                     0x12
 #define TF_NORESERVED (TF_FIN|TF_SYN|TF_RST|TF_PUSH|TF_ACK|TF_URG)
 #define TF_FLAGS      (TF_FIN|TF_SYN|TF_RST|TF_ACK|TF_URG|TF_ECE|TF_CWR)
+
+#define QUIRK_PAST                    0x00000001 /* P */
+#define QUIRK_ZEROID                  0x00000002 /* Z */
+#define QUIRK_IPOPT                   0x00000004 /* I */
+#define QUIRK_URG                     0x00000008 /* U */ 
+#define QUIRK_X2                      0x00000010 /* X */ 
+#define QUIRK_ACK                     0x00000020 /* A */ 
+#define QUIRK_T2                      0x00000040 /* T */
+#define QUIRK_FLAGS                   0x00000080 /* F */
+#define QUIRK_DATA                    0x00000100 /* D */
+#define QUIRK_BROKEN                  0x00000200 /* ! */
+#define QUIRK_RSTACK                  0x00000400 /* K */
+#define QUIRK_SEQEQ                   0x00000800 /* Q */
+#define QUIRK_SEQ0                    0x00001000 /* 0 */
+
+/* Some systems really like to put lots of NOPs there */
+#define MAXOPT                        16 /* Maximum number of TCP packet options to pars */
+
+/* The meaning of wildcard is, however, hardcoded as 'size > PACKET_BIG' */
+#define PACKET_BIG                    100 /* Size limit for size wildcards */
+
+#define TCPOPT_EOL                    0 /* End of options */
+#define TCPOPT_NOP                    1 /* Nothing */
+#define TCPOPT_MAXSEG                 2 /* MSS */
+#define TCPOPT_WSCALE                 3 /* Window scaling */
+#define TCPOPT_SACKOK                 4 /* Selective ACK permitted */
+#define TCPOPT_TIMESTAMP              8 /* Stamp out timestamping! */
 
 #define SUCCESS                        0
 #define ERROR                          1
@@ -216,7 +244,7 @@ typedef struct _tcp_header {
 	uint32_t  t_seq;                 /* sequence number */
 	uint32_t  t_ack;                 /* acknowledgement number */
 	uint8_t   t_offx2;               /* data offset, rsvd */
-        uint8_t   t_flags;               /* tcp flags */
+   uint8_t   t_flags;               /* tcp flags */
 	uint16_t  t_win;                 /* window */
 	uint16_t  t_csum;                /* checksum */
 	uint16_t  t_urgp;                /* urgent pointer */
@@ -225,6 +253,8 @@ typedef struct _tcp_header {
 #define TCP_OFFSET(tcp_header)           (((tcp_header)->t_offx2 & 0xf0) >> 4)
 #define TCP_X2(tcp_header)               ((tcp_header)->t_offx2 & 0x0f)
 #define TCP_ISFLAGSET(tcp_header, flags) (((tcp_header)->t_flags & (flags)) == (flags))
+#define GET16(p)                         ((uint16_t) *((uint8_t*)(p)+0) << 8 | \
+                                          (uint16_t) *((uint8_t*)(p)+1) )
 
 /* 
  * UDP header
@@ -431,6 +461,27 @@ typedef struct _vendor {
    bstring        vendor;                 /* Vendor */
    struct _vendor *next;                  /* Next vendor structure */
 }  vendor;
+
+typedef struct _fp_entry {
+  uint8_t            *os;              /* OS genre */
+  uint8_t            *desc;            /* OS description */
+  uint8_t            no_detail;        /* Disable guesstimates */
+  uint8_t            generic;          /* Generic hit */
+  uint8_t            userland;         /* Userland stack */
+  uint16_t           wsize;            /* window size */
+  uint8_t            wsize_mod;        /* MOD_* for wsize */
+  uint8_t            ttl,df;           /* TTL and don't fragment bit */
+  uint8_t            zero_stamp;       /* timestamp option but zero value? */
+  uint16_t           size;             /* packet size */
+  uint8_t            optcnt;           /* option count */
+  uint8_t            opt[MAXOPT];      /* TCPOPT_* */
+  uint16_t           wsc,mss;          /* value for WSCALE and MSS options */
+  uint8_t            wsc_mod,mss_mod;  /* modulo for WSCALE and MSS (NONE or CONST) */
+  uint32_t           quirks;           /* packet quirks and bugs */
+  uint32_t           line;             /* config file line */
+  struct _fp_entry   *next;
+}  fp_entry;
+
 
 /*  P R O T O T Y P E S  ******************************************************/
 

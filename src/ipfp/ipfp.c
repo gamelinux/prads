@@ -41,4 +41,68 @@
  */
 
 
+void display_signature( uint8_t  ttl,
+                        uint16_t tot,
+                        uint8_t  df,
+                        uint8_t  *op,
+                        uint8_t  ocnt,
+                        uint16_t mss,
+                        uint16_t wss,
+                        uint8_t  wsc,
+                        uint32_t tstamp,
+                        uint32_t quirks,
+                        uint8_t  ftype) {
 
+   uint32_t j;
+   uint8_t  d=0,open_mode=0;
+
+   if ( ftype == TF_SYN) printf("[*] ASSET IP/TCP/SYN FINGERPRINT: ["); else
+   if ( ftype == TF_SYNACK) printf("[*] ASSET IP/TCP/SYNACK FINGERPRINT: ["); else
+   if ( ftype == TF_ACK) printf("[*] ASSET IP/TCP/STRAY-ACK FINGERPRINT: [");
+
+   if (mss && wss && !(wss % mss)) printf("S%d",wss/mss); else
+   if (wss && !(wss % 1460)) printf("S%d",wss/1460); else
+   if (mss && wss && !(wss % (mss+40))) printf("T%d",wss/(mss+40)); else
+   if (wss && !(wss % 1500)) printf("T%d",wss/1500); else
+   if (wss == 12345) printf("*(12345)"); else printf("%d",wss);
+
+   if (!open_mode) {
+      if (tot < PACKET_BIG) printf(":%d:%d:%d:",ttl,df,tot);
+      else printf(":%d:%d:*(%d):",ttl,df,tot);
+   } else printf(":%d:%d:*:",ttl,df);
+ 
+   for (j=0;j<ocnt;j++) {
+      switch (op[j]) {
+         case TCPOPT_NOP: putchar('N'); d=1; break;
+         case TCPOPT_WSCALE: printf("W%d",wsc); d=1; break;
+         case TCPOPT_MAXSEG: printf("M%d",mss); d=1; break;
+         case TCPOPT_TIMESTAMP: putchar('T');
+            if (!tstamp) putchar('0'); d=1; break;
+         case TCPOPT_SACKOK: putchar('S'); d=1; break;
+         case TCPOPT_EOL: putchar('E'); d=1; break;
+         default: printf("?%d",op[j]); d=1; break;
+      }
+      if (j != ocnt-1) putchar(',');
+   }
+
+   if (!d) putchar('.');
+
+   putchar(':');
+
+   if (!quirks) putchar('.'); else {
+      if (quirks & QUIRK_RSTACK) putchar('K');
+      if (quirks & QUIRK_SEQEQ) putchar('Q');
+      if (quirks & QUIRK_SEQ0) putchar('0');
+      if (quirks & QUIRK_PAST) putchar('P');
+      if (quirks & QUIRK_ZEROID) putchar('Z');
+      if (quirks & QUIRK_IPOPT) putchar('I');
+      if (quirks & QUIRK_URG) putchar('U');
+      if (quirks & QUIRK_X2) putchar('X');
+      if (quirks & QUIRK_ACK) putchar('A');
+      if (quirks & QUIRK_T2) putchar('T');
+      if (quirks & QUIRK_FLAGS) putchar('F');
+      if (quirks & QUIRK_DATA) putchar('D');
+      if (quirks & QUIRK_BROKEN) putchar('!');
+   }
+  printf("]\n");
+}
