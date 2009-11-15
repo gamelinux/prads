@@ -124,3 +124,21 @@ void display_signature_icmp ( uint8_t  type,
 
 }
 
+void display_signature_udp (  uint16_t  totlen,
+                              uint8_t   ttl,
+                              uint8_t   df,
+                              int32_t   olen,
+                              uint16_t  ip_len,
+                              uint16_t ip_off,
+                              uint8_t  ip_tos) {
+   printf("[*] ASSET IP/UDP FINGERPRINT: ");
+   //                       [$fplen:$gttl:$df:$ipopts:$ipflags:$foffset]
+   //printf("[%u:%u:%u:%d:%u:%u:%u]\n",totlen,ttl,df,olen,ip_len,ip_off,ip_tos);
+   printf("[%u:%u:%u:",totlen,ttl,df);
+   if (olen == 0) {
+      printf(".:%u:%u]\n",ip_off,ip_tos);
+   }
+   else {
+      printf("%d:%u:%u]\n",totlen,ttl,df,olen,ip_off,ip_tos);
+   }
+}

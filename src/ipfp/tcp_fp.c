@@ -37,7 +37,6 @@ void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t
 
    ilen=((tcph->t_offx2) << 2) - TCP_HEADER_LEN;
 
-   /* let the phun begin... */ 
    if ( (uint8_t *) opt_ptr + ilen < end_ptr) {
       if (!open_mode) quirks |= QUIRK_DATA;
       payload = opt_ptr + ilen;
@@ -46,6 +45,7 @@ void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t
 
    ilen--;
 
+   /* let the phun begin... */
    switch (*(opt_ptr++)) {
       case TCPOPT_EOL:
          /* EOL */

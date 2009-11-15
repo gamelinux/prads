@@ -44,6 +44,7 @@
 #include "cxtracking/cxt.c"
 #include "ipfp/ipfp.c"
 #include "ipfp/tcp_fp.c"
+#include "ipfp/udp_fp.c"
 #include "ipfp/icmp_fp.c"
 #include "servicefp/servicefp.c"
 #include "servicefp/tcps.c"
@@ -191,7 +192,16 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             char *payload;
             payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + UDP_HEADER_LEN);
             service_udp4(ip4,udph,payload,(pheader->caplen - UDP_HEADER_LEN - (IP_HL(ip4)*4) - eth_header_len));
-         /* fp_udp(ip, ttl, ipopts, len, id, ipflags, df); */
+
+            /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_udp4(ip4, udph, end_ptr); 
          }else{
             //printf("[*] - NOT CHECKING UDP PACKAGE\n");
          }
