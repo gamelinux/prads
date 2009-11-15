@@ -30,7 +30,7 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.1.2"
+#define VERSION                       "0.1.3"
 #define TIMEOUT                       60
 #define BUCKET_SIZE                   1669 
 #define SNAPLENGTH                    1604
