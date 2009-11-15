@@ -140,6 +140,8 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
             update_asset(AF_INET,ip_src);
+            //service_tcp4_unknown(ip_src,tcph->src_port);
+            
            /* Paranoia! */
             const uint8_t *end_ptr;
             if (pheader->len <= SNAPLENGTH) {

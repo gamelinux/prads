@@ -91,12 +91,17 @@ update_asset_service ( struct in6_addr ip_addr,
                if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
                   perror("Something died in inet_ntop");
             }
-            printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-
+            if (port == 0) {
+               printf("[*] ADDED NEW CLIENT TO ASSET: %s %s\n",ip_addr_s,(char *)bdata(application));
+            }
+            else {
+               printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+            }
             return 0;
          }
          while ( tmp_sa != NULL ) {
-            if (port == tmp_sa->port && proto == tmp_sa->proto) {
+            if (port == tmp_sa->port && proto == tmp_sa->proto
+                  && (bstricmp(application,tmp_sa->application) == 0)) {
                /* Found! */
                bdestroy(tmp_sa->service);
                tmp_sa->service = bstrcpy(service);
@@ -104,7 +109,12 @@ update_asset_service ( struct in6_addr ip_addr,
                tmp_sa->application = bstrcpy(application);
                //tmp_sa->i_attempts++;
                tmp_sa->last_seen = time(NULL);
-               printf("[*] SERVICE ASSET UPDATED\n");
+               if (port == 0) {
+                  printf("[*] CLIENT ASSET UPDATED\n");
+               }
+               else {
+                  printf("[*] SERVICE ASSET UPDATED\n");
+               }
                return 0;
             }
             if (tmp_sa->next == NULL) {
@@ -132,8 +142,12 @@ update_asset_service ( struct in6_addr ip_addr,
                   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
                      perror("Something died in inet_ntop");
                }
-               printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-
+               if (port == 0) {
+                  printf("[*] ADDED NEW CLIENT ASSET: %s %s\n",ip_addr_s,(char *)bdata(application));
+               }
+               else {
+                  printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+               }
                return 0;
             }
          tmp_sa = tmp_sa->next;
