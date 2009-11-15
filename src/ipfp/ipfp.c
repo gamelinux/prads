@@ -56,9 +56,12 @@ void display_signature( uint8_t  ttl,
    uint32_t j;
    uint8_t  d=0,open_mode=0;
 
-   if ( ftype == TF_SYN) printf("[*] ASSET IP/TCP/SYN FINGERPRINT: ["); else
-   if ( ftype == TF_SYNACK) printf("[*] ASSET IP/TCP/SYNACK FINGERPRINT: ["); else
-   if ( ftype == TF_ACK) printf("[*] ASSET IP/TCP/STRAY-ACK FINGERPRINT: [");
+   if ( ftype == TF_SYN ) printf("[*] ASSET IP/TCP/SYN FINGERPRINT: ["); else
+   if ( ftype == TF_SYNACK ) printf("[*] ASSET IP/TCP/SYNACK FINGERPRINT: ["); else
+   if ( ftype == TF_ACK ) {
+      printf("[*] ASSET IP/TCP/STRAY-ACK FINGERPRINT: [");
+      open_mode=1;
+   }
 
    if (mss && wss && !(wss % mss)) printf("S%d",wss/mss); else
    if (wss && !(wss % 1460)) printf("S%d",wss/1460); else
