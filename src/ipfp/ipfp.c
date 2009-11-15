@@ -109,3 +109,18 @@ void display_signature( uint8_t  ttl,
    }
   printf("]\n");
 }
+
+void display_signature_icmp ( uint8_t  type,
+                              uint8_t  code,
+                              uint8_t  ttl,
+                              uint8_t  df,
+                              int32_t  olen,
+                              uint16_t totlen,
+                              uint16_t ip_off,
+                              uint8_t  ip_tos) {
+   printf("[*] ASSET IP/ICMP FINGERPRINT: ");
+   //                       [$itype:$icode:$ttl:$df:$ipopts:$il:$if:$fo:$tos]
+   printf("[%u:%u:%u:%u:%d:%u:%u:%u]\n",type,code,ttl,df,olen,totlen,df,ip_off,ip_tos);
+
+}
+

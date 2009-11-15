@@ -44,6 +44,7 @@
 #include "cxtracking/cxt.c"
 #include "ipfp/ipfp.c"
 #include "ipfp/tcp_fp.c"
+#include "ipfp/icmp_fp.c"
 #include "servicefp/servicefp.c"
 #include "servicefp/tcps.c"
 #include "servicefp/tcpc.c"
@@ -205,6 +206,15 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          s_check = cx_track(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if (s_check != 0) {
             /* printf("[*] - CHECKING ICMP PACKAGE\n"); */
+            /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_icmp4(ip4, icmph, end_ptr);
             update_asset(AF_INET,ip_src);
          /* service_icmp(*ip4,*tcph) */
          /* fp_icmp(ip, ttl, ipopts, len, id, ipflags, df); */
