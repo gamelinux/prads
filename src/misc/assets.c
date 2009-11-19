@@ -28,6 +28,105 @@ update_asset (int af, struct in6_addr ip_addr) {
 } 
 
 /* ----------------------------------------------------------
+ * FUNCTION     : update_asset_os
+ * DESCRIPTION  : This function will update the OS
+ *              : fields of an asset.
+ * INPUT        : 0 - IP Address
+ *              : 1 - Port
+ *              : 2 - detection method
+ *              : 3 - raw_fp
+ *              : 4 - AF_INET/6
+ * RETURN       : 0 - Success!
+ *              : 1 - Failure!
+ * ---------------------------------------------------------- */
+
+//update_asset_os(ip_addr, port, detection, raw_fp, af);
+
+short
+update_asset_os ( struct in6_addr ip_addr,
+                       u_int16_t port,
+                       bstring detection,
+                       bstring raw_fp,
+                       int af)
+{
+
+   extern asset *passet;
+   asset *rec = passet;
+   int counter = 0;
+   int asset_match   = 0;
+   //printf("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
+ 
+   /* Find asset within linked list.  */
+   while ( rec != NULL ) {
+      //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
+      if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
+         && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
+         printf("[*] FOUND ASSET\n");
+      
+         rec->last_seen = time(NULL);
+         asset_match = 1;
+         os_asset *tmp_oa = NULL;
+         os_asset *head_oa = NULL;
+         tmp_oa = rec->os;
+         head_oa = rec->os;
+
+         while ( tmp_oa != NULL ) {
+            if ( (bstricmp(detection,tmp_oa->detection) == 0 )
+                  && (bstricmp(raw_fp,tmp_oa->raw_fp) == 0)) {
+               /* Found! */
+               bdestroy(tmp_oa->detection);
+               tmp_oa->detection = bstrcpy(detection);
+               bdestroy(tmp_oa->raw_fp);
+               tmp_oa->raw_fp = bstrcpy(raw_fp);
+               //tmp_sa->i_attempts++;
+               tmp_oa->last_seen = time(NULL);
+               printf("[*] ASSET FINGERPRINT UPDATED\n");
+               return 0;
+            }
+         tmp_oa = tmp_oa->next;
+         }
+            
+         if (tmp_oa == NULL) {
+            os_asset *new_oa = NULL;
+            new_oa = (os_asset*)calloc(1,sizeof(os_asset));
+            new_oa->detection = bstrcpy(detection);
+            new_oa->raw_fp = bstrcpy(raw_fp);
+            tmp_oa->i_attempts = 1;
+            new_oa->first_seen = time(NULL);
+            new_oa->last_seen = time(NULL);
+            new_oa->next = rec->os;
+            new_oa->prev = NULL;
+            head_oa->prev = new_oa;
+            rec->os = new_oa;
+
+            /* verbose info for sanity checking */
+            static char ip_addr_s[INET6_ADDRSTRLEN];
+            if ( af == AF_INET) {
+               if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+                  perror("Something died in inet_ntop");
+            }
+            else if ( af == AF_INET6) {
+               if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+                  perror("Something died in inet_ntop");
+            }
+            if (port == 0) {
+               printf("[*] ADDED NEW CLIENT ASSET FINGERPRINT: %s %s\n",ip_addr_s,(char *)bdata(raw_fp));
+            }
+            else {
+               printf("[*] ADDED NEW SERVER ASSET FINGERPRINT TO: %s:%d %s\n",
+                            ip_addr_s,ntohs(port),(char *)bdata(raw_fp));
+            }
+            return 0;
+         }
+      }
+   }
+   /* If no asset: */
+   update_asset (af, ip_addr);
+   update_asset_os(ip_addr, port, detection, raw_fp, af);
+   return 0;
+}
+
+/* ----------------------------------------------------------
  * FUNCTION     : update_asset
  * DESCRIPTION  : This function will update the service and
  *              : application fields of an asset.
@@ -342,7 +441,7 @@ printf("A\n");
 }
 
 void del_asset (asset *passet, asset **bucket_ptr ){
-   /* remove cxt from bucket */
+   /* remove passet from bucket */
    asset *prev = passet->prev; /* OLDER connections */
    asset *next = passet->next; /* NEWER connections */
    if(prev == NULL){

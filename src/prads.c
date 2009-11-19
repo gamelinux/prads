@@ -151,9 +151,9 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                end_ptr = (packet + SNAPLENGTH);
             }
             fp_tcp4(ip4, tcph, end_ptr, TF_SYNACK);
-         } else if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
+         }
+/* else if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
             //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
-           /* Paranoia! */
             const uint8_t *end_ptr;
             if (pheader->len <= SNAPLENGTH) {
                end_ptr = (packet + pheader->len);
@@ -163,9 +163,22 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             }
             fp_tcp4(ip4, tcph, end_ptr, TF_ACK);
             update_asset(AF_INET,ip_src);
-         }
+         } */
          if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
+            if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
+               //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
+               /* Paranoia! */
+               const uint8_t *end_ptr;
+               if (pheader->len <= SNAPLENGTH) {
+                  end_ptr = (packet + pheader->len);
+               }
+               else {
+                  end_ptr = (packet + SNAPLENGTH);
+               }
+               fp_tcp4(ip4, tcph, end_ptr, TF_ACK);
+               update_asset(AF_INET,ip_src);
+            }
             //update_asset(AF_INET,ip_src);
             char *payload;
             payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + TCP_HEADER_LEN);

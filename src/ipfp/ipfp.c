@@ -107,7 +107,10 @@ void display_signature( uint8_t  ttl,
       if (quirks & QUIRK_DATA) putchar('D');
       if (quirks & QUIRK_BROKEN) putchar('!');
    }
-  printf("]\n");
+   printf("]\n");
+
+   //update_asset_os(ip_addr, port, detection, raw_fp, af);
+
 }
 
 void display_signature_icmp ( uint8_t  type,
@@ -118,10 +121,11 @@ void display_signature_icmp ( uint8_t  type,
                               uint16_t totlen,
                               uint16_t ip_off,
                               uint8_t  ip_tos) {
+   bstring fingerprint;
    printf("[*] ASSET IP/ICMP FINGERPRINT: ");
-   //                       [$itype:$icode:$ttl:$df:$ipopts:$il:$if:$fo:$tos]
-   printf("[%u:%u:%u:%u:%d:%u:%u:%u]\n",type,code,ttl,df,olen,totlen,df,ip_off,ip_tos);
-
+   fingerprint = bformat("%u:%u:%u:%u:%d:%u:%u:%u",type,code,ttl,df,olen,totlen,df,ip_off,ip_tos);
+   printf("[%s]\n",(char*)bdata(fingerprint));
+   //update_asset_os(ip_addr, port, detection, raw_fp, af);
 }
 
 void display_signature_udp (  uint16_t  totlen,
@@ -131,14 +135,10 @@ void display_signature_udp (  uint16_t  totlen,
                               uint16_t  ip_len,
                               uint16_t ip_off,
                               uint8_t  ip_tos) {
+
+   bstring fingerprint;
    printf("[*] ASSET IP/UDP FINGERPRINT: ");
-   //                       [$fplen:$gttl:$df:$ipopts:$ipflags:$foffset]
-   //printf("[%u:%u:%u:%d:%u:%u:%u]\n",totlen,ttl,df,olen,ip_len,ip_off,ip_tos);
-   printf("[%u:%u:%u:",totlen,ttl,df);
-   if (olen == 0) {
-      printf(".:%u:%u]\n",ip_off,ip_tos);
-   }
-   else {
-      printf("%d:%u:%u]\n",totlen,ttl,df,olen,ip_off,ip_tos);
-   }
+   fingerprint = bformat("%u:%u:%u:%d:%u:%u",totlen,ttl,df,olen,ip_off,ip_tos);
+   printf("[%s]\n",(char*)bdata(fingerprint));
+   //update_asset_os(ip_addr, port, detection, raw_fp, af);
 }
