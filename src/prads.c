@@ -135,7 +135,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             else {
                end_ptr = (packet + SNAPLENGTH);
             }
-            fp_tcp4(ip4, tcph, end_ptr, TF_SYN);
+            fp_tcp4(ip4, tcph, end_ptr, TF_SYN, ip_src);
             //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
@@ -150,7 +150,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             else {
                end_ptr = (packet + SNAPLENGTH);
             }
-            fp_tcp4(ip4, tcph, end_ptr, TF_SYNACK);
+            fp_tcp4(ip4, tcph, end_ptr, TF_SYNACK, ip_src);
          }
 /* else if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
             //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
@@ -176,7 +176,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                else {
                   end_ptr = (packet + SNAPLENGTH);
                }
-               fp_tcp4(ip4, tcph, end_ptr, TF_ACK);
+               fp_tcp4(ip4, tcph, end_ptr, TF_ACK, ip_src);
                update_asset(AF_INET,ip_src);
             }
             //update_asset(AF_INET,ip_src);

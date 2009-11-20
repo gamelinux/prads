@@ -1,7 +1,7 @@
-void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype);
+void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype, struct in6_addr ip_src);
 void fp_tcp6 (ip6_header *ip6, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype);
 
-void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype) {
+void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype, struct in6_addr ip_src) {
 
    uint8_t   *opt_ptr;
    uint8_t   *payload = 0;
@@ -129,6 +129,7 @@ end_parsing:
    if (TCP_X2(tcph)) quirks |= QUIRK_X2;
    if (!ip4->ip_id)  quirks |= QUIRK_ZEROID;
 
+printf("A\n");
 display_signature(ip4->ip_ttl,open_mode ? 0 : ntohs(ip4->ip_len),
                   (ntohs(ip4->ip_off) & IP_DF) != 0,
                   op,
@@ -138,7 +139,11 @@ display_signature(ip4->ip_ttl,open_mode ? 0 : ntohs(ip4->ip_len),
                   wsc_val,
                   tstamp,
                   quirks,
-                  ftype);
+                  ftype,
+                  ip_src,
+                  tcph->src_port,
+                  AF_INET);
+
 //   find_match(
 //     /* total */ open_mode ? 0 : ntohs(iph->tot_len),
 //     /* DF */    (ntohs(iph->off) & IP_DF) != 0,

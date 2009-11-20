@@ -44,18 +44,21 @@ update_asset (int af, struct in6_addr ip_addr) {
 
 short
 update_asset_os ( struct in6_addr ip_addr,
-                       u_int16_t port,
-                       bstring detection,
-                       bstring raw_fp,
-                       int af)
+                        u_int16_t port,
+                        bstring   detection,
+                        bstring   raw_fp,
+                        int       af)
 {
 
    extern asset *passet;
    asset *rec = passet;
    int counter = 0;
    int asset_match   = 0;
-   //printf("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
- 
+   //printf("Incomming Asset, %s: %u:%u [%s]\n",(char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
+   //bdestroy(raw_fp);
+   //bdestroy(detection);
+   //return 0;
+
    /* Find asset within linked list.  */
    while ( rec != NULL ) {
       //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
@@ -81,6 +84,8 @@ update_asset_os ( struct in6_addr ip_addr,
                //tmp_sa->i_attempts++;
                tmp_oa->last_seen = time(NULL);
                printf("[*] ASSET FINGERPRINT UPDATED\n");
+               bdestroy(raw_fp);
+               bdestroy(detection);
                return 0;
             }
          tmp_oa = tmp_oa->next;
@@ -91,12 +96,12 @@ update_asset_os ( struct in6_addr ip_addr,
             new_oa = (os_asset*)calloc(1,sizeof(os_asset));
             new_oa->detection = bstrcpy(detection);
             new_oa->raw_fp = bstrcpy(raw_fp);
-            tmp_oa->i_attempts = 1;
+            //tmp_oa->i_attempts = 1;
             new_oa->first_seen = time(NULL);
             new_oa->last_seen = time(NULL);
             new_oa->next = rec->os;
             new_oa->prev = NULL;
-            head_oa->prev = new_oa;
+            //head_oa->prev = new_oa;
             rec->os = new_oa;
 
             /* verbose info for sanity checking */
@@ -110,19 +115,24 @@ update_asset_os ( struct in6_addr ip_addr,
                   perror("Something died in inet_ntop");
             }
             if (port == 0) {
-               printf("[*] ADDED NEW CLIENT ASSET FINGERPRINT: %s %s\n",ip_addr_s,(char *)bdata(raw_fp));
+               printf("[*] ADDED NEW CLIENT ASSET %s FINGERPRINT: %s [%s]\n",(char *)bdata(detection),ip_addr_s,(char *)bdata(raw_fp));
             }
             else {
-               printf("[*] ADDED NEW SERVER ASSET FINGERPRINT TO: %s:%d %s\n",
-                            ip_addr_s,ntohs(port),(char *)bdata(raw_fp));
+               printf("[*] ADDED NEW SERVER ASSET %s FINGERPRINT TO: %s:%d [%s]\n",
+                            (char *)bdata(detection),ip_addr_s,ntohs(port),(char *)bdata(raw_fp));
             }
+            bdestroy(raw_fp);
+            bdestroy(detection);
             return 0;
          }
       }
+      rec = rec->next;
    }
    /* If no asset: */
    update_asset (af, ip_addr);
    update_asset_os(ip_addr, port, detection, raw_fp, af);
+   bdestroy(raw_fp);
+   bdestroy(detection);
    return 0;
 }
 
@@ -223,7 +233,7 @@ update_asset_service ( struct in6_addr ip_addr,
                new_sa->proto = proto;
                new_sa->service = bstrcpy(service);
                new_sa->application = bstrcpy(application);
-               tmp_sa->i_attempts = 1;
+               //new_sa->i_attempts = 1;
                new_sa->first_seen = time(NULL);
                new_sa->last_seen = time(NULL);
                new_sa->next = rec->services;
