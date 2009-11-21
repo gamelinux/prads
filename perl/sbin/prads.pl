@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 
+
 # PRADS, the Passive Real-time Asset Detection System
 package Prads;
 
@@ -65,11 +66,12 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
  --dev|-d                : network device (default: eth0)
  --config|-c             : path to prads configfile
+ --confdir|-cd           : path to prads config dir (default /etc/prads)
  --service-signatures|-s : path to service-signatures file (default: /etc/prads/tcp-service.sig)
  --os-fingerprints|-o    : path to os-fingerprints file (default: /etc/prads/os.fp
  --debug                 : enable debug messages 0-255 (default: disabled(0))
  --verbose               : debug 1
- --dump                  : Dumps all signatures and fingerprints then exits 
+ --dump                  : Dumps all signatures and fingerprints then exits
  --arp                   : Enables ARP discover check
  --service               : Enables Service detection
  --os                    : Enables OS detection
@@ -113,14 +115,18 @@ our $DB_LAST_UPDATE = 0;
 my $DEVICE;
 my $LOGFILE                 = q(/dev/null);
 my $PIDFILE                 = q(/var/run/prads.pid);
-my $CONFIG                  = q(/etc/prads/prads.conf);
-my $S_SIGNATURE_FILE        = q(/etc/prads/tcp-service.sig);
-my $OS_SYN_FINGERPRINT_FILE = q(/etc/prads/os.fp);
-my $OS_SYNACK_FINGERPRINT_FILE = q(/etc/prads/osa.fp);
-my $OS_ICMP_FINGERPRINT_FILE= q(/etc/prads/osi.fp);
-my $OS_UDP_FINGERPRINT_FILE = q(/etc/prads/osu.fp);
-my $MAC_SIGNATURE_FILE      = q(/etc/prads/mac.sig);
-my $MTU_SIGNATURE_FILE      = q(/etc/prads/mtu.sig);
+my $CONFDIR                 = q(/etc/prads);
+my $CONFIG                  = qq($CONFDIR/prads.conf);
+
+pre_config();
+
+my $S_SIGNATURE_FILE        = qq($CONFDIR/tcp-service.sig);
+my $OS_SYN_FINGERPRINT_FILE = qq($CONFDIR/os.fp);
+my $OS_SYNACK_FINGERPRINT_FILE = qq($CONFDIR/osa.fp);
+my $OS_ICMP_FINGERPRINT_FILE= qq($CONFDIR/osi.fp);
+my $OS_UDP_FINGERPRINT_FILE = qq($CONFDIR/osu.fp);
+my $MAC_SIGNATURE_FILE      = qq($CONFDIR/mac.sig);
+my $MTU_SIGNATURE_FILE      = qq($CONFDIR/mtu.sig);
 my %pradshosts              = ();
 my %ERROR          = (
     init_dev => q(Unable to determine network device for monitoring - %s),
@@ -133,12 +139,18 @@ my %ERROR          = (
 my $PRADS_HOSTNAME = `hostname`;
 chomp $PRADS_HOSTNAME;
 
-# extract & load config before parsing rest of commandline
-for my $i (0..@ARGV-1){
-   if($ARGV[$i] =~ /^--?(config|c)$/){
-      $CONFIG = splice @ARGV, $i, $i+1;
-      print "Loading config $CONFIG\n";
-      last; # we've modified @ARGV
+sub pre_config
+{
+   # extract & load config before parsing rest of commandline
+   for my $i (0..@ARGV-1){
+      if($ARGV[$i] =~ /^--?(config|c)$/){
+         $CONFIG = splice @ARGV, $i, $i+1;
+         print "Loading config $CONFIG\n";
+         last; # we've modified @ARGV
+      }elsif($ARGV[$i] =~ /^--?(confdir|cd)$/){
+         $CONFDIR = $ARGV[$i+1];
+         print "Loading config from $CONFDIR";
+      }
    }
 }
 
@@ -222,7 +234,7 @@ if ($DUMP) {
 
    print "\n *** Loading Service signatures *** \n\n";
    my @TCP_SERVICE_SIGNATURES = load_signatures($S_SIGNATURE_FILE);
-   print Dumper @TCP_SERVICE_SIGNATURES; 
+   print Dumper @TCP_SERVICE_SIGNATURES;
 
    print "\n *** Loading MTU signatures *** \n\n";
    my $MTU_SIGNATURES = load_mtu($MTU_SIGNATURE_FILE);
@@ -332,11 +344,11 @@ exit;
 sub setup_db {
    my ($db,$user,$password) = @_;
    my $print_error = $DEBUG ? 1 : 0;
-   my $dbh = DBI->connect($db,$user,$password, 
-                          {AutoCommit => $AUTOCOMMIT, 
+   my $dbh = DBI->connect($db,$user,$password,
+                          {AutoCommit => $AUTOCOMMIT,
                           RaiseError => 1, PrintError=> $print_error});
    my ($sql, $sth);
-   eval{ 
+   eval{
       $sql = "CREATE TABLE asset (ip TEXT, service TEXT, time TEXT, fingerprint TEXT,".
          "mac TEXT, os TEXT, details TEXT, link TEXT, distance TEXT, reporting TEXT)";
       $sth = $dbh->prepare($sql);
@@ -355,7 +367,7 @@ sub setup_db {
 
  Callback function for C<Net::Pcap::loop>.
 
-  * Strip ethernet encapsulation of captured packet 
+  * Strip ethernet encapsulation of captured packet
   * pass to protocol handlers
 
 =cut
@@ -368,12 +380,12 @@ sub packets {
     $pradshosts{"tstamp"} = time;
     warn "Ethernet Packet received - processing...\n" if($DEBUG>50);
     my $eth      = NetPacket::Ethernet->decode($packet);
-   
+
     # if VLAN Tag - strip VLANID
     if ( $eth->{type} == ETH_TYPE_802Q1T  ){
         (my $vid, $eth->{type}, $eth->{data}) = unpack('nna*' , $eth->{data});
     }
-    # If VLAN MetroTag - strip MetroTag,TPID,VLANID 
+    # If VLAN MetroTag - strip MetroTag,TPID,VLANID
     elsif ( $eth->{type} == ETH_TYPE_802Q1MT ){
         (my $mvid, my $tpid, my $vid, $eth->{type}, $eth->{data}) = unpack('nnna*' , $eth->{data});
     }
@@ -470,7 +482,7 @@ sub packet_icmp {
     # Im not sure how IP should be printed :/
     # This is work under developtment :)
     if ($OS_ICMP == 1){
-       # Highly fuzzy - need thoughts/input 
+       # Highly fuzzy - need thoughts/input
        # asset database: want to know the following intel:
        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
        # maybe also add binary IP packet for audit?
@@ -505,22 +517,22 @@ sub packet_udp {
         #my $data      = $udp->{'data'};
         #my $dest_port = $udp->{'dest_port'};
         #my $cksum     = $udp->{'cksum'};
-    
+
         my $ulen      = $udp->{'len'};
         #my $data      = $udp->{'data'};
         my $foffset   = $ip->{'foffset'};
-    
+
         # We need to guess initial TTL
         my $gttl = normalize_ttl($ttl);
         my $dist = $gttl - $ttl;
-    
+
         $ipopts = "." if not $ipopts;
-        my $fplen  = $len - $ulen; 
+        my $fplen  = $len - $ulen;
         $fplen = 0 if $fplen < 0;
         my $link = 'ethernet';
         my $UOS = 'UNKNOWN';
         my $DETAILS = 'UNKNOWN';
-     
+
         # Try to guess OS
         # Fingerprint format: $fplen,$ttl,$df,$io,$if,$fo
         my $oss = udp_os_find_match($fplen,$gttl,$df,$ipopts,$ipflags,$foffset);
@@ -537,7 +549,7 @@ sub packet_udp {
     return;
 }
 
-=head2 packet_tcp 
+=head2 packet_tcp
 
  Parse TCP packet
   * Decode contents of TCP/IP packet contained within captured ethernet packet
@@ -549,7 +561,7 @@ sub packet_udp {
    #
    # wwww     - window size (can be * or %nnn or Sxx or Txx)
    #            "Snn" (multiple of MSS) and "Tnn" (multiple of MTU) are allowed.
-   # ttt      - initial TTL 
+   # ttt      - initial TTL
    # D        - don't fragment bit (0 - not set, 1 - set)
    # ss       - overall SYN packet size (* has a special meaning)
    # OOO      - option value and order specification (see below)
@@ -690,7 +702,7 @@ sub tcp_os_find_match{
 # Port of p0f matching code
     my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $ip, $fp) = @_;
     my @quirks = @$qq;
-    my $sigs = $OS_SYN_SIGS; 
+    my $sigs = $OS_SYN_SIGS;
     my $guesses = 0;
 
     #warn "Matching $packet\n" if $DEBUG;
@@ -833,7 +845,7 @@ sub tcp_os_find_match{
     }
     # filter generics
     ($os, $details, @more) = @os;
-    do{ 
+    do{
         if(not ($skip and $os =~ /^@/)){
             push @filtered, ($os, $details);
         }
@@ -966,7 +978,7 @@ sub check_tcp_options{
          }else{
             # unrecognized
             # option 76: (weird router shit)
-            # eg: 4c 0a 0101ac1438060005 01 00 
+            # eg: 4c 0a 0101ac1438060005 01 00
             #     K  SZ ------WEIRD-----NOP EOL
             # option  5: (SACK field)
             $optstr .= "?$kind,";
@@ -1030,7 +1042,7 @@ sub icmp_os_find_match {
     $os  = $os || $IOS;
     $details = $details || $DETAILS;
     my $fp = "$itype:$icode:$ttl:$df:$ipopts:$il:$if:$fo:$tos";
-    
+
     return ($os, $details, $fp);
 }
 
@@ -1127,6 +1139,7 @@ sub load_mtu {
         next LINE unless($line); # empty line
         # One should check for a more or less sane signature file.
         my($mtu, $info) = split /,/, $line, 2;
+        $info =~ s/^"(.*)" ?/$1/;
         $signatures->{$mtu} = $info;
     }
     return $signatures;
@@ -1173,8 +1186,8 @@ sub load_mac {
 
         # handle mac bitmask (in)sanely
         my ($prefix, $mask) = split /\//, $mac, 2;
-        $mask ||= 48; 
-        
+        $mask ||= 48;
+
         # chop off bytes outside of bitmask
         # Sigs of the form 00:50:C2:00:70:00/36
         # become $s->{00}->{50}->{C2}->{00}->{70/4}
@@ -1191,7 +1204,7 @@ sub load_mac {
                 push @bytes, sprintf "00/%d", $rem;
             }
         }
-        my $ptr = $signatures; 
+        my $ptr = $signatures;
         for my $i (0..@bytes-1){
             my $byte = lc $bytes[$i];
             $ptr->{$byte} ||= {};
@@ -1246,7 +1259,7 @@ sub mac_byte_mask {
 
 sub mac_map_mask {
    my ($byte, $ptr) = @_;
-   map { return $ptr->{$_}->{_} } 
+   map { return $ptr->{$_}->{_} }
    grep { /\// and mac_byte_mask($byte,$_)} keys %$ptr;
 }
 
@@ -1259,7 +1272,7 @@ sub mac_map_mask {
 sub mac_find_match {
     my ($mac,$ptr) = @_;
     $ptr ||= $MAC_SIGS;
-    
+
     my ($byte, $rest) = split /[:\.-]/, $mac,2;
     if(ref $ptr->{$byte}){
         #print "recurse\n";
@@ -1267,11 +1280,11 @@ sub mac_find_match {
             # most specific match first (recurse)
             mac_find_match($rest,$ptr->{$byte}) ||
             # see if this node has a complete match
-            $ptr->{$byte}->{_} || 
+            $ptr->{$byte}->{_} ||
             # match on bitmask
             mac_map_mask($byte,$ptr);
     }else{
-       # node leads to a leaf. 
+       # node leads to a leaf.
        return $ptr->{$byte} || mac_map_mask($byte, $ptr);
     }
 }
@@ -1451,9 +1464,9 @@ sub load_os_icmp_fingerprints {
 
 =head2 init_dev
 
- Use network device passed in program arguments or if no 
- argument is passed, determine an appropriate network 
- device for packet sniffing using the 
+ Use network device passed in program arguments or if no
+ argument is passed, determine an appropriate network
+ device for packet sniffing using the
  Net::Pcap::lookupdev method
 
 =cut
@@ -1472,9 +1485,9 @@ sub init_dev {
 
 =head2 lookup_net
 
- Look up network address information about network 
- device using Net::Pcap::lookupnet - This also acts as a 
- check on bogus network device arguments that may be 
+ Look up network address information about network
+ device using Net::Pcap::lookupnet - This also acts as a
+ check on bogus network device arguments that may be
  passed to the program as an argument
 
 =cut
@@ -1500,7 +1513,7 @@ sub lookup_net {
 sub create_object {
     my $dev = shift;
     my($err, $object);
-    my $promisc = 1;    
+    my $promisc = 1;
 
     $object = Net::Pcap::open_live($dev, 65535, $promisc, 500, \$err)
               or die sprintf $ERROR{'create_object'}, $dev, $err;
@@ -1510,11 +1523,11 @@ sub create_object {
 
 =head2 filter_object
 
- Compile and set packet filter for packet capture 
- object - For the capture of TCP packets with the SYN 
- header flag set directed at the external interface of 
+ Compile and set packet filter for packet capture
+ object - For the capture of TCP packets with the SYN
+ header flag set directed at the external interface of
  the local host, the packet filter of '(dst IP) && (tcp
- [13] & 2 != 0)' is used where IP is the IP address of 
+ [13] & 2 != 0)' is used where IP is the IP address of
  the external interface of the machine. Here we use 'tcp'
  as a default BPF filter.
 
@@ -1784,7 +1797,7 @@ sub update_asset {
    if(not $fp){
       $fp = '?';
    }
-   my $entry = { 
+   my $entry = {
       'ip' => $ip,
       'service' => $service,
       'time' => $time,
@@ -1807,7 +1820,7 @@ sub update_asset {
 
 =head2 asset_db
 
- Go through in-memory asset cache and poke updated records 
+ Go through in-memory asset cache and poke updated records
  into the persistent database.
 
 =cut
@@ -1872,7 +1885,7 @@ sub add_asset {
 
     }elsif($service eq 'UDP'){
          my ($src_ip, $fingerprint, $dist, $link, $os, $details, @more) = @rest;
-         update_asset($src_ip, $service, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME) 
+         update_asset($src_ip, $service, $pradshosts{'tstamp'}, $fingerprint, '', $os, $details, $link, $dist, $PRADS_HOSTNAME)
     }
 }
 
