@@ -8,6 +8,7 @@ void end_all_sessions();
 void del_assets (int ctime);
 int daemonize();
 static int go_daemon();
+void print_assets ();
 
 void bucket_keys_NULL() {
    int cxkey;
@@ -24,9 +25,10 @@ void check_interupt() {
    if ( intr_flag == 1 ) {
       game_over();
    }
-/*   else if ( intr_flag == 2 ) {
-      dump_active();
+   else if ( intr_flag == 2 ) {
+      print_assets();
    }
+/*
    else if ( intr_flag == 3 ) {
       set_end_sessions();
    }
@@ -40,6 +42,7 @@ void game_over() {
    
    if ( inpacket == 0 ) {
       extern pcap_t *handle;
+      print_assets();
       end_all_sessions();
       pcap_close(handle);
       //del_assets(0);

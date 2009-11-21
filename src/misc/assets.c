@@ -64,7 +64,7 @@ update_asset_os ( struct in6_addr ip_addr,
       //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
       if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
-         printf("[*] FOUND ASSET\n");
+         //printf("[*] FOUND ASSET\n");
       
          rec->last_seen = time(NULL);
          asset_match = 1;
@@ -167,7 +167,7 @@ update_asset_service ( struct in6_addr ip_addr,
       //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
       if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1] 
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
-         printf("[*] FOUND ASSET\n");
+         //printf("[*] FOUND ASSET\n");
          rec->last_seen = time(NULL);
          asset_match = 1;
          serv_asset *tmp_sa = NULL;
@@ -472,5 +472,43 @@ void del_asset (asset *passet, asset **bucket_ptr ){
    /* Free and set to NULL */
    free(passet);
    passet=NULL;
+}
+
+void print_assets () {
+
+   extern asset *passet;
+   asset *rec = passet;
+
+      while ( rec != NULL ) {
+         serv_asset *tmp_sa = NULL;
+         os_asset *tmp_oa = NULL;
+         tmp_sa = rec->services;
+         tmp_oa = rec->os;
+
+         /* verbose info for sanity checking */
+         static char ip_addr_s[INET6_ADDRSTRLEN];
+         if ( rec->af == AF_INET) {
+            if (!inet_ntop(AF_INET, &rec->ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+               perror("Something died in inet_ntop");
+         }
+         else if ( rec->af == AF_INET6) {
+            if (!inet_ntop(AF_INET6, &rec->ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+               perror("Something died in inet_ntop");
+         }
+
+         printf("\n[*] %s",ip_addr_s);
+
+         while ( tmp_sa != NULL ) {
+            printf(",service");
+            tmp_sa = tmp_sa->next;
+         }
+
+         while ( tmp_oa != NULL ) {
+            printf(",os");
+            tmp_oa = tmp_oa->next;
+         }
+         rec = rec->next;
+      }
+      printf("\n");
 }
 

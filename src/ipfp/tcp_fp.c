@@ -129,7 +129,6 @@ end_parsing:
    if (TCP_X2(tcph)) quirks |= QUIRK_X2;
    if (!ip4->ip_id)  quirks |= QUIRK_ZEROID;
 
-printf("A\n");
 display_signature(ip4->ip_ttl,open_mode ? 0 : ntohs(ip4->ip_len),
                   (ntohs(ip4->ip_off) & IP_DF) != 0,
                   op,
