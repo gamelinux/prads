@@ -499,12 +499,12 @@ void print_assets () {
          printf("\n[*] %s",ip_addr_s);
 
          while ( tmp_sa != NULL ) {
-            printf(",service");
+            printf(",[service:%s]",(char*)bdata(tmp_sa->application));
             tmp_sa = tmp_sa->next;
          }
 
          while ( tmp_oa != NULL ) {
-            printf(",os");
+            printf(",[%s:%s]",(char*)bdata(tmp_oa->detection),(char*)bdata(tmp_oa->raw_fp));
             tmp_oa = tmp_oa->next;
          }
          rec = rec->next;
