@@ -8,6 +8,7 @@ void del_serv_assets (asset *passet);
 /* looks to see if asset exists and update timestamp. If not, create the asset */
 update_asset (int af, struct in6_addr ip_addr) {
    extern asset *passet;
+   extern time_t tstamp;
    asset *rec = passet;
 
    while ( rec != NULL ) {
@@ -17,13 +18,13 @@ update_asset (int af, struct in6_addr ip_addr) {
          && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
 
          /* printf("[*] ASSET Timestamp updated\n"); */
-         rec->last_seen = time(NULL);
+         rec->last_seen = tstamp;
          return;
       }
    rec = rec->next;
   }
   /* If no match, create the asset */
-  add_asset (af, ip_addr, time(NULL));
+  add_asset (af, ip_addr, tstamp);
   return;
 } 
 
@@ -51,6 +52,7 @@ update_asset_os ( struct in6_addr ip_addr,
 {
 
    extern asset *passet;
+   extern time_t tstamp;
    asset *rec = passet;
    int counter = 0;
    int asset_match   = 0;
@@ -66,7 +68,7 @@ update_asset_os ( struct in6_addr ip_addr,
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
          //printf("[*] FOUND ASSET\n");
       
-         rec->last_seen = time(NULL);
+         rec->last_seen = tstamp;
          asset_match = 1;
          os_asset *tmp_oa = NULL;
          os_asset *head_oa = NULL;
@@ -82,7 +84,7 @@ update_asset_os ( struct in6_addr ip_addr,
                bdestroy(tmp_oa->raw_fp);
                tmp_oa->raw_fp = bstrcpy(raw_fp);
                //tmp_sa->i_attempts++;
-               tmp_oa->last_seen = time(NULL);
+               tmp_oa->last_seen = tstamp;
                printf("[*] ASSET FINGERPRINT UPDATED\n");
                bdestroy(raw_fp);
                bdestroy(detection);
@@ -97,8 +99,8 @@ update_asset_os ( struct in6_addr ip_addr,
             new_oa->detection = bstrcpy(detection);
             new_oa->raw_fp = bstrcpy(raw_fp);
             //tmp_oa->i_attempts = 1;
-            new_oa->first_seen = time(NULL);
-            new_oa->last_seen = time(NULL);
+            new_oa->first_seen = tstamp;
+            new_oa->last_seen = tstamp;
             new_oa->next = rec->os;
             new_oa->prev = NULL;
             //head_oa->prev = new_oa;
@@ -157,6 +159,7 @@ update_asset_service ( struct in6_addr ip_addr,
               int af)
 {
    extern asset *passet;
+   extern time_t tstamp;
    asset *rec = passet;
    int counter = 0;
    int asset_match   = 0;
@@ -168,7 +171,7 @@ update_asset_service ( struct in6_addr ip_addr,
       if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1] 
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
          //printf("[*] FOUND ASSET\n");
-         rec->last_seen = time(NULL);
+         rec->last_seen = tstamp;
          asset_match = 1;
          serv_asset *tmp_sa = NULL;
          serv_asset *head_sa = NULL;
@@ -183,8 +186,8 @@ update_asset_service ( struct in6_addr ip_addr,
             new_sa->service = bstrcpy(service);
             new_sa->application = bstrcpy(application);
             new_sa->i_attempts = 1;
-            new_sa->first_seen = time(NULL);
-            new_sa->last_seen = time(NULL);
+            new_sa->first_seen = tstamp;
+            new_sa->last_seen = tstamp;
             new_sa->next = rec->services;
             new_sa->prev = NULL;
             //head_sa->prev = new_sa; <-- head_sa->prev does not exist!
@@ -217,7 +220,7 @@ update_asset_service ( struct in6_addr ip_addr,
                bdestroy(tmp_sa->application);
                tmp_sa->application = bstrcpy(application);
                //tmp_sa->i_attempts++;
-               tmp_sa->last_seen = time(NULL);
+               tmp_sa->last_seen = tstamp;
                if (port == 0) {
                   printf("[*] CLIENT ASSET UPDATED\n");
                }
@@ -234,8 +237,8 @@ update_asset_service ( struct in6_addr ip_addr,
                new_sa->service = bstrcpy(service);
                new_sa->application = bstrcpy(application);
                //new_sa->i_attempts = 1;
-               new_sa->first_seen = time(NULL);
-               new_sa->last_seen = time(NULL);
+               new_sa->first_seen = tstamp;
+               new_sa->last_seen = tstamp;
                new_sa->next = rec->services;
                new_sa->prev = NULL;
                head_sa->prev = new_sa;
@@ -291,6 +294,7 @@ void
 add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
 
    extern asset *passet;
+   extern time_t tstamp;
    asset *rec = NULL;
 
    /* Assign list to temp structure.  */
@@ -301,7 +305,7 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
 
    /* Should remove/rewrite this: */
    if (!discovered) {
-      rec->first_seen = rec->last_seen = time(NULL);
+      rec->first_seen = rec->last_seen = tstamp;
    } else {
       rec->first_seen = rec->last_seen = discovered;
    }
@@ -330,9 +334,29 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
    return;
 }
 
+/* ----------------------------------------------------------
+ * FUNCTION     : hex2mac
+ * DESCRIPTION  : Converts a hex representation of a MAC
+ *              : address into an ASCII string.  This is a
+ *              : more portable equivalent of 'ether_ntoa'.
+ * INPUT        : 0 - MAC Hex Address
+ * RETURN       : 0 - MAC Address String
+ * ---------------------------------------------------------- */
+char* hex2mac(const char *mac) {
+
+    static char buf[32];
+
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+        (mac[0] & 0xFF) , (mac[1] & 0xFF), (mac[2] & 0xFF),
+        (mac[3] & 0xFF), (mac[4] & 0xFF), (mac[5] & 0xFF));
+
+    return buf;
+}
+
 void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 
    extern asset *passet;
+   extern time_t tstamp;
    asset *rec = passet;
    struct in6_addr ip_addr;
    memcpy(&ip_addr.s6_addr32[0], arp_spa, sizeof(u_int8_t) * 4);
@@ -343,13 +367,13 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
          if ( memcmp(rec->mac_addr, arp_sha, MAC_ADDR_LEN) == 0)  {
             /* UPDATE TIME STAMP */
             //rec->mac_addr = ;
-            rec->last_seen = time(NULL);
+            rec->last_seen = tstamp;
             return;
          }
          else {
             /* UPDATE MAC AND TIME STAMP */
             memcpy(&rec->mac_addr, arp_sha, MAC_ADDR_LEN);
-            rec->last_seen = time(NULL);
+            rec->last_seen = tstamp;
             /* For verbos sanity checking */
             static char ip_addr_s[INET6_ADDRSTRLEN];
             inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
@@ -365,23 +389,27 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
    //bstring mac_resolved = NULL;
 
    new = (asset*) calloc(1,sizeof(asset));
+   
+   new->af = AF_INET;
    new->ip_addr.s6_addr32[0] = ip_addr.s6_addr32[0];
    new->ip_addr.s6_addr32[1] = 0;
    new->ip_addr.s6_addr32[2] = 0;
    new->ip_addr.s6_addr32[3] = 0;
 
    memcpy(&new->mac_addr, arp_sha, MAC_ADDR_LEN);
+   //printf("MAC:%s\n",hex2mac((const char *)new->mac_addr));
 
    /* Attempt to resolve the vendor name of the MAC address. */
    //#ifndef DISABLE_VENDOR
    //mac_resolved = (bstring) get_vendor(mac_addr);
    //rec->mac_resolved = bstrcpy(mac_resolved);
    //#else
+   //new->mac_addr = ?;
    new->mac_resolved = NULL;
    //#endif
 
-   new->first_seen = time(NULL);
-   new->last_seen = time(NULL);
+   new->first_seen = tstamp;
+   new->last_seen = tstamp;
 
    /* Insert ARP record into data structure. */
    //TAILQ_INSERT_HEAD(&arpassets, rec, next);
@@ -397,7 +425,8 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 
 void del_assets (int ctime) {
    extern asset *passet;
-   time_t check_time = time(NULL);
+   extern time_t tstamp;
+   time_t check_time = tstamp;
    //extern asset *bucket[BUCKET_SIZE];
    //for ( int akey = 0; akey < BUCKET_SIZE; akey++ ) {
    //   passet = bucket[akey];
@@ -477,6 +506,7 @@ void del_asset (asset *passet, asset **bucket_ptr ){
 void print_assets () {
 
    extern asset *passet;
+   extern time_t tstamp;
    asset *rec = passet;
 
       while ( rec != NULL ) {
@@ -498,6 +528,12 @@ void print_assets () {
 
          printf("\n[*] %s",ip_addr_s);
 
+         //printf("%x",rec->mac_addr);
+         // help :)
+         if (rec->mac_addr != 0x00000000) {
+            printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
+         }
+
          while ( tmp_sa != NULL ) {
             printf(",[service:%s]",(char*)bdata(tmp_sa->application));
             tmp_sa = tmp_sa->next;
@@ -506,6 +542,11 @@ void print_assets () {
          while ( tmp_oa != NULL ) {
             printf(",[%s:%s]",(char*)bdata(tmp_oa->detection),(char*)bdata(tmp_oa->raw_fp));
             tmp_oa = tmp_oa->next;
+         }
+
+         if (tstamp - rec->last_seen > 600) {
+            printf("We could delete this asset!");
+            //del_asset(rec);
          }
          rec = rec->next;
       }

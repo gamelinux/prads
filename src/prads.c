@@ -216,7 +216,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             else {
                end_ptr = (packet + SNAPLENGTH);
             }
-            fp_udp4(ip4, udph, end_ptr); 
+            fp_udp4(ip4, udph, end_ptr, ip_src); 
          }else{
             //printf("[*] - NOT CHECKING UDP PACKAGE\n");
          }
@@ -239,7 +239,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             else {
                end_ptr = (packet + SNAPLENGTH);
             }
-            fp_icmp4(ip4, icmph, end_ptr);
+            fp_icmp4(ip4, icmph, end_ptr, ip_src);
             update_asset(AF_INET,ip_src);
          /* service_icmp(*ip4,*tcph) */
          /* fp_icmp(ip, ttl, ipopts, len, id, ipflags, df); */

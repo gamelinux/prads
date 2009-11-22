@@ -41,7 +41,7 @@
  */
 
 
-void display_signature( uint8_t  ttl,
+void display_signature_tcp ( uint8_t  ttl,
                         uint16_t tot,
                         uint8_t  df,
                         uint8_t  *op,
@@ -61,10 +61,10 @@ void display_signature( uint8_t  ttl,
    bstring fp, de;
    fp = de = bfromcstr("");
 
-   if ( ftype == TF_SYN ) de=bformat("SYN"); else
-   if ( ftype == TF_SYNACK ) de=bformat("SYNACK"); else
+   if ( ftype == TF_SYN ) de=bformat("syn"); else
+   if ( ftype == TF_SYNACK ) de=bformat("synack"); else
    if ( ftype == TF_ACK ) {
-      de=bformat("ACK");
+      de=bformat("ack");
       open_mode=1;
    }
 
@@ -122,28 +122,49 @@ void display_signature_icmp ( uint8_t  type,
                               uint8_t  df,
                               int32_t  olen,
                               uint16_t totlen,
+                              uint8_t  idata,
                               uint16_t ip_off,
-                              uint8_t  ip_tos) {
-   bstring fingerprint;
-   printf("[*] ASSET IP/ICMP FINGERPRINT: ");
-   fingerprint = bformat("%u:%u:%u:%u:%d:%u:%u:%u",type,code,ttl,df,olen,totlen,df,ip_off,ip_tos);
-   printf("[%s]\n",(char*)bdata(fingerprint));
-   //update_asset_os(ip_addr, port, detection, raw_fp, af);
-   bdestroy(fingerprint);
+                              uint8_t  ip_tos,
+                              uint32_t quirks,
+                              struct in6_addr ip_src,
+                              int      af) {
+   bstring fp;
+   //printf("[*] ASSET IP/ICMP FINGERPRINT: ");
+
+   fp = bformat("%u:%u:%u:%u:%u:%d:%u:%u:",idata,type,code,ttl,df,olen,totlen,ip_off,ip_tos);
+   if (!quirks) bformata(fp,"."); else {
+      if (quirks & QUIRK_ZEROID) bformata(fp,"Z");
+      if (quirks & QUIRK_IPOPT) bformata(fp,"I");
+   }
+
+   //printf("[%s]\n",(char*)bdata(fp));
+   update_asset_os(ip_src, htons(type), bformat("icmp"), fp, af);
+   bdestroy(fp);
 }
 
 void display_signature_udp (  uint16_t  totlen,
+                              uint16_t  udata,
                               uint8_t   ttl,
                               uint8_t   df,
                               int32_t   olen,
                               uint16_t  ip_len,
-                              uint16_t ip_off,
-                              uint8_t  ip_tos) {
+                              uint16_t  ip_off,
+                              uint8_t   ip_tos,
+                              uint32_t  quirks,
+                              struct in6_addr ip_src,
+                              uint16_t  port,
+                              int       af) {
 
-   bstring fingerprint;
-   printf("[*] ASSET IP/UDP FINGERPRINT: ");
-   fingerprint = bformat("%u:%u:%u:%d:%u:%u",totlen,ttl,df,olen,ip_off,ip_tos);
-   printf("[%s]\n",(char*)bdata(fingerprint));
-   //update_asset_os(ip_addr, port, detection, raw_fp, af);
-   bdestroy(fingerprint);
+   bstring fp;
+   //printf("[*] ASSET IP/UDP FINGERPRINT: ");
+   
+   fp = bformat("%u:%u:%u:%u:%d:%u:%u:",udata,totlen,ttl,df,olen,ip_off,ip_tos);
+   if (!quirks) bformata(fp,"."); else {
+      if (quirks & QUIRK_ZEROID) bformata(fp,"Z");
+      if (quirks & QUIRK_IPOPT) bformata(fp,"I");
+   }
+
+   //printf("[%s]\n",(char*)bdata(fp));
+   update_asset_os(ip_src, port, bformat("udp"), fp, af);
+   //bdestroy(fp);
 }
