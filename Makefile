@@ -4,10 +4,10 @@ CONFDIR=${PREFIX}/etc/prads
 PMDIR=${PREFIX}/lib/site_perl/
 
 build:
-	# nothing to do
+	${MAKE} -C src/
 
 clean:
-	# nothing to do
+	${MAKE} -C src/ $@
 
 install:
 	# binary

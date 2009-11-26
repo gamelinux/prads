@@ -5,6 +5,21 @@ void del_asset (asset *passet, asset **bucket_ptr);
 void del_os_assets (asset *passet);
 void del_serv_assets (asset *passet);
 
+const char *u_ntop(const struct in6_addr ip_addr, int af, const char *dest){
+   if ( af == AF_INET) {
+      if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], dest, INET_ADDRSTRLEN + 1)){
+         perror("Something died in inet_ntop");
+         return NULL;
+      }
+   } else if ( af == AF_INET6) {
+      if (!inet_ntop(AF_INET6, &ip_addr, dest, INET6_ADDRSTRLEN + 1)){
+         perror("Something died in inet_ntop");
+         return NULL;
+      }
+   }
+   return dest;
+}
+
 /* looks to see if asset exists and update timestamp. If not, create the asset */
 update_asset (int af, struct in6_addr ip_addr) {
    extern asset *passet;
@@ -85,7 +100,9 @@ update_asset_os ( struct in6_addr ip_addr,
                tmp_oa->raw_fp = bstrcpy(raw_fp);
                //tmp_sa->i_attempts++;
                tmp_oa->last_seen = tstamp;
-               printf("[*] ASSET FINGERPRINT UPDATED\n");
+               static char ip_addr_s[INET6_ADDRSTRLEN];
+               u_ntop(ip_addr, af, ip_addr_s);
+               printf("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
                bdestroy(raw_fp);
                bdestroy(detection);
                return 0;
@@ -117,10 +134,10 @@ update_asset_os ( struct in6_addr ip_addr,
                   perror("Something died in inet_ntop");
             }
             if (port == 0) {
-               printf("[*] ADDED NEW CLIENT ASSET %s FINGERPRINT: %s [%s]\n",(char *)bdata(detection),ip_addr_s,(char *)bdata(raw_fp));
+               printf("[*] client %s fp: %16s [%s]\n",(char *)bdata(detection),ip_addr_s,(char *)bdata(raw_fp));
             }
             else {
-               printf("[*] ADDED NEW SERVER ASSET %s FINGERPRINT TO: %s:%d [%s]\n",
+               printf("[*] server %s fp: %16s:%-5d [%s]\n",
                             (char *)bdata(detection),ip_addr_s,ntohs(port),(char *)bdata(raw_fp));
             }
             bdestroy(raw_fp);
@@ -204,10 +221,10 @@ update_asset_service ( struct in6_addr ip_addr,
                   perror("Something died in inet_ntop");
             }
             if (port == 0) {
-               printf("[*] ADDED NEW CLIENT TO ASSET: %s %s\n",ip_addr_s,(char *)bdata(application));
+               printf("[*] new client: %s %s\n",ip_addr_s,(char *)bdata(application));
             }
             else {
-               printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+               printf("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
             }
             return 0;
          }
@@ -222,10 +239,10 @@ update_asset_service ( struct in6_addr ip_addr,
                //tmp_sa->i_attempts++;
                tmp_sa->last_seen = tstamp;
                if (port == 0) {
-                  printf("[*] CLIENT ASSET UPDATED\n");
+                  printf("[*] client asset updated\n");
                }
                else {
-                  printf("[*] SERVICE ASSET UPDATED\n");
+                  printf("[*] service asset updated\n");
                }
                return 0;
             }
@@ -255,10 +272,10 @@ update_asset_service ( struct in6_addr ip_addr,
                      perror("Something died in inet_ntop");
                }
                if (port == 0) {
-                  printf("[*] ADDED NEW CLIENT ASSET: %s %s\n",ip_addr_s,(char *)bdata(application));
+                  printf("[*] new client asset: %s %s\n",ip_addr_s,(char *)bdata(application));
                }
                else {
-                  printf("[*] ADDED NEW SERVICE TO ASSET: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+                  printf("[*] new service asset: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
                }
                return 0;
             }
@@ -330,7 +347,7 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
       if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
          perror("Something died in inet_ntop");
    }
-   printf("[*] ASSET ADDED: %s\n",ip_addr_s);
+   printf("[*] asset added: %s\n",ip_addr_s);
    return;
 }
 
@@ -377,7 +394,7 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
             /* For verbos sanity checking */
             static char ip_addr_s[INET6_ADDRSTRLEN];
             inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-            printf("[*] ADDED MAC-ADDRESS TO AN EXISTING ASSET: %s\n",ip_addr_s);
+            printf("[*] added mac address to asset: %s\n",ip_addr_s);
             return;
          }
       }
@@ -419,7 +436,7 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 
    static char ip_addr_s[INET6_ADDRSTRLEN];
    inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-   printf("[*] ARP ASSET ADDED: %s\n",ip_addr_s);
+   printf("[*] arp asset added: %s\n",ip_addr_s);
    return;
 }
 
