@@ -535,7 +535,7 @@ void del_asset (asset *passet, asset **bucket_ptr ){
    passet=NULL;
 }
 
-void print_assets () {
+void print_assets() {
 
    extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
@@ -567,34 +567,43 @@ void print_assets () {
 
          printf("\n[*] %s",ip_addr_s);
 
-         //printf("%x",rec->mac_addr);
          // help :)
          if (rec->mac_addr != 0x00000000) {
-            printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
+            //printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
          }
 
          while ( tmp_sa != NULL ) {
             if (tmp_sa->port != 0) {
-               printf(",[service:%s]",(char*)bdata(tmp_sa->application));
+               //printf(",[service:%s]",(char*)bdata(tmp_sa->application));
             } else {
-               printf(",[client:%s]",(char*)bdata(tmp_sa->application));
+               //printf(",[client:%s]",(char*)bdata(tmp_sa->application));
+            }
+            if (tstamp - tmp_sa->last_seen > 600) {
+               //printf("[*] we could delete this service-asset!");
+               //del_service_asset(rec);
             }
             tmp_sa = tmp_sa->next;
          }
 
          while ( tmp_oa != NULL ) {
-            printf(",[%s:%s]",(char*)bdata(tmp_oa->detection),(char*)bdata(tmp_oa->raw_fp));
+            //printf(",[%s:%s]",(char*)bdata(tmp_oa->detection),(char*)bdata(tmp_oa->raw_fp));
+            if (tstamp - tmp_oa->last_seen > 600) {
+               //printf("[*] We could delete this os-asset!");
+               //del_os_asset(rec);
+            }
             tmp_oa = tmp_oa->next;
          }
 
-         if (tstamp - rec->last_seen > 600) {
-            printf("We could delete this asset!");
+         if (tstamp - rec->last_seen > 6) {
+            //printf("  *deleting this asset*\n");
+            asset *tmp = rec;
+            rec = rec->next;
+            del_asset ( tmp, &passet[akey]);
             //del_asset(rec);
+         } else {
+            rec = rec->next;
          }
-         rec = rec->next;
       }
-      //printf("\n");
    }
-   printf("\n");
 }
 

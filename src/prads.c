@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
    signal(SIGTERM, game_over);
    signal(SIGINT,  game_over);
    signal(SIGQUIT, game_over);
-   signal(SIGALRM, end_sessions);
+   signal(SIGALRM, set_end_sessions);
 
    while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:v")) != -1)
    switch (ch) {
@@ -506,6 +506,7 @@ int main(int argc, char *argv[]) {
       drop_privs();
    } 
    bucket_keys_NULL();
+   alarm (TIMEOUT);
 
    printf("[*] Sniffing...\n\n");
    pcap_loop(handle,-1,got_packet,NULL);

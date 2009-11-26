@@ -215,12 +215,14 @@ void end_sessions() {
             }
             cxt = cxt->next;
             del_connection(tmp, &bucket[cxkey]);
+            //printf("[*] connection deleted!!!\n");
          }else{
             cxt = cxt->next;
          }
       }
    }
    /* printf("Expired: %u of %u total connections:\n",expired,curcxt); */
+print_assets ();
 }
 
 void del_connection (connection *cxt, connection **bucket_ptr ){
@@ -287,7 +289,8 @@ void end_all_sessions() {
          expired++;
          connection *tmp = cxt;
          cxt = cxt->next;
-         move_connection(tmp, &bucket[cxkey]);
+         del_connection(tmp, &bucket[cxkey]);
+         //move_connection(tmp, &bucket[cxkey]);
          if ( cxt == NULL ) {
             bucket[cxkey] = NULL;
          }
