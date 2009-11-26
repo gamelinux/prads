@@ -605,5 +605,6 @@ void print_assets() {
          }
       }
    }
+printf("\n");
 }
 
