@@ -535,7 +535,11 @@ void print_assets () {
          }
 
          while ( tmp_sa != NULL ) {
-            printf(",[service:%s]",(char*)bdata(tmp_sa->application));
+            if (tmp_sa->port != 0) {
+               printf(",[service:%s]",(char*)bdata(tmp_sa->application));
+            } else {
+               printf(",[client:%s]",(char*)bdata(tmp_sa->application));
+            }
             tmp_sa = tmp_sa->next;
          }
 

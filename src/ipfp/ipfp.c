@@ -66,6 +66,7 @@ void display_signature_tcp ( uint8_t  ttl,
    if ( ftype == TF_ACK ) {
       de=bformat("ack");
       open_mode=1;
+      //wss = 0;
    }
 
    if (mss && wss && !(wss % mss)) fp=bformat("S%d",(wss/mss)); else
@@ -77,7 +78,9 @@ void display_signature_tcp ( uint8_t  ttl,
    if (!open_mode) {
       if (tot < PACKET_BIG) bformata(fp,":%d:%d:%d:",ttl,df,tot);
       else bformata(fp,":%d:%d:*(%d):",ttl,df,tot);
-   } else bformata(fp,":%d:%d:*:",ttl,df);
+   } else {
+      bformata(fp,":%d:%d:*:",ttl,df);
+   }
  
    for (j=0;j<ocnt;j++) {
       switch (op[j]) {
@@ -158,7 +161,8 @@ void display_signature_udp (  uint16_t  totlen,
    bstring fp;
    //printf("[*] ASSET IP/UDP FINGERPRINT: ");
    
-   fp = bformat("%u:%u:%u:%u:%d:%u:%u:",udata,totlen,ttl,df,olen,ip_off,ip_tos);
+   //fp = bformat("%u:%u:%u:%u:%d:%u:%u:",udata,totlen,ttl,df,olen,ip_off,ip_tos);
+   fp = bformat("%u,%u:%u:%d:%u:%u:",totlen,ttl,df,olen,ip_off,ip_tos);
    if (!quirks) bformata(fp,"."); else {
       if (quirks & QUIRK_ZEROID) bformata(fp,"Z");
       if (quirks & QUIRK_IPOPT) bformata(fp,"I");
