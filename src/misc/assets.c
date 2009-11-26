@@ -593,7 +593,8 @@ void print_assets () {
          }
          rec = rec->next;
       }
-      printf("\n");
+      //printf("\n");
    }
+   printf("\n");
 }
 
