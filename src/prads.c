@@ -57,7 +57,7 @@ time_t       timecnt,tstamp;
 pcap_t       *handle;
 connection   *bucket[BUCKET_SIZE];
 connection   *cxtbuffer = NULL;
-asset        *passet = NULL;
+asset        *passet[BUCKET_SIZE];
 signature    *sig_serv_tcp = NULL;
 signature    *sig_serv_udp = NULL;
 signature    *sig_client_tcp = NULL;
@@ -69,6 +69,7 @@ char  *group_name, *user_name, *true_pid_name;
 char  *pidfile = "prads.pid";
 char  *pidpath = "/var/run";
 int   verbose,inpacket,gameover,use_syslog,intr_flag,s_check;
+uint64_t     hash;
 
 /*  I N T E R N A L   P R O T O T Y P E S  ************************************/
 static void usage();

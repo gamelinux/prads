@@ -22,9 +22,11 @@ const char *u_ntop(const struct in6_addr ip_addr, int af, const char *dest){
 
 /* looks to see if asset exists and update timestamp. If not, create the asset */
 update_asset (int af, struct in6_addr ip_addr) {
-   extern asset *passet;
+   extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
-   asset *rec = passet;
+   extern uint64_t hash;
+   hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
+   asset *rec = passet[hash];
 
    while ( rec != NULL ) {
       if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] 
@@ -66,9 +68,13 @@ update_asset_os ( struct in6_addr ip_addr,
                         int       af)
 {
 
-   extern asset *passet;
+   extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
-   asset *rec = passet;
+   extern uint64_t hash;
+   hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
+   asset *rec = passet[hash];
+   //asset *rec = passet;
+
    int counter = 0;
    int asset_match   = 0;
    //printf("Incomming Asset, %s: %u:%u [%s]\n",(char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
@@ -175,9 +181,13 @@ update_asset_service ( struct in6_addr ip_addr,
               bstring application,
               int af)
 {
-   extern asset *passet;
+   extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
-   asset *rec = passet;
+   extern uint64_t hash;
+   hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
+   asset *rec = passet[hash];
+   //asset *rec = passet;
+
    int counter = 0;
    int asset_match   = 0;
    //printf("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
@@ -310,8 +320,11 @@ update_asset_service ( struct in6_addr ip_addr,
 void
 add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
 
-   extern asset *passet;
+   extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
+   extern uint64_t hash;
+   hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
+   //asset *rec = passet[hash];
    asset *rec = NULL;
 
    /* Assign list to temp structure.  */
@@ -333,9 +346,9 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
     * through the identification process.
     */
    //TAILQ_INSERT_HEAD(&assets, rec, next);
-   rec->next           = passet;
+   rec->next           = passet[hash];
    rec->prev           = NULL;
-   passet = rec;
+   passet[hash] = rec;
 
    /* verbose info for sanity checking */
    static char ip_addr_s[INET6_ADDRSTRLEN];
@@ -372,11 +385,13 @@ char* hex2mac(const char *mac) {
 
 void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 
-   extern asset *passet;
+   extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
-   asset *rec = passet;
+   extern uint64_t hash;
    struct in6_addr ip_addr;
    memcpy(&ip_addr.s6_addr32[0], arp_spa, sizeof(u_int8_t) * 4);
+   hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
+   asset *rec = passet[hash];
 
    /* Check the ARP data structure for an existing entry. */
    while ( rec != NULL ) {
@@ -430,9 +445,9 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 
    /* Insert ARP record into data structure. */
    //TAILQ_INSERT_HEAD(&arpassets, rec, next);
-   new->next           = passet;
+   new->next           = passet[BUCKET_SIZE];
    new->prev           = NULL;
-   passet = new;
+   passet[BUCKET_SIZE] = new;
 
    static char ip_addr_s[INET6_ADDRSTRLEN];
    inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
@@ -441,20 +456,20 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 }
 
 void del_assets (int ctime) {
-   extern asset *passet;
+   extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
    time_t check_time = tstamp;
    //extern asset *bucket[BUCKET_SIZE];
    //for ( int akey = 0; akey < BUCKET_SIZE; akey++ ) {
    //   passet = bucket[akey];
    //   xpir = 0;
-   while ( passet != NULL ) {
-      if ( (passet->last_seen - check_time) >= ctime ) {
-         del_serv_assets(passet);
-         del_os_assets(passet);
+//   while ( passet != NULL ) {
+//      if ( (passet->last_seen - check_time) >= ctime ) {
+//         del_serv_assets(passet);
+//         del_os_assets(passet);
          //del_asset(passet, &bucket[akey]);
-      }
-   }   
+//      }
+//   }   
 }
 
 void del_os_assets (asset *passet) {
@@ -522,10 +537,17 @@ void del_asset (asset *passet, asset **bucket_ptr ){
 
 void print_assets () {
 
-   extern asset *passet;
+   extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
-   asset *rec = passet;
+   extern uint64_t hash;
+   asset *rec = NULL;
+   //hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
+   //asset *rec = passet[hash];
+   //asset *rec = passet;
+   int akey;
 
+   for ( akey = 0; akey < BUCKET_SIZE; akey++ ) {
+      rec = passet[akey];
       while ( rec != NULL ) {
          serv_asset *tmp_sa = NULL;
          os_asset *tmp_oa = NULL;
@@ -572,5 +594,6 @@ void print_assets () {
          rec = rec->next;
       }
       printf("\n");
+   }
 }
 
