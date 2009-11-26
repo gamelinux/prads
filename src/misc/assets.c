@@ -565,7 +565,7 @@ void print_assets() {
                perror("Something died in inet_ntop");
          }
 
-         printf("\n[*] %s",ip_addr_s);
+         printf("[*] %s\n",ip_addr_s);
 
          // help :)
          if (rec->mac_addr != 0x00000000) {
@@ -605,6 +605,6 @@ void print_assets() {
          }
       }
    }
-printf("\n");
+//printf("\n");
 }
 
