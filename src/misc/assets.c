@@ -594,7 +594,7 @@ void print_assets() {
             tmp_oa = tmp_oa->next;
          }
 
-         if (tstamp - rec->last_seen > 6) {
+         if (tstamp - rec->last_seen > 600) {
             //printf("  *deleting this asset*\n");
             asset *tmp = rec;
             rec = rec->next;
