@@ -64,6 +64,8 @@ signature    *sig_client_tcp = NULL;
 signature    *sig_client_udp = NULL;
 char  src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
 static char  *dev,*dpath;
+//bstring      sunknown;
+//sunknown  = bformat("unknown");
 char         *chroot_dir;
 char  *group_name, *user_name, *true_pid_name;
 char  *pidfile = "prads.pid";
@@ -138,6 +140,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             }
             fp_tcp4(ip4, tcph, end_ptr, TF_SYN, ip_src);
             //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
+            update_asset_service(ip_src, tcph->dst_port, ip4->ip_p, bformat("unknown"), bformat("unknown"), AF_INET);
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
             update_asset(AF_INET,ip_src);
@@ -152,6 +155,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                end_ptr = (packet + SNAPLENGTH);
             }
             fp_tcp4(ip4, tcph, end_ptr, TF_SYNACK, ip_src);
+            update_asset_service(ip_src, tcph->src_port, ip4->ip_p, bformat("unknown"), bformat("unknown"), AF_INET);
          }
 /* else if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
             //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));

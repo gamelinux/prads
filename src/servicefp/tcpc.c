@@ -63,7 +63,7 @@ void client_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
          ip_addr.s6_addr32[1] = 0;
          ip_addr.s6_addr32[2] = 0;
          ip_addr.s6_addr32[3] = 0;
-         update_asset_service(ip_addr, 0, ip4->ip_p, tmpsig->service, app, AF_INET);
+         update_asset_service(ip_addr, tcph->dst_port, ip4->ip_p, tmpsig->service, app, AF_INET);
          bdestroy(app);
          return;
       }

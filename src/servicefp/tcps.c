@@ -45,7 +45,7 @@
 
 void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
 
-   const char        *err = NULL;        /* PCRE */
+   const char        *err = NULL;    /* PCRE */
    int               erroffset,rc;   /* PCRE */
    int               ovector[15];
    extern signature  *sig_serv_tcp;

@@ -2,8 +2,8 @@
 
 void add_asset (int af, struct in6_addr ip_addr, time_t discovered);
 void del_asset (asset *passet, asset **bucket_ptr);
-void del_os_assets (asset *passet);
-void del_serv_assets (asset *passet);
+void del_os_asset (os_asset *prev_os, os_asset *passet);
+void del_serv_asset (serv_asset *prev_service, serv_asset *passet);
 
 const char *u_ntop(const struct in6_addr ip_addr, int af, const char *dest){
    if ( af == AF_INET) {
@@ -106,14 +106,14 @@ update_asset_os ( struct in6_addr ip_addr,
                tmp_oa->raw_fp = bstrcpy(raw_fp);
                //tmp_sa->i_attempts++;
                tmp_oa->last_seen = tstamp;
-               static char ip_addr_s[INET6_ADDRSTRLEN];
-               u_ntop(ip_addr, af, ip_addr_s);
-               printf("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
+               //static char ip_addr_s[INET6_ADDRSTRLEN];
+               //u_ntop(ip_addr, af, ip_addr_s);
+               //printf("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
                bdestroy(raw_fp);
                bdestroy(detection);
                return 0;
             }
-         tmp_oa = tmp_oa->next;
+            tmp_oa = tmp_oa->next;
          }
             
          if (tmp_oa == NULL) {
@@ -121,10 +121,11 @@ update_asset_os ( struct in6_addr ip_addr,
             new_oa = (os_asset*)calloc(1,sizeof(os_asset));
             new_oa->detection = bstrcpy(detection);
             new_oa->raw_fp = bstrcpy(raw_fp);
-            //tmp_oa->i_attempts = 1;
+            //new_oa->i_attempts = 1;
             new_oa->first_seen = tstamp;
             new_oa->last_seen = tstamp;
-            new_oa->next = rec->os;
+            //new_oa->next = rec->os;
+            new_oa->next = head_oa;
             new_oa->prev = NULL;
             //head_oa->prev = new_oa;
             rec->os = new_oa;
@@ -139,13 +140,13 @@ update_asset_os ( struct in6_addr ip_addr,
                if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
                   perror("Something died in inet_ntop");
             }
-            if (port == 0) {
-               printf("[*] client %s fp: %16s [%s]\n",(char *)bdata(detection),ip_addr_s,(char *)bdata(raw_fp));
-            }
-            else {
-               printf("[*] server %s fp: %16s:%-5d [%s]\n",
-                            (char *)bdata(detection),ip_addr_s,ntohs(port),(char *)bdata(raw_fp));
-            }
+            //if (port == 0) {
+            //   printf("[*] client %s fp: %16s [%s]\n",(char *)bdata(detection),ip_addr_s,(char *)bdata(raw_fp));
+            //}
+            //else {
+            //   printf("[*] server %s fp: %16s:%-5d [%s]\n",
+            //                (char *)bdata(detection),ip_addr_s,ntohs(port),(char *)bdata(raw_fp));
+            //}
             bdestroy(raw_fp);
             bdestroy(detection);
             return 0;
@@ -221,40 +222,65 @@ update_asset_service ( struct in6_addr ip_addr,
             rec->services = new_sa;
 
             /* verbose info for sanity checking */
-            static char ip_addr_s[INET6_ADDRSTRLEN];
-            if ( af == AF_INET) {
-               if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
-                  perror("Something died in inet_ntop");
-            }
-            else if ( af == AF_INET6) {
-               if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
-                  perror("Something died in inet_ntop");
-            }
-            if (port == 0) {
-               printf("[*] new client: %s %s\n",ip_addr_s,(char *)bdata(application));
-            }
-            else {
-               printf("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-            }
+            //static char ip_addr_s[INET6_ADDRSTRLEN];
+            //if ( af == AF_INET) {
+            //   if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+            //      perror("Something died in inet_ntop");
+            //}
+            //else if ( af == AF_INET6) {
+            //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+            //      perror("Something died in inet_ntop");
+            //}
+            //if (port == 0) {
+            //   printf("[*] new client: %s %s\n",ip_addr_s,(char *)bdata(application));
+            //}
+            //else {
+            //   printf("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+            //}
             return 0;
          }
          while ( tmp_sa != NULL ) {
-            if (port == tmp_sa->port && proto == tmp_sa->proto
-                  && (bstricmp(application,tmp_sa->application) == 0)) {
+            //if (port == tmp_sa->port && proto == tmp_sa->proto 
+            //      && (bstricmp(application,tmp_sa->application) == 0)) {
+            if (port == tmp_sa->port && proto == tmp_sa->proto) {
                /* Found! */
-               bdestroy(tmp_sa->service);
-               tmp_sa->service = bstrcpy(service);
-               bdestroy(tmp_sa->application);
-               tmp_sa->application = bstrcpy(application);
-               //tmp_sa->i_attempts++;
-               tmp_sa->last_seen = tstamp;
-               if (port == 0) {
-                  printf("[*] client asset updated\n");
+               /* If we have an id for the service which is != unknown AND the id now is unknown */
+               /* - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown */
+               //if ( !(bstricmp(bformat("unknown"),tmp_sa->application) == 0) && (bstricmp(bformat("unknown"),application)) == 0 ) {
+               if ( !(bstricmp(bformat("unknown"),application) == 0) && (bstricmp(bformat("unknown"),tmp_sa->application)) == 0 ) {
+                  tmp_sa->i_attempts = 0;
+                  bdestroy(tmp_sa->service);
+                  bdestroy(tmp_sa->application);
+                  tmp_sa->service = bstrcpy(service);
+                  tmp_sa->application = bstrcpy(application);
+                  tmp_sa->last_seen = tstamp;
+                  return 0;
                }
-               else {
-                  printf("[*] service asset updated\n");
+               else if ( !(bstricmp(application,tmp_sa->application) == 0) ) {
+                  if (tmp_sa->i_attempts > MAX_PKT_CHECK+1) {
+                     tmp_sa->i_attempts = 0;
+                     bdestroy(tmp_sa->service);
+                     bdestroy(tmp_sa->application);
+                     tmp_sa->service = bstrcpy(service);
+                     tmp_sa->application = bstrcpy(application);
+                     tmp_sa->last_seen = tstamp;
+                     return 0;
+                  } else {
+                     tmp_sa->i_attempts++;
+                     tmp_sa->last_seen = tstamp;
+                     return 0;
+                  }
+               } else {
+                  tmp_sa->i_attempts = 0;
+                  tmp_sa->last_seen = tstamp;
+                  //if (cs == 0) { // cs needs to be defined - to say if its a client or server
+                  //   printf("[*] client asset updated\n");
+                  //}
+                  //else {
+                  //   printf("[*] service asset updated\n");
+                  //}
+                  return 0;
                }
-               return 0;
             }
             if (tmp_sa->next == NULL) {
                serv_asset *new_sa = NULL;
@@ -263,7 +289,7 @@ update_asset_service ( struct in6_addr ip_addr,
                new_sa->proto = proto;
                new_sa->service = bstrcpy(service);
                new_sa->application = bstrcpy(application);
-               //new_sa->i_attempts = 1;
+               new_sa->i_attempts = 0;
                new_sa->first_seen = tstamp;
                new_sa->last_seen = tstamp;
                new_sa->next = rec->services;
@@ -272,21 +298,21 @@ update_asset_service ( struct in6_addr ip_addr,
                rec->services = new_sa;
 
                /* verbose info for sanity checking */
-               static char ip_addr_s[INET6_ADDRSTRLEN];
-               if ( af == AF_INET) {
-                  if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
-                     perror("Something died in inet_ntop");
-               }
-               else if ( af == AF_INET6) {
-                  if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
-                     perror("Something died in inet_ntop");
-               }
-               if (port == 0) {
-                  printf("[*] new client asset: %s %s\n",ip_addr_s,(char *)bdata(application));
-               }
-               else {
-                  printf("[*] new service asset: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-               }
+               //static char ip_addr_s[INET6_ADDRSTRLEN];
+               //if ( af == AF_INET) {
+               //   if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+               //      perror("Something died in inet_ntop");
+               //}
+               //else if ( af == AF_INET6) {
+               //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+               //      perror("Something died in inet_ntop");
+               //}
+               //if (port == 0) {
+               //   printf("[*] new client asset: %s %s\n",ip_addr_s,(char *)bdata(application));
+               //}
+               //else {
+               //   printf("[*] new service asset: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+               //}
                return 0;
             }
          tmp_sa = tmp_sa->next;
@@ -348,19 +374,21 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
    //TAILQ_INSERT_HEAD(&assets, rec, next);
    rec->next           = passet[hash];
    rec->prev           = NULL;
+   rec->os             = NULL;
+   rec->services       = NULL;
    passet[hash] = rec;
 
    /* verbose info for sanity checking */
-   static char ip_addr_s[INET6_ADDRSTRLEN];
-   if ( af == AF_INET) {
-      if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
-         perror("Something died in inet_ntop");
-   }
-   else if ( af == AF_INET6) {
-      if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
-         perror("Something died in inet_ntop");
-   }
-   printf("[*] asset added: %s\n",ip_addr_s);
+   //static char ip_addr_s[INET6_ADDRSTRLEN];
+   //if ( af == AF_INET) {
+   //   if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+   //      perror("Something died in inet_ntop");
+   //}
+   //else if ( af == AF_INET6) {
+   //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+   //      perror("Something died in inet_ntop");
+   //}
+   //printf("[*] asset added: %s\n",ip_addr_s);
    return;
 }
 
@@ -407,9 +435,9 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
             memcpy(&rec->mac_addr, arp_sha, MAC_ADDR_LEN);
             rec->last_seen = tstamp;
             /* For verbos sanity checking */
-            static char ip_addr_s[INET6_ADDRSTRLEN];
-            inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-            printf("[*] added mac address to asset: %s\n",ip_addr_s);
+            //static char ip_addr_s[INET6_ADDRSTRLEN];
+            //inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+            //printf("[*] added mac address to asset: %s\n",ip_addr_s);
             return;
          }
       }
@@ -449,9 +477,9 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
    new->prev           = NULL;
    passet[BUCKET_SIZE] = new;
 
-   static char ip_addr_s[INET6_ADDRSTRLEN];
-   inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-   printf("[*] arp asset added: %s\n",ip_addr_s);
+   //static char ip_addr_s[INET6_ADDRSTRLEN];
+   //inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+   //printf("[*] arp asset added: %s\n",ip_addr_s);
    return;
 }
 
@@ -472,42 +500,45 @@ void del_assets (int ctime) {
 //   }   
 }
 
-void del_os_assets (asset *passet) {
+void del_os_asset (os_asset *prev_os, os_asset *os) {
+
+   if (os == NULL) return;
    os_asset *tmp_oa = NULL;
    os_asset *next_oa = NULL;
-   tmp_oa = passet->os;
+   tmp_oa = os;
 
-   while ( tmp_oa != NULL ) {
-      bdestroy(tmp_oa->vendor);
-      bdestroy(tmp_oa->os);
-      bdestroy(tmp_oa->detection);
-      bdestroy(tmp_oa->raw_fp);
-      bdestroy(tmp_oa->matched_fp);
+   bdestroy(tmp_oa->vendor);
+   bdestroy(tmp_oa->os);
+   bdestroy(tmp_oa->detection);
+   bdestroy(tmp_oa->raw_fp);
+   bdestroy(tmp_oa->matched_fp);
 
-      next_oa = tmp_oa->next;
-      free(tmp_oa);
-      tmp_oa=NULL;
-      tmp_oa = next_oa;
-   }
+   // IS THIS WRONG?
+   next_oa = tmp_oa->next;
+   free(tmp_oa);
+   tmp_oa=NULL;
+   os = next_oa;
+   if (prev_os != NULL) prev_os->next = os;
    return;
 
 }
 
-void del_serv_assets (asset *passet) {
+void del_serv_asset (serv_asset *prev_service, serv_asset *service) {
    
+   if (service == NULL) return;
    serv_asset *tmp_sa = NULL;
    serv_asset *next_sa = NULL;
-   tmp_sa = passet->services;
+   tmp_sa = service;
 
-   while ( tmp_sa != NULL ) {
-printf("A\n");
-      bdestroy(tmp_sa->service);
-      bdestroy(tmp_sa->application);
-      next_sa = tmp_sa->next;
-      free(tmp_sa);
-      tmp_sa=NULL;
-      tmp_sa = next_sa;
-   }
+   bdestroy(tmp_sa->service);
+   bdestroy(tmp_sa->application);
+
+   // IS THIS WRONG?
+   next_sa = tmp_sa->next;
+   free(tmp_sa);
+   tmp_sa=NULL;
+   service = next_sa;
+   if (prev_service != NULL) prev_service->next = service;
    return;
 }
 
@@ -549,62 +580,83 @@ void print_assets() {
    for ( akey = 0; akey < BUCKET_SIZE; akey++ ) {
       rec = passet[akey];
       while ( rec != NULL ) {
-         serv_asset *tmp_sa = NULL;
-         os_asset *tmp_oa = NULL;
-         tmp_sa = rec->services;
-         tmp_oa = rec->os;
-
-         /* verbose info for sanity checking */
-         static char ip_addr_s[INET6_ADDRSTRLEN];
-         if ( rec->af == AF_INET) {
-            if (!inet_ntop(AF_INET, &rec->ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
-               perror("Something died in inet_ntop");
-         }
-         else if ( rec->af == AF_INET6) {
-            if (!inet_ntop(AF_INET6, &rec->ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
-               perror("Something died in inet_ntop");
-         }
-
-         printf("[*] %s\n",ip_addr_s);
-
-         // help :)
-         if (rec->mac_addr != 0x00000000) {
-            //printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
-         }
-
-         while ( tmp_sa != NULL ) {
-            if (tmp_sa->port != 0) {
-               //printf(",[service:%s]",(char*)bdata(tmp_sa->application));
-            } else {
-               //printf(",[client:%s]",(char*)bdata(tmp_sa->application));
+         /* Checks if something has been updated in the asset since last time */
+         if (tstamp - rec->last_seen < TIMEOUT+1) {
+            serv_asset *tmp_sa = NULL;
+            os_asset *tmp_oa = NULL;
+            tmp_sa = rec->services;
+            tmp_oa = rec->os;
+   
+            /* verbose info for sanity checking */
+            static char ip_addr_s[INET6_ADDRSTRLEN];
+            if ( rec->af == AF_INET) {
+               if (!inet_ntop(AF_INET, &rec->ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
+                  perror("Something died in inet_ntop");
             }
-            if (tstamp - tmp_sa->last_seen > 600) {
-               //printf("[*] we could delete this service-asset!");
-               //del_service_asset(rec);
+            else if ( rec->af == AF_INET6) {
+               if (!inet_ntop(AF_INET6, &rec->ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
+                  perror("Something died in inet_ntop");
             }
-            tmp_sa = tmp_sa->next;
+   
+            printf("[*] %s",ip_addr_s);
+   
+            // help :) Would like to not display 00:00:00:00:00
+            if (rec->mac_addr != 0x00000000) {
+               printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
+            }
+   
+            serv_asset *prev_tmp_sa = NULL;
+            while ( tmp_sa != NULL ) {
+               /* Just print out the asset if it is updated since lasttime */
+               if (tstamp - tmp_sa->last_seen < TIMEOUT+1) {
+                  //if (tmp_sa->port != 0) {
+                     printf(",[service:%s:%u]",(char*)bdata(tmp_sa->application),ntohs(tmp_sa->port));
+                  //} else {
+                  //   printf(",[client:%s:%u]",(char*)bdata(tmp_sa->application),tmp_sa->port);
+                  //}
+               }
+               /* If the asset is getting too old - delete it */
+               if (tstamp - tmp_sa->last_seen > 1) {
+                  //printf("[*] we could delete this service-asset!");
+                  //serv_asset *stmp = tmp_sa;
+                  tmp_sa = tmp_sa->next;
+                  //del_serv_asset(prev_tmp_sa, stmp);
+               } else {
+                  prev_tmp_sa = tmp_sa;
+                  tmp_sa = tmp_sa->next;
+               }
+            }
+      
+            os_asset *prev_tmp_oa = NULL;
+            while ( tmp_oa != NULL ) {
+               /* Just print out the asset if it is updated since lasttime */
+               if (tstamp - tmp_oa->last_seen < TIMEOUT+1) {
+                  printf(",[%s:%s]",(char*)bdata(tmp_oa->detection),(char*)bdata(tmp_oa->raw_fp));
+               }
+               /* If the asset is getting too old - delete it */
+               if (tstamp - tmp_oa->last_seen > 1) {
+                  //printf("[*] We could delete this os-asset!");
+                  //os_asset *otmp = tmp_oa;
+                  tmp_oa = tmp_oa->next;
+                  //del_os_asset(prev_tmp_oa, otmp);
+               } else {
+                  prev_tmp_oa = tmp_oa;
+                  tmp_oa = tmp_oa->next;
+               }
+            }
+            printf("\n");
          }
 
-         while ( tmp_oa != NULL ) {
-            //printf(",[%s:%s]",(char*)bdata(tmp_oa->detection),(char*)bdata(tmp_oa->raw_fp));
-            if (tstamp - tmp_oa->last_seen > 600) {
-               //printf("[*] We could delete this os-asset!");
-               //del_os_asset(rec);
-            }
-            tmp_oa = tmp_oa->next;
-         }
-
+         /*If nothing in the asset has been updated for some time - delete it!*/
          if (tstamp - rec->last_seen > 600) {
             //printf("  *deleting this asset*\n");
             asset *tmp = rec;
             rec = rec->next;
             del_asset ( tmp, &passet[akey]);
-            //del_asset(rec);
          } else {
             rec = rec->next;
          }
       }
    }
-//printf("\n");
 }
 
