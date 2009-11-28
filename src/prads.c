@@ -21,35 +21,19 @@
 */
 
 /*  I N C L U D E S  **********************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <netinet/in.h> 
-#include <signal.h>
-#include <pcap.h>
-#include <getopt.h>
-#include <time.h>
-#include <sys/types.h>
-#include <grp.h>
-#include <pwd.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <syslog.h>
-#include <fcntl.h>
-#include <errno.h>
+#include "common.h"
 #include "prads.h"
-#include "misc/sys_func.c"
-#include "misc/assets.c"
-#include "cxtracking/cxt.c"
-#include "ipfp/ipfp.c"
-#include "ipfp/tcp_fp.c"
-#include "ipfp/udp_fp.c"
-#include "ipfp/icmp_fp.c"
-#include "servicefp/servicefp.c"
+#include "sys_func.h"
+#include "assets.h"
+#include "cxt.h"
+#include "ipfp/ipfp.h"
+#include "servicefp/servicefp.h"
+/*
 #include "servicefp/tcps.c"
 #include "servicefp/tcpc.c"
+
 #include "servicefp/udps.c"
+*/
 
 /*  G L O B A L E S  **********************************************************/
 u_int64_t    cxtrackerid;
@@ -502,7 +486,7 @@ int main(int argc, char *argv[]) {
          printf("[*] PID path \"%s\" is bad, check privilege.",pidpath);
          openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
          printf("[*] Daemonizing...\n\n");
-         go_daemon();
+         daemonize(NULL);
    }
 
    if(drop_privs_flag) {

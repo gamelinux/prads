@@ -1,17 +1,72 @@
-void bucket_keys_NULL();
-static int set_chroot(void);
-static int drop_privs(void);
-static int is_valid_path(char *path);
-static int create_pid_file(char *path, char *filename);
-void game_over();
-void end_all_sessions();
-void del_assets (int ctime);
-int daemonize();
-static int go_daemon();
-void print_assets ();
-void set_end_sessions();
-void end_sessions();
+#include "common.h"
+#include "prads.h"
+#include "sys_func.h"
 
+/* ----------------------------------------------------------
+ * FUNCTION     : strlcpy
+ * DESCRIPTION  : Replacement for strncpy.  This function is
+ *              : native in *BSD.  This function was taken
+ *              : from Secure Programming Cookbook by
+ *              : O'Reilly.
+ * INPUT        : 0 - Destination String
+ *              : 1 - Source String
+ *              : 2 - Size
+ * RETURN       : Length of String Created
+ *  ---------------------------------------------------------- */
+#ifndef HAVE_STRLCPY
+#warning no strlcpy
+size_t strlcpy(char *dst, const char *src, size_t size) {
+  char       *dstptr = dst;
+  size_t     tocopy  = size;
+  const char *srcptr = src;
+
+  if (tocopy && --tocopy) {
+    do {
+      if (!(*dstptr++ = *srcptr++)) break;
+    } while (--tocopy);
+  }
+  if (!tocopy) {
+    if (size) *dstptr = 0;
+    while (*srcptr++);
+  }
+
+  return (srcptr - src - 1);
+}
+#endif
+
+/* ----------------------------------------------------------
+ * FUNCTION     : strlcat
+ * DESCRIPTION  : Replacement for strcat.  This function is
+ *              : native in *BSD.  This function was taken
+ *              : from Secure Programming Cookbook by
+ *              : O'Reilly.
+ * INPUT        : 0 - Destination String
+ *              : 1 - Source String
+ *              : 2 - Size
+ * RETURN       : Length of String Created
+ * ---------------------------------------------------------- */
+#ifndef HAVE_STRLCAT
+#warning no strlcat
+size_t strlcat(char *dst, const char *src, size_t len) {
+  char       *dstptr = dst;
+  size_t     dstlen, tocopy = len;
+  const char *srcptr = src;
+
+  while (tocopy-- && *dstptr) dstptr++;
+  dstlen = dstptr - dst;
+  if (!(tocopy = len - dstlen)) return (dstlen + strlen(src));
+  while (*srcptr) {
+    if (tocopy != 1) {
+      *dstptr++ = *srcptr;
+      tocopy--;
+    }
+    srcptr++;
+  }
+  *dstptr = 0;
+
+  return (dstlen + (srcptr - src));
+}
+#endif
 void bucket_keys_NULL() {
    int cxkey;
    extern connection *bucket[BUCKET_SIZE];
@@ -67,7 +122,7 @@ void game_over() {
 }
 
 
-static int set_chroot(void) {
+int set_chroot(void) {
    char *absdir;
    char *logdir;
    int abslen;
@@ -96,7 +151,7 @@ static int set_chroot(void) {
    return 0;
 }
 
-static int drop_privs(void) {
+int drop_privs(void) {
    struct group *gr;
    struct passwd *pw;
    char *endptr;
@@ -154,7 +209,7 @@ static int drop_privs(void) {
    return 0;
 }
 
-static int is_valid_path(char *path) {
+int is_valid_path(const char *path) {
    struct stat st;
 
    if ( path == NULL ) {
@@ -169,10 +224,10 @@ static int is_valid_path(char *path) {
    return 1;
 }
 
-static int create_pid_file(char *path, char *filename) {
+int create_pid_file(const char *path, const char *filename) {
    char filepath[STDBUF];
-   char *fp = NULL;
-   char *fn = NULL;
+   const char *fp = NULL;
+   const char *fn = NULL;
    char pid_buffer[12];
    struct flock lock;
    int rval;
@@ -267,9 +322,4 @@ int daemonize() {
 
    return SUCCESS;
 }
-
-static int go_daemon() {
-    return daemonize(NULL);
-}
-
 

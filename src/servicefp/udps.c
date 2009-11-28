@@ -41,7 +41,8 @@
  * Old school...
  */
 
-#include <pcre.h>
+#include "../prads.h"
+#include "servicefp.h"
 
 void service_udp4 (ip4_header *ip4, udp_header *udph, char *payload, int plen) {
 

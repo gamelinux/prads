@@ -25,8 +25,11 @@
 //#include "cxtracking/cxt.c"
 //#include "servicefp/tcps.c"
 
-#include "misc/bstrlib.c"
-#include "misc/bstrlib.h"
+//#include "misc/bstrlib.c"
+#ifndef PRADS_H
+#define PRADS_H
+#include "common.h"
+#include "bstrlib.h"
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
@@ -484,3 +487,4 @@ typedef struct _fp_entry {
 
 /*  P R O T O T Y P E S  ******************************************************/
 
+#endif // PRADS_H

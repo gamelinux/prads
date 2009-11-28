@@ -40,6 +40,9 @@
  * Old school...
  */
 
+#include "../common.h"
+#include "../prads.h"
+#include "ipfp.h"
 
 void display_signature_tcp ( uint8_t  ttl,
                         uint16_t tot,

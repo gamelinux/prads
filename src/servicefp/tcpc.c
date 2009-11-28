@@ -41,7 +41,9 @@
  * Old school...
  */
 
-#include <pcre.h>
+#include "../prads.h"
+#include "../sys_func.h"
+#include "servicefp.h"
 
 void client_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
 

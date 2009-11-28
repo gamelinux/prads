@@ -1,9 +1,6 @@
-//#include "prads.h"
-
-void add_asset (int af, struct in6_addr ip_addr, time_t discovered);
-void del_asset (asset *passet, asset **bucket_ptr);
-void del_os_asset (os_asset *prev_os, os_asset *passet);
-void del_serv_asset (serv_asset *prev_service, serv_asset *passet);
+#include "common.h"
+#include "prads.h"
+#include "assets.h"
 
 const char *u_ntop(const struct in6_addr ip_addr, int af, const char *dest){
    if ( af == AF_INET) {
@@ -343,8 +340,8 @@ update_asset_service ( struct in6_addr ip_addr,
  *              : 2 - Discovered
  * RETURN       : None!
  * ---------------------------------------------------------- */
-void
-add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
+void add_asset (int af, struct in6_addr ip_addr, time_t discovered)
+{
 
    extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
