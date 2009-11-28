@@ -126,8 +126,8 @@ update_asset_os ( struct in6_addr ip_addr,
             new_oa->last_seen = tstamp;
             //new_oa->next = rec->os;
             new_oa->next = head_oa;
+            if (head_oa != NULL) head_oa->prev= new_oa;
             new_oa->prev = NULL;
-            //head_oa->prev = new_oa;
             rec->os = new_oa;
 
             /* verbose info for sanity checking */
@@ -373,6 +373,7 @@ add_asset (int af, struct in6_addr ip_addr, time_t discovered) {
     */
    //TAILQ_INSERT_HEAD(&assets, rec, next);
    rec->next           = passet[hash];
+   if (passet[hash] != NULL) passet[hash]->prev  = rec;
    rec->prev           = NULL;
    rec->os             = NULL;
    rec->services       = NULL;
@@ -473,9 +474,10 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 
    /* Insert ARP record into data structure. */
    //TAILQ_INSERT_HEAD(&arpassets, rec, next);
-   new->next           = passet[BUCKET_SIZE];
+   new->next           = passet[hash];
    new->prev           = NULL;
-   passet[BUCKET_SIZE] = new;
+   if (passet[hash] != NULL) passet[hash]->prev  = new;
+   passet[hash] = new;
 
    //static char ip_addr_s[INET6_ADDRSTRLEN];
    //inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
@@ -523,22 +525,42 @@ void del_os_asset (os_asset *prev_os, os_asset *os) {
 
 }
 
-void del_serv_asset (serv_asset *prev_service, serv_asset *service) {
+void del_serv_asset (serv_asset *head_sa, serv_asset *service) {
    
    if (service == NULL) return;
    serv_asset *tmp_sa = NULL;
    serv_asset *next_sa = NULL;
-   tmp_sa = service;
+   serv_asset *prev_sa = NULL;
 
+   tmp_sa = service;
    bdestroy(tmp_sa->service);
    bdestroy(tmp_sa->application);
 
    // IS THIS WRONG?
    next_sa = tmp_sa->next;
-   free(tmp_sa);
-   tmp_sa=NULL;
+   prev_sa = tmp_sa->prev;
+
+   //if (prev_sa != NULL) prev_sa->next = service;
+   //if (next_sa != NULL) next_sa->prev = service;
+   if ( prev_sa == NULL ) {
+      /* beginning of list */
+      //*bucket_ptr_from = next_sa;
+      head_sa = next_sa;
+      /* not only entry */
+      if ( next_sa )
+         next_sa->prev = NULL;
+   } else if ( next_sa == NULL ) {
+      /* at end of list! */
+      prev_sa->next = NULL;
+   } else {
+      /* a node */
+      prev_sa->next = next_sa;
+      next_sa->prev = prev_sa;
+   }
+
+   free(service);
+   service=NULL;
    service = next_sa;
-   if (prev_service != NULL) prev_service->next = service;
    return;
 }
 
@@ -605,7 +627,7 @@ void print_assets() {
                printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
             }
    
-            serv_asset *prev_tmp_sa = NULL;
+            serv_asset *head_sa = rec->services;
             while ( tmp_sa != NULL ) {
                /* Just print out the asset if it is updated since lasttime */
                if (tstamp - tmp_sa->last_seen < TIMEOUT+1) {
@@ -618,11 +640,11 @@ void print_assets() {
                /* If the asset is getting too old - delete it */
                if (tstamp - tmp_sa->last_seen > 1) {
                   //printf("[*] we could delete this service-asset!");
-                  //serv_asset *stmp = tmp_sa;
+                  serv_asset *stmp = tmp_sa;
                   tmp_sa = tmp_sa->next;
-                  //del_serv_asset(prev_tmp_sa, stmp);
+                  //if (tmp_sa->prev == NULL) head_sa = NULL;
+                  //del_serv_asset(head_sa, stmp);
                } else {
-                  prev_tmp_sa = tmp_sa;
                   tmp_sa = tmp_sa->next;
                }
             }
