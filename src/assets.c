@@ -499,30 +499,46 @@ void del_assets (int ctime) {
 //   }   
 }
 
-void del_os_asset (os_asset *prev_os, os_asset *os) {
+void del_os_asset (os_asset **head_oa, os_asset *os) {
 
    if (os == NULL) return;
    os_asset *tmp_oa = NULL;
    os_asset *next_oa = NULL;
+   os_asset *prev_oa = NULL;
+   
    tmp_oa = os;
-
    bdestroy(tmp_oa->vendor);
    bdestroy(tmp_oa->os);
-   bdestroy(tmp_oa->detection);
+   //bdestroy(tmp_oa->detection);
    bdestroy(tmp_oa->raw_fp);
-   bdestroy(tmp_oa->matched_fp);
+   //bdestroy(tmp_oa->matched_fp);
 
-   // IS THIS WRONG?
    next_oa = tmp_oa->next;
+   prev_oa = tmp_oa->prev;
+
+   if ( prev_oa == NULL ) {
+      /* beginning of list */
+      *head_oa = next_oa;
+      /* not only entry */
+      if ( next_oa )
+         next_oa->prev = NULL;
+   } else if ( next_oa == NULL ) {
+      /* at end of list! */
+      prev_oa->next = NULL;
+   } else {
+      /* a node */
+      prev_oa->next = next_oa;
+      next_oa->prev = prev_oa;
+   }
+
    free(tmp_oa);
    tmp_oa=NULL;
    os = next_oa;
-   if (prev_os != NULL) prev_os->next = os;
    return;
 
 }
 
-void del_serv_asset (serv_asset *head_sa, serv_asset *service) {
+void del_serv_asset (serv_asset **head_sa, serv_asset *service) {
    
    if (service == NULL) return;
    serv_asset *tmp_sa = NULL;
@@ -533,16 +549,12 @@ void del_serv_asset (serv_asset *head_sa, serv_asset *service) {
    bdestroy(tmp_sa->service);
    bdestroy(tmp_sa->application);
 
-   // IS THIS WRONG?
    next_sa = tmp_sa->next;
    prev_sa = tmp_sa->prev;
 
-   //if (prev_sa != NULL) prev_sa->next = service;
-   //if (next_sa != NULL) next_sa->prev = service;
    if ( prev_sa == NULL ) {
       /* beginning of list */
-      //*bucket_ptr_from = next_sa;
-      head_sa = next_sa;
+      *head_sa = next_sa;
       /* not only entry */
       if ( next_sa )
          next_sa->prev = NULL;
@@ -624,7 +636,7 @@ void print_assets() {
                printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
             }
    
-            serv_asset *head_sa = rec->services;
+            //serv_asset *head_sa = rec->services;
             while ( tmp_sa != NULL ) {
                /* Just print out the asset if it is updated since lasttime */
                if (tstamp - tmp_sa->last_seen < TIMEOUT+1) {
@@ -639,14 +651,12 @@ void print_assets() {
                   //printf("[*] we could delete this service-asset!");
                   serv_asset *stmp = tmp_sa;
                   tmp_sa = tmp_sa->next;
-                  //if (tmp_sa->prev == NULL) head_sa = NULL;
-                  //del_serv_asset(head_sa, stmp);
+                  del_serv_asset(&rec->services, stmp);
                } else {
                   tmp_sa = tmp_sa->next;
                }
             }
       
-            os_asset *prev_tmp_oa = NULL;
             while ( tmp_oa != NULL ) {
                /* Just print out the asset if it is updated since lasttime */
                if (tstamp - tmp_oa->last_seen < TIMEOUT+1) {
@@ -655,11 +665,10 @@ void print_assets() {
                /* If the asset is getting too old - delete it */
                if (tstamp - tmp_oa->last_seen > 1) {
                   //printf("[*] We could delete this os-asset!");
-                  //os_asset *otmp = tmp_oa;
+                  os_asset *otmp = tmp_oa;
                   tmp_oa = tmp_oa->next;
-                  //del_os_asset(prev_tmp_oa, otmp);
+                  del_os_asset(&rec->os, otmp);
                } else {
-                  prev_tmp_oa = tmp_oa;
                   tmp_oa = tmp_oa->next;
                }
             }
