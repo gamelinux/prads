@@ -33,8 +33,9 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.1.5"
-#define TIMEOUT                       15
+#define VERSION                       "0.1.6"
+#define TIMEOUT                       30
+#define TCP_TIMEOUT                   300 /* When idle IP connections should be timed out */
 #define BUCKET_SIZE                   1669 
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000

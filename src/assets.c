@@ -639,7 +639,7 @@ void print_assets() {
             //serv_asset *head_sa = rec->services;
             while ( tmp_sa != NULL ) {
                /* Just print out the asset if it is updated since lasttime */
-               if (tstamp - tmp_sa->last_seen < TIMEOUT+1) {
+               if (tstamp - tmp_sa->last_seen <= TIMEOUT) {
                   //if (tmp_sa->port != 0) {
                      printf(",[service:%s:%u]",(char*)bdata(tmp_sa->application),ntohs(tmp_sa->port));
                   //} else {
@@ -647,7 +647,7 @@ void print_assets() {
                   //}
                }
                /* If the asset is getting too old - delete it */
-               if (tstamp - tmp_sa->last_seen > 1) {
+               if (tstamp - tmp_sa->last_seen > TIMEOUT*4) {
                   //printf("[*] we could delete this service-asset!");
                   serv_asset *stmp = tmp_sa;
                   tmp_sa = tmp_sa->next;
@@ -659,11 +659,11 @@ void print_assets() {
       
             while ( tmp_oa != NULL ) {
                /* Just print out the asset if it is updated since lasttime */
-               if (tstamp - tmp_oa->last_seen < TIMEOUT+1) {
+               if (tstamp - tmp_oa->last_seen <= TIMEOUT) {
                   printf(",[%s:%s]",(char*)bdata(tmp_oa->detection),(char*)bdata(tmp_oa->raw_fp));
                }
                /* If the asset is getting too old - delete it */
-               if (tstamp - tmp_oa->last_seen > 1) {
+               if (tstamp - tmp_oa->last_seen > TIMEOUT*4) {
                   //printf("[*] We could delete this os-asset!");
                   os_asset *otmp = tmp_oa;
                   tmp_oa = tmp_oa->next;
@@ -676,7 +676,7 @@ void print_assets() {
          }
 
          /*If nothing in the asset has been updated for some time - delete it!*/
-         if (tstamp - rec->last_seen > 600) {
+         if (tstamp - rec->last_seen > TIMEOUT*5) {
             //printf("  *deleting this asset*\n");
             asset *tmp = rec;
             rec = rec->next;

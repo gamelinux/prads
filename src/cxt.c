@@ -187,7 +187,7 @@ void end_sessions() {
            else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
               xpir = 1;
            }
-           else if ( (check_time - cxt->last_pkt_time) > 600 ) {
+           else if ( (check_time - cxt->last_pkt_time) > TCP_TIMEOUT ) {
               xpir = 1;
            }
          }
@@ -199,7 +199,7 @@ void end_sessions() {
                xpir = 1;
             }
          }
-         else if ( (check_time - cxt->last_pkt_time) > 300 ) {
+         else if ( (check_time - cxt->last_pkt_time) > TCP_TIMEOUT ) {
             xpir = 1;
          }
 
