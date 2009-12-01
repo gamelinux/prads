@@ -5,6 +5,7 @@ www,v/Perl LWP/$1/$2,lwp-request/([.\d]+) libwww-perl/([.\d]+)
 www,v/Mozilla Browser/$1/$2/,User-Agent\x3a Mozilla\/([\S]+) (.*)
 www,v/Opera/$1/$2/,User-Agent\x3a Opera\/([\S]+) (.*)\r\n
 #www,v/User Agent: $1///,User-Agent\x3a (.*)\r\n
+www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
 
 # SSH
 ssh,v/OpenSSH/$2/Protocol $1/,SSH-([.\d]+)-OpenSSH[_-](\S+)

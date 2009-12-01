@@ -191,14 +191,17 @@ void end_sessions() {
               xpir = 1;
            }
          }
+         /* UDP */
          else if ( cxt->proto == IP_PROTO_UDP && (check_time - cxt->last_pkt_time) > 60 ) {
             xpir = 1;
          }
+         /* ICMP */
          else if ( cxt->proto == IP_PROTO_ICMP || cxt->proto == IP6_PROTO_ICMP ) {
             if ( (check_time - cxt->last_pkt_time) > 60 ) {
                xpir = 1;
             }
          }
+         /* All Other protocols */
          else if ( (check_time - cxt->last_pkt_time) > TCP_TIMEOUT ) {
             xpir = 1;
          }
@@ -219,13 +222,12 @@ void end_sessions() {
       }
    }
    /* printf("Expired: %u of %u total connections:\n",expired,curcxt); */
-print_assets ();
 }
 
 void del_connection (connection *cxt, connection **bucket_ptr ){
-   /* remove cxt from bucket */
    connection *prev = cxt->prev; /* OLDER connections */
    connection *next = cxt->next; /* NEWER connections */
+
    if(prev == NULL){
       // beginning of list
       *bucket_ptr = next;
@@ -246,34 +248,6 @@ void del_connection (connection *cxt, connection **bucket_ptr ){
    cxt=NULL;
 }
 
-void move_connection (connection* cxt, connection **bucket_ptr ){
-   /* remove cxt from bucket */
-   extern connection *cxtbuffer;
-   connection *prev = cxt->prev; /* OLDER connections */
-   connection *next = cxt->next; /* NEWER connections */
-   if(prev == NULL){
-      // beginning of list
-      *bucket_ptr = next;
-      // not only entry
-      if(next)
-         next->prev = NULL;
-   } else if(next == NULL){
-      // at end of list!
-      prev->next = NULL;
-   } else {
-      // a node.
-      prev->next = next;
-      next->prev = prev;
-   }
-
-   /* add cxt to expired list cxtbuffer 
-    - if head is null -> head = cxt;
-    */
-   cxt->next = cxtbuffer; // next = head
-   cxt->prev = NULL;
-   cxtbuffer = cxt;       // head = cxt. result: newhead = cxt->oldhead->list...
-}
-
 void end_all_sessions() {
    connection *cxt;
    int cxkey;
@@ -287,7 +261,6 @@ void end_all_sessions() {
          connection *tmp = cxt;
          cxt = cxt->next;
          del_connection(tmp, &bucket[cxkey]);
-         //move_connection(tmp, &bucket[cxkey]);
          if ( cxt == NULL ) {
             bucket[cxkey] = NULL;
          }
@@ -295,5 +268,4 @@ void end_all_sessions() {
    }
    /* printf("Expired: %d.\n",expired); */
 }
-
 

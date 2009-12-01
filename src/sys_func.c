@@ -67,6 +67,7 @@ size_t strlcat(char *dst, const char *src, size_t len) {
   return (dstlen + (srcptr - src));
 }
 #endif
+
 void bucket_keys_NULL() {
    int cxkey;
    extern connection *bucket[BUCKET_SIZE];
@@ -85,7 +86,6 @@ void check_interupt() {
    else if ( intr_flag == 2 ) {
       print_assets();
    }
-
    else if ( intr_flag == 3 ) {
       set_end_sessions();
    }
@@ -100,7 +100,7 @@ void set_end_sessions() {
 
    if ( inpacket == 0 ) {
       end_sessions();
-      //cxtbuffer_write();
+      print_assets();
       intr_flag = 0;
       alarm(TIMEOUT);
    }
@@ -120,7 +120,6 @@ void game_over() {
    }
    intr_flag = 1;
 }
-
 
 int set_chroot(void) {
    char *absdir;

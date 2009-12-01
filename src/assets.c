@@ -234,6 +234,8 @@ update_asset_service ( struct in6_addr ip_addr,
             //else {
             //   printf("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
             //}
+            bdestroy(service);  // dont understand why this cant be :(
+            bdestroy(application); // dont understand why this cant be :(
             return 0;
          }
          while ( tmp_sa != NULL ) {
@@ -265,6 +267,8 @@ update_asset_service ( struct in6_addr ip_addr,
                   } else {
                      tmp_sa->i_attempts++;
                      tmp_sa->last_seen = tstamp;
+                     //bdestroy(service);
+                     //bdestroy(application);
                      return 0;
                   }
                } else {
@@ -276,6 +280,8 @@ update_asset_service ( struct in6_addr ip_addr,
                   //else {
                   //   printf("[*] service asset updated\n");
                   //}
+                  //bdestroy(service);
+                  //bdestroy(application);
                   return 0;
                }
             }
@@ -324,10 +330,12 @@ update_asset_service ( struct in6_addr ip_addr,
    }
    else if (asset_match == 0 ) {
       update_asset (af, ip_addr);
-      //add_asset (af, ip_addr, time(NULL)); // <-- this should not be nessesary!
       update_asset_service(ip_addr, port, proto, service, application, af);
       return 0;
    }
+   printf("[*] Im I here ?\n");
+   bdestroy(service);
+   bdestroy(application);
    return 1;
 }
 
@@ -507,9 +515,9 @@ void del_os_asset (os_asset **head_oa, os_asset *os) {
    os_asset *prev_oa = NULL;
    
    tmp_oa = os;
-   bdestroy(tmp_oa->vendor);
-   bdestroy(tmp_oa->os);
-   //bdestroy(tmp_oa->detection);
+   //bdestroy(tmp_oa->vendor);
+   //bdestroy(tmp_oa->os);
+   bdestroy(tmp_oa->detection);
    bdestroy(tmp_oa->raw_fp);
    //bdestroy(tmp_oa->matched_fp);
 
@@ -577,6 +585,25 @@ void del_asset (asset *passet, asset **bucket_ptr ){
    /* remove passet from bucket */
    asset *prev = passet->prev; /* OLDER connections */
    asset *next = passet->next; /* NEWER connections */
+   serv_asset *tmp_sa = passet->services;
+   os_asset   *tmp_oa = passet->os;
+   serv_asset *stmp = tmp_sa;
+   os_asset   *otmp = tmp_oa;
+
+   /* delete all service assets */
+   while ( tmp_sa != NULL ) {
+      stmp = tmp_sa;
+      tmp_sa = tmp_sa->next;
+      del_serv_asset(&passet->services, stmp);
+   }
+   /* delete all os assets */
+   while ( tmp_oa != NULL ) {   
+      otmp = tmp_oa;
+      tmp_oa = tmp_oa->next;
+      del_os_asset(&passet->os, otmp);
+   }
+
+   /* now delete the asset */
    if(prev == NULL){
       // beginning of list
       *bucket_ptr = next;
@@ -593,6 +620,7 @@ void del_asset (asset *passet, asset **bucket_ptr ){
    }
 
    /* Free and set to NULL */
+   bdestroy(passet->mac_resolved);
    free(passet);
    passet=NULL;
 }
@@ -676,7 +704,8 @@ void print_assets() {
          }
 
          /*If nothing in the asset has been updated for some time - delete it!*/
-         if (tstamp - rec->last_seen > TIMEOUT*5) {
+         //if (tstamp - rec->last_seen > TIMEOUT*5) {
+         if ( 1 ) { // test - deleting all assets all the time - look for memleak
             //printf("  *deleting this asset*\n");
             asset *tmp = rec;
             rec = rec->next;
