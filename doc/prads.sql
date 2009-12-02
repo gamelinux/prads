@@ -1,9 +1,13 @@
-DROP DATABASE prads;
-
+DROP DATABASE IF EXISTS prads;
 CREATE DATABASE prads;
 
-use prads;
+-- use prads; -- mysql specific
+drop table if exists asset;
+-- autoincrements in postgres
+drop sequence asset_id_seq;
+create sequence asset_id_seq;
 
+/* mysql
 CREATE TABLE IF NOT EXISTS `asset` (
    `assetID`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
    `hostname`       VARCHAR(255) NOT NULL default '',
@@ -25,12 +29,45 @@ CREATE TABLE IF NOT EXISTS `asset` (
    UNIQUE           KEY `unique_row_key` (`ipaddress`,`port`,`protocol`,`service`,`application`),
    PRIMARY          KEY (`sensorID`,`assetID`)
 ) TYPE=InnoDB;
+*/
 
-## INET_ATON6
-DELIMITER //
+CREATE TABLE asset (
+   -- assetID        INT NOT NULL AUTO_INCREMENT,
+   assetID        INT NOT NULL default nextval('asset_id_seq'),
+   hostname       TEXT default '',
+   sensorID       INT NOT NULL default '0',
+   timestamp      TIMESTAMP default NULL,
+   time           TIME default NULL,
+   --ipaddress      decimal(39,0) default NULL,
+   ipaddress      inet default null,
+   mac_address    VARCHAR(20) NOT NULL default '',
+   mac_vendor     VARCHAR(50) NOT NULL default '',
+   os             TEXT default '',
+   os_details     TEXT default '',
+   os_fingerprint TEXT default '',
+   link           TEXT default '',
+   distance       INT default '0',
+   service        TEXT default '',
+   application    TEXT default '',
+   port           INT default '0',
+   protocol       SMALLINT NOT NULL default '0',
+   hex_payload    TEXT default '',
+   --constraint uniq unique (ipaddress,port,protocol,service,application),
+   --UNIQUE           KEY unique_row_key (ipaddress,port,protocol,service,application),
+   --PRIMARY          KEY (sensorID,assetID),
+   constraint prikey primary key (sensorID, assetID),
+   CHECK (assetID>=0),
+   CHECK (sensorID>=0),
+   CHECK (distance>=0),
+   CHECK (port>=0),
+   CHECK (protocol >=0)
+);
+
+/*
+-- INET_ATON6
+-- DELIMITER //
 CREATE FUNCTION INET_ATON6(n CHAR(39))
-RETURNS DECIMAL(39) UNSIGNED
-DETERMINISTIC
+RETURNS DECIMAL(39)
 BEGIN
     RETURN CAST(CONV(SUBSTRING(n FROM  1 FOR 4), 16, 10) AS DECIMAL(39))
                        * 5192296858534827628530496329220096 -- 65536 ^ 7
@@ -49,10 +86,8 @@ BEGIN
          + CAST(CONV(SUBSTRING(n FROM 36 FOR 4), 16, 10) AS DECIMAL(39))
          ;
 END;
-//
 DELIMITER ;
-
-## INET_NTOA6
+-- INET_NTOA6
 
 DELIMITER //
 CREATE FUNCTION INET_NTOA6(n DECIMAL(39) UNSIGNED)
@@ -61,7 +96,7 @@ DETERMINISTIC
 BEGIN
   DECLARE a CHAR(39)             DEFAULT '';
   DECLARE i INT                  DEFAULT 7;
-  DECLARE q DECIMAL(39) UNSIGNED DEFAULT 0;
+  DECLARE q DECIMAL(39)          DEFAULT 0;
   DECLARE r INT                  DEFAULT 0;
   WHILE i DO
     -- DIV doesn't work with nubers > bigint
@@ -82,28 +117,33 @@ BEGIN
 END;
 //
 DELIMITER ;
+*/
 
 
 
-## sqlight
-#CREATE TABLE asset (
-#  ip TEXT,
-#  service TEXT,
-#  time TEXT,
-#  fingerprint TEXT,
-#  mac TEXT,
-#  os TEXT,
-#  details TEXT,
-#  link TEXT,
-#  distance TEXT,
-#  reporting TEXT
-#)
 
-CREATE TABLE IF NOT EXISTS `protocol` (
-  `protoID`         TINYINT UNSIGNED NOT NULL default '',
-  `name`            VARCHAR(100) NOT NULL default '',
-  PRIMARY           KEY (`protoID`)
-) TYPE=InnoDB;
+-- sqlight
+/* CREATE TABLE asset (
+  ip TEXT,
+  service TEXT,
+  time TEXT,
+  fingerprint TEXT,
+  mac TEXT,
+  os TEXT,
+  details TEXT,
+  link TEXT,
+  distance TEXT,
+  reporting TEXT
+)
+*/
+
+drop table protocol;
+CREATE TABLE protocol (
+  protoID         SMALLINT,
+  name            VARCHAR(100) NOT NULL default '',
+  PRIMARY           KEY (protoID),
+  CHECK(protoID >= 0)
+);
 
 INSERT INTO protocol VALUES (0,   'HOPOPT');
 INSERT INTO protocol VALUES (1,   'ICMP');
@@ -280,11 +320,9 @@ INSERT INTO protocol VALUES (156,  'UNASSIGNED');
 INSERT INTO protocol VALUES (157,  'UNASSIGNED');
 INSERT INTO protocol VALUES (158,  'UNASSIGNED');
 INSERT INTO protocol VALUES (159,  'UNASSIGNED');
-#... upto 254
+--#... upto 254
 
-# INSERT INTO protocol VALUES (254,  'UNASSIGNED');
+--# INSERT INTO protocol VALUES (254,  'UNASSIGNED');
 
 INSERT INTO protocol VALUES (255,  'Reserved');
-
-
 
