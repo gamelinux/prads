@@ -7,37 +7,12 @@ drop table if exists asset;
 drop sequence asset_id_seq;
 create sequence asset_id_seq;
 
-/* mysql
-CREATE TABLE IF NOT EXISTS `asset` (
-   `assetID`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
-   `hostname`       VARCHAR(255) NOT NULL default '',
-   `sensorID`       INT UNSIGNED NOT NULL default '0',
-   `timestamp`      DATETIME NOT NULL default '0000-00-00 00:00:00',
-   `ipaddress`      decimal(39,0) unsigned default NULL,
-   `mac_address`    VARCHAR(20) NOT NULL default '',
-   `mac_vendor`     VARCHAR(50) NOT NULL default '',
-   `os`             VARCHAR(20) NOT NULL default '',
-   `os_details`     VARCHAR(255) NOT NULL default '',
-   `os_fingerprint` VARCHAR(255) NOT NULL default '',
-   `link`           VARCHAR(20) NOT NULL default '',
-   `distance`       INT UNSIGNED NOT NULL default '0',
-   `service`        VARCHAR(50) NOT NULL default '',
-   `application`    VARCHAR(255) NOT NULL default '',
-   `port`           INT UNSIGNED NOT NULL default '0',
-   `protocol`       TINYINT UNSIGNED NOT NULL default '0',
-   `hex_payload`    VARCHAR(255) default '',
-   UNIQUE           KEY `unique_row_key` (`ipaddress`,`port`,`protocol`,`service`,`application`),
-   PRIMARY          KEY (`sensorID`,`assetID`)
-) TYPE=InnoDB;
-*/
-
 CREATE TABLE asset (
    -- assetID        INT NOT NULL AUTO_INCREMENT,
    assetID        INT NOT NULL default nextval('asset_id_seq'),
    hostname       TEXT default '',
    sensorID       INT NOT NULL default '0',
    timestamp      TIMESTAMP default NULL,
-   time           TIME default NULL,
    --ipaddress      decimal(39,0) default NULL,
    ipaddress      inet default null,
    mac_address    VARCHAR(20) NOT NULL default '',
@@ -63,7 +38,29 @@ CREATE TABLE asset (
    CHECK (protocol >=0)
 );
 
-/*
+/* mysql
+CREATE TABLE IF NOT EXISTS `asset` (
+   `assetID`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `hostname`       VARCHAR(255) NOT NULL default '',
+   `sensorID`       INT UNSIGNED NOT NULL default '0',
+   `timestamp`      DATETIME NOT NULL default '0000-00-00 00:00:00',
+   `ipaddress`      decimal(39,0) unsigned default NULL,
+   `mac_address`    VARCHAR(20) NOT NULL default '',
+   `mac_vendor`     VARCHAR(50) NOT NULL default '',
+   `os`             VARCHAR(20) NOT NULL default '',
+   `os_details`     VARCHAR(255) NOT NULL default '',
+   `os_fingerprint` VARCHAR(255) NOT NULL default '',
+   `link`           VARCHAR(20) NOT NULL default '',
+   `distance`       INT UNSIGNED NOT NULL default '0',
+   `service`        VARCHAR(50) NOT NULL default '',
+   `application`    VARCHAR(255) NOT NULL default '',
+   `port`           INT UNSIGNED NOT NULL default '0',
+   `protocol`       TINYINT UNSIGNED NOT NULL default '0',
+   `hex_payload`    VARCHAR(255) default '',
+   UNIQUE           KEY `unique_row_key` (`ipaddress`,`port`,`protocol`,`service`,`application`),
+   PRIMARY          KEY (`sensorID`,`assetID`)
+) TYPE=InnoDB;
+
 -- INET_ATON6
 -- DELIMITER //
 CREATE FUNCTION INET_ATON6(n CHAR(39))

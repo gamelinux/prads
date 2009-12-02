@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# sqlite3 prads.db .dump | conv_sqlite2pg.pl | psql -U prads
 
 print "\\set ON_ERROR_STOP\n";
 while(<>){
