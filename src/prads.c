@@ -21,35 +21,19 @@
 */
 
 /*  I N C L U D E S  **********************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <netinet/in.h> 
-#include <signal.h>
-#include <pcap.h>
-#include <getopt.h>
-#include <time.h>
-#include <sys/types.h>
-#include <grp.h>
-#include <pwd.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <syslog.h>
-#include <fcntl.h>
-#include <errno.h>
+#include "common.h"
 #include "prads.h"
-#include "misc/sys_func.c"
-#include "misc/assets.c"
-#include "cxtracking/cxt.c"
-#include "ipfp/ipfp.c"
-#include "ipfp/tcp_fp.c"
-#include "ipfp/udp_fp.c"
-#include "ipfp/icmp_fp.c"
-#include "servicefp/servicefp.c"
+#include "sys_func.h"
+#include "assets.h"
+#include "cxt.h"
+#include "ipfp/ipfp.h"
+#include "servicefp/servicefp.h"
+/*
 #include "servicefp/tcps.c"
 #include "servicefp/tcpc.c"
+
 #include "servicefp/udps.c"
+*/
 
 /*  G L O B A L E S  **********************************************************/
 u_int64_t    cxtrackerid;
@@ -64,6 +48,8 @@ signature    *sig_client_tcp = NULL;
 signature    *sig_client_udp = NULL;
 char  src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
 static char  *dev,*dpath;
+//bstring      sunknown;
+//sunknown  = bformat("unknown");
 char         *chroot_dir;
 char  *group_name, *user_name, *true_pid_name;
 char  *pidfile = "prads.pid";
@@ -138,6 +124,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             }
             fp_tcp4(ip4, tcph, end_ptr, TF_SYN, ip_src);
             //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
+            update_asset_service(ip_src, tcph->dst_port, ip4->ip_p, bformat("unknown"), bformat("unknown"), AF_INET);
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
             update_asset(AF_INET,ip_src);
@@ -152,19 +139,8 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                end_ptr = (packet + SNAPLENGTH);
             }
             fp_tcp4(ip4, tcph, end_ptr, TF_SYNACK, ip_src);
+            update_asset_service(ip_src, tcph->src_port, ip4->ip_p, bformat("unknown"), bformat("unknown"), AF_INET);
          }
-/* else if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
-            //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
-            const uint8_t *end_ptr;
-            if (pheader->len <= SNAPLENGTH) {
-               end_ptr = (packet + pheader->len);
-            }
-            else {
-               end_ptr = (packet + SNAPLENGTH);
-            }
-            fp_tcp4(ip4, tcph, end_ptr, TF_ACK);
-            update_asset(AF_INET,ip_src);
-         } */
          if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
             if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
@@ -242,8 +218,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             }
             fp_icmp4(ip4, icmph, end_ptr, ip_src);
             update_asset(AF_INET,ip_src);
-         /* service_icmp(*ip4,*tcph) */
-         /* fp_icmp(ip, ttl, ipopts, len, id, ipflags, df); */
+         /* service_icmp(*ip4,*tcph) // could look for icmp spesific data in package abcde...*/
          }else{
             /* printf("[*] - NOT CHECKING ICMP PACKAGE\n"); */
          }
@@ -271,6 +246,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       /* printf("[*] Got IPv6 Packet...\n"); */
       ip6_header *ip6;
       ip6 = (ip6_header *) (packet + eth_header_len);
+
       if ( ip6->next == IP_PROTO_TCP ) {
          tcp_header *tcph;
          tcph = (tcp_header *) (packet + eth_header_len + IP6_HEADER_LEN);
@@ -418,7 +394,7 @@ int main(int argc, char *argv[]) {
    signal(SIGTERM, game_over);
    signal(SIGINT,  game_over);
    signal(SIGQUIT, game_over);
-   signal(SIGALRM, end_sessions);
+   signal(SIGALRM, set_end_sessions);
 
    while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:v")) != -1)
    switch (ch) {
@@ -498,7 +474,7 @@ int main(int argc, char *argv[]) {
          printf("[*] PID path \"%s\" is bad, check privilege.",pidpath);
          openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
          printf("[*] Daemonizing...\n\n");
-         go_daemon();
+         daemonize(NULL);
    }
 
    if(drop_privs_flag) {
@@ -506,6 +482,7 @@ int main(int argc, char *argv[]) {
       drop_privs();
    } 
    bucket_keys_NULL();
+   alarm (TIMEOUT);
 
    printf("[*] Sniffing...\n\n");
    pcap_loop(handle,-1,got_packet,NULL);

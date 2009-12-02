@@ -1,9 +1,6 @@
-void end_sessions();
-int  cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uint16_t dst_port,
-               uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af);
-void del_connection (connection*, connection**);
-void move_connection (connection*, connection**);
-
+#include "common.h"
+#include "prads.h"
+#include "cxt.h"
 /* For prads, I guess cx_track needs to return a value, which can
  * be used for evaluating if we should do some fingerprinting
  * I suggest:
@@ -190,19 +187,22 @@ void end_sessions() {
            else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
               xpir = 1;
            }
-           else if ( (check_time - cxt->last_pkt_time) > 600 ) {
+           else if ( (check_time - cxt->last_pkt_time) > TCP_TIMEOUT ) {
               xpir = 1;
            }
          }
+         /* UDP */
          else if ( cxt->proto == IP_PROTO_UDP && (check_time - cxt->last_pkt_time) > 60 ) {
             xpir = 1;
          }
+         /* ICMP */
          else if ( cxt->proto == IP_PROTO_ICMP || cxt->proto == IP6_PROTO_ICMP ) {
             if ( (check_time - cxt->last_pkt_time) > 60 ) {
                xpir = 1;
             }
          }
-         else if ( (check_time - cxt->last_pkt_time) > 300 ) {
+         /* All Other protocols */
+         else if ( (check_time - cxt->last_pkt_time) > TCP_TIMEOUT ) {
             xpir = 1;
          }
 
@@ -215,6 +215,7 @@ void end_sessions() {
             }
             cxt = cxt->next;
             del_connection(tmp, &bucket[cxkey]);
+            //printf("[*] connection deleted!!!\n");
          }else{
             cxt = cxt->next;
          }
@@ -224,9 +225,9 @@ void end_sessions() {
 }
 
 void del_connection (connection *cxt, connection **bucket_ptr ){
-   /* remove cxt from bucket */
    connection *prev = cxt->prev; /* OLDER connections */
    connection *next = cxt->next; /* NEWER connections */
+
    if(prev == NULL){
       // beginning of list
       *bucket_ptr = next;
@@ -247,34 +248,6 @@ void del_connection (connection *cxt, connection **bucket_ptr ){
    cxt=NULL;
 }
 
-void move_connection (connection* cxt, connection **bucket_ptr ){
-   /* remove cxt from bucket */
-   extern connection *cxtbuffer;
-   connection *prev = cxt->prev; /* OLDER connections */
-   connection *next = cxt->next; /* NEWER connections */
-   if(prev == NULL){
-      // beginning of list
-      *bucket_ptr = next;
-      // not only entry
-      if(next)
-         next->prev = NULL;
-   } else if(next == NULL){
-      // at end of list!
-      prev->next = NULL;
-   } else {
-      // a node.
-      prev->next = next;
-      next->prev = prev;
-   }
-
-   /* add cxt to expired list cxtbuffer 
-    - if head is null -> head = cxt;
-    */
-   cxt->next = cxtbuffer; // next = head
-   cxt->prev = NULL;
-   cxtbuffer = cxt;       // head = cxt. result: newhead = cxt->oldhead->list...
-}
-
 void end_all_sessions() {
    connection *cxt;
    int cxkey;
@@ -287,7 +260,7 @@ void end_all_sessions() {
          expired++;
          connection *tmp = cxt;
          cxt = cxt->next;
-         move_connection(tmp, &bucket[cxkey]);
+         del_connection(tmp, &bucket[cxkey]);
          if ( cxt == NULL ) {
             bucket[cxkey] = NULL;
          }
@@ -295,5 +268,4 @@ void end_all_sessions() {
    }
    /* printf("Expired: %d.\n",expired); */
 }
-
 

@@ -1,5 +1,6 @@
-
-void fp_udp4 (ip4_header *ip4, udp_header *udph, const uint8_t *end_ptr, struct in6_addr ip_src);
+#include "../common.h"
+#include "../prads.h"
+#include "ipfp.h"
 
 void fp_udp4 (ip4_header *ip4, udp_header *udph, const uint8_t *end_ptr, struct in6_addr ip_src) {
 

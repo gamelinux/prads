@@ -72,6 +72,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
  --debug                 : enable debug messages 0-255 (default: disabled(0))
  --verbose               : debug 1
  --dump                  : Dumps all signatures and fingerprints then exits
+ --dumpdb                : Dumps all assets in database
  --arp                   : Enables ARP discover check
  --service               : Enables Service detection
  --os                    : Enables OS detection
@@ -87,19 +88,20 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
 our $VERSION       = 0.92;
 our $DEBUG         = 0;
+our $DUMPDB        = 0;
 our $DAEMON        = 0;
 our $DUMP          = 0;
 our $VLAN          = 0;
-our $ARP           = 0;
-our $SERVICE_TCP   = 0;
-our $SERVICE_UDP   = 0;
-our $UDP           = 0;
-our $OS            = 0;
-our $OS_SYN        = 0;
+our $ARP           = 1;
+our $SERVICE_TCP   = 1;
+our $SERVICE_UDP   = 1;
+our $UDP           = 1;
+our $OS            = 1;
+our $OS_SYN        = 1;
 our $OS_SYNACK     = 0;
-our $OS_UDP        = 0;
-our $ICMP          = 0;
-our $OS_ICMP       = 0;
+our $OS_UDP        = 1;
+our $ICMP          = 1;
+our $OS_ICMP       = 1;
 our $BPF           = q();
 our $PERSIST       = 1;
 
@@ -115,7 +117,7 @@ our $DB_LAST_UPDATE = 0;
 my $DEVICE;
 my $LOGFILE                 = q(/dev/null);
 my $PIDFILE                 = q(/var/run/prads.pid);
-my $CONFDIR                 = q(/etc/prads);
+my $CONFDIR                 = q(../etc);
 my $CONFIG                  = qq($CONFDIR/prads.conf);
 
 pre_config();
@@ -167,7 +169,8 @@ sub default_config {
    $ARP            = $conf->{arp}                   || $ARP;
    $SERVICE_TCP    = $conf->{service_tcp}           || $SERVICE_TCP;
    $SERVICE_UDP    = $conf->{service_udp}           || $SERVICE_UDP;
-   $DEBUG          = $conf->{debug}                 || $DEBUG;
+   $DEBUG          = $conf->{debug}                 || $ENV{'DEBUG'} || $DEBUG;
+   $DUMPDB         = $conf->{dumpdb}                || $ENV{'DUMPDB'} || $DUMPDB;
    $DAEMON         = $conf->{daemon}                || $DAEMON;
    $BPF            = $conf->{bpfilter}              || $BPF;
    $OS_SYNACK      = $conf->{os_synack_fingerprint} || $OS;
@@ -188,10 +191,12 @@ $UDP = 1 if ($SERVICE_UDP != 1 || $OS_UDP != 1);
 # commandline overrides config & defaults
 Getopt::Long::GetOptions(
     'config|c=s'             => \$CONFIG,
+    'confdir|cd=s'             => \$CONFDIR,
     'dev|d=s'                => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
     'debug=s'                => \$DEBUG,
+    'dumpdb'                 => \$DUMPDB,
     'verbose'                => \$DEBUG,
     'dump'                   => \$DUMP,
     'daemon'                 => \$DAEMON,
@@ -304,6 +309,7 @@ $stats{"timestamp"} = time;
 my $inpacket = my $dodump = 0;
 
 # Prepare to meet the Daemon
+print "Daemon: $DAEMON, PWD: ".`pwd`."\n";
 if ( $DAEMON ) {
         print "Daemonizing...\n";
         chdir ("/") or die "chdir /: $!\n";
@@ -354,7 +360,7 @@ sub setup_db {
       $sth = $dbh->prepare($sql);
       $sth->execute;
    };
-   if($DEBUG){
+   if($DUMPDB){
       $sql = "SELECT * from asset";
       $sth = $dbh->prepare($sql) or die "foo $!";
       $sth->execute or die "$!";
@@ -1784,6 +1790,17 @@ sub commit_db {
 }
 }
 
+sub print_asset {
+   my ($time, $service, $ip, $os, $details, $fp, $dist, $link)= @_;
+
+   for(@_){
+      print;
+      print ":";
+   }print"\n";
+   printf "%11d [%-8s] ip:%-15s %s - %s [%s] distance:%d link:%s\n",
+          $time, $service, $ip, $os, $details, $fp, $dist, $link;
+}
+
 =head2 update_asset
 
  Update the in-memory asset cache.
@@ -1791,12 +1808,13 @@ sub commit_db {
 =cut
 sub update_asset {
    my ($ip, $service, $time, $fp, $mac, $os, $details, $link, $dist) = @_;
-   if(not $os){
+   if(not $os or uc $os eq 'UNKNOWN'){
       ($os, $details) = ('?','?');
    }
    if(not $fp){
       $fp = '?';
    }
+
    my $entry = {
       'ip' => $ip,
       'service' => $service,
@@ -1810,8 +1828,8 @@ sub update_asset {
    };
    my $key = "$service:$ip:$fp";
    if(not $ASSET{$key}){
-      printf "%11d [%-10s] ip:%16s - %s - %s [%s] distance:%d link:%s\n",
-             $time, $service, $ip, $os, $details, $fp, $dist, $link;
+      # new asset
+      print_asset ($time, $service, $ip, $os, $details, $fp, $dist, $link);
    }
    $ASSET{$key} = $entry;
 

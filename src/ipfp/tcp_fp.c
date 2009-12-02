@@ -1,5 +1,6 @@
-void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype, struct in6_addr ip_src);
-void fp_tcp6 (ip6_header *ip6, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype);
+#include "../common.h"
+#include "../prads.h"
+#include "ipfp.h"
 
 void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype, struct in6_addr ip_src) {
 

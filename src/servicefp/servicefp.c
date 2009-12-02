@@ -39,71 +39,10 @@
  * Old school...
  */
 
-/* ----------------------------------------------------------
- * FUNCTION     : strlcpy
- * DESCRIPTION  : Replacement for strncpy.  This function is
- *              : native in *BSD.  This function was taken
- *              : from Secure Programming Cookbook by
- *              : O'Reilly.
- * INPUT        : 0 - Destination String
- *              : 1 - Source String
- *              : 2 - Size
- * RETURN       : Length of String Created
- *  ---------------------------------------------------------- */
-#ifndef HAVE_STRLCPY
-size_t
-strlcpy(char *dst, const char *src, size_t size) {
-  char       *dstptr = dst;
-  size_t     tocopy  = size;
-  const char *srcptr = src;
-
-  if (tocopy && --tocopy) {
-    do {
-      if (!(*dstptr++ = *srcptr++)) break;
-    } while (--tocopy);
-  }
-  if (!tocopy) {
-    if (size) *dstptr = 0;
-    while (*srcptr++);
-  }
-
-  return (srcptr - src - 1);
-}
-#endif
-
-/* ----------------------------------------------------------
- * FUNCTION     : strlcat
- * DESCRIPTION  : Replacement for strcat.  This function is
- *              : native in *BSD.  This function was taken
- *              : from Secure Programming Cookbook by
- *              : O'Reilly.
- * INPUT        : 0 - Destination String
- *              : 1 - Source String
- *              : 2 - Size
- * RETURN       : Length of String Created
- * ---------------------------------------------------------- */
-#ifndef HAVE_STRLCAT
-size_t
-strlcat(char *dst, const char *src, size_t len) {
-  char       *dstptr = dst;
-  size_t     dstlen, tocopy = len;
-  const char *srcptr = src;
-
-  while (tocopy-- && *dstptr) dstptr++;
-  dstlen = dstptr - dst;
-  if (!(tocopy = len - dstlen)) return (dstlen + strlen(src));
-  while (*srcptr) {
-    if (tocopy != 1) {
-      *dstptr++ = *srcptr;
-      tocopy--;
-    }
-    srcptr++;
-  }
-  *dstptr = 0;
-
-  return (dstlen + (srcptr - src));
-}
-#endif
+#include "../common.h"
+#include "../sys_func.h"
+#include "../prads.h"
+#include "servicefp.h"
 
 /* ----------------------------------------------------------
  * FUNCTION     : init_identification
@@ -290,8 +229,7 @@ int parse_raw_signature (bstring line, int lineno, int storage) {
  *              : 3 - rc (return from pcre_exec)
  * RETURN       : processed app name
  * ---------------------------------------------------------- */
-bstring
-get_app_name (signature *sig,
+bstring get_app_name (signature *sig,
             const char *payload,
             int *ovector,
             int rc)

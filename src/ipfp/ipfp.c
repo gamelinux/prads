@@ -40,6 +40,9 @@
  * Old school...
  */
 
+#include "../common.h"
+#include "../prads.h"
+#include "ipfp.h"
 
 void display_signature_tcp ( uint8_t  ttl,
                         uint16_t tot,
@@ -142,7 +145,6 @@ void display_signature_icmp ( uint8_t  type,
 
    //printf("[%s]\n",(char*)bdata(fp));
    update_asset_os(ip_src, htons(type), bformat("icmp"), fp, af);
-   bdestroy(fp);
 }
 
 void display_signature_udp (  uint16_t  totlen,
@@ -170,5 +172,4 @@ void display_signature_udp (  uint16_t  totlen,
 
    //printf("[%s]\n",(char*)bdata(fp));
    update_asset_os(ip_src, port, bformat("udp"), fp, af);
-   //bdestroy(fp);
 }

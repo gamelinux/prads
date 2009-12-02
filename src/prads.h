@@ -25,13 +25,17 @@
 //#include "cxtracking/cxt.c"
 //#include "servicefp/tcps.c"
 
-#include "misc/bstrlib.c"
-#include "misc/bstrlib.h"
+//#include "misc/bstrlib.c"
+#ifndef PRADS_H
+#define PRADS_H
+#include "common.h"
+#include "bstrlib.h"
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.1.5"
-#define TIMEOUT                       60
+#define VERSION                       "0.1.6"
+#define TIMEOUT                       30
+#define TCP_TIMEOUT                   300 /* When idle IP connections should be timed out */
 #define BUCKET_SIZE                   1669 
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
@@ -484,3 +488,4 @@ typedef struct _fp_entry {
 
 /*  P R O T O T Y P E S  ******************************************************/
 
+#endif // PRADS_H
