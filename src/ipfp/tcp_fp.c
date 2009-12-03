@@ -293,7 +293,7 @@ end_parsing:
    if (TCP_X2(tcph)) quirks |= QUIRK_X2;
    //if (!IP6_FL(ip6))  quirks |= QUIRK_ZEROID;
 
-printf("hop:%u, len:%u, ver:%lu, class:%u, label:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
+printf("hop:%u, len:%u, ver:%u, class:%u, label:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),
                                                      ntohs(IP6_FL(ip6)));
 /*

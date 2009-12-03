@@ -659,8 +659,7 @@ void print_assets() {
    
             printf("[*] %s",ip_addr_s);
    
-            // help :) Would like to not display 00:00:00:00:00
-            if (rec->mac_addr != 0x00000000) {
+            if (memcmp(rec->mac_addr,"\0\0\0\0\0\0",6)) {
                printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
             }
    
