@@ -86,7 +86,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 ############# C - O - N - F - I - G - U - R - A - T - I - O - N ################
 ################################################################################
 
-our $VERSION       = 0.92;
+our $VERSION       = 0.93;
 our $DEBUG         = 0;
 our $DUMPDB        = 0;
 our $DAEMON        = 0;
@@ -113,11 +113,17 @@ our $DB_PASSWORD;
 our $AUTOCOMMIT = 0;
 our $TIMEOUT = 10;
 our $DB_LAST_UPDATE = 0;
+our $SQL_IP = 'ipaddress';
+our $SQL_FP = 'os_fingerprint';
+our $SQL_MAC = 'mac_address';
+our $SQL_DETAILS = 'os_details';
+our $SQL_HOSTNAME = 'hostname';
+our $SQL_TIME = 'timestamp';
 
 my $DEVICE;
 my $LOGFILE                 = q(/dev/null);
 my $PIDFILE                 = q(/var/run/prads.pid);
-my $CONFDIR                 = q(../etc);
+my $CONFDIR                 = q(../../etc);
 my $CONFIG                  = qq($CONFDIR/prads.conf);
 
 pre_config();
@@ -204,7 +210,7 @@ Getopt::Long::GetOptions(
     'service-tcp'            => \$SERVICE_TCP,
     'service-udp'            => \$SERVICE_UDP,
     'os'                     => \$OS,
-    'db'                     => \$DATABASE,
+    'db=s'                   => \$DATABASE,
     # bpf filter
 );
 # if 2nd config file specified, load that one too
@@ -354,14 +360,154 @@ sub setup_db {
                           {AutoCommit => $AUTOCOMMIT,
                           RaiseError => 1, PrintError=> $print_error});
    my ($sql, $sth);
+   
    eval{
-      $sql = "CREATE TABLE asset (ip TEXT, service TEXT, time TEXT, fingerprint TEXT,".
-         "mac TEXT, os TEXT, details TEXT, link TEXT, distance TEXT, reporting TEXT)";
+      if($DATABASE =~ /dbi:sqlite/i){
+         print STDERR "Warning, SQLite schema deprecated: schema change soon!\n".
+         "planned changes to cols:\n".
+         "ip -> ipaddress, fingerprint -> os_fingerprint, mac -> mac_address, ".
+         "details->os_details, reporting -> hostname";
+         $SQL_IP = 'ip';
+         $SQL_FP = 'fingerprint';
+         $SQL_MAC = 'mac';
+         $SQL_TIME = 'time';
+         $SQL_DETAILS = 'details';
+         $SQL_HOSTNAME = 'reporting';
+         $sql = qq(
+CREATE TABLE asset (
+   $SQL_IP TEXT,
+   service TEXT,
+   time TEXT,
+   $SQL_FP TEXT,
+   $SQL_MAC TEXT,
+   os TEXT,
+   $SQL_DETAILS TEXT,
+   link TEXT,
+   distance TEXT,
+   $SQL_HOSTNAME TEXT
+););
+      }elsif($DATABASE =~/dbi:mysql/i){
+         $sql = qq(
+CREATE TABLE IF NOT EXISTS `asset` (
+   `assetID`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   `hostname`       VARCHAR(255) NOT NULL default '',
+   `sensorID`       INT UNSIGNED NOT NULL default '0',
+   `timestamp`      DATETIME NOT NULL default '0000-00-00 00:00:00',
+   `ipaddress`      decimal(39,0) unsigned default NULL,
+   `mac_address`    VARCHAR(20) NOT NULL default '',
+   `mac_vendor`     VARCHAR(50) NOT NULL default '',
+   `os`             VARCHAR(20) NOT NULL default '',
+   `os_details`     VARCHAR(255) NOT NULL default '',
+   `os_fingerprint` VARCHAR(255) NOT NULL default '',
+   `link`           VARCHAR(20) NOT NULL default '',
+   `distance`       INT UNSIGNED NOT NULL default '0',
+   `service`        VARCHAR(50) NOT NULL default '',
+   `application`    VARCHAR(255) NOT NULL default '',
+   `port`           INT UNSIGNED NOT NULL default '0',
+   `protocol`       TINYINT UNSIGNED NOT NULL default '0',
+   `hex_payload`    VARCHAR(255) default '',
+   UNIQUE           KEY `unique_row_key` (`ipaddress`,`port`,`protocol`,`service`,`application`),
+   PRIMARY          KEY (`sensorID`,`assetID`)
+) TYPE=InnoDB;
+
+-- INET_ATON6
+-- DELIMITER //
+CREATE FUNCTION INET_ATON6(n CHAR(39))
+RETURNS DECIMAL(39)
+BEGIN
+    RETURN CAST(CONV(SUBSTRING(n FROM  1 FOR 4), 16, 10) AS DECIMAL(39))
+                       * 5192296858534827628530496329220096 -- 65536 ^ 7
+         + CAST(CONV(SUBSTRING(n FROM  6 FOR 4), 16, 10) AS DECIMAL(39))
+                       *      79228162514264337593543950336 -- 65536 ^ 6
+         + CAST(CONV(SUBSTRING(n FROM 11 FOR 4), 16, 10) AS DECIMAL(39))
+                       *          1208925819614629174706176 -- 65536 ^ 5
+         + CAST(CONV(SUBSTRING(n FROM 16 FOR 4), 16, 10) AS DECIMAL(39)) 
+                       *               18446744073709551616 -- 65536 ^ 4
+         + CAST(CONV(SUBSTRING(n FROM 21 FOR 4), 16, 10) AS DECIMAL(39))
+                       *                    281474976710656 -- 65536 ^ 3
+         + CAST(CONV(SUBSTRING(n FROM 26 FOR 4), 16, 10) AS DECIMAL(39))
+                       *                         4294967296 -- 65536 ^ 2
+         + CAST(CONV(SUBSTRING(n FROM 31 FOR 4), 16, 10) AS DECIMAL(39))
+                       *                              65536 -- 65536 ^ 1
+         + CAST(CONV(SUBSTRING(n FROM 36 FOR 4), 16, 10) AS DECIMAL(39))
+         ;
+END;
+DELIMITER ;
+-- INET_NTOA6
+
+DELIMITER //
+CREATE FUNCTION INET_NTOA6(n DECIMAL(39) UNSIGNED)
+RETURNS CHAR(39)
+DETERMINISTIC
+BEGIN
+  DECLARE a CHAR(39)             DEFAULT '';
+  DECLARE i INT                  DEFAULT 7;
+  DECLARE q DECIMAL(39)          DEFAULT 0;
+  DECLARE r INT                  DEFAULT 0;
+  WHILE i DO
+    -- DIV doesn't work with nubers > bigint
+    SET q := FLOOR(n / 65536);
+    SET r := n MOD 65536;
+    SET n := q;
+    SET a := CONCAT_WS(':', LPAD(CONV(r, 10, 16), 4, '0'), a);
+
+    SET i := i - 1;
+  END WHILE;
+
+  SET a := TRIM(TRAILING ':' FROM CONCAT_WS(':',
+                                            LPAD(CONV(n, 10, 16), 4, '0'),
+                                            a));
+
+  RETURN a;
+
+END;
+//
+DELIMITER ;
+*/
+);
+      }elsif($DATABASE =~ /^dbi:pg/i){
+         $sql = qq(
+CREATE TABLE asset (
+   -- assetID        INT NOT NULL AUTO_INCREMENT,
+   assetID        INT NOT NULL default nextval('asset_id_seq'),
+   hostname       TEXT default '',
+   sensorID       INT NOT NULL default '0',
+   timestamp      TIMESTAMP default NULL,
+   --ipaddress      decimal(39,0) default NULL,
+   ipaddress      inet default null,
+   mac_address    VARCHAR(20) NOT NULL default '',
+   mac_vendor     VARCHAR(50) NOT NULL default '',
+   os             TEXT default '',
+   os_details     TEXT default '',
+   os_fingerprint TEXT default '',
+   link           TEXT default '',
+   distance       INT default '0',
+   service        TEXT default '',
+   application    TEXT default '',
+   port           INT default '0',
+   protocol       SMALLINT NOT NULL default '0',
+   hex_payload    TEXT default '',
+   --constraint uniq unique (ipaddress,port,protocol,service,application),
+   --UNIQUE           KEY unique_row_key (ipaddress,port,protocol,service,application),
+   --PRIMARY          KEY (sensorID,assetID),
+   constraint prikey primary key (sensorID, assetID),
+   CHECK (assetID>=0),
+   CHECK (sensorID>=0),
+   CHECK (distance>=0),
+   CHECK (port>=0),
+   CHECK (protocol >=0)
+);
+END;
+);
+      }
       $sth = $dbh->prepare($sql);
       $sth->execute;
    };
+   $dbh->commit;
+
    if($DUMPDB){
-      $sql = "SELECT * from asset";
+      print STDERR "Issuing select * from asset;\n";
+      $sql = "SELECT * from asset;";
       $sth = $dbh->prepare($sql) or die "foo $!";
       $sth->execute or die "$!";
       $sth->dump_results;
@@ -1758,8 +1904,15 @@ sub add_db {
     warn "Prads::add_db: ERROR: Database not set up, check prads.conf" and return if not $db;
     my ($ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
     $table = 'asset';
-    my $sql = "SELECT ip,fingerprint,time FROM $table WHERE service = ? AND ip = ? AND fingerprint = ?";
+    my $sql = "SELECT $SQL_IP,$SQL_FP,$SQL_TIME FROM $table WHERE service = ? AND $SQL_IP = ? AND $SQL_FP = ?";
     #print "$sql,$ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host\n" if $service eq 'ARP';
+
+    # convert time() to timestamp
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) = gmtime($time);
+    $year += 1900;
+    $mon += 1;
+    $mday += 1;
+    my $ftime = "$year-$mon-$mday $hour:$min:$sec";
 
     $h_select = $db->prepare_cached($sql) or die "Failed:$!" if not $h_select;
     $h_select->execute($service, $ip, $fp);
@@ -1768,16 +1921,16 @@ sub add_db {
     # update record if fp matches, otherwise insert
     # XXX: link, distance may have changed
     if($o_time){
-       $h_update = $db->prepare_cached("UPDATE $table SET time=?,os=?,details=? WHERE ip=? AND fingerprint=?") or die "$!" if not $h_update;
-       $h_update->execute($time,$ip,$fp,$os,$details);
+       $h_update = $db->prepare_cached("UPDATE $table SET $SQL_TIME=?,os=?,$SQL_DETAILS=? WHERE $SQL_IP=? AND $SQL_FP=?") or die "$!" if not $h_update;
+       $h_update->execute($ftime,$os,$details,$ip,$fp);
     }else{
        $h_insert = $db->prepare_cached(
          "INSERT INTO $table ".
-         "(ip, service, time, fingerprint, mac, os, details,".
-          "link, distance, reporting)".
+         "($SQL_IP, service, $SQL_TIME, $SQL_FP, $SQL_MAC, os, $SQL_DETAILS,".
+          "link, distance, $SQL_HOSTNAME)".
          "VALUES (?,?,?,?,?,?,?,?,?,?)") if not $h_insert;
          #('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')") if not $h_insert;
-       $h_insert->execute($ip,$service,$time,$fp,$mac,$os,$details,
+       $h_insert->execute($ip,$service,$ftime,$fp,$mac,$os,$details,
                           $link,$dist,$host);
        $records++;
     }
