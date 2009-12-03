@@ -304,13 +304,23 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          icmph = (icmp6_header *) (packet + eth_header_len + IP6_HEADER_LEN);
          /* printf("[*] IPv6 PROTOCOL TYPE ICMP\n"); */
 
-         s_check = cx_track(ip6->ip_src, ip6->hop_lmt, ip6->ip_dst,
-                            ip6->hop_lmt, ip6->next, ip6->len, 0, tstamp, AF_INET6);
+         /* DO change ip6->hop_lmt to 0 or something! */
+         s_check = cx_track(ip6->ip_src, 0, ip6->ip_dst,
+                            0, ip6->next, ip6->len, 0, tstamp, AF_INET6);
          if (s_check != 0) {
             /* printf("[*] - CHECKING ICMP PACKAGE\n"); */
             update_asset(AF_INET6,ip6->ip_src);
          /* service_icmp(*ip6,*tcph) */
-         /* fp_icmp(ip6, ttl, ipopts, len, id, ipflags, df); */
+
+            /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_icmp6 (ip6, icmph, end_ptr, ip6->ip_src);
          }else{
             /* printf("[*] - NOT CHECKING ICMP PACKAGE\n"); */
          }
