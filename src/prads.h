@@ -239,11 +239,13 @@ typedef struct _ip6_header {
     struct in6_addr ip_dst;              /* dest address */
 } ip6_header;
 
-#define IP6_V(ip6_header)                 (((ip6_header)->vcl)  >> 28)
+// header is in host order~~!
+#define IP6_V(header)                    (htonl(header->vcl) >> 28)
+//#define IP6_V(header)                    ((header->vcl >> 4) & 0xF)
 //#define IP6_V(ip6_header)                 (((ip6_header)->vcl & 0xF00000000 ) >> 28)
 //#define IP6_TC(ip6_header)                ((((ip6_header)->vcl) <<  4) >> 24)
-#define IP6_TC(ip6_header)                ((((ip6_header)->vcl) & 0x0FF00000) >> 20)
-#define IP6_FL(ip6_header)                (((ip6_header)->vcl) & 0x000FFFFF)
+#define IP6_TC(ip6_header)                ((htonl((ip6_header)->vcl) & 0x0FF00000) >> 20)
+#define IP6_FL(ip6_header)                (htonl((ip6_header)->vcl) & 0x000FFFFF)
 //#define IP6_FL(ip6_header)                ((((ip6_header)->vcl) << 12) >> 12)
 //"([ver: 0x%x][len: 0x%x])\n", (ip6h->vcl & 0x0f)>>4
 

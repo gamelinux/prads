@@ -64,7 +64,7 @@ prads.pl - inspired by passive.sourceforge.net and http://lcamtuf.coredump.cx/p0
 
  OPTIONS:
 
- --dev|-d                : network device (default: eth0)
+ --dev|-d |--iface|-i    : network device (default: eth0)
  --config|-c             : path to prads configfile
  --confdir|-cd           : path to prads config dir (default /etc/prads)
  --service-signatures|-s : path to service-signatures file (default: /etc/prads/tcp-service.sig)
@@ -199,6 +199,7 @@ Getopt::Long::GetOptions(
     'config|c=s'             => \$CONFIG,
     'confdir|cd=s'             => \$CONFDIR,
     'dev|d=s'                => \$DEVICE,
+    'iface|i=s'              => \$DEVICE,
     'service-signatures|s=s' => \$S_SIGNATURE_FILE,
     'os-fingerprints|o=s'    => \$OS_SYN_FINGERPRINT_FILE,
     'debug=s'                => \$DEBUG,
@@ -363,10 +364,10 @@ sub setup_db {
    
    eval{
       if($DATABASE =~ /dbi:sqlite/i){
-         print STDERR "Warning, SQLite schema deprecated: schema change soon!\n".
+         print STDERR "Warning, SQLite schema deprecated. schema will change soon!\n".
          "planned changes to cols:\n".
          "ip -> ipaddress, fingerprint -> os_fingerprint, mac -> mac_address, ".
-         "details->os_details, reporting -> hostname";
+         "details->os_details, reporting -> hostname\n";
          $SQL_IP = 'ip';
          $SQL_FP = 'fingerprint';
          $SQL_MAC = 'mac';
