@@ -170,7 +170,7 @@ display_signature_tcp (ip4->ip_ttl,open_mode ? 0 : ntohs(ip4->ip_len),
 }
 
 void fp_tcp6 (ip6_header *ip6, tcp_header *tcph, const uint8_t *end_ptr, uint8_t ftype, struct in6_addr ip_src) {
-   return;
+//   return;
    uint8_t   *opt_ptr;
    uint8_t   *payload = 0;
    uint8_t   op[MAXOPT];

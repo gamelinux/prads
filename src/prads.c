@@ -143,6 +143,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }
          if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
+            update_asset(AF_INET,ip_src);
             if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
                //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
                /* Paranoia! */
@@ -154,9 +155,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                   end_ptr = (packet + SNAPLENGTH);
                }
                fp_tcp4(ip4, tcph, end_ptr, TF_ACK, ip_src);
-               update_asset(AF_INET,ip_src);
             }
-            //update_asset(AF_INET,ip_src);
             char *payload;
             payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + TCP_HEADER_LEN);
             if (s_check == 2) {
@@ -255,14 +254,42 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          s_check = cx_track(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port,
                             ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
-            /* fp_tcp(ip6, ttl, ipopts, len, id, ipflags, df); */
+            /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_tcp6 (ip6, tcph, end_ptr, TF_SYN, ip6->ip_src);
             /* printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port)); */
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ){
             /* printf("[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port)); */
+            /* Paranoia! */
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_tcp6 (ip6, tcph, end_ptr, TF_SYNACK, ip6->ip_src);
          }
          if (s_check != 0) {
             /* printf("[*] - CHECKING TCP PACKAGE\n"); */
             update_asset(AF_INET6,ip6->ip_src);
+            if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
+               /* Paranoia! */
+               const uint8_t *end_ptr;
+               if (pheader->len <= SNAPLENGTH) {
+                  end_ptr = (packet + pheader->len);
+               }
+               else {
+                  end_ptr = (packet + SNAPLENGTH);
+               }
+               fp_tcp6 (ip6, tcph, end_ptr, TF_ACK, ip6->ip_src);
+            }
             char *payload;
             payload = (char *) (packet + eth_header_len + sizeof(ip6_header) );
             if (s_check == 2) {
