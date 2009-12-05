@@ -145,6 +145,7 @@ void display_signature_icmp ( uint8_t  type,
 
    //printf("[%s]\n",(char*)bdata(fp));
    update_asset_os(ip_src, htons(type), bformat("icmp"), fp, af);
+   // add mss ? for MTU detection ?
 }
 
 void display_signature_udp (  uint16_t  totlen,
