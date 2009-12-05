@@ -181,7 +181,7 @@ void fp_tcp6 (ip6_header *ip6, tcp_header *tcph, const uint8_t *end_ptr, uint8_t
 
    /* If the declared length is shorter than the snapshot (etherleak
       or such), truncate the package. */
-   opt_ptr = (uint8_t *) ip6 + htons(ip6->len);
+   opt_ptr = (uint8_t *) ip6 + IP6_HEADER_LEN + ntohs(ip6->len);
    if (end_ptr > opt_ptr) end_ptr = opt_ptr;
 
    opt_ptr = (uint8_t *)(tcph + 1);
@@ -291,13 +291,14 @@ end_parsing:
    if (tcph->t_ack)  quirks |= QUIRK_ACK;
    if (tcph->t_urgp) quirks |= QUIRK_URG;
    if (TCP_X2(tcph)) quirks |= QUIRK_X2;
-   //if (!IP6_FL(ip6))  quirks |= QUIRK_ZEROID;
+   if (!IP6_FL(ip6)) quirks |= QUIRK_ZEROID;
 
+/*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),
                                                      ntohs(IP6_FL(ip6)),
                                                      mss_val, ntohs(tcph->t_win));
-
+*/
 display_signature_tcp (ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                   1, // simulate df bit for now
                   op,
