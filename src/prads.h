@@ -434,7 +434,7 @@ typedef struct _os_asset {
    bstring           detection;           /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
    bstring           raw_fp;              /* The raw fingerprint [*:*:*:*:*:*:....] */
    bstring           matched_fp;          /* The FP that matched [*:*:*:*.*:*:---] */
-   uint16_t          mtu;                 /* MTU = MSS + 40 */
+   uint16_t          mtu;                 /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
    unsigned short    i_attempts;          /* Failed attempts at identifying the os_asset. (hench just unknown) */
    struct _os_asset  *prev;               /* Prev os_asset structure */
    struct _os_asset  *next;               /* Next os_asset structure */
