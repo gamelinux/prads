@@ -87,7 +87,7 @@ void client_tcp6 (ip6_header *ip6, tcp_header *tcph, char *payload, int plen) {
       if (rc != -1) {
          app = get_app_name(tmpsig, payload, ovector, rc);
          //printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
-         update_asset_service(ip6->ip_src, tcph->dst_port, ip6->next, tmpsig->service, app, AF_INET);
+         update_asset_service(ip6->ip_src, tcph->dst_port, ip6->next, tmpsig->service, app, AF_INET6);
          //bdestroy(app);
          return;
       }

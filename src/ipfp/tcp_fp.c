@@ -310,6 +310,6 @@ display_signature_tcp (ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                   ftype,
                   ip_src,
                   tcph->src_port,
-                  AF_INET);
+                  AF_INET6);
 
 }
