@@ -169,7 +169,8 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
             update_asset(AF_INET,ip_src);
-            if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
+            if ( TCP_ISFLAGSET(tcph,(TF_ACK))  && !TCP_ISFLAGSET(tcph,(TF_ACK)) && 
+                 !TCP_ISFLAGSET(tcph,(TF_RST)) && !TCP_ISFLAGSET(tcph,(TF_FIN)) ) {
                //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
                /* Paranoia! */
                const uint8_t *end_ptr;

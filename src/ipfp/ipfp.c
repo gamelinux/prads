@@ -118,6 +118,11 @@ void display_signature_tcp ( uint8_t  ttl,
       if (quirks & QUIRK_T2) bformata(fp,"T");
       if (quirks & QUIRK_FLAGS) bformata(fp,"F");
       if (quirks & QUIRK_DATA) bformata(fp,"D");
+
+      /* edward */
+      if (quirks & QUIRK_FINACK) bformata(fp,"N");
+      if (quirks & QUIRK_FLOWL) bformata(fp,"L");
+
       if (quirks & QUIRK_BROKEN) bformata(fp,"!");
    }
 

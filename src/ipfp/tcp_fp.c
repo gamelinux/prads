@@ -28,7 +28,10 @@ void fp_tcp4 (ip4_header *ip4, tcp_header *tcph, const uint8_t *end_ptr, uint8_t
 
    /* If IP header ends past end_ptr */
    if ((uint8_t *)(ip4 + 1) > end_ptr) return;
+
    if ( ftype == TF_ACK ) open_mode = 1;
+   if ( ftype == TF_RST && (tcph->t_flags & TF_ACK)) quirks |= QUIRK_RSTACK;
+   if ( ftype == TF_FIN && (tcph->t_flags & TF_ACK)) quirks |= QUIRK_FINACK;
 
    if (tcph->t_seq == tcph->t_ack) quirks |= QUIRK_SEQEQ;
    if (!tcph->t_seq) quirks |= QUIRK_SEQ0;
@@ -192,7 +195,10 @@ void fp_tcp6 (ip6_header *ip6, tcp_header *tcph, const uint8_t *end_ptr, uint8_t
 
    /* If IP header ends past end_ptr */
    if ((uint8_t *)(ip6 + 1) > end_ptr) return;
+
    if ( ftype == TF_ACK ) open_mode = 1;
+   if ( ftype == TF_RST && (tcph->t_flags & TF_ACK)) quirks |= QUIRK_RSTACK;
+   if ( ftype == TF_FIN && (tcph->t_flags & TF_ACK)) quirks |= QUIRK_FINACK;
 
    if (tcph->t_seq == tcph->t_ack) quirks |= QUIRK_SEQEQ;
    if (!tcph->t_seq) quirks |= QUIRK_SEQ0;
