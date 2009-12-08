@@ -102,7 +102,8 @@
 #define QUIRK_SEQEQ                   0x00000800 /* Q */
 #define QUIRK_SEQ0                    0x00001000 /* 0 */
 
-#define QUIRK_FLOWL                   0x00000001 /* L */
+#define QUIRK_FINACK                  0x00002000 /* N */
+#define QUIRK_FLOWL                   0x00004000 /* L */
 
 /* Some systems really like to put lots of NOPs there */
 #define MAXOPT                        16 /* Maximum number of TCP packet options to pars */
@@ -240,14 +241,10 @@ typedef struct _ip6_header {
 } ip6_header;
 
 // header is in host order~~!
-#define IP6_V(header)                    (htonl(header->vcl) >> 28)
-//#define IP6_V(header)                    ((header->vcl >> 4) & 0xF)
-//#define IP6_V(ip6_header)                 (((ip6_header)->vcl & 0xF00000000 ) >> 28)
-//#define IP6_TC(ip6_header)                ((((ip6_header)->vcl) <<  4) >> 24)
+#define IP6_V(header)                     (htonl(header->vcl) >> 28)
+//#define IP6_TC(ip6_header)                (((htonl(ip6_header)->vcl) & 0x0FF00000) >> 20)
 #define IP6_TC(ip6_header)                ((htonl((ip6_header)->vcl) & 0x0FF00000) >> 20)
 #define IP6_FL(ip6_header)                (htonl((ip6_header)->vcl) & 0x000FFFFF)
-//#define IP6_FL(ip6_header)                ((((ip6_header)->vcl) << 12) >> 12)
-//"([ver: 0x%x][len: 0x%x])\n", (ip6h->vcl & 0x0f)>>4
 
 /* 
  * TCP header
@@ -434,6 +431,7 @@ typedef struct _os_asset {
    bstring           detection;           /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
    bstring           raw_fp;              /* The raw fingerprint [*:*:*:*:*:*:....] */
    bstring           matched_fp;          /* The FP that matched [*:*:*:*.*:*:---] */
+   uint16_t          mtu;                 /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
    unsigned short    i_attempts;          /* Failed attempts at identifying the os_asset. (hench just unknown) */
    struct _os_asset  *prev;               /* Prev os_asset structure */
    struct _os_asset  *next;               /* Next os_asset structure */

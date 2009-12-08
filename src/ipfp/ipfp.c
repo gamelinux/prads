@@ -66,6 +66,8 @@ void display_signature_tcp ( uint8_t  ttl,
 
    if ( ftype == TF_SYN ) de=bformat("syn"); else
    if ( ftype == TF_SYNACK ) de=bformat("synack"); else
+   if ( ftype == TF_RST ) de=bformat("rst"); else
+   if ( ftype == TF_FIN ) de=bformat("fin"); else
    if ( ftype == TF_ACK ) {
       de=bformat("ack");
       open_mode=1;
@@ -116,6 +118,11 @@ void display_signature_tcp ( uint8_t  ttl,
       if (quirks & QUIRK_T2) bformata(fp,"T");
       if (quirks & QUIRK_FLAGS) bformata(fp,"F");
       if (quirks & QUIRK_DATA) bformata(fp,"D");
+
+      /* edward */
+      if (quirks & QUIRK_FINACK) bformata(fp,"N");
+      if (quirks & QUIRK_FLOWL) bformata(fp,"L");
+
       if (quirks & QUIRK_BROKEN) bformata(fp,"!");
    }
 
@@ -145,6 +152,7 @@ void display_signature_icmp ( uint8_t  type,
 
    //printf("[%s]\n",(char*)bdata(fp));
    update_asset_os(ip_src, htons(type), bformat("icmp"), fp, af);
+   // add mss ? for MTU detection ?
 }
 
 void display_signature_udp (  uint16_t  totlen,

@@ -140,11 +140,37 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             }
             fp_tcp4(ip4, tcph, end_ptr, TF_SYNACK, ip_src);
             update_asset_service(ip_src, tcph->src_port, ip4->ip_p, bformat("unknown"), bformat("unknown"), AF_INET);
+
+         } else if ( TCP_ISFLAGSET(tcph,(TF_FIN))) {
+            /* This is for test and phun (RST/FIN etc) */
+            update_asset(AF_INET,ip_src);
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_tcp4(ip4, tcph, end_ptr, TF_FIN, ip_src);
+
+         } else if ( TCP_ISFLAGSET(tcph,(TF_RST))) {
+            /* This is for test and phun (RST/FIN etc) */
+            update_asset(AF_INET,ip_src);
+            const uint8_t *end_ptr;
+            if (pheader->len <= SNAPLENGTH) {
+               end_ptr = (packet + pheader->len);
+            }
+            else {
+               end_ptr = (packet + SNAPLENGTH);
+            }
+            fp_tcp4(ip4, tcph, end_ptr, TF_RST, ip_src);
          }
+
          if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
             update_asset(AF_INET,ip_src);
-            if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
+            if ( TCP_ISFLAGSET(tcph,(TF_ACK))  && !TCP_ISFLAGSET(tcph,(TF_ACK)) && 
+                 !TCP_ISFLAGSET(tcph,(TF_RST)) && !TCP_ISFLAGSET(tcph,(TF_FIN)) ) {
                //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
                /* Paranoia! */
                const uint8_t *end_ptr;
