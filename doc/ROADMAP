@@ -48,5 +48,24 @@ Point Release 2.0
  * If performance is an issue ? C/C++ ?
  * CVE coorolation on services, not in prads, but prads GUI ?
 
+--- random ideas for implementation ---
+ - MVCC lockless assets in shared memory ring-buffer (shmat())
+ - keep last x updates + random discards / vacuum
 
-
+ * asset struct / shared fields. keep in same hashfunc : hash lib!
+ * sigs -> lookups
+ * API for plugins = 
+ - Lua plugins
+ log / visualize / stats / db insert
+ * get prads.c to prads.pl state. superdaemon + subfunction daemons
+ -> duplicate the commandline
+ * DDoS detection
+ * phase plane analysis of initial SEQ = fingerprint signatures
+ * release packages: deb/rpm
+ * async IO and other scaling factors
+ * mobile (wifi,ether,ip,tcp)-frame scanning app for android/iPhone (+ autohack?)
+ * autogen nagios host table
+ * autogen snort host attributes
+ * optimize PCRE matcher
+ * graphviz dot visualizations
+ * realitme / SDL visio map
