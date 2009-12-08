@@ -149,6 +149,14 @@ chomp $PRADS_HOSTNAME;
 
 sub pre_config
 {
+   # make an educated confdir guess.
+   for my $dir ($CONFDIR, qw(../etc /etc/prads)){
+      if (-d $dir) {
+         $CONFDIR = $dir;
+         $CONFIG = "$dir/prads.conf";
+         last;
+      }
+   }
    # extract & load config before parsing rest of commandline
    for my $i (0..@ARGV-1){
       if($ARGV[$i] =~ /^--?(config|c)$/){

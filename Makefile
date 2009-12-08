@@ -4,15 +4,19 @@ CONFDIR=${PREFIX}/etc/prads
 PMDIR=${PREFIX}/lib/site_perl/
 
 build:
+	@echo "You need libpcre-dev and libpcap-dev to compile this program."
 	${MAKE} -C src/
 
 clean:
 	${MAKE} -C src/ $@
 
-install:
+install: 
 	# binary
 	install -d ${DESTDIR}${SBINDIR}
-	install -m 755 -o root -g root sbin/prads.pl ${DESTDIR}${SBINDIR}/prads
+	# perl version
+	install -m 755 -o root -g root perl/sbin/prads.pl ${DESTDIR}${SBINDIR}/prads.pl
+	# C version
+	install -m 755 -o root -g root src/prads ${DESTDIR}${SBINDIR}/prads
 	# config
 	install -d ${DESTDIR}${CONFDIR}
 	install -m 644 -o root -g root etc/prads.conf ${DESTDIR}${CONFDIR}/

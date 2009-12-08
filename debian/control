@@ -12,7 +12,7 @@ Vcs-Browser: http://github.com/gamelinux/prads/tree/master
 Package: prads
 Architecture: all
 Depends: ${perl:Depends}, libdbi-perl, libnet-pcap-perl
-Recommends: libdbd-sqlite3-perl, libdbd-mysql-perl
+Recommends: libdbd-sqlite3-perl, libdbd-mysql-perl, libdbd-pg-perl
 Description: Passive Real-time Asset Detection System
  prads is a "Passive Real-time Asset Detection System".  It passively
  listen to network traffic and gathers information on hosts and
