@@ -128,6 +128,7 @@
 #define MAX_APP                        100
 #define MAX_VER                        25
 #define MAX_MISC                       100
+#define MAX_NETS                       128
 
 /*  D A T A  S T R U C T U R E S  *********************************************/
 

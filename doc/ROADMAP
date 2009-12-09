@@ -1,7 +1,5 @@
 ### PRADS ROADMAP
 
-From where we are now - 12 May 2009
-
 Point Release 0.1 - Reached 19 May 2009
  * SYN/ACK
  * Persistant local DB (SQLite)

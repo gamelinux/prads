@@ -36,7 +36,7 @@
 */
 
 /*  G L O B A L E S  **********************************************************/
-u_int64_t    cxtrackerid;
+uint64_t    cxtrackerid;
 time_t       timecnt,tstamp;
 pcap_t       *handle;
 connection   *bucket[BUCKET_SIZE];
@@ -56,13 +56,46 @@ char  *pidfile = "prads.pid";
 char  *pidpath = "/var/run";
 int   verbose,inpacket,gameover,use_syslog,intr_flag,s_check;
 uint64_t     hash;
+// default source net owns everything
+char *s_net = "0.0.0.0/0";
+int nets = 1;
+//char *s_net = "87.238.44.0/255.255.255.0,87.238.45.0/26,87.238.44.60/32";
+uint32_t  network[MAX_NETS];
+uint32_t  netmask[MAX_NETS];
 
 /*  I N T E R N A L   P R O T O T Y P E S  ************************************/
 static void usage();
 
 /* F U N C T I O N S  *********************************************************/
 
+int filter_packet(int af, struct in6_addr ip_s){
+   char tmp[MAX_NETS];
+   int our = 0;
+   if(af == AF_INET){
+      uint32_t ip = ip_s.s6_addr32[0];
+      inet_ntop(af, &ip, tmp, MAX_NETS);
+      int i;
+      our = 0;
+      for(i = 0; i < MAX_NETS && i < nets; i++){
+         if((ip & netmask[i]) == network[i]){
+            our = 1;
+         }
+      }
+#ifdef DEBUG
+      if(our)
+         fprintf(stderr, "Address %s is in our network.\n", tmp);
+      else
+         fprintf(stderr, "Address %s is not our network.\n", tmp);
+#endif
+   }else{
+      fprintf(stderr, "AF_INET6 and other protos aren't filtered yet\n");
+      our = 1;
+   }
+   return our;
+}
+
 void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char *packet) {
+   int our = 1;
    if ( intr_flag != 0 ) { check_interupt(); }
    inpacket = 1;
    s_check = 0; // do we need to ?
@@ -104,6 +137,8 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       ip_dst.s6_addr32[2] = 0;
       ip_dst.s6_addr32[3] = 0;
 
+      /* not our network? */
+      our = filter_packet(AF_INET, ip_src);
       if ( ip4->ip_p == IP_PROTO_TCP ) {
          tcp_header *tcph;
          tcph = (tcp_header *) (packet + eth_header_len + (IP_HL(ip4)*4));
@@ -111,6 +146,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check = cx_track(ip_src, tcph->src_port, ip_dst, tcph->dst_port,
                             ip4->ip_p, p_bytes, tcph->t_flags, tstamp, AF_INET);
+         if(!our) goto packet_end;
 
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             update_asset(AF_INET,ip_src);
@@ -194,8 +230,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }else{
             //printf("[*] - NOT CHECKING TCP PACKAGE\n");
          } 
-         inpacket = 0;
-         return;
+         goto packet_end;
       }
       else if (ip4->ip_p == IP_PROTO_UDP) {
          udp_header *udph;
@@ -203,6 +238,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          /* printf("[*] IPv4 PROTOCOL TYPE UDP:\n"); */
 
          s_check = cx_track(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         if(!our) goto packet_end;
          if (s_check != 0) {
             //printf("[*] - CHECKING UDP PACKAGE\n");
             update_asset(AF_INET,ip_src);
@@ -222,8 +258,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }else{
             //printf("[*] - NOT CHECKING UDP PACKAGE\n");
          }
-         inpacket = 0;
-         return;
+         goto packet_end;
       }
       else if (ip4->ip_p == IP_PROTO_ICMP) {
          icmp_header *icmph;
@@ -231,6 +266,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          /* printf("[*] IP PROTOCOL TYPE ICMP\n"); */
 
          s_check = cx_track(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         if(!our) goto packet_end;
          if (s_check != 0) {
             /* printf("[*] - CHECKING ICMP PACKAGE\n"); */
             /* Paranoia! */
@@ -247,13 +283,13 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }else{
             /* printf("[*] - NOT CHECKING ICMP PACKAGE\n"); */
          }
-         inpacket = 0;
-         return;
+         goto packet_end;
       }
       else {
          printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n",ip4->ip_p); 
 
          s_check  = cx_track(ip_src, 0, ip_dst, 0, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
+         if(!our) goto packet_end;
          if (s_check != 0) {
             /* printf("[*] - CHECKING OTHER PACKAGE\n"); */
             update_asset(AF_INET,ip_src);
@@ -262,15 +298,13 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }else{
             /* printf("[*] - NOT CHECKING OTHER PACKAGE\n"); */
          }
-         inpacket = 0;
-         return;
+         goto packet_end;
       }
-   }
-
-   else if ( eth_type == ETHERNET_TYPE_IPV6) {
+   } else if ( eth_type == ETHERNET_TYPE_IPV6) {
       /* printf("[*] Got IPv6 Packet...\n"); */
       ip6_header *ip6;
       ip6 = (ip6_header *) (packet + eth_header_len);
+      our = filter_packet(AF_INET6, ip6->ip_src);
 
       if ( ip6->next == IP_PROTO_TCP ) {
          tcp_header *tcph;
@@ -279,6 +313,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check = cx_track(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port,
                             ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
+         if(!our) goto packet_end;
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             /* Paranoia! */
             const uint8_t *end_ptr;
@@ -329,7 +364,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }else{
             /* printf("[*] - NOT CHECKING TCP PACKAGE\n"); */
          }
-         inpacket = 0;
+         goto packet_end;
          return;
       }
       else if (ip6->next == IP_PROTO_UDP) {
@@ -349,8 +384,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }else{
             /* printf("[*] - NOT CHECKING UDP PACKAGE\n"); */
          }
-         inpacket = 0;
-         return;
+         goto packet_end;
       }
       else if (ip6->next == IP6_PROTO_ICMP) {
          icmp6_header *icmph;
@@ -377,8 +411,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }else{
             /* printf("[*] - NOT CHECKING ICMP PACKAGE\n"); */
          }
-         inpacket = 0;
-         return;
+         goto packet_end;
       }
       else {
          printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n",ip6->next); 
@@ -394,8 +427,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          /* }else{ */
          /*  printf("[*] - NOT CHECKING OTHER PACKAGE\n"); */
          /* } */
-         inpacket = 0;
-         return;
+         goto packet_end;
       }
    }
    else if ( eth_type == ETHERNET_TYPE_ARP ) {
@@ -410,15 +442,74 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       else {
          /* printf("ARP TYPE: %d\n",ntohs(arph->ea_hdr.ar_op)); */
       }
-      inpacket = 0;
-      return;
+      goto packet_end;
    }
-   else {
-      /* printf("[*] ETHERNET TYPE : %x\n", eth_hdr->eth_ip_type); */
-      inpacket = 0;
-      return;
+   /* printf("[*] ETHERNET TYPE : %x\n", eth_hdr->eth_ip_type); */
+packet_end:
+#ifdef DEBUG
+   if(!our)
+      fprintf(stderr, "Not our network packet. Tracked, but not logged.\n");
+#endif
+   inpacket = 0;
+   return;
+}
+
+/* parse strings of the form "10.10.10.10/255.255.255.128"
+ * as well as "10.10.10.10/25"
+ */
+
+void parse_nets(char *s_net, uint32_t *network, uint32_t *netmask){
+   char *f, *p, *t;
+   int i = 0;
+   uint32_t tmp;
+   char snet[MAX_NETS];
+   strncpy(snet,s_net, MAX_NETS);
+   f = snet;
+   /* f -> for processing
+    * p -> frob pointer
+    * t -> to pointer */
+   while(f && 0 != (p = strchr(f, '/'))){
+      // convert network address
+      *p = '\0';
+      if(!inet_pton(AF_INET, f, &network[i])){
+         perror("parse_nets");
+         return;
+      }
+      printf("parse_nets: %s -> %p\n", f, network[i]);
+      f = p + 1;
+      // terminate netmask
+      p = strchr(f, ',');
+      if(p){
+         *p = '\0';
+      }
+
+      // create inverted netmask
+      if((t = strchr(f, '.'))-f < 4 && t > f){
+         // dotted quads
+         printf("parse_nets: Got netmask %s -> ", f);
+         inet_pton(AF_INET, f, &netmask[i]);
+         //netmask[i] = htonl(netmask[i]);
+      }else{
+         // 'short' form
+         sscanf(f, "%u", &tmp);
+         printf("parse_nets: Got netmask %u -> ", tmp);
+         netmask[i] = 0;
+         tmp = 32 - tmp;
+         while(tmp--){
+            netmask[i] <<= 1;
+            netmask[i] |= 1;
+         }
+         netmask[i] = ~netmask[i];
+         netmask[i] = ntohl(netmask[i]);
+      }
+      // easier to create inverted netmask
+      printf("%08p\n", netmask[i]);
+      nets = ++i;
+      f = p;
+      if(p) f++;
    }
 }
+
 
 static void usage() {
     printf("USAGE:\n");
@@ -433,7 +524,8 @@ static void usage() {
     printf(" -g             : group\n");
     printf(" -D             : enables daemon mode\n");
     printf(" -h             : this help message\n");
-    printf(" -v             : verbose\n\n");
+    printf(" -v             : verbose\n");
+    printf(" -a             : home nets (eg: '87.238.44.0/25,10.0.0.0/255.0.0.0')\n\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -459,8 +551,11 @@ int main(int argc, char *argv[]) {
    signal(SIGQUIT, game_over);
    signal(SIGALRM, set_end_sessions);
 
-   while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:v")) != -1)
+   while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:va:")) != -1)
    switch (ch) {
+      case 'a':
+         s_net = strdup(optarg);
+         break;
       case 'i':
          dev = strdup(optarg);
          break;
@@ -504,6 +599,7 @@ int main(int argc, char *argv[]) {
       return (1);
    }
 
+   parse_nets(s_net, network, netmask);
    printf("[*] Running prads %s\n",VERSION);
    load_servicefp_file(1,"../etc/tcp-service.sig");
    load_servicefp_file(2,"../etc/udp-service.sig");
