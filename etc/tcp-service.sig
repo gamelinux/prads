@@ -68,6 +68,8 @@ www,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
 www,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
 #www,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 #www,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
+#Need to polish the Zope sig - this is just the raw string:
+#www,v/Zope/$1//,Server: Zope/(Zope 2.9.1-, python 2.4.2, linux2) ZServer/1.1
 www,v/Server: $1///,Server: (.*)\r\n
 
 wwwproxy,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]

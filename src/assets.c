@@ -417,13 +417,13 @@ char* hex2mac(const char *mac) {
     return buf;
 }
 
-void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
+//void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
+void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], struct in6_addr ip_addr) {
 
    extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
    extern uint64_t hash;
-   struct in6_addr ip_addr;
-   memcpy(&ip_addr.s6_addr32[0], arp_spa, sizeof(u_int8_t) * 4);
+
    hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
    asset *rec = passet[hash];
 

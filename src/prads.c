@@ -436,7 +436,11 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       arph = (ether_arp *)(packet + eth_header_len);
 
       if (ntohs(arph->ea_hdr.ar_op) == ARPOP_REPLY) {
-         update_asset_arp(arph->arp_sha,arph->arp_spa); 
+         struct in6_addr ip_addr;
+         memcpy(&ip_addr.s6_addr32[0], arph->arp_spa, sizeof(u_int8_t) * 4);
+         if ( filter_packet(AF_INET, ip_addr) ) {
+            update_asset_arp(arph->arp_sha, ip_addr);
+         }
       /* arp_check(eth_hdr,tstamp); */
       }
       else {
