@@ -18,7 +18,7 @@ const char *u_ntop(const struct in6_addr ip_addr, int af, const char *dest){
 }
 
 /* looks to see if asset exists and update timestamp. If not, create the asset */
-update_asset (int af, struct in6_addr ip_addr) {
+void update_asset (int af, struct in6_addr ip_addr) {
    extern asset *passet[BUCKET_SIZE];
    extern time_t tstamp;
    extern uint64_t hash;

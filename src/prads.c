@@ -81,14 +81,14 @@ int filter_packet(int af, struct in6_addr ip_s){
             our = 1;
          }
       }
-#ifdef DEBUG
+#ifdef DEBUG_MUCH
       if(our)
          fprintf(stderr, "Address %s is in our network.\n", tmp);
       else
          fprintf(stderr, "Address %s is not our network.\n", tmp);
 #endif
    }else{
-      fprintf(stderr, "AF_INET6 and other protos aren't filtered yet\n");
+      fprintf(stderr, "ipv6 packets aren't filtered by netmask yet\n");
       our = 1;
    }
    return our;
