@@ -57,8 +57,7 @@ void update_asset (int af, struct in6_addr ip_addr) {
 
 //update_asset_os(ip_addr, port, detection, raw_fp, af);
 
-short
-update_asset_os ( struct in6_addr ip_addr,
+short update_asset_os ( struct in6_addr ip_addr,
                         u_int16_t port,
                         bstring   detection,
                         bstring   raw_fp,
@@ -171,8 +170,7 @@ update_asset_os ( struct in6_addr ip_addr,
  * RETURN       : 0 - Success!
  *              : 1 - Failure!
  * ---------------------------------------------------------- */
-short
-update_asset_service ( struct in6_addr ip_addr,
+short update_asset_service ( struct in6_addr ip_addr,
               u_int16_t port,
               unsigned short proto,
               bstring service,

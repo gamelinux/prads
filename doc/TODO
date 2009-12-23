@@ -39,22 +39,58 @@ Sep 04 21:00:45 <qru>    * 01                   TCP / ICMP Asset Discovered
 Sep 04 21:00:45 <qru>    * 02                   ARP Asset Discovered
 Sep 04 21:00:45 <qru>    * 03                   TCP / ICMP Statistic Information
 
-Kacper's crazy ideas:
+Kacper's TODO items & krazy ideas:
+ > design doc! => good design == god API for free
+ == easier to make good gui with good api
+      /  main program (prads)  \
+ packet analyzer -> fingerprint analyzer
+   (pradsd)     \-> realtime asset memory
+                |==> graphical C&C
 
+ .in-memory asset store API
+ .data exchange api? in-memory updates should be available
+ for realtime display, db insertion or offline dumping
+ .signature matching {SYN,UDP,ICMP,++} based on generated fp
+ match = signature[hash(fp)]. 
+    > Take away multiple matches.
+    > Normalize OS, provides "best guess"
+ .service fingerprints == good regex module
+ - .optimize SERVICE matching - reduce universe of regexes to match by
+  finding byte-sigs before regex.
+ - NAT detection
+ - PRADS console (woot. leet!)
+ - trust relationships :-)
+ - DDoS detection
+ - Flood protection: malloc-free shmem ringbugger
+ - phase plane analysis seqnum fingerprints
+ - active prads-informed firewall
+ - UPnP. BGP IGMP, multicast, tcp6 etc etc
+ - how to do vuln checks? / match to db
 - switch/router topology by sniffing OSPF/BGP/RSTP
 -.geoip maps ( passive lookup )
 -.sniff DNS lookups
 
-Kacper's TODO items:
- - OPTIMIXE: 
-   .investigate NetPacket slowness
-   .optimize SERVICE matching - reduce universe of regexes to match by
-   finding byte-sigs before regex.
- - trust relationships :-)
- - active prads-informed firewall
- - UPnP. BGP IGMP, multicast, tcp6 etc etc
- - how to do vuln checks? / match to db
- - PRADS console (woot. leet!)
+
+--- random ideas for implementation ---
+ - MVCC lockless assets in shared memory ring-buffer (shmat())
+    - keep last x updates + random discards / vacuum
+
+ * asset struct / shared fields. keep in same hashfunc : hash lib!
+ * sigs -> lookups
+ * API for plugins = 
+ - Lua plugins
+ log / visualize / stats / db insert
+ * get prads.c to prads.pl state. superdaemon + subfunction daemons
+ -> duplicate the commandline of perl
+ * phase plane analysis of initial SEQ = fingerprint signatures
+ * release packages: deb/rpm
+ * async IO and other scaling factors
+ * mobile (wifi,ether,ip,tcp)-frame scanning app for android/iPhone (+ autohack?)
+ * autogen nagios host table
+ * autogen snort host attributes
+ * optimize PCRE matcher
+ * graphviz dot visualizations
+ * realitme / SDL visio map
 
 Edward's TODO items:
  - fix SERVICE, both TCP and UDP... together with Kacper?

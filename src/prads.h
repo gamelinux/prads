@@ -393,6 +393,10 @@ typedef struct _icmp6_header {
  */
 
 typedef struct _connection {
+        struct _connection *prev;
+        struct _connection *next;
+        time_t start_time;                 /* connection start time */
+        time_t last_pkt_time;              /* last seen packet time */
         u_int64_t cxid;                    /* connection id */
         int af;                            /* IP version (4/6) AF_INET*/
         u_int8_t  proto;                   /* IP protocoll type */
@@ -406,57 +410,53 @@ typedef struct _connection {
         u_int64_t d_total_bytes;           /* total destination bytes */
         u_int8_t s_tcpFlags;               /* tcpflags sent by source */
         u_int8_t d_tcpFlags;               /* tcpflags sent by destination */
-        time_t start_time;                 /* connection start time */
-        time_t last_pkt_time;              /* last seen packet time */
-        struct _connection *prev;
-        struct _connection *next;
 } connection;
 
 typedef struct _serv_asset {
+   struct _serv_asset   *prev;            /* Prev serv_asset structure */
+   struct _serv_asset   *next;            /* Next serv_asset structure */
    time_t               first_seen;       /* Time at which service_asset was first seen. */
    time_t               last_seen;        /* Time at which service_asset was last seen. */
+   unsigned short       i_attempts;       /* Attempts at identifying the service_asset. */
    unsigned short       proto;            /* Asset protocol */
    u_int16_t            port;             /* Asset port */
    bstring              service;          /* Asset service (i.e. SSH, WWW, ICMP etc.) */
    bstring              application;      /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
-   unsigned short       i_attempts;       /* Attempts at identifying the service_asset. */
-   struct _serv_asset   *prev;            /* Prev serv_asset structure */
-   struct _serv_asset   *next;            /* Next serv_asset structure */
 } serv_asset;
 
 typedef struct _os_asset {
+   struct _os_asset  *prev;               /* Prev os_asset structure */
+   struct _os_asset  *next;               /* Next os_asset structure */
    time_t            first_seen;          /* Time at which os_asset was first detected. */
    time_t            last_seen;           /* Time at which os_asset was last detected. */
+   unsigned short    i_attempts;          /* Failed attempts at identifying the os_asset. (hench just unknown) */
    bstring           vendor;              /* Vendor (MS,Linux,Sun,HP...) */
    bstring           os;                  /* OS (WinXP SP2, 2.4/2.6, 10.2..) */
    bstring           detection;           /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
    bstring           raw_fp;              /* The raw fingerprint [*:*:*:*:*:*:....] */
    bstring           matched_fp;          /* The FP that matched [*:*:*:*.*:*:---] */
    uint16_t          mtu;                 /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
-   unsigned short    i_attempts;          /* Failed attempts at identifying the os_asset. (hench just unknown) */
-   struct _os_asset  *prev;               /* Prev os_asset structure */
-   struct _os_asset  *next;               /* Next os_asset structure */
 } os_asset;
 
 /* Holds one entery for an ARP/NDP or IPv4/IPv6 asset */
 typedef struct _asset {
+   struct _asset        *prev;            /* Prev ip_asset structure */
+   struct _asset        *next;            /* Next ip_asset structure */
+   time_t               first_seen;       /* Time at which asset was first seen. */
+   time_t               last_seen;        /* Time at which asset was last seen. */
+   unsigned short       i_attempts;       /* Attempts at identifying the asset. */
    int                  af;               /* IP AF_INET */
    struct in6_addr      ip_addr;          /* IP asset address */
    unsigned char        mac_addr[MAC_ADDR_LEN];/* Asset MAC address */
    bstring              mac_resolved;     /* Asset MAC vendor name */
    serv_asset           *services;        /* Linked list with services detected */
    os_asset             *os;              /* Linked list with OSes detected */
-   time_t               first_seen;       /* Time at which asset was first seen. */
-   time_t               last_seen;        /* Time at which asset was last seen. */
-   unsigned short       i_attempts;       /* Attempts at identifying the asset. */
-   struct _asset        *prev;            /* Prev ip_asset structure */
-   struct _asset        *next;            /* Next ip_asset structure */
 }  asset;
 
 typedef struct _signature {
    bstring           service;     /* Service (i.e. SSH, WWW, etc.) */
    u_int16_t         port;        /* Port to check for this service, or 0 for all */
-                                  /* Should be able to spesify range, and such... */
+                                  /* Should be able to specify range, and such... */
                                   /* Snort style : [80,8080,100-200,20-30,!22] */
                                   /* Not sure how to do that... yet.... */
 
