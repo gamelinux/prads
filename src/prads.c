@@ -20,7 +20,7 @@
 **
 */
 
-/*  I N C L U D E S  **********************************************************/
+/*  I N C L U D E S  *********************************************************/
 #include "common.h"
 #include "prads.h"
 #include "sys_func.h"
@@ -35,7 +35,7 @@
 #include "servicefp/udps.c"
 */
 
-/*  G L O B A L E S  **********************************************************/
+/*  G L O B A L E S  *********************************************************/
 uint64_t    cxtrackerid;
 time_t       timecnt,tstamp;
 pcap_t       *handle;
@@ -63,11 +63,13 @@ int nets = 1;
 uint32_t  network[MAX_NETS];
 uint32_t  netmask[MAX_NETS];
 
-/*  I N T E R N A L   P R O T O T Y P E S  ************************************/
+/*  I N T E R N A L   P R O T O T Y P E S  ***********************************/
 static void usage();
 
-/* F U N C T I O N S  *********************************************************/
+/* F U N C T I O N S  ********************************************************/
 
+/* does this ip belong to our network? do we care about the packet?
+ * Return value: boolean                                                     */
 int filter_packet(int af, struct in6_addr ip_s){
    char tmp[MAX_NETS];
    int our = 0;
@@ -81,14 +83,14 @@ int filter_packet(int af, struct in6_addr ip_s){
             our = 1;
          }
       }
-#ifdef DEBUG
+#ifdef DEBUG_MUCH
       if(our)
          fprintf(stderr, "Address %s is in our network.\n", tmp);
       else
          fprintf(stderr, "Address %s is not our network.\n", tmp);
 #endif
    }else{
-      fprintf(stderr, "AF_INET6 and other protos aren't filtered yet\n");
+      fprintf(stderr, "ipv6 packets aren't filtered by netmask yet\n");
       our = 1;
    }
    return our;
@@ -103,6 +105,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
    u_short p_bytes;
 
    /* printf("[*] Got network packet...\n"); */
+   // unwrap ethernet
    ether_header *eth_hdr;
    eth_hdr = (ether_header *) (packet);
    u_short eth_type;
@@ -116,6 +119,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       eth_type = ntohs(eth_hdr->eth_8_ip_type); 
       eth_header_len +=4;
    }
+   // XXX: are all ethernet_type flags set here? what are we testing?
    else if ( eth_type == (ETHERNET_TYPE_802Q1MT|ETHERNET_TYPE_802Q1MT2|ETHERNET_TYPE_802Q1MT3|ETHERNET_TYPE_8021AD) ) {
       /* printf("[*] ETHERNET TYPE 802Q1MT\n"); */
       eth_type = ntohs(eth_hdr->eth_82_ip_type);

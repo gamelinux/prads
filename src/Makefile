@@ -1,6 +1,7 @@
 #Makefile
 
 CC=gcc
+LDFLAGS=-lpcap -lpcre
 OCFLAGS=-O3
 DCFLAGS=-g
 PCFLAGS=-g -pg
@@ -15,16 +16,27 @@ IPFP_OBJ = ipfp/ipfp.o ipfp/tcp_fp.o ipfp/udp_fp.o ipfp/icmp_fp.o
 OBJECTS = bstrlib.o sys_func.o bstraux.o cxt.o assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
 
 
-all:${OBJECTS}
-	gcc $(OCFLAGS) -o prads $(OBJECTS) -lpcap -lpcre
+all: prads
+
+prads: $(OBJECTS)
+	gcc $(OCFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
 
 debug:
 	 ${MAKE} DEBUG=y
 
 profile:
-	gcc $(PCFLAGS) -o prads prads.c -lpcap -lpcre
+	gcc $(PCFLAGS) -o prads prads.c $(LDFLAGS)
 
 clean:
 	-rm -v $(OBJECTS)
 	-rm prads 
+
+# oldschool header file dependency checking.
+deps:
+	-rm -f deps.d
+	for i in *.c ipfp/*.c servicefp/*.c output-plugins/*.c macfp/*.c; do gcc -MM $$i >> deps.d; done
+
+ifneq ($(wildcard deps.d),)
+include deps.d
+endif
 
