@@ -46,7 +46,7 @@ www,v/NetCache//$1/,Server: NetCache (\(.*\))
 www,v/Switch and Data - EdgePrism/$1//,Server:  EdgePrism\/([\S]+)
 www,v/thttp/$1/$2/,Server: thttpd\/([\S]+) ([\S]+)
 www,v/Apache Tomcat/$1/$2/,Server: Apache Tomcat\/([\S]+) (\(.*\))
-www,v/Apache Coyote/$1//,Server: Apache Coyote\/([\S]+)
+www,v/Apache Coyote/$1//,Server: Apache[ -]{1}Coyote\/([\S]+)
 www,v/DoubleClick Adserver///,Server: DCLK-HttpSvr
 www,v/Resin JSP Engine/$1//,Server: Resin\/([\S]+)
 www,v/Akamai Ghost///,Server: AkamaiGHost
