@@ -153,7 +153,8 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          if(!our) goto packet_end;
 
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
-            update_asset(AF_INET,ip_src);
+            // Redundant - fp_tcp4 & update_asset_service will do this!
+            //update_asset(AF_INET,ip_src);
             /* Paranoia! */
             const uint8_t *end_ptr;
             if (pheader->len <= SNAPLENGTH) {
@@ -167,8 +168,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
             update_asset_service(ip_src, tcph->dst_port, ip4->ip_p, bformat("unknown"), bformat("unknown"), AF_INET);
          } else if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
-            update_asset(AF_INET,ip_src);
-            //service_tcp4_unknown(ip_src,tcph->src_port);
+            //update_asset(AF_INET,ip_src);
             
            /* Paranoia! */
             const uint8_t *end_ptr;
@@ -183,7 +183,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          } else if ( TCP_ISFLAGSET(tcph,(TF_FIN))) {
             /* This is for test and phun (RST/FIN etc) */
-            update_asset(AF_INET,ip_src);
+            //update_asset(AF_INET,ip_src);
             const uint8_t *end_ptr;
             if (pheader->len <= SNAPLENGTH) {
                end_ptr = (packet + pheader->len);
@@ -195,7 +195,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          } else if ( TCP_ISFLAGSET(tcph,(TF_RST))) {
             /* This is for test and phun (RST/FIN etc) */
-            update_asset(AF_INET,ip_src);
+            //update_asset(AF_INET,ip_src);
             const uint8_t *end_ptr;
             if (pheader->len <= SNAPLENGTH) {
                end_ptr = (packet + pheader->len);
@@ -208,7 +208,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          if (s_check != 0) { 
             //printf("[*] - CHECKING TCP PACKAGE\n");
-            update_asset(AF_INET,ip_src);
+            //update_asset(AF_INET,ip_src);
             if ( TCP_ISFLAGSET(tcph,(TF_ACK))  && !TCP_ISFLAGSET(tcph,(TF_ACK)) && 
                  !TCP_ISFLAGSET(tcph,(TF_RST)) && !TCP_ISFLAGSET(tcph,(TF_FIN)) ) {
                //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
@@ -243,9 +243,10 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check = cx_track(ip_src, udph->src_port, ip_dst, udph->dst_port, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if(!our) goto packet_end;
+
          if (s_check != 0) {
             //printf("[*] - CHECKING UDP PACKAGE\n");
-            update_asset(AF_INET,ip_src);
+            //update_asset(AF_INET,ip_src);
             char *payload;
             payload = (char *)(packet + eth_header_len + (IP_HL(ip4)*4) + UDP_HEADER_LEN);
             service_udp4(ip4,udph,payload,(pheader->caplen - UDP_HEADER_LEN - (IP_HL(ip4)*4) - eth_header_len));
@@ -271,6 +272,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check = cx_track(ip_src, icmph->s_icmp_id, ip_dst, icmph->s_icmp_id, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if(!our) goto packet_end;
+
          if (s_check != 0) {
             /* printf("[*] - CHECKING ICMP PACKAGE\n"); */
             /* Paranoia! */
@@ -282,7 +284,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                end_ptr = (packet + SNAPLENGTH);
             }
             fp_icmp4(ip4, icmph, end_ptr, ip_src);
-            update_asset(AF_INET,ip_src);
+            //update_asset(AF_INET,ip_src);
          /* service_icmp(*ip4,*tcph) // could look for icmp spesific data in package abcde...*/
          }else{
             /* printf("[*] - NOT CHECKING ICMP PACKAGE\n"); */
@@ -294,6 +296,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
 
          s_check  = cx_track(ip_src, 0, ip_dst, 0, ip4->ip_p, p_bytes, 0, tstamp, AF_INET);
          if(!our) goto packet_end;
+
          if (s_check != 0) {
             /* printf("[*] - CHECKING OTHER PACKAGE\n"); */
             update_asset(AF_INET,ip_src);
@@ -318,6 +321,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          s_check = cx_track(ip6->ip_src, tcph->src_port, ip6->ip_dst, tcph->dst_port,
                             ip6->next, ip6->len, tcph->t_flags, tstamp, AF_INET6);
          if(!our) goto packet_end;
+
          if ( TCP_ISFLAGSET(tcph,(TF_SYN)) && !TCP_ISFLAGSET(tcph,(TF_ACK)) ) {
             /* Paranoia! */
             const uint8_t *end_ptr;
@@ -343,7 +347,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
          }
          if (s_check != 0) {
             /* printf("[*] - CHECKING TCP PACKAGE\n"); */
-            update_asset(AF_INET6,ip6->ip_src);
+            //update_asset(AF_INET6,ip6->ip_src);
             if (TCP_ISFLAGSET(tcph,(TF_ACK)) && !TCP_ISFLAGSET(tcph,(TF_SYN)) ) {
                /* Paranoia! */
                const uint8_t *end_ptr;
@@ -380,7 +384,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                             ip6->next, ip6->len, 0, tstamp, AF_INET6);
          if (s_check != 0) {
             /* printf("[*] - CHECKING UDP PACKAGE\n"); */
-            update_asset(AF_INET6,ip6->ip_src);
+            //update_asset(AF_INET6,ip6->ip_src);
          /* fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); */
             char *payload;
             payload = (char *) (packet + eth_header_len + sizeof(ip6_header) );
@@ -400,7 +404,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
                             0, ip6->next, ip6->len, 0, tstamp, AF_INET6);
          if (s_check != 0) {
             /* printf("[*] - CHECKING ICMP PACKAGE\n"); */
-            update_asset(AF_INET6,ip6->ip_src);
+            //update_asset(AF_INET6,ip6->ip_src);
          /* service_icmp(*ip6,*tcph) */
 
             /* Paranoia! */
