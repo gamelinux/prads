@@ -119,6 +119,8 @@ our $SQL_MAC = 'mac_address';
 our $SQL_DETAILS = 'os_details';
 our $SQL_HOSTNAME = 'hostname';
 our $SQL_TIME = 'timestamp';
+our $SQL_ATON = 'INET_ATON(?)';
+our $SQL_NTOA = 'INET_NTOA(?)';
 
 my $DEVICE;
 my $LOGFILE                 = q(/dev/null);
@@ -382,6 +384,8 @@ sub setup_db {
          $SQL_TIME = 'time';
          $SQL_DETAILS = 'details';
          $SQL_HOSTNAME = 'reporting';
+         $SQL_ATON = '?';
+         $SQL_NTOA = '?';
          $sql = qq(
 CREATE TABLE asset (
    $SQL_IP TEXT,
@@ -418,6 +422,8 @@ CREATE TABLE IF NOT EXISTS `asset` (
 ) TYPE=InnoDB;
 );
       }elsif($DATABASE =~ /^dbi:pg/i){
+         $SQL_ATON = '?';
+         $SQL_NTOA = '?';
          $sql = qq(
 CREATE TABLE asset (
    -- assetID        INT NOT NULL AUTO_INCREMENT,
@@ -1856,7 +1862,7 @@ sub add_db {
     warn "Prads::add_db: ERROR: Database not set up, check prads.conf" and return if not $db;
     my ($ip, $service, $time, $fp, $mac, $os, $details, $link, $dist, $host) = @_;
     $table = 'asset';
-    my $sql = "SELECT $SQL_IP,$SQL_FP,$SQL_TIME FROM $table WHERE service = ? AND $SQL_IP = ? AND $SQL_FP = ?";
+    my $sql = "SELECT $SQL_IP,$SQL_FP,$SQL_TIME FROM $table WHERE service = ? AND $SQL_IP = $SQL_NTOA AND $SQL_FP = ?";
     #print "$sql,$ip,$service,$time,$fp,$mac,$os,$details,$link,$dist,$host\n" if $service eq 'ARP';
 
     # convert time() to timestamp
@@ -1873,14 +1879,14 @@ sub add_db {
     # update record if fp matches, otherwise insert
     # XXX: link, distance may have changed
     if($o_time){
-       $h_update = $db->prepare_cached("UPDATE $table SET $SQL_TIME=?,os=?,$SQL_DETAILS=? WHERE $SQL_IP=? AND $SQL_FP=?") or die "$!" if not $h_update;
+       $h_update = $db->prepare_cached("UPDATE $table SET $SQL_TIME=?,os=?,$SQL_DETAILS=? WHERE $SQL_IP=$SQL_ATON AND $SQL_FP=?") or die "$!" if not $h_update;
        $h_update->execute($ftime,$os,$details,$ip,$fp);
     }else{
        $h_insert = $db->prepare_cached(
          "INSERT INTO $table ".
          "($SQL_IP, service, $SQL_TIME, $SQL_FP, $SQL_MAC, os, $SQL_DETAILS,".
           "link, distance, $SQL_HOSTNAME)".
-         "VALUES (?,?,?,?,?,?,?,?,?,?)") if not $h_insert;
+         "VALUES ($SQL_ATON,?,?,?,?,?,?,?,?,?)") if not $h_insert;
          #('$ip', '$service', '$time', '$fp', '$mac', '$os', '$details', '$link', '$dist', '$host')") if not $h_insert;
        $h_insert->execute($ip,$service,$ftime,$fp,$mac,$os,$details,
                           $link,$dist,$host);
