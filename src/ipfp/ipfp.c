@@ -44,7 +44,7 @@
 #include "../prads.h"
 #include "ipfp.h"
 
-void display_signature_tcp ( uint8_t  ttl,
+void gen_fp_tcp ( uint8_t  ttl,
                         uint16_t tot,
                         uint8_t  df,
                         uint8_t  *op,
@@ -129,7 +129,7 @@ void display_signature_tcp ( uint8_t  ttl,
    update_asset_os(ip_src, port, de, fp, af);
 }
 
-void display_signature_icmp ( uint8_t  type,
+void gen_fp_icmp ( uint8_t  type,
                               uint8_t  code,
                               uint8_t  ttl,
                               uint8_t  df,
@@ -155,7 +155,7 @@ void display_signature_icmp ( uint8_t  type,
    // add mss ? for MTU detection ?
 }
 
-void display_signature_udp (  uint16_t  totlen,
+void gen_fp_udp (  uint16_t  totlen,
                               uint16_t  udata,
                               uint8_t   ttl,
                               uint8_t   df,

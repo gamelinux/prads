@@ -44,7 +44,7 @@ void fp_icmp4 (ip4_header *ip4, icmp_header *icpmh, const uint8_t *end_ptr, stru
 
    if (!ip4->ip_id)  quirks |= QUIRK_ZEROID;
 
-   display_signature_icmp(icpmh->type,icpmh->code,ip4->ip_ttl,(ntohs(ip4->ip_off) & IP_DF) != 0,olen,
+   gen_fp_icmp(icpmh->type,icpmh->code,ip4->ip_ttl,(ntohs(ip4->ip_off) & IP_DF) != 0,olen,
                      ntohs(ip4->ip_len),idata,ip4->ip_off,ip4->ip_tos,quirks, ip_src, AF_INET);
                      
 //icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset,$tos);
@@ -84,7 +84,7 @@ printf("[*] icmp6: type:%u,code:%u,ttl:%u,len:%u,ver:0x%x,class:0x%x,label:0x%x\
                                                ntohs(ip6->len),IP6_V(ip6),IP6_TC(ip6),
                                                IP6_FL(ip6));
 
-   display_signature_icmp(icpmh->type,icpmh->code,ip4->ip_ttl,(ntohs(ip4->ip_off) & IP_DF) != 0,olen,
+   gen_fp_icmp(icpmh->type,icpmh->code,ip4->ip_ttl,(ntohs(ip4->ip_off) & IP_DF) != 0,olen,
                      ntohs(ip4->ip_len),idata,ip4->ip_off,ip4->ip_tos,quirks, ip_src, AF_INET);
 */
 }

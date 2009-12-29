@@ -119,8 +119,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
       eth_type = ntohs(eth_hdr->eth_8_ip_type); 
       eth_header_len +=4;
    }
-   // XXX: are all ethernet_type flags set here? what are we testing?
-   else if ( eth_type == (ETHERNET_TYPE_802Q1MT|ETHERNET_TYPE_802Q1MT2|ETHERNET_TYPE_802Q1MT3|ETHERNET_TYPE_8021AD) ) {
+   else if ( eth_type & (ETHERNET_TYPE_802Q1MT|ETHERNET_TYPE_802Q1MT2|ETHERNET_TYPE_802Q1MT3|ETHERNET_TYPE_8021AD) ) {
       /* printf("[*] ETHERNET TYPE 802Q1MT\n"); */
       eth_type = ntohs(eth_hdr->eth_82_ip_type);
       eth_header_len +=8;

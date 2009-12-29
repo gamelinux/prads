@@ -133,7 +133,7 @@ end_parsing:
    if (TCP_X2(tcph)) quirks |= QUIRK_X2;
    if (!ip4->ip_id)  quirks |= QUIRK_ZEROID;
 
-display_signature_tcp (ip4->ip_ttl,open_mode ? 0 : ntohs(ip4->ip_len),
+gen_fp_tcp (ip4->ip_ttl,open_mode ? 0 : ntohs(ip4->ip_len),
                   (ntohs(ip4->ip_off) & IP_DF) != 0,
                   op,
                   ocnt,
@@ -305,7 +305,7 @@ printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lm
                                                      ntohs(IP6_FL(ip6)),
                                                      mss_val, ntohs(tcph->t_win));
 */
-display_signature_tcp (ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
+gen_fp_tcp (ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                   1, // simulate df bit for now
                   op,
                   ocnt,
