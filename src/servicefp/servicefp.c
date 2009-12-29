@@ -20,14 +20,14 @@
 
 /* $Id$ */
 
-/* servicefp 
- * 
+/* servicefp
+ *
  * Purpose:
  *
  * This file holds essential functions for the service fingerprinting
  *
  * Arguments:
- *   
+ *
  * *NONE
  *
  * Effect:

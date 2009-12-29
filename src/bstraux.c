@@ -1,7 +1,7 @@
 /*
  * This source file is part of the bstring string library.  This code was
- * written by Paul Hsieh in 2002-2008, and is covered by the BSD open source 
- * license and the GPL. Refer to the accompanying documentation for details 
+ * written by Paul Hsieh in 2002-2008, and is covered by the BSD open source
+ * license and the GPL. Refer to the accompanying documentation for details
  * on usage and license.
  */
 
@@ -9,7 +9,7 @@
  * bstraux.c
  *
  * This file is not necessarily part of the core bstring library itself, but
- * is just an auxilliary module which includes miscellaneous or trivial 
+ * is just an auxilliary module which includes miscellaneous or trivial
  * functions.
  */
 
@@ -83,13 +83,13 @@ unsigned char t;
 
 /*  int bInsertChrs (bstring b, int pos, int len, unsigned char c, unsigned char fill)
  *
- *  Insert a repeated sequence of a given character into the string at 
+ *  Insert a repeated sequence of a given character into the string at
  *  position pos for a length len.
  */
 int bInsertChrs (bstring b, int pos, int len, unsigned char c, unsigned char fill) {
 	if (b == NULL || b->slen < 0 || b->mlen < b->slen || pos < 0 || len <= 0) return -__LINE__;
 
-	if (pos > b->slen 
+	if (pos > b->slen
 	 && 0 > bsetstr (b, pos, NULL, fill)) return -__LINE__;
 
 	if (0 > balloc (b, b->slen + len)) return -__LINE__;
@@ -226,9 +226,9 @@ size_t tsz = elsize * nelem;
 }
 
 /*  The "by reference" version of the above function.  This function puts
- *  a number of restrictions on the call site (the passed in struct 
+ *  a number of restrictions on the call site (the passed in struct
  *  tagbstring *will* be modified by this function, and the source data
- *  must remain alive and constant for the lifetime of the bStream).  
+ *  must remain alive and constant for the lifetime of the bStream).
  *  Hence it is not presented as an extern.
  */
 static struct bStream * bsFromBstrRef (struct tagbstring * t) {
@@ -238,10 +238,10 @@ static struct bStream * bsFromBstrRef (struct tagbstring * t) {
 
 /*  char * bStr2NetStr (const_bstring b)
  *
- *  Convert a bstring to a netstring.  See 
+ *  Convert a bstring to a netstring.  See
  *  http://cr.yp.to/proto/netstrings.txt for a description of netstrings.
- *  Note: 1) The value returned should be freed with a call to bcstrfree() at 
- *           the point when it will no longer be referenced to avoid a memory 
+ *  Note: 1) The value returned should be freed with a call to bcstrfree() at
+ *           the point when it will no longer be referenced to avoid a memory
  *           leak.
  *        2) If the returned value is non-NULL, then it also '\0' terminated
  *           in the character position one past the "," terminator.
@@ -265,7 +265,7 @@ unsigned char * buff;
 
 /*  bstring bNetStr2Bstr (const char * buf)
  *
- *  Convert a netstring to a bstring.  See 
+ *  Convert a netstring to a bstring.  See
  *  http://cr.yp.to/proto/netstrings.txt for a description of netstrings.
  *  Note that the terminating "," *must* be present, however a following '\0'
  *  is *not* required.
@@ -509,7 +509,7 @@ int i, llen, otlen, ret, c0, c1, c2, c3, d0, d1, d2, d3;
 
 	otlen = t->slen;
 
-	if (((unsigned) llen) > UU_MAX_LINELEN) { ret = -__LINE__; 
+	if (((unsigned) llen) > UU_MAX_LINELEN) { ret = -__LINE__;
 		goto bl;
 	}
 
@@ -572,9 +572,9 @@ int i, llen, otlen, ret, c0, c1, c2, c3, d0, d1, d2, d3;
  *
  *  Performs a UUDecode of a block of data.  If there are errors in the
  *  decoding, they are counted up and returned in "badlines", if badlines is
- *  not NULL. It is assumed that the "begin" and "end" lines have already 
- *  been stripped off.  The potential security problem of writing the 
- *  filename in the begin line is something that is beyond the scope of a 
+ *  not NULL. It is assumed that the "begin" and "end" lines have already
+ *  been stripped off.  The potential security problem of writing the
+ *  filename in the begin line is something that is beyond the scope of a
  *  portable library.
  */
 
@@ -676,10 +676,10 @@ int l, lret;
 /*  bStream * bsUuDecode (struct bStream * sInp, int * badlines)
  *
  *  Creates a bStream which performs the UUDecode of an an input stream.  If
- *  there are errors in the decoding, they are counted up and returned in 
- *  "badlines", if badlines is not NULL. It is assumed that the "begin" and 
- *  "end" lines have already been stripped off.  The potential security 
- *  problem of writing the filename in the begin line is something that is 
+ *  there are errors in the decoding, they are counted up and returned in
+ *  "badlines", if badlines is not NULL. It is assumed that the "begin" and
+ *  "end" lines have already been stripped off.  The potential security
+ *  problem of writing the filename in the begin line is something that is
  *  beyond the scope of a portable library.
  */
 
@@ -712,7 +712,7 @@ struct bStream * sOut;
 
 /*  bstring bUuEncode (const_bstring src)
  *
- *  Performs a UUEncode of a block of data.  The "begin" and "end" lines are 
+ *  Performs a UUEncode of a block of data.  The "begin" and "end" lines are
  *  not appended.
  */
 bstring bUuEncode (const_bstring src) {
@@ -750,8 +750,8 @@ unsigned int c0, c1, c2;
 
 /*  bstring bYEncode (const_bstring src)
  *
- *  Performs a YEncode of a block of data.  No header or tail info is 
- *  appended.  See: http://www.yenc.org/whatis.htm and 
+ *  Performs a YEncode of a block of data.  No header or tail info is
+ *  appended.  See: http://www.yenc.org/whatis.htm and
  *  http://www.yenc.org/yenc-draft.1.3.txt
  */
 bstring bYEncode (const_bstring src) {
@@ -780,7 +780,7 @@ unsigned char c;
 
 /*  bstring bYDecode (const_bstring src)
  *
- *  Performs a YDecode of a block of data.  See: 
+ *  Performs a YDecode of a block of data.  See:
  *  http://www.yenc.org/whatis.htm and http://www.yenc.org/yenc-draft.1.3.txt
  */
 #define MAX_OB_LEN (64)
@@ -838,7 +838,7 @@ int obl;
  *
  *  Takes a format string that is compatible with strftime and a struct tm
  *  pointer, formats the time according to the format string and outputs
- *  the bstring as a result. Note that if there is an early generation of a 
+ *  the bstring as a result. Note that if there is an early generation of a
  *  '\0' character, the bstring will be truncated to this end point.
  */
 bstring bStrfTime (const char * fmt, const struct tm * timeptr) {
@@ -855,7 +855,7 @@ size_t r;
 	if (fmt == NULL) return NULL;
 
 	/* Since the length is not determinable beforehand, a search is
-	   performed using the truncating "strftime" call on increasing 
+	   performed using the truncating "strftime" call on increasing
 	   potential sizes for the output result. */
 
 	if ((n = (int) (2*strlen (fmt))) < 16) n = 16;
@@ -886,7 +886,7 @@ size_t r;
  *  Sets the character at position pos to the character c in the bstring a.
  *  If the character c is NUL ('\0') then the string is truncated at this
  *  point.  Note: this does not enable any other '\0' character in the bstring
- *  as terminator indicator for the string.  pos must be in the position 
+ *  as terminator indicator for the string.  pos must be in the position
  *  between 0 and b->slen inclusive, otherwise BSTR_ERR will be returned.
  */
 int bSetCstrChar (bstring b, int pos, char c) {
@@ -927,7 +927,7 @@ int bSetChar (bstring b, int pos, char c) {
 
 #define INIT_SECURE_INPUT_LENGTH (256)
 
-/*  bstring bSecureInput (int maxlen, int termchar, 
+/*  bstring bSecureInput (int maxlen, int termchar,
  *                        bNgetc vgetchar, void * vgcCtx)
  *
  *  Read input from an abstracted input interface, for a length of at most
@@ -988,7 +988,7 @@ struct bwriteStream {
 
 /*  struct bwriteStream * bwsOpen (bNwrite writeFn, void * parm)
  *
- *  Wrap a given open stream (described by a fwrite work-a-like function 
+ *  Wrap a given open stream (described by a fwrite work-a-like function
  *  pointer and stream handle) into an open bwriteStream suitable for write
  *  streaming functions.
  */
@@ -1025,7 +1025,7 @@ struct bwriteStream * ws;
  *  Force any pending data to be written to the core stream.
  */
 int bwsWriteFlush (struct bwriteStream * ws) {
-	if (NULL == ws || ws->isEOF || 0 >= ws->minBuffSz || 
+	if (NULL == ws || ws->isEOF || 0 >= ws->minBuffSz ||
 	    NULL == ws->writeFn || NULL == ws->buff) return BSTR_ERR;
 	internal_bwswriteout (ws, ws->buff);
 	ws->buff->slen = 0;
@@ -1077,7 +1077,7 @@ int l;
 
 /*  int bwsWriteBlk (struct bwriteStream * ws, void * blk, int len)
  *
- *  Send a block of data a bwriteStream.  If the stream is at EOF BSTR_ERR is 
+ *  Send a block of data a bwriteStream.  If the stream is at EOF BSTR_ERR is
  *  returned.
  */
 int bwsWriteBlk (struct bwriteStream * ws, void * blk, int len) {
@@ -1089,18 +1089,18 @@ struct tagbstring t;
 
 /*  int bwsIsEOF (const struct bwriteStream * ws)
  *
- *  Returns 0 if the stream is currently writable, 1 if the core stream has 
+ *  Returns 0 if the stream is currently writable, 1 if the core stream has
  *  responded by not accepting the previous attempted write.
  */
 int bwsIsEOF (const struct bwriteStream * ws) {
-	if (NULL == ws || NULL == ws->buff || 0 > ws->minBuffSz || 
+	if (NULL == ws || NULL == ws->buff || 0 > ws->minBuffSz ||
 	    NULL == ws->writeFn) return BSTR_ERR;
 	return ws->isEOF;
 }
 
 /*  int bwsBuffLength (struct bwriteStream * ws, int sz)
  *
- *  Set the length of the buffer used by the bwsStream.  If sz is zero, the 
+ *  Set the length of the buffer used by the bwsStream.  If sz is zero, the
  *  length is not set.  This function returns with the previous length.
  */
 int bwsBuffLength (struct bwriteStream * ws, int sz) {
@@ -1113,13 +1113,13 @@ int oldSz;
 
 /*  void * bwsClose (struct bwriteStream * s)
  *
- *  Close the bwriteStream, and return the handle to the stream that was 
+ *  Close the bwriteStream, and return the handle to the stream that was
  *  originally used to open the given stream.  Note that even if the stream
  *  is at EOF it still needs to be closed with a call to bwsClose.
  */
 void * bwsClose (struct bwriteStream * ws) {
 void * parm;
-	if (NULL == ws || NULL == ws->buff || 0 >= ws->minBuffSz || 
+	if (NULL == ws || NULL == ws->buff || 0 >= ws->minBuffSz ||
 	    NULL == ws->writeFn) return NULL;
 	bwsWriteFlush (ws);
 	parm = ws->parm;

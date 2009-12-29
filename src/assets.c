@@ -2,7 +2,7 @@
 #include "prads.h"
 #include "assets.h"
 
-const char *u_ntop(const struct in6_addr ip_addr, int af, const char *dest)
+const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
 {
     if (af == AF_INET) {
         if (!inet_ntop
@@ -555,7 +555,7 @@ void del_assets(int ctime)
 //         del_os_assets(passet);
     //del_asset(passet, &bucket[akey]);
 //      }
-//   }   
+//   }
 }
 
 void del_os_asset(os_asset ** head_oa, os_asset * os)

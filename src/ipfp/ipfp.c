@@ -20,15 +20,15 @@
 
 /* $Id$ */
 
-/* ipfp 
- * 
+/* ipfp
+ *
  * Purpose:
  *
- * This file eats an IPv4 or an IPv6 packet/fingerprint, and returns a 
+ * This file eats an IPv4 or an IPv6 packet/fingerprint, and returns a
  * fingerprint match.
  *
  * Arguments:
- *   
+ *
  * IP-version, args to eat...
  *
  * Effect:

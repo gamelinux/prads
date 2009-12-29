@@ -137,7 +137,7 @@
 
 /*  D A T A  S T R U C T U R E S  *********************************************/
 
-/* 
+/*
  * Ethernet header
  */
 
@@ -205,7 +205,7 @@ typedef struct _ether_arp {
     uint8_t arp_tpa[4];         /* target protocol address */
 } ether_arp;
 
-/* 
+/*
  * IPv4 header
  */
 
@@ -229,7 +229,7 @@ typedef struct _ip4_header {
 #define IP_HL(ip4_header)                (((ip4_header)->ip_vhl) & 0x0f)
 #define IP_V(ip4_header)                 (((ip4_header)->ip_vhl) >> 4)
 
-/* 
+/*
  * IPv6 header
  */
 
@@ -250,7 +250,7 @@ typedef struct _ip6_header {
 #define IP6_TC(ip6_header)                ((htonl((ip6_header)->vcl) & 0x0FF00000) >> 20)
 #define IP6_FL(ip6_header)                (htonl((ip6_header)->vcl) & 0x000FFFFF)
 
-/* 
+/*
  * TCP header
  */
 
@@ -272,7 +272,7 @@ typedef struct _tcp_header {
 #define GET16(p)                         ((uint16_t) *((uint8_t*)(p)+0) << 8 | \
                                           (uint16_t) *((uint8_t*)(p)+1) )
 
-/* 
+/*
  * UDP header
  */
 
@@ -283,7 +283,7 @@ typedef struct _udp_header {
     uint16_t csum;              /* checksum */
 } udp_header;
 
-/* 
+/*
  * ICMP header
  */
 
@@ -388,7 +388,7 @@ typedef struct _icmp6_header {
 /* Minus 1 due to the 'body' field  */
 #define ICMP6_MIN_HEADER_LEN (sizeof(ICMP6Hdr) )
 
-/* 
+/*
  * Structure for connections
  */
 
