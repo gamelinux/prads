@@ -42,8 +42,6 @@ signature *sig_client_tcp = NULL;
 signature *sig_client_udp = NULL;
 char src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
 static char *dev, *dpath;
-//bstring      sunknown;
-//sunknown  = bformat("unknown");
 char *chroot_dir;
 char *group_name, *user_name, *true_pid_name;
 char *pidfile = "prads.pid";
@@ -252,12 +250,11 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 char *payload;
                 payload =
                     (char *)(packet + eth_header_len +
-                             (IP_HL(ip4) * 4) + TCP_HEADER_LEN);
+                             (IP_HL(ip4) * 4) + (TCP_OFFSET(tcph) * 4));
                 if (s_check == 2) {
                     service_tcp4(ip4, tcph, payload,
                                  (pheader->caplen -
-                                  (TCP_OFFSET(tcph)) *
-                                  4 - eth_header_len));
+                                  (TCP_OFFSET(tcph)) * 4 - eth_header_len));
                 }
                 /*
                  * if (s_check == 1) {
@@ -453,22 +450,22 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 }
                 char *payload;
                 payload =
-                    (char *)(packet + eth_header_len + sizeof(ip6_header));
+                    //(char *)(packet + eth_header_len + sizeof(ip6_header));
+                    (char *)(packet + eth_header_len + IP6_HEADER_LEN + (TCP_OFFSET(tcph)*4));
                 if (s_check == 2) {
                     /*
                      * printf("[*] - CHECKING TCP SERVER PACKAGE\n");
                      */
                     service_tcp6(ip6, tcph, payload,
-                                 (pheader->caplen -
-                                  (TCP_OFFSET(tcph)) *
-                                  4 - eth_header_len));
+                                 (pheader->caplen - (TCP_OFFSET(tcph)*4) -
+                                  IP6_HEADER_LEN - eth_header_len));
                 } else {
                     /*
                      * printf("[*] - CHECKING TCP CLIENT PACKAGE\n");
                      */
                     client_tcp6(ip6, tcph, payload,
-                                (pheader->caplen -
-                                 (TCP_OFFSET(tcph)) * 4 - eth_header_len));
+                                (pheader->caplen - (TCP_OFFSET(tcph)*4) -
+                                 IP6_HEADER_LEN - eth_header_len));
                 }
             } else {
                 /*
@@ -499,10 +496,10 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                  */
                 char *payload;
                 payload =
-                    (char *)(packet + eth_header_len + sizeof(ip6_header));
+                    (char *)(packet + eth_header_len + IP6_HEADER_LEN + UDP_HEADER_LEN);
                 service_udp6(ip6, udph, payload,
-                             (pheader->caplen -
-                              sizeof(udp_header) - eth_header_len));
+                             (pheader->caplen - UDP_HEADER_LEN -
+                              IP6_HEADER_LEN - eth_header_len));
             } else {
                 /*
                  * printf("[*] - NOT CHECKING UDP PACKAGE\n");
