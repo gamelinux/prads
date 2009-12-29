@@ -179,14 +179,15 @@ void end_sessions() {
            else if ( (cxt->s_tcpFlags & TF_RST || cxt->d_tcpFlags & TF_RST) && (check_time - cxt->last_pkt_time) > 5) {
               xpir = 1;
            }
+           // Commented out, since &TF_SYNACK is wrong!
            /* if not a complete TCP 3-way handshake */
-           else if ( !cxt->s_tcpFlags&TF_SYNACK || !cxt->d_tcpFlags&TF_SYNACK && (check_time - cxt->last_pkt_time) > 10) {
-              xpir = 1;
-           }
+           //else if ( !cxt->s_tcpFlags&TF_SYNACK || !cxt->d_tcpFlags&TF_SYNACK && (check_time - cxt->last_pkt_time) > 10) {
+           //   xpir = 1;
+           //}
            /* Ongoing timout */
-           else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
-              xpir = 1;
-           }
+           //else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
+           //   xpir = 1;
+           //}
            else if ( (check_time - cxt->last_pkt_time) > TCP_TIMEOUT ) {
               xpir = 1;
            }

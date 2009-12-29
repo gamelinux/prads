@@ -346,7 +346,7 @@ short update_asset_service ( struct in6_addr ip_addr,
  *              : 2 - Discovered
  * RETURN       : None!
  * ---------------------------------------------------------- */
-void add_asset (int af, struct in6_addr ip_addr, time_t discovered)
+void add_asset (int af, struct in6_addr ip_addr)
 {
 
    extern asset *passet[BUCKET_SIZE];
@@ -361,13 +361,7 @@ void add_asset (int af, struct in6_addr ip_addr, time_t discovered)
    rec->ip_addr = ip_addr;
    rec->af = af;
    rec->i_attempts = 0;
-
-   /* Should remove/rewrite this: */
-   if (!discovered) {
-      rec->first_seen = rec->last_seen = tstamp;
-   } else {
-      rec->first_seen = rec->last_seen = discovered;
-   }
+   rec->first_seen = rec->last_seen = tstamp;
 
    /* 
     * Insert record at the head of the data structure.  The logic behind
