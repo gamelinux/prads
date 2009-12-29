@@ -28,12 +28,6 @@
 #include "cxt.h"
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
-/*
-#include "servicefp/tcps.c"
-#include "servicefp/tcpc.c"
-
-#include "servicefp/udps.c"
-*/
 
 /*  G L O B A L E S  *********************************************************/
 uint64_t cxtrackerid;
@@ -342,10 +336,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 goto packet_end;
 
             if (s_check != 0) {
-                /*
-                 * printf("[*] - CHECKING ICMP PACKAGE\n"); 
-                 */
-                /*
+                /* printf("[*] - CHECKING ICMP PACKAGE\n"); 
                  * Paranoia! 
                  */
                 const uint8_t *end_ptr;
@@ -566,32 +557,16 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
         } else {
             printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n", ip6->next);
             /*
-             * s_check = cx_track(ip6->ip_src, 0, ip6->ip_dst, 0,
-             * ip6->next, ip6->len, 0, tstamp, AF_INET6);
-             */
-            /*
-             * if (s_check != 0) { 
-             */
-            /*
-             * printf("[*] - CHECKING OTHER PACKAGE\n"); 
-             */
-            /*
-             * update_asset(AF_INET6,ip6->ip_src); 
-             */
-            /*
-             * service_other(*ip4,*tcph) 
-             */
-            /*
-             * fp_other(ip, ttl, ipopts, len, id, ipflags, df); 
-             */
-            /*
-             * }else{ 
-             */
-            /*
-             * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
-             */
-            /*
-             * } 
+             s_check = cx_track(ip6->ip_src, 0, ip6->ip_dst, 0,
+             ip6->next, ip6->len, 0, tstamp, AF_INET6);
+             if (s_check != 0) { 
+                printf("[*] - CHECKING OTHER PACKAGE\n"); 
+                update_asset(AF_INET6,ip6->ip_src); 
+                service_other(*ip4,*tcph) 
+                fp_other(ip, ttl, ipopts, len, id, ipflags, df); 
+             }else{ 
+                printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
+             } 
              */
             goto packet_end;
         }

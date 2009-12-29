@@ -88,6 +88,11 @@
 #define TF_NORESERVED (TF_FIN|TF_SYN|TF_RST|TF_PUSH|TF_ACK|TF_URG)
 #define TF_FLAGS      (TF_FIN|TF_SYN|TF_RST|TF_ACK|TF_URG|TF_ECE|TF_CWR)
 
+#define MOD_NONE	0
+#define MOD_CONST	1
+#define MOD_MSS		2
+#define MOD_MTU		3
+
 #define QUIRK_PAST                    0x00000001 /* P */
 #define QUIRK_ZEROID                  0x00000002 /* Z */
 #define QUIRK_IPOPT                   0x00000004 /* I */
