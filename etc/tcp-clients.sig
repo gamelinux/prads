@@ -10,7 +10,11 @@ www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
 # SSH
 ssh,v/OpenSSH/$2/Protocol $1/,SSH-([.\d]+)-OpenSSH[_-](\S+)
 ssh,v/libssh/$2/Protocol $1/,SSH-([.\d]+)-libssh-(\S+)
+
 # SSL Signatures
-ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01
-ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
+ssl,v/TLS 1.0 Client Hello///,^\x16\x03\x01..\x01...\x03\x01
+ssl,v/TLS 1.0 Client Key Exchange///,^\x16\x03\x01..\x10...\x14\x03\x01..
+ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
+#ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
+
 
