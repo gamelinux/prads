@@ -1,4 +1,4 @@
-assets.o: assets.c common.h prads.h bstrlib.h assets.h
+assets.o: assets.c common.h prads.h bstrlib.h assets.h sys_func.h
 bstraux.o: bstraux.c bstrlib.h bstraux.h
 bstrlib.o: bstrlib.c bstrlib.h
 cxt.o: cxt.c common.h prads.h bstrlib.h cxt.h

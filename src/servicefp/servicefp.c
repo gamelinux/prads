@@ -272,18 +272,18 @@ bstring get_app_name(signature * sig,
      * Create Application string using the values in signature[i].title.  
      */
     if (sig->title.app != NULL) {
-        strlcpy(app, (char *)bdata(sig->title.app), MAX_APP);
+        strncpy(app, (char *)bdata(sig->title.app), MAX_APP);
     }
     if (sig->title.ver != NULL) {
         if (sig->title.ver->slen > 0) {
             strcat(app, " ");
-            strlcat(app, (char *)bdata(sig->title.ver), MAX_VER);
+            strncat(app, (char *)bdata(sig->title.ver), MAX_VER);
         }
     }
     if (sig->title.misc != NULL) {
         if (sig->title.misc->slen > 0) {
             strcat(app, " (");
-            strlcat(app, (char *)bdata(sig->title.misc), MAX_MISC);
+            strncat(app, (char *)bdata(sig->title.misc), MAX_MISC);
             strcat(app, ")");
         }
     }

@@ -1,5 +1,11 @@
 #ifndef SYSFUNC_H
 #define SYSFUNC_H
+
+#ifdef DEBUG
+#define dlog(fmt, ...) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);
+#else
+#define dlog(fmt, ...)
+#endif
 size_t strlcpy(char *dst, const char *src, size_t size);
 size_t strlcat(char *dst, const char *src, size_t len);
 void bucket_keys_NULL();

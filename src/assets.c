@@ -1,6 +1,7 @@
 #include "common.h"
 #include "prads.h"
 #include "assets.h"
+#include "sys_func.h"
 
 const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
 {
@@ -78,7 +79,7 @@ short update_asset_os(struct in6_addr ip_addr,
 
     int counter = 0;
     int asset_match = 0;
-    //printf("Incoming Asset, %s: %u:%u [%s]\n",(char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
+    dlog("Incoming asset, %s: %u:%u [%s]\n",(char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
     //bdestroy(raw_fp);
     //bdestroy(detection);
     //return 0;
