@@ -179,11 +179,11 @@ typedef struct _ether_header {
 }       ether_header;
 
 typedef struct _arphdr {
-   unsigned short int ar_hrd;      /* Format of hardware address.  */
-   unsigned short int ar_pro;      /* Format of protocol address.  */
-   unsigned char ar_hln;           /* Length of hardware address.  */
-   unsigned char ar_pln;           /* Length of protocol address.  */
-   unsigned short int ar_op;       /* ARP opcode (command).  */
+   uint16_t ar_hrd;      /* Format of hardware address.  */
+   uint16_t ar_pro;      /* Format of protocol address.  */
+   uint8_t ar_hln;           /* Length of hardware address.  */
+   uint8_t ar_pln;           /* Length of protocol address.  */
+   uint16_t ar_op;       /* ARP opcode (command).  */
 #if 0
    /* Ethernet looks like this : This bit is variable sized
       however...  */
@@ -196,10 +196,10 @@ typedef struct _arphdr {
 
 typedef struct _ether_arp {
    arphdr   ea_hdr;                 /* fixed-size header */
-   u_int8_t arp_sha[MAC_ADDR_LEN];  /* sender hardware address */
-   u_int8_t arp_spa[4];             /* sender protocol address */
-   u_int8_t arp_tha[MAC_ADDR_LEN];  /* target hardware address */
-   u_int8_t arp_tpa[4];             /* target protocol address */
+   uint8_t arp_sha[MAC_ADDR_LEN];  /* sender hardware address */
+   uint8_t arp_spa[4];             /* sender protocol address */
+   uint8_t arp_tha[MAC_ADDR_LEN];  /* target hardware address */
+   uint8_t arp_tpa[4];             /* target protocol address */
 }  ether_arp;
 
 /* 
@@ -397,19 +397,19 @@ typedef struct _connection {
         struct _connection *next;
         time_t start_time;                 /* connection start time */
         time_t last_pkt_time;              /* last seen packet time */
-        u_int64_t cxid;                    /* connection id */
-        int af;                            /* IP version (4/6) AF_INET*/
-        u_int8_t  proto;                   /* IP protocoll type */
-        struct in6_addr s_ip;              /* source address */
-        struct in6_addr d_ip;              /* destination address */
-        u_int16_t s_port;                  /* source port */
-        u_int16_t d_port;                  /* destination port */
-        u_int64_t s_total_pkts;            /* total source packets */
-        u_int64_t s_total_bytes;           /* total source bytes */
-        u_int64_t d_total_pkts;            /* total destination packets */
-        u_int64_t d_total_bytes;           /* total destination bytes */
-        u_int8_t s_tcpFlags;               /* tcpflags sent by source */
-        u_int8_t d_tcpFlags;               /* tcpflags sent by destination */
+        uint64_t cxid;                    /* connection id */
+        uint32_t af;                      /* IP version (4/6) AF_INET*/
+        uint8_t  proto;                   /* IP protocoll type */
+        struct in6_addr s_ip;             /* source address */
+        struct in6_addr d_ip;             /* destination address */
+        uint16_t s_port;                  /* source port */
+        uint16_t d_port;                  /* destination port */
+        uint64_t s_total_pkts;            /* total source packets */
+        uint64_t s_total_bytes;           /* total source bytes */
+        uint64_t d_total_pkts;            /* total destination packets */
+        uint64_t d_total_bytes;           /* total destination bytes */
+        uint8_t s_tcpFlags;               /* tcpflags sent by source */
+        uint8_t d_tcpFlags;               /* tcpflags sent by destination */
 } connection;
 
 typedef struct _serv_asset {
@@ -419,7 +419,7 @@ typedef struct _serv_asset {
    time_t               last_seen;        /* Time at which service_asset was last seen. */
    unsigned short       i_attempts;       /* Attempts at identifying the service_asset. */
    unsigned short       proto;            /* Asset protocol */
-   u_int16_t            port;             /* Asset port */
+   uint16_t            port;             /* Asset port */
    bstring              service;          /* Asset service (i.e. SSH, WWW, ICMP etc.) */
    bstring              application;      /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
 } serv_asset;
@@ -455,7 +455,7 @@ typedef struct _asset {
 
 typedef struct _signature {
    bstring           service;     /* Service (i.e. SSH, WWW, etc.) */
-   u_int16_t         port;        /* Port to check for this service, or 0 for all */
+   uint16_t         port;        /* Port to check for this service, or 0 for all */
                                   /* Should be able to specify range, and such... */
                                   /* Snort style : [80,8080,100-200,20-30,!22] */
                                   /* Not sure how to do that... yet.... */
