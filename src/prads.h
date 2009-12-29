@@ -36,7 +36,7 @@
 #define VERSION                       "0.1.6"
 #define TIMEOUT                       30
 #define TCP_TIMEOUT                   300 /* When idle IP connections should be timed out */
-#define BUCKET_SIZE                   1669 
+#define BUCKET_SIZE                   1669
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
 #define MAX_PKT_CHECK                 20
@@ -91,9 +91,9 @@
 #define QUIRK_PAST                    0x00000001 /* P */
 #define QUIRK_ZEROID                  0x00000002 /* Z */
 #define QUIRK_IPOPT                   0x00000004 /* I */
-#define QUIRK_URG                     0x00000008 /* U */ 
-#define QUIRK_X2                      0x00000010 /* X */ 
-#define QUIRK_ACK                     0x00000020 /* A */ 
+#define QUIRK_URG                     0x00000008 /* U */
+#define QUIRK_X2                      0x00000010 /* X */
+#define QUIRK_ACK                     0x00000020 /* A */
 #define QUIRK_T2                      0x00000040 /* T */
 #define QUIRK_FLAGS                   0x00000080 /* F */
 #define QUIRK_DATA                    0x00000100 /* D */
@@ -123,7 +123,7 @@
 #define STDBUF                         1024
 
 #define INSTALL_SYSCONFDIR             ""
-#define TCP_SIGNATURE_LIST             "/../etc/tcp-service.sig" 
+#define TCP_SIGNATURE_LIST             "/../etc/tcp-service.sig"
 
 #define MAX_APP                        100
 #define MAX_VER                        25
@@ -132,7 +132,7 @@
 
 /*  D A T A  S T R U C T U R E S  *********************************************/
 
-/* 
+/*
  * Ethernet header
  */
 
@@ -153,11 +153,11 @@ typedef struct _ether_header {
          u_short eth_t_8_vid;
          u_short eth_t_8_type;
       } qt;
-   
+
       struct qot
       {
          u_short eth_t_80212;            /* ethernet type/802.1QinQ */
-         u_short eth_t_82_mvid; 
+         u_short eth_t_82_mvid;
          u_short eth_t_82_8021;
          u_short eth_t_82_vid;
          u_short eth_t_82_type;
@@ -202,7 +202,7 @@ typedef struct _ether_arp {
    u_int8_t arp_tpa[4];             /* target protocol address */
 }  ether_arp;
 
-/* 
+/*
  * IPv4 header
  */
 
@@ -226,7 +226,7 @@ typedef struct _ip4_header {
 #define IP_HL(ip4_header)                (((ip4_header)->ip_vhl) & 0x0f)
 #define IP_V(ip4_header)                 (((ip4_header)->ip_vhl) >> 4)
 
-/* 
+/*
  * IPv6 header
  */
 
@@ -247,7 +247,7 @@ typedef struct _ip6_header {
 #define IP6_TC(ip6_header)                ((htonl((ip6_header)->vcl) & 0x0FF00000) >> 20)
 #define IP6_FL(ip6_header)                (htonl((ip6_header)->vcl) & 0x000FFFFF)
 
-/* 
+/*
  * TCP header
  */
 
@@ -269,7 +269,7 @@ typedef struct _tcp_header {
 #define GET16(p)                         ((uint16_t) *((uint8_t*)(p)+0) << 8 | \
                                           (uint16_t) *((uint8_t*)(p)+1) )
 
-/* 
+/*
  * UDP header
  */
 
@@ -280,7 +280,7 @@ typedef struct _udp_header {
 	uint16_t csum;                    /* checksum */
 } udp_header;
 
-/* 
+/*
  * ICMP header
  */
 
@@ -388,7 +388,7 @@ typedef struct _icmp6_header {
 /* Minus 1 due to the 'body' field  */
 #define ICMP6_MIN_HEADER_LEN (sizeof(ICMP6Hdr) )
 
-/* 
+/*
  * Structure for connections
  */
 

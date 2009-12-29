@@ -10,7 +10,7 @@ void fp_icmp4 (ip4_header *ip4, icmp_header *icpmh, const uint8_t *end_ptr, stru
    uint8_t   *payload = 0;
 
    /* Decode variable length header options and remaining data in field */
-   olen = IP_HL(ip4) - 5; 
+   olen = IP_HL(ip4) - 5;
    if (olen < 0) { // Check for bad hlen
       olen = 0;
    }
@@ -46,7 +46,7 @@ void fp_icmp4 (ip4_header *ip4, icmp_header *icpmh, const uint8_t *end_ptr, stru
 
    gen_fp_icmp(icpmh->type,icpmh->code,ip4->ip_ttl,(ntohs(ip4->ip_off) & IP_DF) != 0,olen,
                      ntohs(ip4->ip_len),idata,ip4->ip_off,ip4->ip_tos,quirks, ip_src, AF_INET);
-                     
+
 //icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset,$tos);
 }
 

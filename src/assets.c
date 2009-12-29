@@ -26,7 +26,7 @@ void update_asset (int af, struct in6_addr ip_addr) {
    asset *rec = passet[hash];
 
    while ( rec != NULL ) {
-      if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] 
+      if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]
          && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2]
          && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
@@ -40,7 +40,7 @@ void update_asset (int af, struct in6_addr ip_addr) {
   /* If no match, create the asset */
   add_asset (af, ip_addr, tstamp);
   return;
-} 
+}
 
 /* ----------------------------------------------------------
  * FUNCTION     : update_asset_os
@@ -84,7 +84,7 @@ short update_asset_os ( struct in6_addr ip_addr,
       if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
          //printf("[*] FOUND ASSET\n");
-      
+
          rec->last_seen = tstamp;
          asset_match = 1;
          os_asset *tmp_oa = NULL;
@@ -111,7 +111,7 @@ short update_asset_os ( struct in6_addr ip_addr,
             }
             tmp_oa = tmp_oa->next;
          }
-            
+
          if (tmp_oa == NULL) {
             os_asset *new_oa = NULL;
             new_oa = (os_asset*)calloc(1,sizeof(os_asset));
@@ -187,11 +187,11 @@ short update_asset_service ( struct in6_addr ip_addr,
    int counter = 0;
    int asset_match   = 0;
    //printf("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
-   
+
    /* Find asset within linked list.  */
    while ( rec != NULL ) {
       //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
-      if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1] 
+      if (  rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
          && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2] && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3] ) {
          //printf("[*] FOUND ASSET\n");
          rec->last_seen = tstamp;
@@ -237,7 +237,7 @@ short update_asset_service ( struct in6_addr ip_addr,
             return 0;
          }
          while ( tmp_sa != NULL ) {
-            //if (port == tmp_sa->port && proto == tmp_sa->proto 
+            //if (port == tmp_sa->port && proto == tmp_sa->proto
             //      && (bstricmp(application,tmp_sa->application) == 0)) {
             if (port == tmp_sa->port && proto == tmp_sa->proto) {
                /* Found! */
@@ -363,9 +363,9 @@ void add_asset (int af, struct in6_addr ip_addr)
    rec->i_attempts = 0;
    rec->first_seen = rec->last_seen = tstamp;
 
-   /* 
+   /*
     * Insert record at the head of the data structure.  The logic behind
-    * this is to insert it at the head for quick access since it is going 
+    * this is to insert it at the head for quick access since it is going
     * through the identification process.
     */
    //TAILQ_INSERT_HEAD(&assets, rec, next);
@@ -421,7 +421,7 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], struct in6_addr ip_addr) {
 
    /* Check the ARP data structure for an existing entry. */
    while ( rec != NULL ) {
-      if ( rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] ) { 
+      if ( rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0] ) {
          if ( memcmp(rec->mac_addr, arp_sha, MAC_ADDR_LEN) == 0)  {
             /* UPDATE TIME STAMP */
             //rec->mac_addr = ;
@@ -447,7 +447,7 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], struct in6_addr ip_addr) {
    //bstring mac_resolved = NULL;
 
    new = (asset*) calloc(1,sizeof(asset));
-   
+
    new->af = AF_INET;
    new->ip_addr.s6_addr32[0] = ip_addr.s6_addr32[0];
    new->ip_addr.s6_addr32[1] = 0;
@@ -496,7 +496,7 @@ void del_assets (int ctime) {
 //         del_os_assets(passet);
          //del_asset(passet, &bucket[akey]);
 //      }
-//   }   
+//   }
 }
 
 void del_os_asset (os_asset **head_oa, os_asset *os) {
@@ -505,7 +505,7 @@ void del_os_asset (os_asset **head_oa, os_asset *os) {
    os_asset *tmp_oa = NULL;
    os_asset *next_oa = NULL;
    os_asset *prev_oa = NULL;
-   
+
    tmp_oa = os;
    //bdestroy(tmp_oa->vendor);
    //bdestroy(tmp_oa->os);
@@ -539,7 +539,7 @@ void del_os_asset (os_asset **head_oa, os_asset *os) {
 }
 
 void del_serv_asset (serv_asset **head_sa, serv_asset *service) {
-   
+
    if (service == NULL) return;
    serv_asset *tmp_sa = NULL;
    serv_asset *next_sa = NULL;
@@ -589,7 +589,7 @@ void del_asset (asset *passet, asset **bucket_ptr ){
       del_serv_asset(&passet->services, stmp);
    }
    /* delete all os assets */
-   while ( tmp_oa != NULL ) {   
+   while ( tmp_oa != NULL ) {
       otmp = tmp_oa;
       tmp_oa = tmp_oa->next;
       del_os_asset(&passet->os, otmp);
@@ -637,7 +637,7 @@ void print_assets() {
             os_asset *tmp_oa = NULL;
             tmp_sa = rec->services;
             tmp_oa = rec->os;
-   
+
             /* verbose info for sanity checking */
             static char ip_addr_s[INET6_ADDRSTRLEN];
             if ( rec->af == AF_INET) {
@@ -648,13 +648,13 @@ void print_assets() {
                if (!inet_ntop(AF_INET6, &rec->ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
                   perror("Something died in inet_ntop");
             }
-   
+
             printf("[*] %s",ip_addr_s);
-   
+
             if (memcmp(rec->mac_addr,"\0\0\0\0\0\0",6)) {
                printf(",[arp:%s]",hex2mac((const char *)rec->mac_addr));
             }
-   
+
             //serv_asset *head_sa = rec->services;
             while ( tmp_sa != NULL ) {
                /* Just print out the asset if it is updated since lasttime */
@@ -675,7 +675,7 @@ void print_assets() {
                   tmp_sa = tmp_sa->next;
                }
             }
-      
+
             while ( tmp_oa != NULL ) {
                /* Just print out the asset if it is updated since lasttime */
                if (tstamp - tmp_oa->last_seen <= TIMEOUT) {

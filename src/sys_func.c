@@ -108,7 +108,7 @@ void set_end_sessions() {
 
 void game_over() {
    extern int inpacket,intr_flag;
-   
+
    if ( inpacket == 0 ) {
       extern pcap_t *handle;
       print_assets();
@@ -171,7 +171,7 @@ int drop_privs(void) {
          groupid = strtoul(group_name, &endptr, 10);
       }
    }
-   
+
    if ( user_name != NULL ) {
       do_setuid = 1;
       do_setgid = 1;
@@ -193,7 +193,7 @@ int drop_privs(void) {
          printf("Unable to set group ID: %s", strerror(i));
       }
    }
-   
+
    endgrent();
    endpwent();
 
@@ -255,7 +255,7 @@ int create_pid_file(const char *path, const char *filename) {
    else {
       printf("PID path \"%s\" isn't a writeable directory!", fp);
    }
-  
+
    true_pid_name = strdup(filename);
 
    if ( (fd = open(filepath, O_CREAT | O_WRONLY,

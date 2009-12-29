@@ -21,13 +21,13 @@
 /* $Id$ */
 
 /* mac.c
- * 
+ *
  * Purpose:
  *
  * This file eats an ARP packet and adds/enters the asset
  *
  * Arguments:
- *   
+ *
  * ARP header
  *
  * Effect:

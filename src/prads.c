@@ -110,7 +110,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     u_short p_bytes;
 
     /*
-     * printf("[*] Got network packet...\n"); 
+     * printf("[*] Got network packet...\n");
      */
     // unwrap ethernet
     ether_header *eth_hdr;
@@ -121,11 +121,11 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     eth_header_len = ETHERNET_HEADER_LEN;
 
     /*
-     * while (ETHERNET_TYPE_X) check for infinit vlan tags 
+     * while (ETHERNET_TYPE_X) check for infinit vlan tags
      */
     if (eth_type == ETHERNET_TYPE_8021Q) {
         /*
-         * printf("[*] ETHERNET TYPE 8021Q\n"); 
+         * printf("[*] ETHERNET TYPE 8021Q\n");
          */
         eth_type = ntohs(eth_hdr->eth_8_ip_type);
         eth_header_len += 4;
@@ -133,14 +133,14 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                (ETHERNET_TYPE_802Q1MT | ETHERNET_TYPE_802Q1MT2 |
                 ETHERNET_TYPE_802Q1MT3 | ETHERNET_TYPE_8021AD)) {
         /*
-         * printf("[*] ETHERNET TYPE 802Q1MT\n"); 
+         * printf("[*] ETHERNET TYPE 802Q1MT\n");
          */
         eth_type = ntohs(eth_hdr->eth_82_ip_type);
         eth_header_len += 8;
     }
 
     if (eth_type == ETHERNET_TYPE_IP) {
-        //printf("[*] Got IPv4 Packet...\n"); 
+        //printf("[*] Got IPv4 Packet...\n");
         ip4_header *ip4;
         ip4 = (ip4_header *) (packet + eth_header_len);
         p_bytes = (ip4->ip_len - (IP_HL(ip4) * 4));
@@ -155,7 +155,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
         ip_dst.s6_addr32[3] = 0;
 
         /*
-         * not our network? 
+         * not our network?
          */
         our = filter_packet(AF_INET, ip_src);
         if (ip4->ip_p == IP_PROTO_TCP) {
@@ -164,7 +164,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 (tcp_header *) (packet + eth_header_len +
                                 (IP_HL(ip4) * 4));
             /*
-             * printf("[*] IPv4 PROTOCOL TYPE TCP:\n"); 
+             * printf("[*] IPv4 PROTOCOL TYPE TCP:\n");
              */
 
             s_check =
@@ -179,7 +179,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 // Redundant - fp_tcp4 & update_asset_service will do this!
                 //update_asset(AF_INET,ip_src);
                 /*
-                 * Paranoia! 
+                 * Paranoia!
                  */
                 const uint8_t *end_ptr;
                 if (pheader->len <= SNAPLENGTH) {
@@ -200,7 +200,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 //update_asset(AF_INET,ip_src);
 
                 /*
-                 * Paranoia! 
+                 * Paranoia!
                  */
                 const uint8_t *end_ptr;
                 if (pheader->len <= SNAPLENGTH) {
@@ -217,7 +217,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 
             } else if (TCP_ISFLAGSET(tcph, (TF_FIN))) {
                 /*
-                 * This is for test and phun (RST/FIN etc) 
+                 * This is for test and phun (RST/FIN etc)
                  */
                 //update_asset(AF_INET,ip_src);
                 const uint8_t *end_ptr;
@@ -230,7 +230,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 
             } else if (TCP_ISFLAGSET(tcph, (TF_RST))) {
                 /*
-                 * This is for test and phun (RST/FIN etc) 
+                 * This is for test and phun (RST/FIN etc)
                  */
                 //update_asset(AF_INET,ip_src);
                 const uint8_t *end_ptr;
@@ -251,7 +251,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                     && !TCP_ISFLAGSET(tcph, (TF_FIN))) {
                     //printf("[*] Got a STRAY-ACK: src_port:%d\n",ntohs(tcph->src_port));
                     /*
-                     * Paranoia! 
+                     * Paranoia!
                      */
                     const uint8_t *end_ptr;
                     if (pheader->len <= SNAPLENGTH) {
@@ -272,7 +272,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                                   4 - eth_header_len));
                 }
                 /*
-                 * if (s_check == 1) { 
+                 * if (s_check == 1) {
                  */
                 else {
                     client_tcp4(ip4, tcph, payload,
@@ -289,7 +289,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 (udp_header *) (packet + eth_header_len +
                                 (IP_HL(ip4) * 4));
             /*
-             * printf("[*] IPv4 PROTOCOL TYPE UDP:\n"); 
+             * printf("[*] IPv4 PROTOCOL TYPE UDP:\n");
              */
 
             s_check =
@@ -312,7 +312,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                               (IP_HL(ip4) * 4) - eth_header_len));
 
                 /*
-                 * Paranoia! 
+                 * Paranoia!
                  */
                 const uint8_t *end_ptr;
                 if (pheader->len <= SNAPLENGTH) {
@@ -331,7 +331,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 (icmp_header *) (packet + eth_header_len +
                                  (IP_HL(ip4) * 4));
             /*
-             * printf("[*] IP PROTOCOL TYPE ICMP\n"); 
+             * printf("[*] IP PROTOCOL TYPE ICMP\n");
              */
 
             s_check =
@@ -343,10 +343,10 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 
             if (s_check != 0) {
                 /*
-                 * printf("[*] - CHECKING ICMP PACKAGE\n"); 
+                 * printf("[*] - CHECKING ICMP PACKAGE\n");
                  */
                 /*
-                 * Paranoia! 
+                 * Paranoia!
                  */
                 const uint8_t *end_ptr;
                 if (pheader->len <= SNAPLENGTH) {
@@ -361,7 +361,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                  */
             } else {
                 /*
-                 * printf("[*] - NOT CHECKING ICMP PACKAGE\n"); 
+                 * printf("[*] - NOT CHECKING ICMP PACKAGE\n");
                  */
             }
             goto packet_end;
@@ -376,25 +376,25 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 
             if (s_check != 0) {
                 /*
-                 * printf("[*] - CHECKING OTHER PACKAGE\n"); 
+                 * printf("[*] - CHECKING OTHER PACKAGE\n");
                  */
                 update_asset(AF_INET, ip_src);
                 /*
-                 * service_other(*ip4,*tcph) 
+                 * service_other(*ip4,*tcph)
                  */
                 /*
-                 * fp_other(ip, ttl, ipopts, len, id, ipflags, df); 
+                 * fp_other(ip, ttl, ipopts, len, id, ipflags, df);
                  */
             } else {
                 /*
-                 * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
+                 * printf("[*] - NOT CHECKING OTHER PACKAGE\n");
                  */
             }
             goto packet_end;
         }
     } else if (eth_type == ETHERNET_TYPE_IPV6) {
         /*
-         * printf("[*] Got IPv6 Packet...\n"); 
+         * printf("[*] Got IPv6 Packet...\n");
          */
         ip6_header *ip6;
         ip6 = (ip6_header *) (packet + eth_header_len);
@@ -405,7 +405,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             tcph =
                 (tcp_header *) (packet + eth_header_len + IP6_HEADER_LEN);
             /*
-             * printf("[*] IPv6 PROTOCOL TYPE TCP:\n"); 
+             * printf("[*] IPv6 PROTOCOL TYPE TCP:\n");
              */
 
             s_check =
@@ -419,7 +419,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             if (TCP_ISFLAGSET(tcph, (TF_SYN))
                 && !TCP_ISFLAGSET(tcph, (TF_ACK))) {
                 /*
-                 * Paranoia! 
+                 * Paranoia!
                  */
                 const uint8_t *end_ptr;
                 if (pheader->len <= SNAPLENGTH) {
@@ -429,15 +429,15 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 }
                 fp_tcp6(ip6, tcph, end_ptr, TF_SYN, ip6->ip_src);
                 /*
-                 * printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port)); 
+                 * printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
                  */
             } else if (TCP_ISFLAGSET(tcph, (TF_SYN))
                        && TCP_ISFLAGSET(tcph, (TF_ACK))) {
                 /*
-                 * printf("[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port)); 
+                 * printf("[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
                  */
                 /*
-                 * Paranoia! 
+                 * Paranoia!
                  */
                 const uint8_t *end_ptr;
                 if (pheader->len <= SNAPLENGTH) {
@@ -449,13 +449,13 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             }
             if (s_check != 0) {
                 /*
-                 * printf("[*] - CHECKING TCP PACKAGE\n"); 
+                 * printf("[*] - CHECKING TCP PACKAGE\n");
                  */
                 //update_asset(AF_INET6,ip6->ip_src);
                 if (TCP_ISFLAGSET(tcph, (TF_ACK))
                     && !TCP_ISFLAGSET(tcph, (TF_SYN))) {
                     /*
-                     * Paranoia! 
+                     * Paranoia!
                      */
                     const uint8_t *end_ptr;
                     if (pheader->len <= SNAPLENGTH) {
@@ -470,7 +470,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                     (char *)(packet + eth_header_len + sizeof(ip6_header));
                 if (s_check == 2) {
                     /*
-                     * printf("[*] - CHECKING TCP SERVER PACKAGE\n"); 
+                     * printf("[*] - CHECKING TCP SERVER PACKAGE\n");
                      */
                     service_tcp6(ip6, tcph, payload,
                                  (pheader->caplen -
@@ -478,7 +478,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                                   4 - eth_header_len));
                 } else {
                     /*
-                     * printf("[*] - CHECKING TCP CLIENT PACKAGE\n"); 
+                     * printf("[*] - CHECKING TCP CLIENT PACKAGE\n");
                      */
                     client_tcp6(ip6, tcph, payload,
                                 (pheader->caplen -
@@ -486,7 +486,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 }
             } else {
                 /*
-                 * printf("[*] - NOT CHECKING TCP PACKAGE\n"); 
+                 * printf("[*] - NOT CHECKING TCP PACKAGE\n");
                  */
             }
             goto packet_end;
@@ -496,7 +496,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             udph =
                 (udp_header *) (packet + eth_header_len + IP6_HEADER_LEN);
             /*
-             * printf("[*] IPv6 PROTOCOL TYPE UDP:\n"); 
+             * printf("[*] IPv6 PROTOCOL TYPE UDP:\n");
              */
 
             s_check =
@@ -505,11 +505,11 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                          ip6->next, ip6->len, 0, tstamp, AF_INET6);
             if (s_check != 0) {
                 /*
-                 * printf("[*] - CHECKING UDP PACKAGE\n"); 
+                 * printf("[*] - CHECKING UDP PACKAGE\n");
                  */
                 //update_asset(AF_INET6,ip6->ip_src);
                 /*
-                 * fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); 
+                 * fp_udp(ip6, ttl, ipopts, len, id, ipflags, df);
                  */
                 char *payload;
                 payload =
@@ -519,7 +519,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                               sizeof(udp_header) - eth_header_len));
             } else {
                 /*
-                 * printf("[*] - NOT CHECKING UDP PACKAGE\n"); 
+                 * printf("[*] - NOT CHECKING UDP PACKAGE\n");
                  */
             }
             goto packet_end;
@@ -529,26 +529,26 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 (icmp6_header *) (packet + eth_header_len +
                                   IP6_HEADER_LEN);
             /*
-             * printf("[*] IPv6 PROTOCOL TYPE ICMP\n"); 
+             * printf("[*] IPv6 PROTOCOL TYPE ICMP\n");
              */
 
             /*
-             * DO change ip6->hop_lmt to 0 or something! 
+             * DO change ip6->hop_lmt to 0 or something!
              */
             s_check = cx_track(ip6->ip_src, 0, ip6->ip_dst,
                                0, ip6->next, ip6->len, 0,
                                tstamp, AF_INET6);
             if (s_check != 0) {
                 /*
-                 * printf("[*] - CHECKING ICMP PACKAGE\n"); 
+                 * printf("[*] - CHECKING ICMP PACKAGE\n");
                  */
                 //update_asset(AF_INET6,ip6->ip_src);
                 /*
-                 * service_icmp(*ip6,*tcph) 
+                 * service_icmp(*ip6,*tcph)
                  */
 
                 /*
-                 * Paranoia! 
+                 * Paranoia!
                  */
                 const uint8_t *end_ptr;
                 if (pheader->len <= SNAPLENGTH) {
@@ -559,7 +559,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 fp_icmp6(ip6, icmph, end_ptr, ip6->ip_src);
             } else {
                 /*
-                 * printf("[*] - NOT CHECKING ICMP PACKAGE\n"); 
+                 * printf("[*] - NOT CHECKING ICMP PACKAGE\n");
                  */
             }
             goto packet_end;
@@ -570,34 +570,34 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
              * ip6->next, ip6->len, 0, tstamp, AF_INET6);
              */
             /*
-             * if (s_check != 0) { 
+             * if (s_check != 0) {
              */
             /*
-             * printf("[*] - CHECKING OTHER PACKAGE\n"); 
+             * printf("[*] - CHECKING OTHER PACKAGE\n");
              */
             /*
-             * update_asset(AF_INET6,ip6->ip_src); 
+             * update_asset(AF_INET6,ip6->ip_src);
              */
             /*
-             * service_other(*ip4,*tcph) 
+             * service_other(*ip4,*tcph)
              */
             /*
-             * fp_other(ip, ttl, ipopts, len, id, ipflags, df); 
+             * fp_other(ip, ttl, ipopts, len, id, ipflags, df);
              */
             /*
-             * }else{ 
+             * }else{
              */
             /*
-             * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
+             * printf("[*] - NOT CHECKING OTHER PACKAGE\n");
              */
             /*
-             * } 
+             * }
              */
             goto packet_end;
         }
     } else if (eth_type == ETHERNET_TYPE_ARP) {
         /*
-         * printf("[*] Got ARP Packet...\n"); 
+         * printf("[*] Got ARP Packet...\n");
          */
         ether_arp *arph;
         arph = (ether_arp *) (packet + eth_header_len);
@@ -610,17 +610,17 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 update_asset_arp(arph->arp_sha, ip_addr);
             }
             /*
-             * arp_check(eth_hdr,tstamp); 
+             * arp_check(eth_hdr,tstamp);
              */
         } else {
             /*
-             * printf("ARP TYPE: %d\n",ntohs(arph->ea_hdr.ar_op)); 
+             * printf("ARP TYPE: %d\n",ntohs(arph->ea_hdr.ar_op));
              */
         }
         goto packet_end;
     }
     /*
-     * printf("[*] ETHERNET TYPE : %x\n", eth_hdr->eth_ip_type); 
+     * printf("[*] ETHERNET TYPE : %x\n", eth_hdr->eth_ip_type);
      */
   packet_end:
 #ifdef DEBUG
@@ -647,7 +647,7 @@ void parse_nets(char *s_net, uint32_t * network, uint32_t * netmask)
     /*
      * f -> for processing
      * * p -> frob pointer
-     * * t -> to pointer 
+     * * t -> to pointer
      */
     while (f && 0 != (p = strchr(f, '/'))) {
         // convert network address
@@ -792,7 +792,7 @@ int main(int argc, char *argv[])
 
     errbuf[0] = '\0';
     /*
-     * look up an availible device if non specified 
+     * look up an availible device if non specified
      */
     if (dev == 0x0)
         dev = pcap_lookupdev(errbuf);
@@ -810,7 +810,7 @@ int main(int argc, char *argv[])
     pcap_setfilter(handle, &cfilter);
 
     /*
-     * B0rk if we see an error... 
+     * B0rk if we see an error...
      */
     if (strlen(errbuf) > 0) {
         printf("[*] Error errbuf: %s \n", errbuf);

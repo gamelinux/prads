@@ -20,15 +20,15 @@
 
 /* $Id$ */
 
-/* ipfp 
- * 
+/* ipfp
+ *
  * Purpose:
  *
- * This file eats an IPv4 or an IPv6 packet/fingerprint, and returns a 
+ * This file eats an IPv4 or an IPv6 packet/fingerprint, and returns a
  * fingerprint match.
  *
  * Arguments:
- *   
+ *
  * IP-version, args to eat...
  *
  * Effect:
@@ -86,7 +86,7 @@ void gen_fp_tcp ( uint8_t  ttl,
    } else {
       bformata(fp,":%d:%d:*:",ttl,df);
    }
- 
+
    for (j=0;j<ocnt;j++) {
       switch (op[j]) {
          case TCPOPT_NOP: bformata(fp,"N"); d=1; break;
@@ -170,7 +170,7 @@ void gen_fp_udp (  uint16_t  totlen,
 
    bstring fp;
    //printf("[*] ASSET IP/UDP FINGERPRINT: ");
-   
+
    //fp = bformat("%u:%u:%u:%u:%d:%u:%u:",udata,totlen,ttl,df,olen,ip_off,ip_tos);
    fp = bformat("%u,%u:%u:%d:%u:%u:",totlen,ttl,df,olen,ip_off,ip_tos);
    if (!quirks) bformata(fp,"."); else {

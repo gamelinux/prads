@@ -21,7 +21,7 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
 
    if (af == AF_INET) {
       hash = (( ip_src.s6_addr32[0] + ip_dst.s6_addr32[0] )) % BUCKET_SIZE;
-   } else 
+   } else
    if (af == AF_INET6) {
       hash = ((  ip_src.s6_addr32[0] + ip_src.s6_addr32[1] + ip_src.s6_addr32[2] + ip_src.s6_addr32[3]
                + ip_dst.s6_addr32[0] + ip_dst.s6_addr32[1] + ip_dst.s6_addr32[2] + ip_dst.s6_addr32[3]
@@ -33,7 +33,7 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
 
    while ( cxt != NULL ) {
       if (af == AF_INET) {
-         if ( cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0] && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0] 
+         if ( cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0] && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
               && cxt->s_port == src_port && cxt->d_port == dst_port ) {
             cxt->s_tcpFlags    |= tcpflags;
             cxt->s_total_bytes += p_bytes;
@@ -77,7 +77,7 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
                   return 0; // Dont Check!
                }
                return 1; // Client
-         } 
+         }
          else if (  cxt->s_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
                  && cxt->s_ip.s6_addr32[1] == ip_dst.s6_addr32[1]
                  && cxt->s_ip.s6_addr32[2] == ip_dst.s6_addr32[2]
@@ -87,7 +87,7 @@ int cx_track(struct in6_addr ip_src,uint16_t src_port,struct in6_addr ip_dst,uin
                  && cxt->d_ip.s6_addr32[1] == ip_src.s6_addr32[1]
                  && cxt->d_ip.s6_addr32[2] == ip_src.s6_addr32[2]
                  && cxt->d_ip.s6_addr32[3] == ip_src.s6_addr32[3]
-                 
+
                  && cxt->d_port == src_port && cxt->s_port == dst_port ) {
 
                cxt->d_tcpFlags    |= tcpflags;

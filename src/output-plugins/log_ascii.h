@@ -20,14 +20,14 @@
 
 /* $Id$ */
 
-/* log_ascii 
- * 
+/* log_ascii
+ *
  * Purpose:
  *
  * This output module provides the default packet logging funtionality
  *
  * Arguments:
- *   
+ *
  * none
  *
  * Effect:

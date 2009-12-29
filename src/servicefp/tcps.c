@@ -21,14 +21,14 @@
 /* $Id$ */
 
 /* service_tcp
- * 
+ *
  * Purpose:
  *
  * This file eats an *IP-packet and tcp-header and adds/enter
  * a service to asset if any match is made, and the fingerprint.
  *
  * Arguments:
- *   
+ *
  * *IP-packet, tcp-header
  *
  * Effect:

@@ -21,14 +21,14 @@
 /* $Id$ */
 
 /* service_udp
- * 
+ *
  * Purpose:
  *
  * This file eats an *IP-packet and udp-header and adds/enter
  * a service to asset if any match is made, and the fingerprint.
  *
  * Arguments:
- *   
+ *
  * *IP-packet, udp-header
  *
  * Effect:

@@ -20,14 +20,14 @@
 
 /* $Id$ */
 
-/* macfp 
- * 
+/* macfp
+ *
  * Purpose:
  *
  * This file eats a MAC-address and returns a MAC-vendor match.
  *
  * Arguments:
- *   
+ *
  * MAC-address
  *
  * Effect:
