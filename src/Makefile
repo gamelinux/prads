@@ -30,6 +30,8 @@ profile:
 clean:
 	-rm -v $(OBJECTS)
 	-rm prads 
+indent:
+	indent -kr -i4 -cdb -sc -sob -ss -ncs -ts8 -nut KACPER.c
 
 # oldschool header file dependency checking.
 deps:
