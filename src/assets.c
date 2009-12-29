@@ -2,7 +2,7 @@
 #include "prads.h"
 #include "assets.h"
 
-const char *u_ntop(const struct in6_addr ip_addr, int af, const char *dest){
+const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest){
    if ( af == AF_INET) {
       if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], dest, INET_ADDRSTRLEN + 1)){
          perror("Something died in inet_ntop");
