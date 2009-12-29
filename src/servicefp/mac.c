@@ -40,7 +40,7 @@
  * Old school...
  */
 
-void arp_check(eth_hdr,tstamp) {
-   return;
+void arp_check(eth_hdr, tstamp)
+{
+    return;
 }
-

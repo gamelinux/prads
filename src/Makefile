@@ -30,8 +30,9 @@ profile:
 clean:
 	-rm -v $(OBJECTS)
 	-rm prads 
+
 indent:
-	indent -kr -i4 -cdb -sc -sob -ss -ncs -ts8 -nut KACPER.c
+	find -type f -name '*.[ch]' | xargs indent -kr -i4 -cdb -sc -sob -ss -ncs -ts8 -nut
 
 # oldschool header file dependency checking.
 deps:

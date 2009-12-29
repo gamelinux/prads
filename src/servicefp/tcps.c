@@ -45,59 +45,64 @@
 #include "../sys_func.h"
 #include "servicefp.h"
 
-void service_tcp4 (ip4_header *ip4, tcp_header *tcph, char *payload, int plen) {
+void service_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
+                  int plen)
+{
 
-   const char        *err = NULL;    /* PCRE */
-   int               erroffset,rc;   /* PCRE */
-   int               ovector[15];
-   extern signature  *sig_serv_tcp;
-   signature         *tmpsig;
-   bstring           app;
+    const char *err = NULL;     /* PCRE */
+    int erroffset, rc;          /* PCRE */
+    int ovector[15];
+    extern signature *sig_serv_tcp;
+    signature *tmpsig;
+    bstring app;
 
-   tmpsig = sig_serv_tcp;
-   while ( tmpsig != NULL ) {
-      rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      if (rc >= 0) {
-         app = get_app_name(tmpsig, payload, ovector, rc);
-         //printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
-         struct in6_addr ip_addr;
-         ip_addr.s6_addr32[0] = ip4->ip_src;
-         ip_addr.s6_addr32[1] = 0;
-         ip_addr.s6_addr32[2] = 0;
-         ip_addr.s6_addr32[3] = 0;
-         update_asset_service(ip_addr, tcph->src_port, ip4->ip_p, tmpsig->service, app, AF_INET);
-         //bdestroy(app);
-         return;
-      }
-      else if ( rc == PCRE_ERROR_NOMATCH) {
-         //printf("pcre nomatch \n");
-      }
-      else {
-         printf("pcre error: %d \n",rc);
-      }
-      tmpsig = tmpsig->next;
-   }
+    tmpsig = sig_serv_tcp;
+    while (tmpsig != NULL) {
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+                       ovector, 15);
+        if (rc >= 0) {
+            app = get_app_name(tmpsig, payload, ovector, rc);
+            //printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
+            struct in6_addr ip_addr;
+            ip_addr.s6_addr32[0] = ip4->ip_src;
+            ip_addr.s6_addr32[1] = 0;
+            ip_addr.s6_addr32[2] = 0;
+            ip_addr.s6_addr32[3] = 0;
+            update_asset_service(ip_addr, tcph->src_port, ip4->ip_p,
+                                 tmpsig->service, app, AF_INET);
+            //bdestroy(app);
+            return;
+        } else if (rc == PCRE_ERROR_NOMATCH) {
+            //printf("pcre nomatch \n");
+        } else {
+            printf("pcre error: %d \n", rc);
+        }
+        tmpsig = tmpsig->next;
+    }
 }
 
-void service_tcp6 (ip6_header *ip6, tcp_header *tcph, char *payload, int plen) {
-   const char        *err = NULL;    /* PCRE */
-   int               erroffset,rc;   /* PCRE */
-   int               ovector[15];
-   extern signature  *sig_serv_tcp;
-   signature         *tmpsig;
-   bstring           app;
+void service_tcp6(ip6_header * ip6, tcp_header * tcph, char *payload,
+                  int plen)
+{
+    const char *err = NULL;     /* PCRE */
+    int erroffset, rc;          /* PCRE */
+    int ovector[15];
+    extern signature *sig_serv_tcp;
+    signature *tmpsig;
+    bstring app;
 
-   tmpsig = sig_serv_tcp;
-   while ( tmpsig != NULL ) {
-      rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      if (rc >= 0) {
-         app = get_app_name(tmpsig, payload, ovector, rc);
-         //printf("[*] - MATCH SERVICE IPv6/TCP: %s\n",(char *)bdata(app));
-         update_asset_service(ip6->ip_src, tcph->src_port, ip6->next, tmpsig->service, app, AF_INET6);
-         //bdestroy(app);
-         return;
-      }
-      tmpsig = tmpsig->next;
-   }
+    tmpsig = sig_serv_tcp;
+    while (tmpsig != NULL) {
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+                       ovector, 15);
+        if (rc >= 0) {
+            app = get_app_name(tmpsig, payload, ovector, rc);
+            //printf("[*] - MATCH SERVICE IPv6/TCP: %s\n",(char *)bdata(app));
+            update_asset_service(ip6->ip_src, tcph->src_port, ip6->next,
+                                 tmpsig->service, app, AF_INET6);
+            //bdestroy(app);
+            return;
+        }
+        tmpsig = tmpsig->next;
+    }
 }
-
