@@ -130,6 +130,8 @@
 #define MAX_VER                        25
 #define MAX_MISC                       100
 #define MAX_NETS                       128
+#define SERVICE                        1
+#define CLIENT                         2
 
 /*  D A T A  S T R U C T U R E S  *********************************************/
 
@@ -418,6 +420,7 @@ typedef struct _serv_asset {
     uint16_t port;              /* Asset port */
     bstring service;            /* Asset service (i.e. SSH, WWW, ICMP etc.) */
     bstring application;        /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
+    int role;                   /* server or client */
 } serv_asset;
 
 typedef struct _os_asset {

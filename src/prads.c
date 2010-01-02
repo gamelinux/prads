@@ -179,7 +179,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                                      tcph->dst_port,
                                      ip4->ip_p,
                                      UNKNOWN,
-                                     UNKNOWN, AF_INET);
+                                     UNKNOWN, AF_INET, CLIENT);
             } else if (TCP_ISFLAGSET(tcph, (TF_SYN))
                        && TCP_ISFLAGSET(tcph, (TF_ACK))) {
                 //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
@@ -199,7 +199,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                                      tcph->src_port,
                                      ip4->ip_p,
                                      UNKNOWN,
-                                     UNKNOWN, AF_INET);
+                                     UNKNOWN, AF_INET, SERVICE);
 
             } else if (TCP_ISFLAGSET(tcph, (TF_FIN))) {
                 /*
