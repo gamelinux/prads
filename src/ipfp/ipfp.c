@@ -61,7 +61,6 @@ void gen_fp_tcp(uint8_t ttl,
     uint32_t j;
     uint8_t d = 0;
     bstring fp, de;
-    fp = de = bfromcstr("");
 
     if (ftype == TF_SYN)
         de = bformat("syn");
@@ -74,10 +73,14 @@ void gen_fp_tcp(uint8_t ttl,
     else if (ftype == TF_ACK) {
         de = bformat("ack");
         //wss = 0;
+    }else{
+        de = bformat("");
     }
 
+    fp = bformat("");
+
     if (mss && wss && !(wss % mss))
-        fp = bformat("S%d", (wss / mss));
+        fp = bformata(fp, "S%d", (wss / mss));
     else if (wss && !(wss % 1460))
         bformata(fp, "S%d", (wss / 1460));
     else if (mss && wss && !(wss % (mss + 40)))
