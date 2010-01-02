@@ -35,6 +35,7 @@
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
 #define MAX_PKT_CHECK                 20
+#define MAX_SERVICE_CHECK             5         /* How many new services*/
 
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806

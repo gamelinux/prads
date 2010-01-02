@@ -204,7 +204,6 @@ short update_asset_service(struct in6_addr ip_addr,
 
     int counter = 0;
     int asset_match = 0;
-    //printf("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
     //dlog("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
 
     /*
@@ -251,6 +250,9 @@ short update_asset_service(struct in6_addr ip_addr,
                 //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
                 //      perror("Something died in inet_ntop");
                 //}
+                static char ip_addr_s[INET6_ADDRSTRLEN];
+                u_ntop(ip_addr, af, ip_addr_s);
+                dlog("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
                 //if (port == 0) {
                 //   printf("[*] new client: %s %s\n",ip_addr_s,(char *)bdata(application));
                 //}
@@ -262,19 +264,12 @@ short update_asset_service(struct in6_addr ip_addr,
                 return 0;
             }
             while (tmp_sa != NULL) {
-                //if (port == tmp_sa->port && proto == tmp_sa->proto 
-                //      && (bstricmp(application,tmp_sa->application) == 0)) {
                 if (port == tmp_sa->port && proto == tmp_sa->proto) {
                     /*
                      * Found! 
-                     */
-                    /*
                      * If we have an id for the service which is != unknown AND the id now is unknown 
-                     */
-                    /*
                      * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
                      */
-                    //if ( !(bstricmp(bformat("unknown"),tmp_sa->application) == 0) && (bstricmp(bformat("unknown"),application)) == 0 ) {
                     if (!(bstricmp(bformat("unknown"), application) == 0)
                         &&
                         (bstricmp(bformat("unknown"), tmp_sa->application))
@@ -285,18 +280,25 @@ short update_asset_service(struct in6_addr ip_addr,
                         tmp_sa->service = bstrcpy(service);
                         tmp_sa->application = bstrcpy(application);
                         tmp_sa->last_seen = tstamp;
+
+                        static char ip_addr_s[INET6_ADDRSTRLEN];
+                        u_ntop(ip_addr, af, ip_addr_s);
+                        dlog("[*] service now known: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+
                         return 0;
-                    } else
-                        if (!
-                            (bstricmp(application, tmp_sa->application) ==
-                             0)) {
-                        if (tmp_sa->i_attempts > MAX_PKT_CHECK + 1) {
+                    } else if (!(bstricmp(application, tmp_sa->application) == 0)) {
+                        if (tmp_sa->i_attempts > MAX_SERVICE_CHECK) {
                             tmp_sa->i_attempts = 0;
                             bdestroy(tmp_sa->service);
                             bdestroy(tmp_sa->application);
                             tmp_sa->service = bstrcpy(service);
                             tmp_sa->application = bstrcpy(application);
                             tmp_sa->last_seen = tstamp;
+
+                            static char ip_addr_s[INET6_ADDRSTRLEN];
+                            u_ntop(ip_addr, af, ip_addr_s);
+                            dlog("[*] changed service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+
                             return 0;
                         } else {
                             tmp_sa->i_attempts++;
