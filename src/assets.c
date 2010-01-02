@@ -3,6 +3,10 @@
 #include "assets.h"
 #include "sys_func.h"
 
+// constant strings
+struct tagbstring tUNKNOWN = bsStatic("unknown");
+bstring UNKNOWN = & tUNKNOWN;
+
 const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
 {
     if (af == AF_INET) {
@@ -269,9 +273,9 @@ short update_asset_service(struct in6_addr ip_addr,
                      * If we have an id for the service which is != unknown AND the id now is unknown 
                      * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
                      */
-                    if (!(bstricmp(bformat("unknown"), application) == 0)
+                    if (!(bstricmp(UNKNOWN, application) == 0)
                         &&
-                        (bstricmp(bformat("unknown"), tmp_sa->application))
+                        (bstricmp(UNKNOWN, tmp_sa->application))
                         == 0) {
                         tmp_sa->i_attempts = 0;
                         bdestroy(tmp_sa->service);
