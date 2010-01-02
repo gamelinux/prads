@@ -3,10 +3,6 @@
 #include "assets.h"
 #include "sys_func.h"
 
-// constant strings
-struct tagbstring tUNKNOWN = bsStatic("unknown");
-bstring UNKNOWN = & tUNKNOWN;
-
 const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
 {
     if (af == AF_INET) {
