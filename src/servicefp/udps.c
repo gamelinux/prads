@@ -68,7 +68,7 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
             ip_addr.s6_addr32[2] = 0;
             ip_addr.s6_addr32[3] = 0;
             update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
-                                 tmpsig->service, app, AF_INET);
+                                 tmpsig->service, app, AF_INET, SERVICE);
             bdestroy(app);
             return;
         }
@@ -94,7 +94,7 @@ void service_udp6(ip6_header * ip6, udp_header * udph, char *payload,
             app = get_app_name(tmpsig, payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
             update_asset_service(ip6->ip_src, udph->src_port, ip6->next,
-                                 tmpsig->service, app, AF_INET);
+                                 tmpsig->service, app, AF_INET, SERVICE);
             bdestroy(app);
             return;
         }
