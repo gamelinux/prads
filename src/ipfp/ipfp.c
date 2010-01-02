@@ -59,7 +59,7 @@ void gen_fp_tcp(uint8_t ttl,
 {
 
     uint32_t j;
-    uint8_t d = 0, open_mode = 0;
+    uint8_t d = 0;
     bstring fp, de;
     fp = de = bfromcstr("");
 
@@ -73,7 +73,6 @@ void gen_fp_tcp(uint8_t ttl,
         de = bformat("fin");
     else if (ftype == TF_ACK) {
         de = bformat("ack");
-        open_mode = 1;
         //wss = 0;
     }
 
@@ -90,14 +89,10 @@ void gen_fp_tcp(uint8_t ttl,
     else
         bformata(fp, "%d", wss);
 
-    if (!open_mode) {
-        if (tot < PACKET_BIG)
-            bformata(fp, ":%d:%d:%d:", ttl, df, tot);
-        else
-            bformata(fp, ":%d:%d:*(%d):", ttl, df, tot);
-    } else {
-        bformata(fp, ":%d:%d:*:", ttl, df);
-    }
+    if (tot < PACKET_BIG)
+        bformata(fp, ":%d:%d:%d:", ttl, df, tot);
+    else
+        bformata(fp, ":%d:%d:*(%d):", ttl, df, tot);
 
     for (j = 0; j < ocnt; j++) {
         switch (op[j]) {
@@ -182,6 +177,9 @@ void gen_fp_tcp(uint8_t ttl,
     }
 
     update_asset_os(ip_src, port, de, fp, af);
+    // cleanup
+    bdestroy(fp);
+    bdestroy(de);
 }
 
 void gen_fp_icmp(uint8_t type,
@@ -210,7 +208,10 @@ void gen_fp_icmp(uint8_t type,
     }
 
     //printf("[%s]\n",(char*)bdata(fp));
-    update_asset_os(ip_src, htons(type), bformat("icmp"), fp, af);
+    bstring t = bformat("icmp");
+    update_asset_os(ip_src, htons(type), t, fp, af);
+    bdestroy(t);
+    bdestroy(fp);
     // add mss ? for MTU detection ?
 }
 
@@ -240,7 +241,10 @@ void gen_fp_udp(uint16_t totlen,
         if (quirks & QUIRK_IPOPT)
             bformata(fp, "I");
     }
+    bstring t = bformat("udp");
 
     //printf("[%s]\n",(char*)bdata(fp));
-    update_asset_os(ip_src, port, bformat("udp"), fp, af);
+    update_asset_os(ip_src, port, t, fp, af);
+    bdestroy(fp);
+    bdestroy(t);
 }

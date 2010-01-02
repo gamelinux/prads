@@ -79,16 +79,13 @@ short update_asset_os(struct in6_addr ip_addr,
 
     int counter = 0;
     int asset_match = 0;
-    dlog("Incoming asset, %s: %u:%u [%s]\n",(char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
-    //bdestroy(raw_fp);
-    //bdestroy(detection);
-    //return 0;
+    dlog("[%lu] Incoming asset, %s: %u:%u [%s]\n", tstamp, (char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
 
     /*
      * Find asset within linked list.  
      */
     while (rec != NULL) {
-        //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
+        //if (memcmp(&ip_addr,&rec->ip_addr,16))
         if (rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]
             && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
             && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2]
@@ -117,8 +114,10 @@ short update_asset_os(struct in6_addr ip_addr,
                     //static char ip_addr_s[INET6_ADDRSTRLEN];
                     //u_ntop(ip_addr, af, ip_addr_s);
                     //printf("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
-                    bdestroy(raw_fp);
-                    bdestroy(detection);
+
+                    // XXX: arguments must be destroyed by _caller_ - kwy
+                    //bdestroy(raw_fp);
+                    //bdestroy(detection);
                     return 0;
                 }
                 tmp_oa = tmp_oa->next;
@@ -161,8 +160,10 @@ short update_asset_os(struct in6_addr ip_addr,
                 //   printf("[*] server %s fp: %16s:%-5d [%s]\n",
                 //                (char *)bdata(detection),ip_addr_s,ntohs(port),(char *)bdata(raw_fp));
                 //}
-                bdestroy(raw_fp);
-                bdestroy(detection);
+
+                // arguments must be destroyed by caller
+                //bdestroy(raw_fp);
+                //bdestroy(detection);
                 return 0;
             }
         }
@@ -173,8 +174,9 @@ short update_asset_os(struct in6_addr ip_addr,
      */
     update_asset(af, ip_addr);
     update_asset_os(ip_addr, port, detection, raw_fp, af);
-    bdestroy(raw_fp);
-    bdestroy(detection);
+    // arguments must be destroyed by caller
+    //bdestroy(raw_fp);
+    //bdestroy(detection);
     return 0;
 }
 
@@ -256,8 +258,9 @@ short update_asset_service(struct in6_addr ip_addr,
                 //else {
                 //   printf("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
                 //}
-                bdestroy(service);      // dont understand why this cant be :(
-                bdestroy(application);  // dont understand why this cant be :(
+                // XXX: let caller clean up args
+                //bdestroy(service);      // dont understand why this cant be :(
+                //bdestroy(application);  // dont understand why this cant be :(
                 return 0;
             }
             while (tmp_sa != NULL) {
@@ -369,8 +372,9 @@ short update_asset_service(struct in6_addr ip_addr,
         return 0;
     }
     printf("[*] Im I here ?\n");
-    bdestroy(service);
-    bdestroy(application);
+    // XXX: caller cleans up
+    //bdestroy(service);
+    //bdestroy(application);
     return 1;
 }
 

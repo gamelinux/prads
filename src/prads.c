@@ -683,13 +683,13 @@ int main(int argc, char *argv[])
     int ch, fromfile, setfilter, version, drop_privs_flag, daemon_flag;
     int use_syslog = 0;
     struct in_addr addr;
-    struct bpf_program cfilter;
+    struct bpf_program cfilter = {0};
     char *bpff, errbuf[PCAP_ERRBUF_SIZE], *user_filter;
     char *net_ip_string;
     bpf_u_int32 net_mask;
     ch = fromfile = setfilter = version = drop_privs_flag =
         daemon_flag = 0;
-    dev = "eth0";
+    dev = "wlan0";
     bpff = "";
     dpath = "/tmp";
     cxtbuffer = NULL;
