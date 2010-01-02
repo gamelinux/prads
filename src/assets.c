@@ -111,13 +111,9 @@ short update_asset_os(struct in6_addr ip_addr,
                     tmp_oa->raw_fp = bstrcpy(raw_fp);
                     //tmp_sa->i_attempts++;
                     tmp_oa->last_seen = tstamp;
-                    //static char ip_addr_s[INET6_ADDRSTRLEN];
-                    //u_ntop(ip_addr, af, ip_addr_s);
-                    //printf("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
-
-                    // XXX: arguments must be destroyed by _caller_ - kwy
-                    //bdestroy(raw_fp);
-                    //bdestroy(detection);
+                    static char ip_addr_s[INET6_ADDRSTRLEN];
+                    u_ntop(ip_addr, af, ip_addr_s);
+                    dlog("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
                     return 0;
                 }
                 tmp_oa = tmp_oa->next;
@@ -206,7 +202,7 @@ short update_asset_service(struct in6_addr ip_addr,
 
     int counter = 0;
     int asset_match = 0;
-    //printf("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
+    //dlog("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
 
     /*
      * Find asset within linked list.  
@@ -252,6 +248,9 @@ short update_asset_service(struct in6_addr ip_addr,
                 //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
                 //      perror("Something died in inet_ntop");
                 //}
+                static char ip_addr_s[INET6_ADDRSTRLEN];
+                u_ntop(ip_addr, af, ip_addr_s);
+                dlog("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
                 //if (port == 0) {
                 //   printf("[*] new client: %s %s\n",ip_addr_s,(char *)bdata(application));
                 //}
@@ -264,19 +263,12 @@ short update_asset_service(struct in6_addr ip_addr,
                 return 0;
             }
             while (tmp_sa != NULL) {
-                //if (port == tmp_sa->port && proto == tmp_sa->proto 
-                //      && (bstricmp(application,tmp_sa->application) == 0)) {
                 if (port == tmp_sa->port && proto == tmp_sa->proto) {
                     /*
                      * Found! 
-                     */
-                    /*
                      * If we have an id for the service which is != unknown AND the id now is unknown 
-                     */
-                    /*
                      * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
                      */
-                    //if ( !(bstricmp(bformat("unknown"),tmp_sa->application) == 0) && (bstricmp(bformat("unknown"),application)) == 0 ) {
                     if (!(bstricmp(bformat("unknown"), application) == 0)
                         &&
                         (bstricmp(bformat("unknown"), tmp_sa->application))
@@ -287,18 +279,25 @@ short update_asset_service(struct in6_addr ip_addr,
                         tmp_sa->service = bstrcpy(service);
                         tmp_sa->application = bstrcpy(application);
                         tmp_sa->last_seen = tstamp;
+
+                        static char ip_addr_s[INET6_ADDRSTRLEN];
+                        u_ntop(ip_addr, af, ip_addr_s);
+                        dlog("[*] service now known: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+
                         return 0;
-                    } else
-                        if (!
-                            (bstricmp(application, tmp_sa->application) ==
-                             0)) {
-                        if (tmp_sa->i_attempts > MAX_PKT_CHECK + 1) {
+                    } else if (!(bstricmp(application, tmp_sa->application) == 0)) {
+                        if (tmp_sa->i_attempts > MAX_SERVICE_CHECK) {
                             tmp_sa->i_attempts = 0;
                             bdestroy(tmp_sa->service);
                             bdestroy(tmp_sa->application);
                             tmp_sa->service = bstrcpy(service);
                             tmp_sa->application = bstrcpy(application);
                             tmp_sa->last_seen = tstamp;
+
+                            static char ip_addr_s[INET6_ADDRSTRLEN];
+                            u_ntop(ip_addr, af, ip_addr_s);
+                            dlog("[*] changed service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
+
                             return 0;
                         } else {
                             tmp_sa->i_attempts++;
@@ -423,16 +422,10 @@ void add_asset(int af, struct in6_addr ip_addr)
     /*
      * verbose info for sanity checking 
      */
-    //static char ip_addr_s[INET6_ADDRSTRLEN];
-    //if ( af == AF_INET) {
-    //   if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
-    //      perror("Something died in inet_ntop");
-    //}
-    //else if ( af == AF_INET6) {
-    //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
-    //      perror("Something died in inet_ntop");
-    //}
-    //printf("[*] asset added: %s\n",ip_addr_s);
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    u_ntop(ip_addr, af, ip_addr_s);
+    dlog("[*] asset added: %s\n",ip_addr_s);
+    
     return;
 }
 
@@ -456,7 +449,6 @@ char *hex2mac(const char *mac)
     return buf;
 }
 
-//void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], u_int8_t arp_spa[4]) {
 void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
                       struct in6_addr ip_addr)
 {
@@ -489,9 +481,9 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
                 /*
                  * For verbos sanity checking 
                  */
-                //static char ip_addr_s[INET6_ADDRSTRLEN];
-                //inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-                //printf("[*] added mac address to asset: %s\n",ip_addr_s);
+                static char ip_addr_s[INET6_ADDRSTRLEN];
+                inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+                dlog("[*] added mac address to asset: %s\n",ip_addr_s);
                 return;
             }
         }
@@ -532,16 +524,16 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
     /*
      * Insert ARP record into data structure. 
      */
-    //TAILQ_INSERT_HEAD(&arpassets, rec, next);
     new->next = passet[hash];
     new->prev = NULL;
     if (passet[hash] != NULL)
         passet[hash]->prev = new;
     passet[hash] = new;
 
-    //static char ip_addr_s[INET6_ADDRSTRLEN];
-    //inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-    //printf("[*] arp asset added: %s\n",ip_addr_s);
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+    dlog("[*] arp asset added: %s\n",ip_addr_s);
+
     return;
 }
 
@@ -741,18 +733,7 @@ void print_assets()
                  * verbose info for sanity checking 
                  */
                 static char ip_addr_s[INET6_ADDRSTRLEN];
-                if (rec->af == AF_INET) {
-                    if (!inet_ntop
-                        (AF_INET, &rec->ip_addr.s6_addr32[0], ip_addr_s,
-                         INET_ADDRSTRLEN + 1))
-                        perror("Something died in inet_ntop");
-                } else if (rec->af == AF_INET6) {
-                    if (!inet_ntop
-                        (AF_INET6, &rec->ip_addr, ip_addr_s,
-                         INET6_ADDRSTRLEN + 1))
-                        perror("Something died in inet_ntop");
-                }
-
+                u_ntop(rec->ip_addr, rec->af, ip_addr_s);
                 printf("[*] %s", ip_addr_s);
 
                 if (memcmp(rec->mac_addr, "\0\0\0\0\0\0", 6)) {
