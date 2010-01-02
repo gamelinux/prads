@@ -79,7 +79,7 @@ short update_asset_os(struct in6_addr ip_addr,
 
     int counter = 0;
     int asset_match = 0;
-    dlog("Incoming asset, %s: %u:%u [%s]\n",(char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
+    //dlog("Incoming asset, %s: %u:%u [%s]\n",(char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
     //bdestroy(raw_fp);
     //bdestroy(detection);
     //return 0;
@@ -114,9 +114,9 @@ short update_asset_os(struct in6_addr ip_addr,
                     tmp_oa->raw_fp = bstrcpy(raw_fp);
                     //tmp_sa->i_attempts++;
                     tmp_oa->last_seen = tstamp;
-                    //static char ip_addr_s[INET6_ADDRSTRLEN];
-                    //u_ntop(ip_addr, af, ip_addr_s);
-                    //printf("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
+                    static char ip_addr_s[INET6_ADDRSTRLEN];
+                    u_ntop(ip_addr, af, ip_addr_s);
+                    dlog("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
                     bdestroy(raw_fp);
                     bdestroy(detection);
                     return 0;
@@ -205,6 +205,7 @@ short update_asset_service(struct in6_addr ip_addr,
     int counter = 0;
     int asset_match = 0;
     //printf("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
+    //dlog("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
 
     /*
      * Find asset within linked list.  
