@@ -70,7 +70,7 @@ void client_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
             ip_addr.s6_addr32[3] = 0;
             update_asset_service(ip_addr, tcph->dst_port, ip4->ip_p,
                                  tmpsig->service, app, AF_INET);
-            //bdestroy(app);
+            bdestroy(app);
             return;
         }
         tmpsig = tmpsig->next;
@@ -96,7 +96,7 @@ void client_tcp6(ip6_header * ip6, tcp_header * tcph, char *payload,
             //printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
             update_asset_service(ip6->ip_src, tcph->dst_port, ip6->next,
                                  tmpsig->service, app, AF_INET6);
-            //bdestroy(app);
+            bdestroy(app);
             return;
         }
         tmpsig = tmpsig->next;
