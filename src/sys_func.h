@@ -21,8 +21,4 @@ void print_assets();
 void set_end_sessions();
 void end_sessions();
 
-// constant strings
-struct tagbstring tUNKNOWN = bsStatic("unknown");
-bstring UNKNOWN = & tUNKNOWN;
-
 #endif

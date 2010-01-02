@@ -80,7 +80,7 @@ void gen_fp_tcp(uint8_t ttl,
     fp = bformat("");
 
     if (mss && wss && !(wss % mss))
-        fp = bformata(fp, "S%d", (wss / mss));
+        bformata(fp, "S%d", (wss / mss));
     else if (wss && !(wss % 1460))
         bformata(fp, "S%d", (wss / 1460));
     else if (mss && wss && !(wss % (mss + 40)))

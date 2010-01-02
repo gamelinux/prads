@@ -29,6 +29,7 @@
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
 
+
 /*  G L O B A L E S  *********************************************************/
 uint64_t cxtrackerid;
 time_t timecnt, tstamp;
@@ -54,6 +55,11 @@ int nets = 1;
 //char *s_net = "87.238.44.0/255.255.255.0,87.238.45.0/26,87.238.44.60/32";
 uint32_t network[MAX_NETS];
 uint32_t netmask[MAX_NETS];
+
+// static strings for comparison
+struct tagbstring tUNKNOWN = bsStatic("unknown");
+bstring UNKNOWN = & tUNKNOWN;
+
 
 /*  I N T E R N A L   P R O T O T Y P E S  ***********************************/
 static void usage();
@@ -689,7 +695,7 @@ int main(int argc, char *argv[])
     bpf_u_int32 net_mask;
     ch = fromfile = setfilter = version = drop_privs_flag =
         daemon_flag = 0;
-    dev = "wlan0";
+    dev = "eth0";
     bpff = "";
     dpath = "/tmp";
     cxtbuffer = NULL;
