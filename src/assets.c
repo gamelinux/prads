@@ -104,8 +104,8 @@ short update_asset_os(struct in6_addr ip_addr,
             head_oa = rec->os;
 
             while (tmp_oa != NULL) {
-                if ((bstricmp(detection, tmp_oa->detection) == 0)
-                    && (bstricmp(raw_fp, tmp_oa->raw_fp) == 0)) {
+                if ((bstrcmp(detection, tmp_oa->detection) == 0)
+                    && (bstrcmp(raw_fp, tmp_oa->raw_fp) == 0)) {
                     /*
                      * Found! 
                      */
@@ -263,9 +263,9 @@ short update_asset_service(struct in6_addr ip_addr,
                      * If we have an id for the service which is != unknown AND the id now is unknown 
                      * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
                      */
-                    if (!(bstricmp(UNKNOWN, application) == 0)
+                    if (!(bstrcmp(UNKNOWN, application) == 0)
                         &&
-                        (bstricmp(UNKNOWN, tmp_sa->application))
+                        (bstrcmp(UNKNOWN, tmp_sa->application))
                         == 0) {
                         tmp_sa->i_attempts = 0;
                         bdestroy(tmp_sa->service);
@@ -283,7 +283,7 @@ short update_asset_service(struct in6_addr ip_addr,
                         }
 
                         return 0;
-                    } else if (!(bstricmp(application, tmp_sa->application) == 0)) {
+                    } else if (!(bstrcmp(application, tmp_sa->application) == 0)) {
                         if (tmp_sa->i_attempts > MAX_SERVICE_CHECK) {
                             tmp_sa->i_attempts = 0;
                             bdestroy(tmp_sa->service);
@@ -722,7 +722,7 @@ void print_assets()
             /*
              * Checks if something has been updated in the asset since last time 
              */
-            if (tstamp - rec->last_seen < TIMEOUT + 1) {
+            if (tstamp - rec->last_seen <= ASSET_TIMEOUT) {
                 serv_asset *tmp_sa = NULL;
                 os_asset *tmp_oa = NULL;
                 tmp_sa = rec->services;
@@ -744,7 +744,7 @@ void print_assets()
                     /*
                      * Just print out the asset if it is updated since lasttime 
                      */
-                    if (tstamp - tmp_sa->last_seen <= TIMEOUT) {
+                    if (tstamp - tmp_sa->last_seen <= ASSET_TIMEOUT) {
                         if (tmp_sa->role == 1) {
                         printf(",[service:%s:%u]",
                                (char *)bdata(tmp_sa->application),
@@ -758,7 +758,7 @@ void print_assets()
                     /*
                      * If the asset is getting too old - delete it 
                      */
-                    if (tstamp - tmp_sa->last_seen > TIMEOUT * 4) {
+                    if (tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
                         //printf("[*] we could delete this service-asset!");
                         serv_asset *stmp = tmp_sa;
                         tmp_sa = tmp_sa->next;
@@ -772,7 +772,7 @@ void print_assets()
                     /*
                      * Just print out the asset if it is updated since lasttime 
                      */
-                    if (tstamp - tmp_oa->last_seen <= TIMEOUT) {
+                    if (tstamp - tmp_oa->last_seen <= ASSET_TIMEOUT) {
                         printf(",[%s:%s]",
                                (char *)bdata(tmp_oa->detection),
                                (char *)bdata(tmp_oa->raw_fp));
@@ -780,7 +780,7 @@ void print_assets()
                     /*
                      * If the asset is getting too old - delete it 
                      */
-                    if (tstamp - tmp_oa->last_seen > TIMEOUT * 4) {
+                    if (tstamp - tmp_oa->last_seen >= ASSET_TIMEOUT) {
                         //printf("[*] We could delete this os-asset!");
                         os_asset *otmp = tmp_oa;
                         tmp_oa = tmp_oa->next;
@@ -795,8 +795,8 @@ void print_assets()
             /*
              * If nothing in the asset has been updated for some time - delete it!
              */
-            //if (tstamp - rec->last_seen > TIMEOUT*5) {
-            if (1) {            // test - deleting all assets all the time - look for memleak
+            if (tstamp - rec->last_seen >= ASSET_TIMEOUT) {
+            //if (1) {            // test - deleting all assets all the time - look for memleak
                 //printf("  *deleting this asset*\n");
                 asset *tmp = rec;
                 rec = rec->next;

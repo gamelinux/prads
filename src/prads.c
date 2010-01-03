@@ -804,7 +804,7 @@ int main(int argc, char *argv[])
         drop_privs();
     }
     bucket_keys_NULL();
-    alarm(TIMEOUT);
+    alarm(CHECK_TIMEOUT);
 
     printf("[*] Sniffing...\n\n");
     pcap_loop(handle, -1, got_packet, NULL);

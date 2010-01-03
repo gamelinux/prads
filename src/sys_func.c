@@ -36,7 +36,7 @@ void set_end_sessions()
         end_sessions();
         print_assets();
         intr_flag = 0;
-        alarm(TIMEOUT);
+        alarm(CHECK_TIMEOUT);
     }
 }
 

@@ -44,6 +44,8 @@
 #include "../prads.h"
 #include "servicefp.h"
 
+extern bstring UNKNOWN;
+
 void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
                   int plen)
 {
@@ -55,6 +57,12 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
     signature *tmpsig;
     bstring app;
 
+    struct in6_addr ip_addr;
+    ip_addr.s6_addr32[0] = ip4->ip_src;
+    ip_addr.s6_addr32[1] = 0;
+    ip_addr.s6_addr32[2] = 0;
+    ip_addr.s6_addr32[3] = 0;
+
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {
         rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
@@ -62,11 +70,6 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
         if (rc != -1) {
             app = get_app_name(tmpsig, payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
-            struct in6_addr ip_addr;
-            ip_addr.s6_addr32[0] = ip4->ip_src;
-            ip_addr.s6_addr32[1] = 0;
-            ip_addr.s6_addr32[2] = 0;
-            ip_addr.s6_addr32[3] = 0;
             update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
                                  tmpsig->service, app, AF_INET, SERVICE);
             bdestroy(app);
@@ -74,6 +77,15 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
         }
         tmpsig = tmpsig->next;
     }
+
+    if (ntohs(udph->src_port) == 1194) {
+        update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
+                             UNKNOWN, UNKNOWN, AF_INET, SERVICE);
+    } else if (ntohs(udph->dst_port) == 1194) {
+        update_asset_service(ip_addr, udph->dst_port, ip4->ip_p,
+                             UNKNOWN, UNKNOWN, AF_INET, CLIENT);
+    }
+
 }
 
 void service_udp6(ip6_header * ip6, udp_header * udph, char *payload,
