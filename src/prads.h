@@ -482,6 +482,13 @@ typedef struct _vendor {
     struct _vendor *next;       /* Next vendor structure */
 } vendor;
 
+typedef struct _port_t {
+    uint16_t h_port;            /* High port */
+    //uint16_t l_port;            /* Low Port */
+    bstring service_name;       /* Service */
+    struct _port_t *next;       /* Next port_t structure */
+} port_t;
+
 typedef struct _fp_entry {
     uint8_t *os;                /* OS genre */
     uint8_t *desc;              /* OS description */

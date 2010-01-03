@@ -328,3 +328,53 @@ bstring get_app_name(signature * sig,
     return retval;
 
 }
+
+void load_known_ports_file(char *filename, port_t *lports)
+{
+    /* parse file with "service,port" */
+    /* for each line of "service,port" : add_known_port() */
+    return;
+}
+
+void add_known_port(uint8_t proto, uint16_t port, bstring service_name)
+{
+    extern port_t *lports[255];
+    port_t *tmp_lports;
+    tmp_lports = lports[proto];
+    port_t *new_port=NULL;
+
+    while (tmp_lports != NULL) {
+        tmp_lports = tmp_lports->next;
+    }
+
+    if (tmp_lports == NULL) {
+        new_port = (port_t *) calloc(1, sizeof(port_t));
+        new_port->h_port = port;
+        new_port->service_name = service_name;
+        new_port->next = lports[proto];
+        lports[proto] = new_port;
+    }
+
+    return;
+}
+
+bstring check_port(uint8_t proto, uint16_t port)
+{
+
+    extern port_t *lports[255];
+    port_t *ports_head;
+    port_t *tmp_lports;
+    ports_head = lports[proto];
+
+    while(ports_head!=NULL){
+        //if(port >= ports_head->l_port && port <= ports_head->h_port) {
+        if(port == ports_head->h_port) {
+            return ports_head->service_name;
+        }
+        tmp_lports=ports_head;
+        ports_head=tmp_lports->next;
+    }
+
+    return NULL;
+}
+
