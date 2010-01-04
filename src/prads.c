@@ -28,12 +28,6 @@
 #include "cxt.h"
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
-/*
-#include "servicefp/tcps.c"
-#include "servicefp/tcpc.c"
-
-#include "servicefp/udps.c"
-*/
 
 /*  G L O B A L E S  *********************************************************/
 uint64_t    cxtrackerid;
@@ -458,7 +452,7 @@ void got_packet (u_char *useless,const struct pcap_pkthdr *pheader, const u_char
    }
    /* printf("[*] ETHERNET TYPE : %x\n", eth_hdr->eth_ip_type); */
 packet_end:
-#ifdef DEBUG
+#ifdef DEBUG_MUCH
    if(!our)
       fprintf(stderr, "Not our network packet. Tracked, but not logged.\n");
 #endif
@@ -473,7 +467,7 @@ packet_end:
 void parse_nets(char *s_net, uint32_t *network, uint32_t *netmask){
    char *f, *p, *t;
    int i = 0;
-   uint32_t tmp;
+   uint32_t mask;
    char snet[MAX_NETS];
    strncpy(snet,s_net, MAX_NETS);
    f = snet;
@@ -487,7 +481,7 @@ void parse_nets(char *s_net, uint32_t *network, uint32_t *netmask){
          perror("parse_nets");
          return;
       }
-      printf("parse_nets: %s -> %p\n", f, network[i]);
+      printf("Network %s \t-> %010p\n", f, network[i]);
       f = p + 1;
       // terminate netmask
       p = strchr(f, ',');
@@ -495,27 +489,19 @@ void parse_nets(char *s_net, uint32_t *network, uint32_t *netmask){
          *p = '\0';
       }
 
-      // create inverted netmask
+      // create netmask
       if((t = strchr(f, '.'))-f < 4 && t > f){
          // dotted quads
-         printf("parse_nets: Got netmask %s -> ", f);
+         printf("Netmask %s \t-> ", f);
          inet_pton(AF_INET, f, &netmask[i]);
-         //netmask[i] = htonl(netmask[i]);
       }else{
          // 'short' form
-         sscanf(f, "%u", &tmp);
-         printf("parse_nets: Got netmask %u -> ", tmp);
-         netmask[i] = 0;
-         tmp = 32 - tmp;
-         while(tmp--){
-            netmask[i] <<= 1;
-            netmask[i] |= 1;
-         }
-         netmask[i] = ~netmask[i];
-         netmask[i] = ntohl(netmask[i]);
+         sscanf(f, "%u", &mask);
+         printf("Netmask %u \t\t-> ", mask);
+         mask = 32 - mask;
+         netmask[i] = ntohl( ((unsigned int)-1 >> mask)<< mask );
       }
-      // easier to create inverted netmask
-      printf("%08p\n", netmask[i]);
+      printf("%010p\n", netmask[i]);
       nets = ++i;
       f = p;
       if(p) f++;
