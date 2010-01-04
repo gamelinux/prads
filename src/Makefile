@@ -2,10 +2,10 @@
 
 CC=gcc
 LDFLAGS=-lpcap -lpcre
-OCFLAGS=-O3
+
 DCFLAGS=-g
 PCFLAGS='-g -pg'
-ifneq (${DEBUG},,)
+ifneq (${DEBUG},)
 CFLAGS += -g -DDEBUG
 endif
 
