@@ -4,7 +4,7 @@ CC=gcc
 LDFLAGS=-lpcap -lpcre
 OCFLAGS=-O3
 DCFLAGS=-g
-PCFLAGS=-g -pg
+PCFLAGS='-g -pg'
 ifneq (${DEBUG},,)
 CFLAGS += -g -DDEBUG
 endif
@@ -25,7 +25,7 @@ debug:
 	 ${MAKE} DEBUG=y
 
 profile:
-	gcc $(PCFLAGS) -o prads prads.c $(LDFLAGS)
+	${MAKE} CFLAGS+=${PCFLAGS}
 
 clean:
 	-rm -v $(OBJECTS)
