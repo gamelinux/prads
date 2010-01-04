@@ -869,6 +869,7 @@ int main(int argc, char *argv[])
     load_servicefp_file(3, "../etc/tcp-clients.sig");
     //load_servicefp_file(4,"../etc/udp-client.sig");
     add_known_port(17,1194,bfromcstr("@openvpn"));
+    add_known_port(17,123,bfromcstr("@ntp"));
 
     errbuf[0] = '\0';
     /*

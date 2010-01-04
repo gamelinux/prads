@@ -82,12 +82,12 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
     /* 
      * If no sig is found/mached, use default port to determin.
      */
-    if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->src_port))) !=NULL ) {
-        update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
-                             UNKNOWN, bstrcpy(service_name), AF_INET, SERVICE);
-    } else if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->dst_port))) !=NULL ) {
+    if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->dst_port))) !=NULL ) {
         update_asset_service(ip_addr, udph->dst_port, ip4->ip_p,
                              UNKNOWN, bstrcpy(service_name), AF_INET, CLIENT);
+    } else if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->src_port))) !=NULL ) {
+        update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
+                             UNKNOWN, bstrcpy(service_name), AF_INET, SERVICE);
     }
 
 }
