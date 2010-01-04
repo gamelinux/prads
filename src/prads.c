@@ -68,21 +68,21 @@ static void usage();
 
 /* does this ip belong to our network? do we care about the packet?
  * Return value: boolean                                                     */
-int filter_packet(int af, struct in6_addr ip_s)
+static inline int filter_packet(const int af, const struct in6_addr ip_s)
 {
-    char tmp[MAX_NETS];
-    int our = 0;
+    uint32_t ip;
+    int i, our = 0;
     if (af == AF_INET) {
-        uint32_t ip = ip_s.s6_addr32[0];
-        inet_ntop(af, &ip, tmp, MAX_NETS);
-        int i;
-        our = 0;
+        ip = ip_s.s6_addr32[0];
         for (i = 0; i < MAX_NETS && i < nets; i++) {
             if ((ip & netmask[i]) == network[i]) {
                 our = 1;
+                break;
             }
         }
 #ifdef DEBUG_MUCH
+        char tmp[MAX_NETS];
+        inet_ntop(af, &ip, tmp, MAX_NETS);
         if (our)
             fprintf(stderr, "Address %s is in our network.\n", tmp);
         else
