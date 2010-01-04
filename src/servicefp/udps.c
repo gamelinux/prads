@@ -21,14 +21,14 @@
 /* $Id$ */
 
 /* service_udp
- * 
+ *
  * Purpose:
  *
  * This file eats an *IP-packet and udp-header and adds/enter
  * a service to asset if any match is made, and the fingerprint.
  *
  * Arguments:
- *   
+ *
  * *IP-packet, udp-header
  *
  * Effect:
@@ -44,53 +44,76 @@
 #include "../prads.h"
 #include "servicefp.h"
 
-void service_udp4 (ip4_header *ip4, udp_header *udph, char *payload, int plen) {
+extern bstring UNKNOWN;
 
-   const char        *err = NULL;        /* PCRE */
-   int               erroffset,rc;   /* PCRE */
-   int               ovector[15];
-   extern signature  *sig_serv_udp;
-   signature         *tmpsig;
-   bstring           app;
+void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
+                  int plen)
+{
 
-   tmpsig = sig_serv_udp;
-   while ( tmpsig != NULL ) {
-      rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      if (rc != -1) {
-         app = get_app_name(tmpsig, payload, ovector, rc);
-         //printf("[*] - MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
-         struct in6_addr ip_addr;
-         ip_addr.s6_addr32[0] = ip4->ip_src;
-         ip_addr.s6_addr32[1] = 0;
-         ip_addr.s6_addr32[2] = 0;
-         ip_addr.s6_addr32[3] = 0;
-         update_asset_service(ip_addr, udph->src_port, ip4->ip_p, tmpsig->service, app, AF_INET);
-         //bdestroy(app);
-         return;
-      }
-      tmpsig = tmpsig->next;
-   }
+    const char *err = NULL;     /* PCRE */
+    int erroffset, rc;          /* PCRE */
+    int ovector[15];
+    extern signature *sig_serv_udp;
+    signature *tmpsig;
+    bstring app, service_name;
+    app = service_name = NULL;
+
+    struct in6_addr ip_addr;
+    ip_addr.s6_addr32[0] = ip4->ip_src;
+    ip_addr.s6_addr32[1] = 0;
+    ip_addr.s6_addr32[2] = 0;
+    ip_addr.s6_addr32[3] = 0;
+
+    tmpsig = sig_serv_udp;
+    while (tmpsig != NULL) {
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+                       ovector, 15);
+        if (rc != -1) {
+            app = get_app_name(tmpsig, payload, ovector, rc);
+            //printf("[*] - MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
+            update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
+                                 tmpsig->service, app, AF_INET, SERVICE);
+            bdestroy(app);
+            return;
+        }
+        tmpsig = tmpsig->next;
+    }
+
+    /* 
+     * If no sig is found/mached, use default port to determin.
+     */
+    if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->src_port))) !=NULL ) {
+        update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
+                             UNKNOWN, bstrcpy(service_name), AF_INET, SERVICE);
+    } else if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->dst_port))) !=NULL ) {
+        update_asset_service(ip_addr, udph->dst_port, ip4->ip_p,
+                             UNKNOWN, bstrcpy(service_name), AF_INET, CLIENT);
+    }
+
 }
 
-void service_udp6 (ip6_header *ip6, udp_header *udph, char *payload, int plen) {
-   const char        *err = NULL;        /* PCRE */
-   int               erroffset,rc;       /* PCRE */
-   int               ovector[15];
-   extern signature  *sig_serv_udp;
-   signature         *tmpsig;
-   bstring           app;
+void service_udp6(ip6_header * ip6, udp_header * udph, char *payload,
+                  int plen)
+{
+    const char *err = NULL;     /* PCRE */
+    int erroffset, rc;          /* PCRE */
+    int ovector[15];
+    extern signature *sig_serv_udp;
+    signature *tmpsig;
+    bstring app;
 
-   tmpsig = sig_serv_udp;
-   while ( tmpsig != NULL ) {
-      rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0, ovector, 15);
-      if (rc != -1) {
-         app = get_app_name(tmpsig, payload, ovector, rc);
-         //printf("[*] - MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
-         update_asset_service(ip6->ip_src, udph->src_port, ip6->next, tmpsig->service, app, AF_INET);
-         //bdestroy(app);
-         return;
-      }
-      tmpsig = tmpsig->next;
-   }
+    tmpsig = sig_serv_udp;
+    while (tmpsig != NULL) {
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+                       ovector, 15);
+        if (rc != -1) {
+            app = get_app_name(tmpsig, payload, ovector, rc);
+            //printf("[*] - MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
+            update_asset_service(ip6->ip_src, udph->src_port, ip6->next,
+                                 tmpsig->service, app, AF_INET, SERVICE);
+            bdestroy(app);
+            return;
+        }
+        tmpsig = tmpsig->next;
+    }
 }
-

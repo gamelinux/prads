@@ -20,14 +20,14 @@
 
 /* $Id$ */
 
-/* servicefp 
- * 
+/* servicefp
+ *
  * Purpose:
  *
  * This file holds essential functions for the service fingerprinting
  *
  * Arguments:
- *   
+ *
  * *NONE
  *
  * Effect:
@@ -52,43 +52,52 @@
  * RETURN       : -1 - Error
  *              : 0 - Normal Return
  * ---------------------------------------------------------- */
-int load_servicefp_file(int storage, char *sigfile) {
+int load_servicefp_file(int storage, char *sigfile)
+{
 
-   FILE *fp;
-   bstring filename;
-   bstring filedata;
-   struct bstrList *lines;
-   int i;
+    FILE *fp;
+    bstring filename;
+    bstring filedata;
+    struct bstrList *lines;
+    int i;
 
-   /* Check for a PADS_SIGNATURE_LIST file within the current directory.  */
-   if ((fp = fopen(TCP_SIGNATURE_LIST, "r")) != NULL) {
-      filename = bformat("./%s", sigfile);
-      fclose(fp);
-   } else {
-      filename = bformat(sigfile);
-   }
+    /*
+     * Check for a PADS_SIGNATURE_LIST file within the current directory.  
+     */
+    if ((fp = fopen(TCP_SIGNATURE_LIST, "r")) != NULL) {
+        filename = bformat("./%s", sigfile);
+        fclose(fp);
+    } else {
+        filename = bformat(sigfile);
+    }
 
-   /* Open Signature File */
-   if ((fp = fopen((char *)bdata(filename), "r")) == NULL) {
-      printf("Unable to open signature file - %s", bdata(filename));
-      return 1;
-   }
+    /*
+     * Open Signature File 
+     */
+    if ((fp = fopen((char *)bdata(filename), "r")) == NULL) {
+        printf("Unable to open signature file - %s", bdata(filename));
+        return 1;
+    }
 
-   /* Read file into 'filedata' and process it accordingly. */
-   filedata = bread ((bNread) fread, fp);
-   if ((lines = bsplit(filedata, '\n')) != NULL) {
-      for (i = 0; i < lines->qty; i++) {
-         parse_raw_signature(lines->entry[i], i + 1, storage);
-      }
-   }
+    /*
+     * Read file into 'filedata' and process it accordingly. 
+     */
+    filedata = bread((bNread) fread, fp);
+    if ((lines = bsplit(filedata, '\n')) != NULL) {
+        for (i = 0; i < lines->qty; i++) {
+            parse_raw_signature(lines->entry[i], i + 1, storage);
+        }
+    }
 
-   /* Clean Up */
-   bdestroy(filename);
-   bdestroy(filedata);
-   bstrListDestroy(lines);
-   fclose(fp);
+    /*
+     * Clean Up 
+     */
+    bdestroy(filename);
+    bdestroy(filedata);
+    bstrListDestroy(lines);
+    fclose(fp);
 
-   return 0;
+    return 0;
 }
 
 /* ----------------------------------------------------------
@@ -101,121 +110,139 @@ int load_servicefp_file(int storage, char *sigfile) {
  * RETURN       : 0 - Success
  *              : -1 - Error
  * ---------------------------------------------------------- */
-int parse_raw_signature (bstring line, int lineno, int storage) {
-   struct bstrList *raw_sig = NULL;
-   struct bstrList *title = NULL;
-   signature *sig, *head;
-   sig = head = NULL;
-   bstring pcre_string = NULL;
-   const char *err = NULL;     /* PCRE */
-   int erroffset;              /* PCRE */
-   int ret = 0;
-   int i;
+int parse_raw_signature(bstring line, int lineno, int storage)
+{
+    struct bstrList *raw_sig = NULL;
+    struct bstrList *title = NULL;
+    signature *sig, *head;
+    sig = head = NULL;
+    bstring pcre_string = NULL;
+    const char *err = NULL;     /* PCRE */
+    int erroffset;              /* PCRE */
+    int ret = 0;
+    int i;
 
-   /* Check to see if this line has something to read. */
-   if (line->data[0] == '\0' || line->data[0] == '#')
-      return -1;
+    /*
+     * Check to see if this line has something to read. 
+     */
+    if (line->data[0] == '\0' || line->data[0] == '#')
+        return -1;
 
-   /* Split Line */
-   //if ((raw_sig = bsplitstr(line, bformat("||") )) == NULL)
-   if ((raw_sig = bsplit(line, ',')) == NULL)
-      return -1;
+    /*
+     * Split Line 
+     */
+    //if ((raw_sig = bsplitstr(line, bformat("||") )) == NULL)
+    if ((raw_sig = bsplit(line, ',')) == NULL)
+        return -1;
 
-   /* Reconstruct the PCRE string.  This is needed in case there are PCRE
-    * strings containing commas within them. */
-   if (raw_sig->qty < 3) {
-      ret = -1;
-   } else if (raw_sig->qty > 3) {
-      pcre_string = bstrcpy(raw_sig->entry[2]);
-      for (i = 3; i < raw_sig->qty; i++) {
-         //bstring tmp = bfromcstr("||");
-         bstring tmp = bfromcstr(",");
-         if ((bconcat(pcre_string, tmp)) == BSTR_ERR)
-            ret = -1;
-         if ((bconcat(pcre_string, raw_sig->entry[i])) == BSTR_ERR)
-            ret = -1;
-         bdestroy(tmp);
-      }
-   } else {
-      pcre_string = bstrcpy(raw_sig->entry[2]);
-   }
+    /*
+     * Reconstruct the PCRE string.  This is needed in case there are PCRE
+     * * strings containing commas within them. 
+     */
+    if (raw_sig->qty < 3) {
+        ret = -1;
+    } else if (raw_sig->qty > 3) {
+        pcre_string = bstrcpy(raw_sig->entry[2]);
+        for (i = 3; i < raw_sig->qty; i++) {
+            //bstring tmp = bfromcstr("||");
+            bstring tmp = bfromcstr(",");
+            if ((bconcat(pcre_string, tmp)) == BSTR_ERR)
+                ret = -1;
+            if ((bconcat(pcre_string, raw_sig->entry[i])) == BSTR_ERR)
+                ret = -1;
+            bdestroy(tmp);
+        }
+    } else {
+        pcre_string = bstrcpy(raw_sig->entry[2]);
+    }
 
-   /* Split Title */
-   if (raw_sig->entry[1] != NULL && ret != -1)
-      title = bsplit(raw_sig->entry[1], '/');
-      if (title == NULL) {
-         bdestroy(pcre_string);
-         return -1;
-      }
-   if (title->qty < 3)
-      ret = -1;
+    /*
+     * Split Title 
+     */
+    if (raw_sig->entry[1] != NULL && ret != -1)
+        title = bsplit(raw_sig->entry[1], '/');
+    if (title == NULL) {
+        bdestroy(pcre_string);
+        return -1;
+    }
+    if (title->qty < 3)
+        ret = -1;
 
-   /* Create signature data structure for this record. */
-   if (ret != -1) {
-      sig = (signature*)calloc(1,sizeof(signature));
-      if (raw_sig->entry[0] != NULL)
-         sig->service = bstrcpy(raw_sig->entry[0]);
-      if (title->entry[1] != NULL)
-         sig->title.app = bstrcpy(title->entry[1]);
-      if (title->entry[2] != NULL)
-         sig->title.ver = bstrcpy(title->entry[2]);
-      if (title->entry[3] != NULL)
-         sig->title.misc = bstrcpy(title->entry[3]);
+    /*
+     * Create signature data structure for this record. 
+     */
+    if (ret != -1) {
+        sig = (signature *) calloc(1, sizeof(signature));
+        if (raw_sig->entry[0] != NULL)
+            sig->service = bstrcpy(raw_sig->entry[0]);
+        if (title->entry[1] != NULL)
+            sig->title.app = bstrcpy(title->entry[1]);
+        if (title->entry[2] != NULL)
+            sig->title.ver = bstrcpy(title->entry[2]);
+        if (title->entry[3] != NULL)
+            sig->title.misc = bstrcpy(title->entry[3]);
 
-      /* PCRE */
-      if (pcre_string != NULL) {
-         if ((sig->regex = pcre_compile ((char *)bdata(pcre_string), 0, &err, &erroffset, NULL)) == NULL) {
-            printf("Unable to compile signature:  %s at line %d (%s)",
-            err, lineno, bdata(line));
-            ret = -1;
-         }
-      }
-      if (ret != -1) {
-         sig->study = pcre_study (sig->regex, 0, &err);
-         if (err != NULL)
-            printf("Unable to study signature:  %s", err);
-      }
+        /*
+         * PCRE 
+         */
+        if (pcre_string != NULL) {
+            if ((sig->regex =
+                 pcre_compile((char *)bdata(pcre_string), 0, &err,
+                              &erroffset, NULL)) == NULL) {
+                printf("Unable to compile signature:  %s at line %d (%s)",
+                       err, lineno, bdata(line));
+                ret = -1;
+            }
+        }
+        if (ret != -1) {
+            sig->study = pcre_study(sig->regex, 0, &err);
+            if (err != NULL)
+                printf("Unable to study signature:  %s", err);
+        }
 
-      /* Add signature to 'signature_list' data structure. */
-      if (ret != -1) {
-         //add_signature (sig);
-         if (storage == 1) {
-            extern signature *sig_serv_tcp;
-            head = sig_serv_tcp;
-            sig->next  = head;
-            sig_serv_tcp = sig;
-         } else
-         if (storage == 2) {
-            extern signature *sig_serv_udp;
-            head = sig_serv_udp;
-            sig->next  = head;
-            sig_serv_udp = sig;
-         } else
-         if (storage == 3) {
-            extern signature *sig_client_tcp;
-            head = sig_client_tcp;
-            sig->next  = head;
-            sig_client_tcp = sig;
-         } else
-         if (storage == 4) {
-            extern signature *sig_client_udp;
-            head = sig_client_udp;
-            sig->next  = head;
-            sig_client_udp = sig;
-         }
-        /* printf("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); */
-      }
-   }
+        /*
+         * Add signature to 'signature_list' data structure. 
+         */
+        if (ret != -1) {
+            //add_signature (sig);
+            if (storage == 1) {
+                extern signature *sig_serv_tcp;
+                head = sig_serv_tcp;
+                sig->next = head;
+                sig_serv_tcp = sig;
+            } else if (storage == 2) {
+                extern signature *sig_serv_udp;
+                head = sig_serv_udp;
+                sig->next = head;
+                sig_serv_udp = sig;
+            } else if (storage == 3) {
+                extern signature *sig_client_tcp;
+                head = sig_client_tcp;
+                sig->next = head;
+                sig_client_tcp = sig;
+            } else if (storage == 4) {
+                extern signature *sig_client_udp;
+                head = sig_client_udp;
+                sig->next = head;
+                sig_client_udp = sig;
+            }
+            /*
+             * printf("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); 
+             */
+        }
+    }
 
-   /* Garbage Collection */
-   if (raw_sig != NULL)
-      bstrListDestroy(raw_sig);
-   if (title != NULL)
-      bstrListDestroy(title);
-   if (pcre_string != NULL)
-      bdestroy(pcre_string);
+    /*
+     * Garbage Collection 
+     */
+    if (raw_sig != NULL)
+        bstrListDestroy(raw_sig);
+    if (title != NULL)
+        bstrListDestroy(title);
+    if (pcre_string != NULL)
+        bdestroy(pcre_string);
 
-   return ret;
+    return ret;
 }
 
 /* ----------------------------------------------------------
@@ -229,10 +256,8 @@ int parse_raw_signature (bstring line, int lineno, int storage) {
  *              : 3 - rc (return from pcre_exec)
  * RETURN       : processed app name
  * ---------------------------------------------------------- */
-bstring get_app_name (signature *sig,
-            const char *payload,
-            int *ovector,
-            int rc)
+bstring get_app_name(signature * sig,
+                     const char *payload, int *ovector, int rc)
 {
     char sub[100];
     char app[5000];
@@ -243,33 +268,42 @@ bstring get_app_name (signature *sig,
     int x = 0;
     int z = 0;
 
-    /* Create Application string using the values in signature[i].title.  */
+    /*
+     * Create Application string using the values in signature[i].title.  
+     */
     if (sig->title.app != NULL) {
-        strlcpy(app, (char *)bdata(sig->title.app), MAX_APP);
+        strncpy(app, (char *)bdata(sig->title.app), MAX_APP);
     }
     if (sig->title.ver != NULL) {
         if (sig->title.ver->slen > 0) {
             strcat(app, " ");
-            strlcat(app, (char *)bdata(sig->title.ver), MAX_VER);
+            strncat(app, (char *)bdata(sig->title.ver), MAX_VER);
         }
     }
     if (sig->title.misc != NULL) {
         if (sig->title.misc->slen > 0) {
             strcat(app, " (");
-            strlcat(app, (char *)bdata(sig->title.misc), MAX_MISC);
+            strncat(app, (char *)bdata(sig->title.misc), MAX_MISC);
             strcat(app, ")");
         }
     }
 
-    /* Replace $1, $2, etc. with the appropriate substring.  */
+    /*
+     * Replace $1, $2, etc. with the appropriate substring.  
+     */
     while (app[i] != '\0' && z < (sizeof(sub) - 1)) {
-        /* Check to see if the string contains a $? mark variable. */
+        /*
+         * Check to see if the string contains a $? mark variable. 
+         */
         if (app[i] == '$') {
-            /* Yes it does, replace it with the appropriate match string. */
+            /*
+             * Yes it does, replace it with the appropriate match string. 
+             */
             i++;
             n = atoi(&app[i]);
 
-            pcre_copy_substring(payload, ovector, rc, n, expr, sizeof(expr));
+            pcre_copy_substring(payload, ovector, rc, n, expr,
+                                sizeof(expr));
             x = 0;
             while (expr[x] != '\0' && z < (sizeof(sub) - 1)) {
                 sub[z] = expr[x];
@@ -280,7 +314,9 @@ bstring get_app_name (signature *sig,
                 expr[x] = '\0';
             i++;
         } else {
-            /* No it doesn't, copy to new string. */
+            /*
+             * No it doesn't, copy to new string. 
+             */
             sub[z] = app[i];
             i++;
             z++;
@@ -291,5 +327,54 @@ bstring get_app_name (signature *sig,
     retval = bfromcstr(sub);
     return retval;
 
+}
+
+void load_known_ports_file(char *filename, port_t *lports)
+{
+    /* parse file with "service,port" */
+    /* for each line of "service,port" : add_known_port() */
+    return;
+}
+
+void add_known_port(uint8_t proto, uint16_t port, bstring service_name)
+{
+    extern port_t *lports[255];
+    port_t *tmp_lports;
+    tmp_lports = lports[proto];
+    port_t *new_port=NULL;
+
+    while (tmp_lports != NULL) {
+        tmp_lports = tmp_lports->next;
+    }
+
+    if (tmp_lports == NULL) {
+        new_port = (port_t *) calloc(1, sizeof(port_t));
+        new_port->h_port = port;
+        new_port->service_name = service_name;
+        new_port->next = lports[proto];
+        lports[proto] = new_port;
+    }
+
+    return;
+}
+
+bstring check_port(uint8_t proto, uint16_t port)
+{
+
+    extern port_t *lports[255];
+    port_t *ports_head;
+    port_t *tmp_lports;
+    ports_head = lports[proto];
+
+    while(ports_head!=NULL){
+        //if(port >= ports_head->l_port && port <= ports_head->h_port) {
+        if(port == ports_head->h_port) {
+            return ports_head->service_name;
+        }
+        tmp_lports=ports_head;
+        ports_head=tmp_lports->next;
+    }
+
+    return NULL;
 }
 

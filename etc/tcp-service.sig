@@ -76,7 +76,7 @@ wwwproxy,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 wwwproxy,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 
 # Fallback WWW Signature
-www,v/Unknown HTTP//$1/,^(HTTP/\d.\d)
+#www,v/Unknown HTTP//$1/,^(HTTP/\d.\d)
 
 # SSL Signatures
 ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01

@@ -21,13 +21,13 @@
 /* $Id$ */
 
 /* mac.c
- * 
+ *
  * Purpose:
  *
  * This file eats an ARP packet and adds/enters the asset
  *
  * Arguments:
- *   
+ *
  * ARP header
  *
  * Effect:
@@ -40,7 +40,7 @@
  * Old school...
  */
 
-void arp_check(eth_hdr,tstamp) {
-   return;
+void arp_check(eth_hdr, tstamp)
+{
+    return;
 }
-

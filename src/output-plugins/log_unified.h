@@ -20,14 +20,14 @@
 
 /* $Id$ */
 
-/* log_unified 
- * 
+/* log_unified
+ *
  * Purpose:
  *
  * This plugin generates the new unified alert and logging formats
  *
  * Arguments:
- *   
+ *
  * filename of the alert and log spools
  *
  * Effect:
@@ -38,6 +38,3 @@
  *
  * The future...
  */
-
-
-
