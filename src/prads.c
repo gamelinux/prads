@@ -72,32 +72,77 @@ static void usage();
 /* F U N C T I O N S  ********************************************************/
 
 /* does this ip belong to our network? do we care about the packet?
- * Return value: boolean                                                     */
+ *
+ * unfortunately pcap sends us packets in host order
+ * Return value: boolean
+ */
 static inline int filter_packet(const int af, const struct in6_addr ip_s)
 {
     uint32_t ip;
     int i, our = 0;
-    if (af == AF_INET) {
-        ip = ip_s.s6_addr32[0];
-        for (i = 0; i < MAX_NETS && i < nets; i++) {
-            if ((ip & network[i].mask.s6_addr32[0]) ==
-                network[i].addr.s6_addr32[0]) {
-                our = 1;
-                break;
+    char output[MAX_NETS];
+    switch (af) {
+        case AF_INET:
+        {
+            ip = ip_s.s6_addr32[0];
+            for (i = 0; i < MAX_NETS && i < nets; i++) {
+#if DEBUG == 2
+                inet_ntop(af, &network[i].addr.s6_addr32[0], output, MAX_NETS);
+                vlog(0x2, "Filter: %s\n", output);
+                inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
+                vlog(0x2, "mask: %s\n", output);
+                inet_ntop(af, &ip, output, MAX_NETS);
+                vlog(0x2, "ip: %s\n", output);
+#endif
+                if (network[i].type == AF_INET
+                    && (ip & network[i].mask.s6_addr32[0])
+                    == network[i].addr.s6_addr32[0]) {
+                    our = 1;
+                    break;
+                }
             }
         }
-#ifdef DEBUG_MUCH
-        char tmp[MAX_NETS];
-        inet_ntop(af, &ip, tmp, MAX_NETS);
-        if (our)
-            fprintf(stderr, "Address %s is in our network.\n", tmp);
-        else
-            fprintf(stderr, "Address %s is not our network.\n", tmp);
-#endif
-    } else {
-        fprintf(stderr, "ipv6 packets aren't filtered by netmask yet\n");
-        our = 1;
+        break;
+        case AF_INET6:
+        {
+            /* 32-bit comparison of ipv6 nets.
+             * can do better here by using 64-bit or SIMD instructions
+             *
+             *
+             * PS: use same code for ipv4 */
+            for (i = 0; i < MAX_NETS && i < nets; i++) {
+                if (network[i].type == AF_INET6
+                    && (htonl(ip_s.s6_addr32[0]) & network[i].mask.s6_addr32[0])
+                    == network[i].addr.s6_addr32[0]
+                    && (htonl(ip_s.s6_addr32[1]) & network[i].mask.s6_addr32[1])
+                    == network[i].addr.s6_addr32[1]
+                    && (htonl(ip_s.s6_addr32[2]) & network[i].mask.s6_addr32[2])
+                    == network[i].addr.s6_addr32[2]
+                    && (htonl(ip_s.s6_addr32[3]) & network[i].mask.s6_addr32[3])
+                    == network[i].addr.s6_addr32[3]) {
+                    our = 1;
+                    break;
+                }
+            }
+        }
+        break;
+        default:
+        fprintf(stderr,
+            "non-ip packets of type %d aren't filtered by netmask yet\n", af);
+            our = 1;
     }
+#ifdef DEBUG
+    if (af == AF_INET6){
+        inet_ntop(af, &ip_s, output, MAX_NETS);
+    }else{
+        inet_ntop(af, &ip, output, MAX_NETS);
+    }
+    if (our){
+        vlog(0x2, "Address %s is in our network.\n", output);
+    } else {
+        vlog(0x2, "Address %s is not our network.\n", output);
+    }
+#endif
     return our;
 }
 
@@ -126,19 +171,19 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
      * while (ETHERNET_TYPE_X) check for infinit vlan tags
      */
     if (eth_type == ETHERNET_TYPE_8021Q) {
-        // printf("[*] ETHERNET TYPE 8021Q\n"); 
+        vlog(0x3, "[*] ETHERNET TYPE 8021Q\n"); 
         eth_type = ntohs(eth_hdr->eth_8_ip_type);
         eth_header_len += 4;
     } else if (eth_type ==
                (ETHERNET_TYPE_802Q1MT | ETHERNET_TYPE_802Q1MT2 |
                 ETHERNET_TYPE_802Q1MT3 | ETHERNET_TYPE_8021AD)) {
-        // printf("[*] ETHERNET TYPE 802Q1MT\n"); 
+        vlog(0x3, "[*] ETHERNET TYPE 802Q1MT\n"); 
         eth_type = ntohs(eth_hdr->eth_82_ip_type);
         eth_header_len += 8;
     }
 
     if (eth_type == ETHERNET_TYPE_IP) {
-        // printf("[*] Got IPv4 Packet...\n"); 
+        vlog(0x3, "[*] Got IPv4 Packet...\n");
         ip4_header *ip4;
         ip4 = (ip4_header *) (packet + eth_header_len);
         p_bytes = (ip4->ip_len - (IP_HL(ip4) * 4));
@@ -161,9 +206,8 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             tcph =
                 (tcp_header *) (packet + eth_header_len +
                                 (IP_HL(ip4) * 4));
-            /*
-             * printf("[*] IPv4 PROTOCOL TYPE TCP:\n");
-             */
+            vlog(0x3, "[*] IPv4 PROTOCOL TYPE TCP:\n");
+            
 
             s_check =
                 cx_track(ip_src, tcph->src_port, ip_dst,
@@ -186,7 +230,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                     end_ptr = (packet + SNAPLENGTH);
                 }
                 fp_tcp4(ip4, tcph, end_ptr, TF_SYN, ip_src);
-                //printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
+                vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
                 update_asset_service(ip_src,
                                      tcph->dst_port,
                                      ip4->ip_p,
@@ -194,7 +238,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                                      UNKNOWN, AF_INET, CLIENT);
             } else if (TCP_ISFLAGSET(tcph, (TF_SYN))
                        && TCP_ISFLAGSET(tcph, (TF_ACK))) {
-                //printf("[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
+                vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
                 //update_asset(AF_INET,ip_src);
 
                 /*
@@ -269,7 +313,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                                   (TCP_OFFSET(tcph)) * 4 - eth_header_len));
                 }
                 /*
-                 * if (s_check == 1) {
+                 * if (s_check == 1)
                  */
                 else {
                     client_tcp4(ip4, tcph, payload,
@@ -374,10 +418,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                  * printf("[*] - CHECKING OTHER PACKAGE\n");
                  */
                 update_asset(AF_INET, ip_src);
-                /*
-                 * service_other(*ip4,*tcph)
-                 */
-                /*
+                /* service_other(*ip4,*tcph)
                  * fp_other(ip, ttl, ipopts, len, id, ipflags, df);
                  */
             } else {
@@ -388,9 +429,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             goto packet_end;
         }
     } else if (eth_type == ETHERNET_TYPE_IPV6) {
-        /*
-         * printf("[*] Got IPv6 Packet...\n");
-         */
+        vlog(0x3, "Got IPv6 Packet...\n");
         ip6_header *ip6;
         ip6 = (ip6_header *) (packet + eth_header_len);
         our = filter_packet(AF_INET6, ip6->ip_src);
@@ -603,9 +642,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
      */
   packet_end:
 #ifdef DEBUG
-    if (!our)
-        fprintf(stderr,
-                "Not our network packet. Tracked, but not logged.\n");
+    //if (!our) dlog("Not our network packet. Tracked, but not logged.\n");
 #endif
     inpacket = 0;
     return;
@@ -628,18 +665,24 @@ void parse_nets(char *s_net, struct fmask *network)
     struct in6_addr network6, netmask6;
 
     char snet[MAX_NETS];
-    strncpy(snet,s_net, MAX_NETS);
+    strncpy(snet, s_net, MAX_NETS);
     f = snet;
     while (f && 0 != (p = strchr(f, '/'))) {
         // convert network address
         *p = '\0';
-        if (0!= (t = strchr(f, ':'))) {
+        if (NULL != (t = strchr(f, ':'))) {
             type = AF_INET6;
             if (!inet_pton(type, f, &network6)) {
                 perror("parse_nets6");
                 return;
             }
-            printf("Network6 %s ", f);
+            printf("Network6 %s \t -> %08x:%08x:%08x:%08x ",
+                   f,
+                   network6.s6_addr32[0],
+                   network6.s6_addr32[1],
+                   network6.s6_addr32[2],
+                   network6.s6_addr32[3]
+                   );
         } else {
             type = AF_INET;
             if (!inet_pton(type, f, &network4)) {
@@ -666,10 +709,14 @@ void parse_nets(char *s_net, struct fmask *network)
         } else {
             // cidr form
             sscanf(f, "%u", &mask);
-            printf("Netmask %u \t\t-> ", mask);
+            printf("Netmask %u \t-> ", mask);
             if (type == AF_INET) {
-                mask = 32 - mask;
-                netmask4 = ntohl( ((unsigned int)-1 >> mask)<< mask );
+                uint32_t shift = 32 - mask;
+                if (mask)
+                    netmask4 = ntohl( ((unsigned int)-1 >> shift)<< shift);
+                else
+                    netmask4 = 0;
+
                 printf("%010p\n", netmask4);
             } else if (type == AF_INET6) {
                 //mask = 128 - mask;
@@ -683,6 +730,10 @@ void parse_nets(char *s_net, struct fmask *network)
                 if (mask > 0) {
                     netmask6.s6_addr[j] = -1 << (8 - mask);
                 }
+                netmask6.s6_addr32[0] = ntohl(netmask6.s6_addr32[0]);
+                netmask6.s6_addr32[1] = ntohl(netmask6.s6_addr32[1]);
+                netmask6.s6_addr32[2] = ntohl(netmask6.s6_addr32[2]);
+                netmask6.s6_addr32[3] = ntohl(netmask6.s6_addr32[3]);
             }
         }
 
@@ -691,11 +742,13 @@ void parse_nets(char *s_net, struct fmask *network)
             case AF_INET:
                 network[i].addr.s6_addr32[0] = network4;
                 network[i].mask.s6_addr32[0] = netmask4;
+                network[i].type = type;
                 break;
 
             case AF_INET6:
                 network[i].addr = network6;
                 network[i].mask = netmask6;
+                network[i].type = type;
                 break;
 
             default:
@@ -703,7 +756,6 @@ void parse_nets(char *s_net, struct fmask *network)
                 return;
         }
 
-        network[i].type = type;
         nets = ++i;
 
         if (i > MAX_NETS) {
