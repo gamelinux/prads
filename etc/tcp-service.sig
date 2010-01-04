@@ -192,3 +192,5 @@ dns,v/TCP DNS Server///,^[\x02-\xFF]...\x84\x80
 # Munin
 munin,v/Munin Node/$1//, munin node at (.*)
 
+# Subversion
+svn,v/Subversion server http///,\( success \( 2 2 \( \) \( edit-pipeline svndiff1 absent-entries commit-revprops depth log-revprops partial-replay \) \) \)

@@ -33,6 +33,8 @@ void set_end_sessions()
     intr_flag = 3;
 
     if (inpacket == 0) {
+        extern time_t tstamp;
+        tstamp = time(NULL);
         end_sessions();
         print_assets();
         intr_flag = 0;

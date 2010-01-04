@@ -150,13 +150,13 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 const u_char * packet)
 {
     int our = 1;
+    tstamp = time(NULL);
     if (intr_flag != 0) {
         // printf("[*] Checking interrupt...\n"); 
         check_interupt();
     }
     inpacket = 1;
     s_check = 0;                // do we need to ?
-    tstamp = time(NULL);
     u_short p_bytes;
 
     // unwrap ethernet
