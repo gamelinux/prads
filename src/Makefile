@@ -2,11 +2,11 @@
 
 CC=gcc
 LDFLAGS=-lpcap -lpcre
-
+CFLAGS=-O3
 DCFLAGS=-g
 PCFLAGS='-g -pg'
 ifneq (${DEBUG},)
-CFLAGS += -g -DDEBUG
+CFLAGS = -g -DDEBUG
 endif
 
 SERVICE_OBJ = \
@@ -19,7 +19,7 @@ OBJECTS = bstrlib.o sys_func.o bstraux.o cxt.o assets.o prads.o ${IPFP_OBJ} ${SE
 all: prads
 
 prads: $(OBJECTS)
-	gcc $(OCFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
+	$(CC) $(OCFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
 
 debug:
 	 ${MAKE} DEBUG=y
