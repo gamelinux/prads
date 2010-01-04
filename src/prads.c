@@ -53,8 +53,13 @@ uint64_t hash;
 char *s_net = "0.0.0.0/0";
 int nets = 1;
 //char *s_net = "87.238.44.0/255.255.255.0,87.238.45.0/26,87.238.44.60/32";
-uint32_t network[MAX_NETS];
-uint32_t netmask[MAX_NETS];
+struct fmask { 
+    int type;
+    struct in6_addr addr;
+    struct in6_addr mask;
+};
+struct fmask network[MAX_NETS];
+//struct in6_addr netmask[MAX_NETS];
 
 // static strings for comparison
 struct tagbstring tUNKNOWN = bsStatic("unknown");
@@ -75,7 +80,8 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
     if (af == AF_INET) {
         ip = ip_s.s6_addr32[0];
         for (i = 0; i < MAX_NETS && i < nets; i++) {
-            if ((ip & netmask[i]) == network[i]) {
+            if ((ip & network[i].mask.s6_addr32[0]) ==
+                network[i].addr.s6_addr32[0]) {
                 our = 1;
                 break;
             }
@@ -605,49 +611,106 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     return;
 }
 
-/* parse strings of the form "10.10.10.10/255.255.255.128"
- * as well as "10.10.10.10/25"
+/* parse strings of the form ip/cidr or ip/mask like:
+ * "10.10.10.10/255.255.255.128,10.10.10.10/25" and 
+ * "dead:be:eef2:1aa::b5ff:fe96:37a2/64,..."
+ *
+ * an IPv6 address is 8 x 4 hex digits. missing digits are padded with zeroes.
  */
-void parse_nets(char *s_net, uint32_t *network, uint32_t *netmask)
+void parse_nets(char *s_net, struct fmask *network)
 {
-    char *f, *p, *t;
-    int i = 0;
-    uint32_t mask;
-    char snet[MAX_NETS];
-    strncpy(snet,s_net, MAX_NETS);
-    f = snet;
     /* f -> for processing
      * p -> frob pointer
      * t -> to pointer */
+    char *f, *p, *t;
+    int type, i = 0;
+    uint32_t mask, network4, netmask4;
+    struct in6_addr network6, netmask6;
+
+    char snet[MAX_NETS];
+    strncpy(snet,s_net, MAX_NETS);
+    f = snet;
     while (f && 0 != (p = strchr(f, '/'))) {
         // convert network address
         *p = '\0';
-        if (!inet_pton(AF_INET, f, &network[i])) {
-            perror("parse_nets");
-            return;
+        if (0!= (t = strchr(f, ':'))) {
+            type = AF_INET6;
+            if (!inet_pton(type, f, &network6)) {
+                perror("parse_nets6");
+                return;
+            }
+            printf("Network6 %s ", f);
+        } else {
+            type = AF_INET;
+            if (!inet_pton(type, f, &network4)) {
+                perror("parse_nets");
+                return;
+            }
+            printf("Network4 %s \t-> %010p ", f, network4);
         }
-        printf("Network %s \t-> %010p\n", f, network[i]);
+        // convert netmask
         f = p + 1;
-        // terminate netmask
         p = strchr(f, ',');
         if (p) {
             *p = '\0';
         }
 
-        // create netmask
-        if ((t = strchr(f, '.'))-f < 4 && t > f) {
+        if (type == AF_INET && (t = strchr(f, '.'))-f < 4 && t > f) {
             // dotted quads
-            printf("Netmask %s \t-> ", f);
-            inet_pton(AF_INET, f, &netmask[i]);
+            inet_pton(type, f, &netmask4);
+            printf("Netmask4 %s \t-> %010p\n", f, netmask4);
+        } else if (type == AF_INET6 && 0 == (t = strchr(f, ':'))) {
+            // full ipv6 netmasĸ
+            printf("Netmask6 %s\n", f);
+            inet_pton(type, f, &netmask6);
         } else {
-            // 'short' form
+            // cidr form
             sscanf(f, "%u", &mask);
             printf("Netmask %u \t\t-> ", mask);
-            mask = 32 - mask;
-            netmask[i] = ntohl( ((unsigned int)-1 >> mask)<< mask );
+            if (type == AF_INET) {
+                mask = 32 - mask;
+                netmask4 = ntohl( ((unsigned int)-1 >> mask)<< mask );
+                printf("%010p\n", netmask4);
+            } else if (type == AF_INET6) {
+                //mask = 128 - mask;
+                int j = 0;
+                memset(&netmask6, 0, sizeof(struct in6_addr));
+
+                while (mask > 8) {
+                    netmask6.s6_addr[j++] = 0xff;
+                    mask -= 8;
+                }
+                if (mask > 0) {
+                    netmask6.s6_addr[j] = -1 << (8 - mask);
+                }
+            }
         }
-        printf("%010p\n", netmask[i]);
+
+        // poke in the gathered information
+        switch (type) {
+            case AF_INET:
+                network[i].addr.s6_addr32[0] = network4;
+                network[i].mask.s6_addr32[0] = netmask4;
+                break;
+
+            case AF_INET6:
+                network[i].addr = network6;
+                network[i].mask = netmask6;
+                break;
+
+            default:
+                fprintf(stderr, "parse_nets: invalid address family!\n");
+                return;
+        }
+
+        network[i].type = type;
         nets = ++i;
+
+        if (i > MAX_NETS) {
+            fprintf(stderr, "Max networks reached, stopped parsing at %lu\n", i-1);
+            return;
+        }
+
 
         // continue parsing at p, which might point to another network range
         f = p;
@@ -747,7 +810,7 @@ int main(int argc, char *argv[])
         return (1);
     }
 
-    parse_nets(s_net, network, netmask);
+    parse_nets(s_net, network);
     printf("[*] Running prads %s\n", VERSION);
     load_servicefp_file(1, "../etc/tcp-service.sig");
     load_servicefp_file(2, "../etc/udp-service.sig");
