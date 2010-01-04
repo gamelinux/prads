@@ -746,13 +746,13 @@ void print_assets()
                      */
                     if (tstamp - tmp_sa->last_seen <= CHECK_TIMEOUT) {
                         if (tmp_sa->role == 1) {
-                        printf(",[service:%s:%u]",
+                        printf(",[service:%s:%u:%u]",
                                (char *)bdata(tmp_sa->application),
-                               ntohs(tmp_sa->port));
+                               ntohs(tmp_sa->port),tmp_sa->proto);
                         } else {
-                           printf(",[client:%s:%u]",
+                           printf(",[client:%s:%u:%u]",
                                 (char*)bdata(tmp_sa->application),
-                                ntohs(tmp_sa->port));
+                                ntohs(tmp_sa->port),tmp_sa->proto);
                         }
                     }
                     /*

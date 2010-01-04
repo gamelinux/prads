@@ -98,6 +98,7 @@ cvsup,v/CVSup server///,CVSup server ready
 
 # SQL signatures
 sql,v/MySQL/$1//,([3-6]\.[0-1]\.\d\d-\w.+)
+#sql,v/MySQL Server Greeting (1.0+latin1)/$1//,^...\x00\x0a([3-6]\.[0-1]\.\d\d).............\x08
 
 # Citrix ICA. Included signature wasn't hitting, this seems to fix it.
 #ica,v/Citrix ICA Protocol///,\x7f\x7ICA\x00
