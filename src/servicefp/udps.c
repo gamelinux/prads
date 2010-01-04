@@ -44,6 +44,8 @@
 #include "../prads.h"
 #include "servicefp.h"
 
+extern bstring UNKNOWN;
+
 void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
                   int plen)
 {
@@ -53,7 +55,14 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
     int ovector[15];
     extern signature *sig_serv_udp;
     signature *tmpsig;
-    bstring app;
+    bstring app, service_name;
+    app = service_name = NULL;
+
+    struct in6_addr ip_addr;
+    ip_addr.s6_addr32[0] = ip4->ip_src;
+    ip_addr.s6_addr32[1] = 0;
+    ip_addr.s6_addr32[2] = 0;
+    ip_addr.s6_addr32[3] = 0;
 
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {
@@ -62,11 +71,6 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
         if (rc != -1) {
             app = get_app_name(tmpsig, payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
-            struct in6_addr ip_addr;
-            ip_addr.s6_addr32[0] = ip4->ip_src;
-            ip_addr.s6_addr32[1] = 0;
-            ip_addr.s6_addr32[2] = 0;
-            ip_addr.s6_addr32[3] = 0;
             update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
                                  tmpsig->service, app, AF_INET, SERVICE);
             bdestroy(app);
@@ -74,6 +78,18 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
         }
         tmpsig = tmpsig->next;
     }
+
+    /* 
+     * If no sig is found/mached, use default port to determin.
+     */
+    if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->src_port))) !=NULL ) {
+        update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
+                             UNKNOWN, bstrcpy(service_name), AF_INET, SERVICE);
+    } else if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->dst_port))) !=NULL ) {
+        update_asset_service(ip_addr, udph->dst_port, ip4->ip_p,
+                             UNKNOWN, bstrcpy(service_name), AF_INET, CLIENT);
+    }
+
 }
 
 void service_udp6(ip6_header * ip6, udp_header * udph, char *payload,

@@ -29,7 +29,6 @@
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
 
-
 /*  G L O B A L E S  *********************************************************/
 uint64_t cxtrackerid;
 time_t timecnt, tstamp;
@@ -37,6 +36,7 @@ pcap_t *handle;
 connection *bucket[BUCKET_SIZE];
 connection *cxtbuffer = NULL;
 asset *passet[BUCKET_SIZE];
+port_t *lports[255];
 signature *sig_serv_tcp = NULL;
 signature *sig_serv_udp = NULL;
 signature *sig_client_tcp = NULL;
@@ -608,20 +608,17 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 /* parse strings of the form "10.10.10.10/255.255.255.128"
  * as well as "10.10.10.10/25"
  */
-
-void parse_nets(char *s_net, uint32_t * network, uint32_t * netmask)
+void parse_nets(char *s_net, uint32_t *network, uint32_t *netmask)
 {
     char *f, *p, *t;
     int i = 0;
-    uint32_t tmp;
+    uint32_t mask;
     char snet[MAX_NETS];
-    strncpy(snet, s_net, MAX_NETS);
+    strncpy(snet,s_net, MAX_NETS);
     f = snet;
-    /*
-     * f -> for processing
-     * * p -> frob pointer
-     * * t -> to pointer
-     */
+    /* f -> for processing
+     * p -> frob pointer
+     * t -> to pointer */
     while (f && 0 != (p = strchr(f, '/'))) {
         // convert network address
         *p = '\0';
@@ -629,38 +626,32 @@ void parse_nets(char *s_net, uint32_t * network, uint32_t * netmask)
             perror("parse_nets");
             return;
         }
-        printf("parse_nets: %s -> %p\n", f, network[i]);
+        printf("Network %s \t-> %010p\n", f, network[i]);
         f = p + 1;
         // terminate netmask
         p = strchr(f, ',');
         if (p) {
             *p = '\0';
         }
-        // create inverted netmask
-        if ((t = strchr(f, '.')) - f < 4 && t > f) {
+
+        // create netmask
+        if ((t = strchr(f, '.'))-f < 4 && t > f) {
             // dotted quads
-            printf("parse_nets: Got netmask %s -> ", f);
+            printf("Netmask %s \t-> ", f);
             inet_pton(AF_INET, f, &netmask[i]);
-            //netmask[i] = htonl(netmask[i]);
         } else {
             // 'short' form
-            sscanf(f, "%u", &tmp);
-            printf("parse_nets: Got netmask %u -> ", tmp);
-            netmask[i] = 0;
-            tmp = 32 - tmp;
-            while (tmp--) {
-                netmask[i] <<= 1;
-                netmask[i] |= 1;
-            }
-            netmask[i] = ~netmask[i];
-            netmask[i] = ntohl(netmask[i]);
+            sscanf(f, "%u", &mask);
+            printf("Netmask %u \t\t-> ", mask);
+            mask = 32 - mask;
+            netmask[i] = ntohl( ((unsigned int)-1 >> mask)<< mask );
         }
-        // easier to create inverted netmask
-        printf("%08p\n", netmask[i]);
+        printf("%010p\n", netmask[i]);
         nets = ++i;
+
+        // continue parsing at p, which might point to another network range
         f = p;
-        if (p)
-            f++;
+        if(p) f++;
     }
 }
 
@@ -762,6 +753,7 @@ int main(int argc, char *argv[])
     load_servicefp_file(2, "../etc/udp-service.sig");
     load_servicefp_file(3, "../etc/tcp-clients.sig");
     //load_servicefp_file(4,"../etc/udp-client.sig");
+    add_known_port(17,1194,bfromcstr("@openvpn"));
 
     errbuf[0] = '\0';
     /*
@@ -804,7 +796,7 @@ int main(int argc, char *argv[])
         drop_privs();
     }
     bucket_keys_NULL();
-    alarm(TIMEOUT);
+    alarm(CHECK_TIMEOUT);
 
     printf("[*] Sniffing...\n\n");
     pcap_loop(handle, -1, got_packet, NULL);

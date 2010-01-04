@@ -29,8 +29,9 @@
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.6"
-#define TIMEOUT                       30
+#define CHECK_TIMEOUT                 30        /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
+#define ASSET_TIMEOUT                 600       /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
@@ -480,6 +481,13 @@ typedef struct _vendor {
     bstring vendor;             /* Vendor */
     struct _vendor *next;       /* Next vendor structure */
 } vendor;
+
+typedef struct _port_t {
+    uint16_t h_port;            /* High port */
+    //uint16_t l_port;            /* Low Port */
+    bstring service_name;       /* Service */
+    struct _port_t *next;       /* Next port_t structure */
+} port_t;
 
 typedef struct _fp_entry {
     uint8_t *os;                /* OS genre */
