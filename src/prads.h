@@ -28,7 +28,7 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.1.6"
+#define VERSION                       "0.1.7"
 #define CHECK_TIMEOUT                 30        /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 600       /* Time befor an asset is deleted if no updates */
