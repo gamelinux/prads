@@ -162,7 +162,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 const u_char * packet)
 {
     int our = 1;
-    tstamp = time(NULL);
+    tstamp = pheader->ts.tv_sec;
     if (intr_flag != 0) {
         // printf("[*] Checking interrupt...\n"); 
         check_interupt();
