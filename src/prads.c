@@ -666,18 +666,21 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
  *
  * an IPv6 address is 8 x 4 hex digits. missing digits are padded with zeroes.
  */
-void parse_nets(char *s_net, struct fmask *network)
+void parse_nets(const char *s_net, struct fmask *network)
 {
     /* f -> for processing
      * p -> frob pointer
      * t -> to pointer */
-    char *f, *p, *t;
-    int type, i = 0;
+    char *f, *p, *t, *snet;
+    char output[MAX_NETS];
+    int type, len, i = 0;
     uint32_t mask, network4, netmask4;
     struct in6_addr network6, netmask6;
 
-    char snet[MAX_NETS];
-    strncpy(snet, s_net, MAX_NETS);
+    // snet is a mutable copy of the args,freed @ nets_end
+    len = strlen(s_net);
+    snet = calloc(1, len);
+    strncpy(snet, s_net, len);
     f = snet;
     while (f && 0 != (p = strchr(f, '/'))) {
         // convert network address
@@ -686,7 +689,7 @@ void parse_nets(char *s_net, struct fmask *network)
             type = AF_INET6;
             if (!inet_pton(type, f, &network6)) {
                 perror("parse_nets6");
-                return;
+                goto nets_end;
             }
             printf("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
                    f,
@@ -699,7 +702,7 @@ void parse_nets(char *s_net, struct fmask *network)
             type = AF_INET;
             if (!inet_pton(type, f, &network4)) {
                 perror("parse_nets");
-                return;
+                goto nets_end;
             }
             printf("Network4 %16s \t-> %010p\n", f, network4);
         }
@@ -743,8 +746,8 @@ void parse_nets(char *s_net, struct fmask *network)
                 if (mask > 0) {
                     netmask6.s6_addr[j] = -1 << (8 - mask);
                 }
-                //inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
-                //vlog(0x2, "mask: %s\n", output);
+                inet_ntop(type, &netmask6.s6_addr32[0], output, MAX_NETS);
+                printf("mask: %s\n", output);
                 // pcap packets are in host order.
                 netmask6.s6_addr32[0] = ntohl(netmask6.s6_addr32[0]);
                 netmask6.s6_addr32[1] = ntohl(netmask6.s6_addr32[1]);
@@ -770,14 +773,14 @@ void parse_nets(char *s_net, struct fmask *network)
 
             default:
                 fprintf(stderr, "parse_nets: invalid address family!\n");
-                return;
+                goto nets_end;
         }
 
         nets = ++i;
 
         if (i > MAX_NETS) {
-            fprintf(stderr, "Max networks reached, stopped parsing at %lu\n", i-1);
-            return;
+            elog("Max networks reached, stopped parsing at %lu nets.\n", i-1);
+            goto nets_end;
         }
 
 
@@ -785,6 +788,9 @@ void parse_nets(char *s_net, struct fmask *network)
         f = p;
         if(p) f++;
     }
+nets_end:
+    free(snet);
+    return;
 }
 
 static void usage()
