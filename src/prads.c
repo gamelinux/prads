@@ -50,7 +50,7 @@ char *pidpath = "/var/run";
 int verbose, inpacket, gameover, use_syslog, intr_flag, s_check;
 uint64_t hash;
 // default source net owns everything
-char *s_net = "0.0.0.0/0";
+char *s_net = "0.0.0.0/0,::/0";
 int nets = 1;
 //char *s_net = "87.238.44.0/255.255.255.0,87.238.45.0/26,87.238.44.60/32";
 struct fmask { 
@@ -112,7 +112,6 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
              *
              * PS: use same code for ipv4 */
 
-            printf("filter_packet ipv6. I got %d nets\n", nets);
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
@@ -445,7 +444,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
         ip6_header *ip6;
         ip6 = (ip6_header *) (packet + eth_header_len);
         our = filter_packet(AF_INET6, ip6->ip_src);
-        vlog(0x3, "Got %s IPv6 Packet...\n", (our?"our":"foregin"));
+        dlog("Got %s IPv6 Packet...\n", (our?"our":"foregin"));
 
         if (ip6->next == IP_PROTO_TCP) {
             tcp_header *tcph;
