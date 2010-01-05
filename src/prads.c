@@ -86,6 +86,8 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
         {
             ip = ip_s.s6_addr32[0];
             for (i = 0; i < MAX_NETS && i < nets; i++) {
+                if (network[i].type != AF_INET)
+                    continue;
 #if DEBUG == 2
                 inet_ntop(af, &network[i].addr.s6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "Filter: %s\n", output);
@@ -94,8 +96,7 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
                 inet_ntop(af, &ip, output, MAX_NETS);
                 vlog(0x2, "ip: %s\n", output);
 #endif
-                if (network[i].type == AF_INET
-                    && (ip & network[i].mask.s6_addr32[0])
+                if((ip & network[i].mask.s6_addr32[0])
                     == network[i].addr.s6_addr32[0]) {
                     our = 1;
                     break;
@@ -110,15 +111,27 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
              *
              *
              * PS: use same code for ipv4 */
+
+            printf("filter_packet ipv6. I got %d nets\n", nets);
             for (i = 0; i < MAX_NETS && i < nets; i++) {
+                if(network[i].type != AF_INET6)
+                    continue;
+#if DEBUG == 2
+                inet_ntop(af, &network[i].addr, output, MAX_NETS);
+                dlog("net:  %s\n", output);
+                inet_ntop(af, &network[i].mask, output, MAX_NETS);
+                dlog("mask: %s\n", output);
+                inet_ntop(af, &ip_s, output, MAX_NETS);
+                dlog("ip: %s\n", output);
+#endif
                 if (network[i].type == AF_INET6
-                    && (htonl(ip_s.s6_addr32[0]) & network[i].mask.s6_addr32[0])
+                    && (ip_s.s6_addr32[0] & network[i].mask.s6_addr32[0])
                     == network[i].addr.s6_addr32[0]
-                    && (htonl(ip_s.s6_addr32[1]) & network[i].mask.s6_addr32[1])
+                    && (ip_s.s6_addr32[1] & network[i].mask.s6_addr32[1])
                     == network[i].addr.s6_addr32[1]
-                    && (htonl(ip_s.s6_addr32[2]) & network[i].mask.s6_addr32[2])
+                    && (ip_s.s6_addr32[2] & network[i].mask.s6_addr32[2])
                     == network[i].addr.s6_addr32[2]
-                    && (htonl(ip_s.s6_addr32[3]) & network[i].mask.s6_addr32[3])
+                    && (ip_s.s6_addr32[3] & network[i].mask.s6_addr32[3])
                     == network[i].addr.s6_addr32[3]) {
                     our = 1;
                     break;
@@ -429,10 +442,10 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             goto packet_end;
         }
     } else if (eth_type == ETHERNET_TYPE_IPV6) {
-        vlog(0x3, "Got IPv6 Packet...\n");
         ip6_header *ip6;
         ip6 = (ip6_header *) (packet + eth_header_len);
         our = filter_packet(AF_INET6, ip6->ip_src);
+        vlog(0x3, "Got %s IPv6 Packet...\n", (our?"our":"foregin"));
 
         if (ip6->next == IP_PROTO_TCP) {
             tcp_header *tcph;
@@ -642,7 +655,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
      */
   packet_end:
 #ifdef DEBUG
-    //if (!our) dlog("Not our network packet. Tracked, but not logged.\n");
+    if (!our) vlog(0x3, "Not our network packet. Tracked, but not logged.\n");
 #endif
     inpacket = 0;
     return;
@@ -676,7 +689,7 @@ void parse_nets(char *s_net, struct fmask *network)
                 perror("parse_nets6");
                 return;
             }
-            printf("Network6 %s \t -> %08x:%08x:%08x:%08x ",
+            printf("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
                    f,
                    network6.s6_addr32[0],
                    network6.s6_addr32[1],
@@ -689,7 +702,7 @@ void parse_nets(char *s_net, struct fmask *network)
                 perror("parse_nets");
                 return;
             }
-            printf("Network4 %s \t-> %010p ", f, network4);
+            printf("Network4 %16s \t-> %010p\n", f, network4);
         }
         // convert netmask
         f = p + 1;
@@ -698,18 +711,19 @@ void parse_nets(char *s_net, struct fmask *network)
             *p = '\0';
         }
 
+        // parse netmask into host order
         if (type == AF_INET && (t = strchr(f, '.'))-f < 4 && t > f) {
             // dotted quads
             inet_pton(type, f, &netmask4);
-            printf("Netmask4 %s \t-> %010p\n", f, netmask4);
-        } else if (type == AF_INET6 && 0 == (t = strchr(f, ':'))) {
+            printf("mask 4 %s \t-> %010p\n", f, netmask4);
+        } else if (type == AF_INET6 && NULL != (t = strchr(f, ':'))) {
             // full ipv6 netmasĸ
-            printf("Netmask6 %s\n", f);
+            printf("mask 6 %s\n", f);
             inet_pton(type, f, &netmask6);
         } else {
             // cidr form
             sscanf(f, "%u", &mask);
-            printf("Netmask %u \t-> ", mask);
+            printf("cidr  %u \t-> ", mask);
             if (type == AF_INET) {
                 uint32_t shift = 32 - mask;
                 if (mask)
@@ -730,10 +744,14 @@ void parse_nets(char *s_net, struct fmask *network)
                 if (mask > 0) {
                     netmask6.s6_addr[j] = -1 << (8 - mask);
                 }
+                //inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
+                //vlog(0x2, "mask: %s\n", output);
+                // pcap packets are in host order.
                 netmask6.s6_addr32[0] = ntohl(netmask6.s6_addr32[0]);
                 netmask6.s6_addr32[1] = ntohl(netmask6.s6_addr32[1]);
                 netmask6.s6_addr32[2] = ntohl(netmask6.s6_addr32[2]);
                 netmask6.s6_addr32[3] = ntohl(netmask6.s6_addr32[3]);
+
             }
         }
 
@@ -791,7 +809,7 @@ static void usage()
 
 int main(int argc, char *argv[])
 {
-
+    printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     int ch, fromfile, setfilter, version, drop_privs_flag, daemon_flag;
     int use_syslog = 0;
     struct in_addr addr;
