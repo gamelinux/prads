@@ -515,6 +515,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 payload =
                     //(char *)(packet + eth_header_len + sizeof(ip6_header));
                     (char *)(packet + eth_header_len + IP6_HEADER_LEN + (TCP_OFFSET(tcph)*4));
+                    //(char *)(packet + eth_header_len + IP6_HEADER_LEN);
                 if (s_check == 2) {
                     /*
                      * printf("[*] - CHECKING TCP SERVER PACKAGE\n");

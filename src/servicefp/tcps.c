@@ -72,10 +72,10 @@ void service_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
                                  tmpsig->service, app, AF_INET, SERVICE);
             bdestroy(app);
             return;
-        } else if (rc == PCRE_ERROR_NOMATCH) {
+        //} else if (rc == PCRE_ERROR_NOMATCH) {
             //printf("pcre nomatch \n");
-        } else {
-            printf("pcre error: %d \n", rc);
+        //} else {
+            //printf("pcre error: %d \n", rc);
         }
         tmpsig = tmpsig->next;
     }
