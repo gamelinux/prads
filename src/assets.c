@@ -722,7 +722,7 @@ void print_assets()
             /*
              * Checks if something has been updated in the asset since last time 
              */
-            if (tstamp - rec->last_seen <= ASSET_TIMEOUT) {
+            if (tstamp - rec->last_seen <= CHECK_TIMEOUT) {
                 serv_asset *tmp_sa = NULL;
                 os_asset *tmp_oa = NULL;
                 tmp_sa = rec->services;
@@ -744,15 +744,15 @@ void print_assets()
                     /*
                      * Just print out the asset if it is updated since lasttime 
                      */
-                    if (tstamp - tmp_sa->last_seen <= ASSET_TIMEOUT) {
+                    if (tstamp - tmp_sa->last_seen <= CHECK_TIMEOUT) {
                         if (tmp_sa->role == 1) {
-                        printf(",[service:%s:%u]",
+                        printf(",[service:%s:%u:%u]",
                                (char *)bdata(tmp_sa->application),
-                               ntohs(tmp_sa->port));
+                               ntohs(tmp_sa->port),tmp_sa->proto);
                         } else {
-                           printf(",[client:%s:%u]",
+                           printf(",[client:%s:%u:%u]",
                                 (char*)bdata(tmp_sa->application),
-                                ntohs(tmp_sa->port));
+                                ntohs(tmp_sa->port),tmp_sa->proto);
                         }
                     }
                     /*
@@ -772,7 +772,7 @@ void print_assets()
                     /*
                      * Just print out the asset if it is updated since lasttime 
                      */
-                    if (tstamp - tmp_oa->last_seen <= ASSET_TIMEOUT) {
+                    if (tstamp - tmp_oa->last_seen <= CHECK_TIMEOUT) {
                         printf(",[%s:%s]",
                                (char *)bdata(tmp_oa->detection),
                                (char *)bdata(tmp_oa->raw_fp));

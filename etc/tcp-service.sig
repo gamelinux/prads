@@ -98,6 +98,7 @@ cvsup,v/CVSup server///,CVSup server ready
 
 # SQL signatures
 sql,v/MySQL/$1//,([3-6]\.[0-1]\.\d\d-\w.+)
+#sql,v/MySQL Server Greeting (1.0+latin1)/$1//,^...\x00\x0a([3-6]\.[0-1]\.\d\d).............\x08
 
 # Citrix ICA. Included signature wasn't hitting, this seems to fix it.
 #ica,v/Citrix ICA Protocol///,\x7f\x7ICA\x00
@@ -192,3 +193,5 @@ dns,v/TCP DNS Server///,^[\x02-\xFF]...\x84\x80
 # Munin
 munin,v/Munin Node/$1//, munin node at (.*)
 
+# Subversion
+svn,v/Subversion server http///,\( success \( 2 2 \( \) \( edit-pipeline svndiff1 absent-entries commit-revprops depth log-revprops partial-replay \) \) \)
