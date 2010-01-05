@@ -153,8 +153,8 @@ smtp,v/Proxy SMTP Service///,220 SMTP Proxy Server Ready
 smtp,v/Yahoo! SMTP Service//$1/,220 YSmtp ([\S]+) ESMTP service ready
 smtp,v/SurgeMail/$2/$1/,220 ([-.\w]+) SurgeSMTP \(Version ([\S]+)\) http:\/\/surgemail.com
 smtp,v/PowerMTA SMTP/$2/$1/,220 ([\S]+) \(PowerMTA ([\S|\s]+)\) ESMTP service ready
-smtp,v/Exim/$2/$1/,220 ([\S]+) SMTP Exim ([\S]+)
-smtp,v/Exim/$2/$1/,220-([\S]+) SMTP Exim ([\S]+)
+smtp,v/Exim/$2/$1/,220[ -]{1}([\S]+) E?SMTP Exim ([\S]+)
+#smtp,v/Exim/$2/$1/,220-([\S]+) SMTP Exim ([\S]+)
 smtp,v/LSMTP for Windows NT/$2/$1/,220 ([\S]+) \(LSMTP for Windows NT ([\S]+)\) ESMTP server ready
 smtp,v/Postini Perimeter Manager/$2/$1/,220 ([\S]+) ESMTP ([\S]+) ready.  CA Business and Professions Code
 smtp,v/Sun iPlanet Messaging Server//$1/,220 ([\S]+) -- Server ESMTP \(Iplanet Messaging Server\)
