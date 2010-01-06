@@ -261,7 +261,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                                      UNKNOWN, pi.af, CLIENT);
             } else if (TCP_ISFLAGSET(pi.tcph, (TF_SYN))
                        && TCP_ISFLAGSET(pi.tcph, (TF_ACK))) {
-                vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
+                vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi.tcph->src_port));
 
                 /*
                  * Paranoia!
@@ -795,8 +795,7 @@ static void usage()
     printf(" -D             : enables daemon mode\n");
     printf(" -h             : this help message\n");
     printf(" -v             : verbose\n");
-    printf
-        (" -a             : home nets (eg: '87.238.44.0/25,10.0.0.0/255.0.0.0')\n\n");
+    printf(" -a             : home nets (eg: '87.238.44.0/25,10.0.0.0/255.0.0.0')\n\n");
 }
 
 int main(int argc, char *argv[])
@@ -883,7 +882,7 @@ int main(int argc, char *argv[])
 
     errbuf[0] = '\0';
     /*
-     * look up an availible device if non specified
+     * look up an available device if non specified
      */
     if (dev == 0x0)
         dev = pcap_lookupdev(errbuf);
