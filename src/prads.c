@@ -294,13 +294,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             if (pi.s_check != 0) {
                 /*
                  * printf("[*] - CHECKING ICMP PACKAGE\n"); 
-                 * Paranoia! 
                  */
-                if (pi.pheader->len <= SNAPLENGTH) {
-                    pi.end_ptr = (pi.packet + pi.pheader->len);
-                } else {
-                    pi.end_ptr = (pi.packet + SNAPLENGTH);
-                }
                 fp_icmp4(pi.ip4, pi.icmph, pi.end_ptr, pi.ip_src);
                 /*
                  * service_icmp(*pi.ip4,*tcph) // could look for icmp spesific data in package abcde...
@@ -353,14 +347,6 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 
             if (TCP_ISFLAGSET(pi.tcph, (TF_SYN))
                 && !TCP_ISFLAGSET(pi.tcph, (TF_ACK))) {
-                /*
-                 * Paranoia!
-                 */
-                if (pi.pheader->len <= SNAPLENGTH) {
-                    pi.end_ptr = (pi.packet + pi.pheader->len);
-                } else {
-                    pi.end_ptr = (pi.packet + SNAPLENGTH);
-                }
                 fp_tcp6(pi.ip6, pi.tcph, pi.end_ptr, TF_SYN, pi.ip6->ip_src);
                 /*
                  * printf("[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(tcph->dst_port));
@@ -370,14 +356,6 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 /*
                  * printf("[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(tcph->src_port));
                  */
-                /*
-                 * Paranoia!
-                 */
-                if (pi.pheader->len <= SNAPLENGTH) {
-                    pi.end_ptr = (pi.packet + pi.pheader->len);
-                } else {
-                    pi.end_ptr = (pi.packet + SNAPLENGTH);
-                }
                 fp_tcp6(pi.ip6, pi.tcph, pi.end_ptr, TF_SYNACK, pi.ip6->ip_src);
             }
             if (pi.s_check != 0) {
@@ -386,14 +364,6 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                  */
                 if (TCP_ISFLAGSET(pi.tcph, (TF_ACK))
                     && !TCP_ISFLAGSET(pi.tcph, (TF_SYN))) {
-                    /*
-                     * Paranoia!
-                     */
-                    if (pi.pheader->len <= SNAPLENGTH) {
-                        pi.end_ptr = (pi.packet + pi.pheader->len);
-                    } else {
-                        pi.end_ptr = (pi.packet + SNAPLENGTH);
-                    }
                     fp_tcp6(pi.ip6, pi.tcph, pi.end_ptr, TF_ACK, pi.ip6->ip_src);
                 }
                 pi.payload =
@@ -465,15 +435,6 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 /*
                  * service_icmp(*ip6,*tcph)
                  */
-
-                /*
-                 * Paranoia!
-                 */
-                if (pi.pheader->len <= SNAPLENGTH) {
-                    pi.end_ptr = (pi.packet + pi.pheader->len);
-                } else {
-                    pi.end_ptr = (pi.packet + SNAPLENGTH);
-                }
                 fp_icmp6(pi.ip6, pi.icmp6h, pi.end_ptr, pi.ip6->ip_src);
             } else {
                 /*
