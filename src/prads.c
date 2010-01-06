@@ -74,7 +74,8 @@ void prepare_ip6 (packetinfo *pi);
 void set_pkt_end_ptr (packetinfo *pi);
 void prepare_tcp (packetinfo *pi);
 void prepare_udp (packetinfo *pi);
-//void prepare_icmp (packetinfo *pi);
+void prepare_icmp (packetinfo *pi);
+void prepare_other (packetinfo *pi);
 
 /* F U N C T I O N S  ********************************************************/
 
@@ -277,17 +278,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             }
             goto packet_end;
         } else if (pi.ip4->ip_p == IP_PROTO_ICMP) {
-            pi.icmph =
-                (icmp_header *) (pi.packet + pi.eth_hlen +
-                                 (IP_HL(pi.ip4) * 4));
-            /*
-             * printf("[*] IP PROTOCOL TYPE ICMP\n");
-             */
-
-            pi.s_check =
-                cx_track(pi.ip_src, pi.icmph->s_icmp_id, pi.ip_dst,
-                         pi.icmph->s_icmp_id, pi.ip4->ip_p, pi.packet_bytes,
-                         0, tstamp, pi.af);
+            prepare_icmp(&pi);
             if (!pi.our)
                 goto packet_end;
 
@@ -306,14 +297,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             }
             goto packet_end;
         } else {
-            /*
-             * Template for implementing checks on other transport types.
-             */
-            printf("[*] IPv4 PROTOCOL TYPE OTHER: %d\n", pi.ip4->ip_p);
-
-            pi.s_check =
-                cx_track(pi.ip_src, 0, pi.ip_dst, 0, pi.ip4->ip_p,
-                         pi.packet_bytes, 0, tstamp, pi.af);
+            prepare_other(&pi);
             if (!pi.our)
                 goto packet_end;
 
@@ -413,19 +397,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             }
             goto packet_end;
         } else if (pi.ip6->next == IP6_PROTO_ICMP) {
-            pi.icmp6h =
-                (icmp6_header *) (pi.packet + pi.eth_hlen +
-                                  IP6_HEADER_LEN);
-            /*
-             * printf("[*] IPv6 PROTOCOL TYPE ICMP\n");
-             */
-
-            /*
-             * DO change ip6->hop_lmt to 0 or something!
-             */
-            pi.s_check = cx_track(pi.ip6->ip_src, 0, pi.ip6->ip_dst,
-                               0, pi.ip6->next, pi.ip6->len, 0,
-                               tstamp, pi.af);
+            prepare_icmp(&pi);
             if (!pi.our)
                 goto packet_end;
             if (pi.s_check != 0) {
@@ -443,10 +415,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
             }
             goto packet_end;
         } else {
-            printf("[*] IPv6 PROTOCOL TYPE OTHER: %d\n", pi.ip6->next);
-            
-            pi.s_check = cx_track(pi.ip6->ip_src, 0, pi.ip6->ip_dst, 0,
-                                  pi.ip6->next, pi.ip6->len, 0, tstamp, pi.af);
+            prepare_other(&pi);
             /*
              * if (s_check != 0) { 
              * printf("[*] - CHECKING OTHER PACKAGE\n"); 
@@ -591,6 +560,45 @@ void prepare_udp (packetinfo *pi)
     }
     return;
 }
+
+void prepare_icmp (packetinfo *pi)
+{
+    if (pi->af==AF_INET) {
+        vlog(0x3, "[*] IPv4 PROTOCOL TYPE ICMP:\n");
+        pi->icmph = (icmp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
+        pi->s_check =
+                cx_track(pi->ip_src, pi->icmph->s_icmp_id, pi->ip_dst,
+                         pi->icmph->s_icmp_id, pi->ip4->ip_p, pi->packet_bytes,
+                         0, tstamp, pi->af);
+    } else if (pi->af==AF_INET6) {
+        vlog(0x3, "[*] IPv6 PROTOCOL TYPE ICMP:\n");
+        pi->icmp6h = (icmp6_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
+        /*
+         * DO change ip6->hop_lmt to 0 or something
+         */
+        pi->s_check = cx_track(pi->ip6->ip_src, 0, pi->ip6->ip_dst,
+                              0, pi->ip6->next, pi->ip6->len, 0,
+                              tstamp, pi->af);
+    }
+    return;
+}
+
+void prepare_other (packetinfo *pi)
+{
+    if (pi->af==AF_INET) {
+        vlog(0x3, "[*] IPv4 PROTOCOL TYPE OTHER: %d\n",pi->ip->ip_p); 
+        pi->s_check =
+                cx_track(pi->ip_src, 0, pi->ip_dst, 0, pi->ip4->ip_p,
+                         pi->packet_bytes, 0, tstamp, pi->af);
+    } else if (pi->af==AF_INET6) {
+        vlog(0x3, "[*] IPv6 PROTOCOL TYPE OTHER: %d\n",pi->ip6->next);
+        pi->s_check = 
+                cx_track(pi->ip6->ip_src, 0, pi->ip6->ip_dst, 0,
+                         pi->ip6->next, pi->ip6->len, 0, tstamp, pi->af);
+    }
+    return;
+}
+
 
 /* parse strings of the form ip/cidr or ip/mask like:
  * "10.10.10.10/255.255.255.128,10.10.10.10/25" and 
