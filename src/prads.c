@@ -84,8 +84,48 @@ void parse_tcp6 (packetinfo *pi);
 void parse_udp (packetinfo *pi);
 void parse_arp (packetinfo *pi);
 void set_pkt_end_ptr (packetinfo *pi);
+static inline int filter_packet(const int af, const struct in6_addr ip_s);
 
 /* F U N C T I O N S  ********************************************************/
+
+void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
+                const u_char * packet)
+{
+    packetinfo pi;
+    memset(&pi, 0, sizeof(packetinfo));
+    //pi = (packetinfo *) calloc(1, sizeof(packetinfo));
+    pi.our = 1;
+    pi.packet = packet;
+    pi.pheader = pheader;
+    set_pkt_end_ptr (&pi);
+    tstamp = pi.pheader->ts.tv_sec;
+    if (intr_flag != 0) {
+        check_interupt();
+    }
+    inpacket = 1;
+    prepare_eth(&pi);
+    check_vlan(&pi);
+
+    if (pi.eth_type == ETHERNET_TYPE_IP) {
+        prepare_ip4(&pi);
+        parse_ip4(&pi);
+    } else if (pi.eth_type == ETHERNET_TYPE_IPV6) {
+        prepare_ip6(&pi);
+        parse_ip6(&pi);
+    } else if (pi.eth_type == ETHERNET_TYPE_ARP) {
+        parse_arp(&pi);
+        goto packet_end;
+    }
+    vlog(0x3, "[*] ETHERNET TYPE : %x\n",pi.eth_hdr->eth_ip_type);
+  packet_end:
+#ifdef DEBUG
+    if (!pi.our) vlog(0x3, "Not our network packet. Tracked, but not logged.\n");
+#endif
+    inpacket = 0;
+    //free(pi);
+    return;
+}
+
 
 /* does this ip belong to our network? do we care about the packet?
  *
@@ -173,45 +213,6 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
 #endif
     return our;
 }
-
-void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
-                const u_char * packet)
-{
-    packetinfo pi;
-    memset(&pi, 0, sizeof(packetinfo));
-    //pi = (packetinfo *) calloc(1, sizeof(packetinfo));
-    pi.our = 1;
-    pi.packet = packet;
-    pi.pheader = pheader;
-    set_pkt_end_ptr (&pi);
-    tstamp = pi.pheader->ts.tv_sec;
-    if (intr_flag != 0) {
-        check_interupt();
-    }
-    inpacket = 1;
-    prepare_eth(&pi);
-    check_vlan(&pi);
-
-    if (pi.eth_type == ETHERNET_TYPE_IP) {
-        prepare_ip4(&pi);
-        parse_ip4(&pi);
-    } else if (pi.eth_type == ETHERNET_TYPE_IPV6) {
-        prepare_ip6(&pi);
-        parse_ip6(&pi);
-    } else if (pi.eth_type == ETHERNET_TYPE_ARP) {
-        parse_arp(&pi);
-        goto packet_end;
-    }
-    vlog(0x3, "[*] ETHERNET TYPE : %x\n",pi.eth_hdr->eth_ip_type);
-  packet_end:
-#ifdef DEBUG
-    if (!pi.our) vlog(0x3, "Not our network packet. Tracked, but not logged.\n");
-#endif
-    inpacket = 0;
-    //free(pi);
-    return;
-}
-
 void prepare_eth (packetinfo *pi)
 {
     pi->eth_hdr  = (ether_header *) (pi->packet);
