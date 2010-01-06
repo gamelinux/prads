@@ -63,6 +63,7 @@
 #define IP6_PROTO_FRAG                44
 #define IP6_PROTO_ICMP                58
 #define IP6_PROTO_NONXT               59
+#define MAX_IP_PROTO                  255
 
 #define IP4_HEADER_LEN                20
 #define IP6_HEADER_LEN                40
@@ -534,6 +535,36 @@ typedef struct _fp_entry {
     uint32_t line;              /* config file line */
     struct _fp_entry *next;
 } fp_entry;
+
+typedef struct _fmask {
+    int type;
+    struct in6_addr addr;
+    struct in6_addr mask;
+} fmask;
+
+typedef struct _globalconfig {
+    pcap_t      *handle;                /* Pointer to libpcap handle */
+    connection  *bucket[BUCKET_SIZE];   /* Pointer to list of ongoing connections */
+    connection  *cxtbuffer;             /* Pointer to list of expired connections */
+    asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
+    port_t      *lports[MAX_IP_PROTO];  /* Pointer to list of known ports */
+    signature   *sig_serv_tcp;          /* Pointer to list of tcp service signatures */
+    signature   *sig_serv_udp;          /* Pointer to list of udp service signatures */
+    signature   *sig_client_tcp;        /* Pointer to list of tcp client signatures */
+    signature   *sig_client_udp;        /* Pointer to list of udp client signatures */
+    fmask       *network[MAX_NETS];      /* Struct for fmask */
+    char *dev;                   /* Device name to use for sniffing */
+    char *dpath;                 /* ... */
+    char *chroot_dir;            /* Directory to chroot to */
+    char *group_name;            /* Groupe to drop privileges too */
+    char *user_name;             /* User to drop privileges too */
+    char *true_pid_name;         /* Pid name */
+    char *pidfile;               /* pidfile */
+    char *pidpath;               /* Path to pidfile */
+    char *s_net;                 /* Nets to collect assets for */
+    uint32_t    verbose;                /* Verbose or not */
+    uint32_t    use_syslog;             /* Use syslog or not */
+} globalconfig;
 
 /*  P R O T O T Y P E S  ******************************************************/
 

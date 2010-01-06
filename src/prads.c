@@ -32,7 +32,7 @@
 
 /*  G L O B A L E S  *********************************************************/
 uint64_t cxtrackerid;
-time_t timecnt, tstamp;
+time_t tstamp;
 pcap_t *handle;
 connection *bucket[BUCKET_SIZE];
 connection *cxtbuffer = NULL;
@@ -66,7 +66,6 @@ struct fmask network[MAX_NETS];
 struct tagbstring tUNKNOWN = bsStatic("unknown");
 bstring UNKNOWN = & tUNKNOWN;
 
-
 /*  I N T E R N A L   P R O T O T Y P E S  ***********************************/
 static void usage();
 void check_vlan (packetinfo *pi);
@@ -98,7 +97,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     pi.packet = packet;
     pi.pheader = pheader;
     set_pkt_end_ptr (&pi);
-    tstamp = pi.pheader->ts.tv_sec;
+    tstamp = pi.pheader->ts.tv_sec; // Global
     if (intr_flag != 0) {
         check_interupt();
     }
@@ -125,7 +124,6 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     //free(pi);
     return;
 }
-
 
 /* does this ip belong to our network? do we care about the packet?
  *
@@ -213,6 +211,7 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
 #endif
     return our;
 }
+
 void prepare_eth (packetinfo *pi)
 {
     pi->eth_hdr  = (ether_header *) (pi->packet);
@@ -380,7 +379,7 @@ void parse_arp (packetinfo *pi)
             update_asset_arp(pi->arph->arp_sha, pi->ip_src);
         }
         /*
-         * arp_check(eth_hdr,tstamp);
+         * arp_check(eth_hdr,pi->pheader->ts.tv_sec);
          */
     } else {
         vlog(0x3, "[*] ARP TYPE: %d\n",ntohs(pi->arph->ea_hdr.ar_op));
@@ -408,7 +407,7 @@ void prepare_tcp (packetinfo *pi)
         pi->s_check =
                 cx_track(pi->ip_src, pi->tcph->src_port, pi->ip_dst,
                          pi->tcph->dst_port, pi->ip4->ip_p, pi->packet_bytes,
-                         pi->tcph->t_flags, tstamp, pi->af);
+                         pi->tcph->t_flags, pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
@@ -416,7 +415,7 @@ void prepare_tcp (packetinfo *pi)
                 cx_track(pi->ip6->ip_src, pi->tcph->src_port,
                          pi->ip6->ip_dst, pi->tcph->dst_port,
                          pi->ip6->next, pi->ip6->len, pi->tcph->t_flags,
-                         tstamp, pi->af);
+                         pi->pheader->ts.tv_sec, pi->af);
     }
     return; 
 }
@@ -515,14 +514,14 @@ void prepare_udp (packetinfo *pi)
         pi->s_check =
                 cx_track(pi->ip_src, pi->udph->src_port, pi->ip_dst,
                          pi->udph->dst_port, pi->ip4->ip_p, pi->packet_bytes, 0,
-                         tstamp, pi->af);
+                         pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE UDP:\n");
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + + IP6_HEADER_LEN);
         pi->s_check =
                 cx_track(pi->ip6->ip_src, pi->udph->src_port,
                          pi->ip6->ip_dst, pi->udph->dst_port,
-                         pi->ip6->next, pi->ip6->len, 0, tstamp, pi->af);
+                         pi->ip6->next, pi->ip6->len, 0, pi->pheader->ts.tv_sec, pi->af);
     }
     return;
 }
@@ -551,7 +550,7 @@ void prepare_icmp (packetinfo *pi)
         pi->s_check =
                 cx_track(pi->ip_src, pi->icmph->s_icmp_id, pi->ip_dst,
                          pi->icmph->s_icmp_id, pi->ip4->ip_p, pi->packet_bytes,
-                         0, tstamp, pi->af);
+                         0, pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE ICMP:\n");
         pi->icmp6h = (icmp6_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
@@ -560,7 +559,7 @@ void prepare_icmp (packetinfo *pi)
          */
         pi->s_check = cx_track(pi->ip6->ip_src, 0, pi->ip6->ip_dst,
                               0, pi->ip6->next, pi->ip6->len, 0,
-                              tstamp, pi->af);
+                              pi->pheader->ts.tv_sec, pi->af);
     }
     return;
 }
@@ -571,16 +570,15 @@ void prepare_other (packetinfo *pi)
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE OTHER: %d\n",pi->ip4->ip_p); 
         pi->s_check =
                 cx_track(pi->ip_src, 0, pi->ip_dst, 0, pi->ip4->ip_p,
-                         pi->packet_bytes, 0, tstamp, pi->af);
+                         pi->packet_bytes, 0, pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE OTHER: %d\n",pi->ip6->next);
         pi->s_check = 
                 cx_track(pi->ip6->ip_src, 0, pi->ip6->ip_dst, 0,
-                         pi->ip6->next, pi->ip6->len, 0, tstamp, pi->af);
+                         pi->ip6->next, pi->ip6->len, 0, pi->pheader->ts.tv_sec, pi->af);
     }
     return;
 }
-
 
 /* parse strings of the form ip/cidr or ip/mask like:
  * "10.10.10.10/255.255.255.128,10.10.10.10/25" and 
@@ -751,7 +749,6 @@ int main(int argc, char *argv[])
     cxtbuffer = NULL;
     cxtrackerid = 0;
     inpacket = gameover = intr_flag = 0;
-    timecnt = time(NULL);
 
     signal(SIGTERM, game_over);
     signal(SIGINT, game_over);
