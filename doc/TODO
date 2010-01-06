@@ -73,11 +73,10 @@ Optimizations:
  - .optimize SERVICE matching - reduce universe of regexes to match by
  * optimize PCRE matcher ( try n implementations like snort)
  - use SIMD instructions for parsing & matching (vectorize data)
+ ... and OpenCL / CUDA too!
  - profile using rdtsc
  - examine cache locality, TLB misses (cachegrind, perfctr), pipelines,
  instruction pairing
-
-
 
 --- random ideas for implementation ---
  - MVCC lockless assets in shared memory ring-buffer (shmat())
