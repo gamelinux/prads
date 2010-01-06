@@ -9,6 +9,8 @@ www,v/Perl LWP/$1//,User-Agent\x3a lwp-request\/([.\d]+)
 www,v/Opera/$1/$2/,User-Agent\x3a Opera\/([\S]+) (.*)\r\n
 ## CUPS
 www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
+## Pidgin
+im,v/Pidgin Instant Messaging/$1//,User Agent: pidgin\/([\S]+)
 ## Unknown/Failback
 #www,v/HTTP Browser/$3//,^.+\[(.{26})\] \"(.+)HTTP/1..\".*(\".+\")$
 www,v/User Agent: $1///,User-Agent\x3a (.*)\r\n
