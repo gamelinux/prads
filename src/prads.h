@@ -418,22 +418,23 @@ typedef struct _packetinfo {
     uint32_t        eth_hlen;       /* Ethernet header lenght */
     uint16_t        mvlan;          /* Metro vlan tag */
     uint16_t        vlan;           /* vlan tag */
-    uint16_t        eth_type;       /* Ethernet type (IPv4/IPv6/etc)*/
+    uint16_t        eth_type;       /* Ethernet type (IPv4/IPv6/etc) */
     uint32_t        af;             /* IP version (4/6) AF_INET */
     ether_header    *eth_hdr;       /* Ethernet header struct pointer */
     ether_arp       *arph;          /* ARP header struct pointer */
-    ip4_header      *ip4;           /* IPv4 header struct pointer*/
-    ip6_header      *ip6;           /* IPv6 header struct pointer*/
+    ip4_header      *ip4;           /* IPv4 header struct pointer */
+    ip6_header      *ip6;           /* IPv6 header struct pointer */
     uint16_t        packet_bytes;   /* Lenght of IP payload in packet */
     struct in6_addr ip_src;         /* source address */
     struct in6_addr ip_dst;         /* destination address */
-    uint32_t        s_check;        /* return value from cxtracker*/
+    uint32_t        s_check;        /* return value from cxtracker */
     tcp_header      *tcph;          /* tcp header struct pointer */
     udp_header      *udph;          /* udp header struct pointer */
     icmp_header     *icmph;         /* icmp header struct pointer */
     icmp6_header    *icmp6h;        /* icmp6 header struct pointer */ 
     const uint8_t   *end_ptr;       /* Paranoid end pointer of packet */
     const char      *payload;       /* char pointer to transport payload */
+    uint32_t        our;            /* Is the asset in our defined network */
 } packetinfo;
 
 typedef struct _serv_asset {
