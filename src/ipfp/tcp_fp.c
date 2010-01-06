@@ -103,7 +103,7 @@ void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
              * MSS LEN D0 D1 
              */
             if (opt_ptr + 3 > end_ptr) {
-              borken:
+borken:
                 quirks |= QUIRK_BROKEN;
                 goto end_parsing;
             }

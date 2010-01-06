@@ -519,7 +519,7 @@ void parse_tcp4 (packetinfo *pi)
 
     if (pi->s_check != 0) {
         if (TCP_ISFLAGSET(pi->tcph, (TF_ACK))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
             vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
