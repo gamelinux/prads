@@ -54,13 +54,27 @@ uint64_t hash;
 char *s_net = "0.0.0.0/0,::/0";
 int nets = 1;
 //char *s_net = "87.238.44.0/255.255.255.0,87.238.45.0/26,87.238.44.60/32";
+
+// vector types :-)
+typedef int v4si __attribute__((vector_size(16)));
+typedef union _i4vector {
+    v4si v;
+    struct in6_addr ip6;
+    uint64_t i[2];
+} ip6v;
 struct fmask { 
     int type;
-    struct in6_addr addr;
-    struct in6_addr mask;
+    union {
+        v4si addr_v;
+        struct in6_addr addr;
+    };
+    union {
+        v4si mask_v;
+        struct in6_addr mask;
+    };
 };
+
 struct fmask network[MAX_NETS];
-//struct in6_addr netmask[MAX_NETS];
 
 // static strings for comparison
 struct tagbstring tUNKNOWN = bsStatic("unknown");
@@ -137,6 +151,8 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 static inline int filter_packet(const int af, const struct in6_addr ip_s)
 {
     uint32_t ip;
+    ip6v ip_vec;
+
     int i, our = 0;
     char output[MAX_NETS];
     switch (af) {
@@ -168,8 +184,9 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
              * can do better here by using 64-bit or SIMD instructions
              *
              *
-             * PS: use same code for ipv4 */
+             * PS: use same code for ipv4 - 0 bytes and SIMD doesnt care*/
 
+            ip_vec.ip6 = ip_s;
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
@@ -181,17 +198,35 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
                 inet_ntop(af, &ip_s, output, MAX_NETS);
                 dlog("ip: %s\n", output);
 #endif
-                if (network[i].type == AF_INET6
-                    && (ip_s.s6_addr32[0] & network[i].mask.s6_addr32[0])
-                    == network[i].addr.s6_addr32[0]
-                    && (ip_s.s6_addr32[1] & network[i].mask.s6_addr32[1])
-                    == network[i].addr.s6_addr32[1]
-                    && (ip_s.s6_addr32[2] & network[i].mask.s6_addr32[2])
-                    == network[i].addr.s6_addr32[2]
-                    && (ip_s.s6_addr32[3] & network[i].mask.s6_addr32[3])
-                    == network[i].addr.s6_addr32[3]) {
-                    our = 1;
-                    break;
+                if (network[i].type == AF_INET6) {
+#ifdef HAVE_SSE2
+                    v4si tmp = ip_vec.v & network[i].mask_v;
+                    v4si tmp2 = network[i].addr_v;
+                    //if(memcmp(&tmp,&network[i].addr_v,16) == 0){
+                    // only on sse2! 
+                    v4si tmp3 = __builtin_ia32_pcmpeqd128(tmp,tmp2);
+                    ip6v t;
+                    t.v = tmp3;
+                    if(t.i[0] && t.i[1]){
+                        //network[i].addr_v ){
+                           // network[i].addr_v)){
+                        our = 1;
+                        break;
+                    }
+
+#else
+                    if ((ip_s.s6_addr32[0] & network[i].mask.s6_addr32[0])
+                        == network[i].addr.s6_addr32[0]
+                        && (ip_s.s6_addr32[1] & network[i].mask.s6_addr32[1])
+                        == network[i].addr.s6_addr32[1]
+                        && (ip_s.s6_addr32[2] & network[i].mask.s6_addr32[2])
+                        == network[i].addr.s6_addr32[2]
+                        && (ip_s.s6_addr32[3] & network[i].mask.s6_addr32[3])
+                        == network[i].addr.s6_addr32[3]) {
+                        our = 1;
+                        break;
+                    }
+#endif
                 }
             }
         }
