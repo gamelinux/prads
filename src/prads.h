@@ -419,6 +419,7 @@ typedef struct _packetinfo {
     uint16_t        vlan;           /* vlan tag */
     uint16_t        eth_type;       /* Ethernet type (IPv4/IPv6/etc)*/
     uint32_t        af;             /* IP version (4/6) AF_INET */
+    ether_header    *eth_hdr;       /* Ethernet header struct pointer */
     ether_arp       *arph;          /* ARP header struct pointer */
     ip4_header      *ip4;           /* IPv4 header struct pointer*/
     ip6_header      *ip6;           /* IPv6 header struct pointer*/
