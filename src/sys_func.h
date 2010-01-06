@@ -6,8 +6,8 @@
 #define dlog(fmt, ...) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);
 #define vlog(v, fmt, ...) do{ if(DEBUG == v) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__); }while(0)
 #else
-#define dlog(fmt, ...)
-#define vlog(fmt, ...)
+#define dlog(fmt, ...) do { ; } while(0);
+#define vlog(fmt, ...) do { ; } while(0);
 #endif
 size_t strlcpy(char *dst, const char *src, size_t size);
 size_t strlcat(char *dst, const char *src, size_t len);

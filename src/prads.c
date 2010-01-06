@@ -69,15 +69,21 @@ bstring UNKNOWN = & tUNKNOWN;
 
 /*  I N T E R N A L   P R O T O T Y P E S  ***********************************/
 static void usage();
-void prepare_eth (packetinfo *pi);
 void check_vlan (packetinfo *pi);
+void prepare_eth (packetinfo *pi);
 void prepare_ip4 (packetinfo *pi);
 void prepare_ip6 (packetinfo *pi);
-void set_pkt_end_ptr (packetinfo *pi);
 void prepare_tcp (packetinfo *pi);
 void prepare_udp (packetinfo *pi);
 void prepare_icmp (packetinfo *pi);
 void prepare_other (packetinfo *pi);
+void parse_ip4 (packetinfo *pi);
+void parse_ip6 (packetinfo *pi);
+void parse_tcp4 (packetinfo *pi);
+void parse_tcp6 (packetinfo *pi);
+void parse_udp (packetinfo *pi);
+void parse_arp (packetinfo *pi);
+void set_pkt_end_ptr (packetinfo *pi);
 
 /* F U N C T I O N S  ********************************************************/
 
@@ -188,206 +194,12 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 
     if (pi.eth_type == ETHERNET_TYPE_IP) {
         prepare_ip4(&pi);
-        if (pi.ip4->ip_p == IP_PROTO_TCP) {
-            prepare_tcp(&pi);
-            if (!pi.our)
-                goto packet_end;
-
-            if (TCP_ISFLAGSET(pi.tcph, (TF_SYN))
-                && !TCP_ISFLAGSET(pi.tcph, (TF_ACK))) {
-                vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi.tcph->dst_port));
-                fp_tcp4(pi.ip4, pi.tcph, pi.end_ptr, TF_SYN, pi.ip_src);
-                update_asset_service(pi.ip_src,
-                                     pi.tcph->dst_port,
-                                     pi.ip4->ip_p,
-                                     UNKNOWN,
-                                     UNKNOWN, pi.af, CLIENT);
-            } else if (TCP_ISFLAGSET(pi.tcph, (TF_SYN))
-                       && TCP_ISFLAGSET(pi.tcph, (TF_ACK))) {
-                vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi.tcph->src_port));
-                fp_tcp4(pi.ip4, pi.tcph, pi.end_ptr, TF_SYNACK, pi.ip_src);
-                update_asset_service(pi.ip_src,
-                                     pi.tcph->src_port,
-                                     pi.ip4->ip_p,
-                                     UNKNOWN,
-                                     UNKNOWN, pi.af, SERVICE);
-            } else if (TCP_ISFLAGSET(pi.tcph, (TF_FIN))) {
-                fp_tcp4(pi.ip4, pi.tcph, pi.end_ptr, TF_FIN, pi.ip_src);
-            } else if (TCP_ISFLAGSET(pi.tcph, (TF_RST))) {
-                fp_tcp4(pi.ip4, pi.tcph, pi.end_ptr, TF_RST, pi.ip_src);
-            }
-
-            if (pi.s_check != 0) {
-                if (TCP_ISFLAGSET(pi.tcph, (TF_ACK))
-                    && !TCP_ISFLAGSET(pi.tcph, (TF_ACK))
-                    && !TCP_ISFLAGSET(pi.tcph, (TF_RST))
-                    && !TCP_ISFLAGSET(pi.tcph, (TF_FIN))) {
-                    vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi.tcph->src_port));
-                    fp_tcp4(pi.ip4, pi.tcph, pi.end_ptr, TF_ACK, pi.ip_src);
-                }
-                pi.payload =
-                    (char *)(pi.packet + pi.eth_hlen +
-                             (IP_HL(pi.ip4) * 4) + (TCP_OFFSET(pi.tcph) * 4));
-                if (pi.s_check == 2) {
-                    service_tcp4(pi.ip4, pi.tcph, pi.payload,
-                                 (pi.pheader->caplen -
-                                  (TCP_OFFSET(pi.tcph)) * 4 - pi.eth_hlen));
-                } else if (pi.s_check == 1) {
-                    client_tcp4(pi.ip4, pi.tcph, pi.payload,
-                                (pi.pheader->caplen -
-                                 (TCP_OFFSET(pi.tcph)) * 4 - pi.eth_hlen));
-                }
-            } else {
-                vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
-            }
-            goto packet_end;
-        } else if (pi.ip4->ip_p == IP_PROTO_UDP) {
-            prepare_udp(&pi);
-            if (!pi.our)
-                goto packet_end;
-
-            if (pi.s_check != 0) {
-                pi.payload =
-                    (char *)(pi.packet + pi.eth_hlen +
-                             (IP_HL(pi.ip4) * 4) + UDP_HEADER_LEN);
-                service_udp4(pi.ip4, pi.udph, pi.payload,
-                             (pi.pheader->caplen -
-                              UDP_HEADER_LEN -
-                              (IP_HL(pi.ip4) * 4) - pi.eth_hlen));
-                fp_udp4(pi.ip4, pi.udph, pi.end_ptr, pi.ip_src);
-            } else {
-                vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
-            }
-            goto packet_end;
-        } else if (pi.ip4->ip_p == IP_PROTO_ICMP) {
-            prepare_icmp(&pi);
-            if (!pi.our)
-                goto packet_end;
-
-            if (pi.s_check != 0) {
-                fp_icmp4(pi.ip4, pi.icmph, pi.end_ptr, pi.ip_src);
-                /*
-                 * service_icmp(*pi.ip4,*tcph) // could look for icmp spesific data in package abcde...
-                 */
-            } else {
-                vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
-            }
-            goto packet_end;
-        } else {
-            prepare_other(&pi);
-            if (!pi.our)
-                goto packet_end;
-
-            if (pi.s_check != 0) {
-                update_asset(pi.af, pi.ip_src);
-                /* service_other(*pi.ip4,*transporth)
-                 * fp_other(pi.ipX, ttl, ipopts, len, id, ipflags, df);
-                 */
-            } else {
-                vlog(0x3, "[*] - NOT CHECKING OTHER PACKAGE\n");
-            }
-            goto packet_end;
-        }
+        parse_ip4(&pi);
     } else if (pi.eth_type == ETHERNET_TYPE_IPV6) {
         prepare_ip6(&pi);
-        if (pi.ip6->next == IP_PROTO_TCP) {
-            prepare_tcp(&pi);
-            if (!pi.our)
-                goto packet_end;
-
-            if (TCP_ISFLAGSET(pi.tcph, (TF_SYN))
-                && !TCP_ISFLAGSET(pi.tcph, (TF_ACK))) {
-                fp_tcp6(pi.ip6, pi.tcph, pi.end_ptr, TF_SYN, pi.ip6->ip_src);
-                vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi.tcph->dst_port));
-            } else if (TCP_ISFLAGSET(pi.tcph, (TF_SYN))
-                       && TCP_ISFLAGSET(pi.tcph, (TF_ACK))) {
-                vlog(0x3, "[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi.tcph->src_port));
-                fp_tcp6(pi.ip6, pi.tcph, pi.end_ptr, TF_SYNACK, pi.ip6->ip_src);
-            }
-            if (pi.s_check != 0) {
-                if (TCP_ISFLAGSET(pi.tcph, (TF_ACK))
-                    && !TCP_ISFLAGSET(pi.tcph, (TF_SYN))) {
-                    fp_tcp6(pi.ip6, pi.tcph, pi.end_ptr, TF_ACK, pi.ip6->ip_src);
-                }
-                pi.payload =
-                    (char *)(pi.packet + pi.eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi.tcph)*4));
-                if (pi.s_check == 2) {
-                    vlog(0x3, "[*] - checking tcp server package\n");
-                    service_tcp6(pi.ip6, pi.tcph, pi.payload,
-                                 (pi.pheader->caplen - (TCP_OFFSET(pi.tcph)*4) -
-                                  IP6_HEADER_LEN - pi.eth_hlen));
-                } else {
-                    vlog(0x3, "[*] - checking tcp client package\n");
-                    client_tcp6(pi.ip6, pi.tcph, pi.payload,
-                                (pi.pheader->caplen - (TCP_OFFSET(pi.tcph)*4) -
-                                 IP6_HEADER_LEN - pi.eth_hlen));
-                }
-            } else {
-                vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
-            }
-            goto packet_end;
-            return;
-        } else if (pi.ip6->next == IP_PROTO_UDP) {
-            prepare_udp(&pi);
-            if (!pi.our)
-                goto packet_end;
-            if (pi.s_check != 0) {
-                /*
-                 * fp_udp(ip6, ttl, ipopts, len, id, ipflags, df);
-                 */
-                pi.payload =
-                    (char *)(pi.packet + pi.eth_hlen + IP6_HEADER_LEN + UDP_HEADER_LEN);
-                service_udp6(pi.ip6, pi.udph, pi.payload,
-                             (pi.pheader->caplen - UDP_HEADER_LEN -
-                              IP6_HEADER_LEN - pi.eth_hlen));
-            } else {
-                vlog(0x3, "[*] - NOT CHECKING UDP PACKAGE\n");
-            }
-            goto packet_end;
-        } else if (pi.ip6->next == IP6_PROTO_ICMP) {
-            prepare_icmp(&pi);
-            if (!pi.our)
-                goto packet_end;
-            if (pi.s_check != 0) {
-                /*
-                 * service_icmp(*ip6,*tcph)
-                 */
-                fp_icmp6(pi.ip6, pi.icmp6h, pi.end_ptr, pi.ip6->ip_src);
-            } else {
-                vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
-            }
-            goto packet_end;
-        } else {
-            prepare_other(&pi);
-            /*
-             * if (s_check != 0) { 
-             * printf("[*] - CHECKING OTHER PACKAGE\n"); 
-             * update_asset(AF_INET6,ip6->ip_src); 
-             * service_other(*pi.ip4,*tcph) 
-             * fp_other(ip, ttl, ipopts, len, id, ipflags, df); 
-             * }else{ 
-             * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
-             * } 
-             */
-            goto packet_end;
-        }
+        parse_ip6(&pi);
     } else if (pi.eth_type == ETHERNET_TYPE_ARP) {
-        vlog(0x3, "[*] Got ARP packet...\n");
-        pi.af = AF_INET;
-        pi.arph = (ether_arp *) (pi.packet + pi.eth_hlen);
-
-        if (ntohs(pi.arph->ea_hdr.ar_op) == ARPOP_REPLY) {
-            memcpy(&pi.ip_src.s6_addr32[0], pi.arph->arp_spa,
-                   sizeof(u_int8_t) * 4);
-            if (filter_packet(pi.af, pi.ip_src)) {
-                update_asset_arp(pi.arph->arp_sha, pi.ip_src);
-            }
-            /*
-             * arp_check(eth_hdr,tstamp);
-             */
-        } else {
-            vlog(0x3, "[*] ARP TYPE: %d\n",ntohs(pi.arph->ea_hdr.ar_op));
-        }
+        parse_arp(&pi);
         goto packet_end;
     }
     vlog(0x3, "[*] ETHERNET TYPE : %x\n",pi.eth_hdr->eth_ip_type);
@@ -441,6 +253,51 @@ void prepare_ip4 (packetinfo *pi)
     return;
 }
 
+void parse_ip4 (packetinfo *pi)
+{
+    if (pi->ip4->ip_p == IP_PROTO_TCP) {
+        prepare_tcp(pi);
+        if (!pi->our)
+            return;
+
+        parse_tcp4(pi);
+        return;
+    } else if (pi->ip4->ip_p == IP_PROTO_UDP) {
+        prepare_udp(pi);
+        if (!pi->our)
+            return;
+
+        parse_udp(pi);
+        return;
+    } else if (pi->ip4->ip_p == IP_PROTO_ICMP) {
+        prepare_icmp(pi);
+        if (!pi->our)
+            return;
+
+        if (pi->s_check != 0) {
+            fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
+            // could look for icmp spesific data in package abcde...
+            // service_icmp(*pi->ip4,*tcph)
+        } else {
+            vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
+        }
+        return;
+    } else {
+        prepare_other(pi);
+        if (!pi->our)
+            return;
+
+        if (pi->s_check != 0) {
+            update_asset(pi->af, pi->ip_src);
+            // service_other(*pi->ip4,*transporth)
+            // fp_other(pi->ipX, ttl, ipopts, len, id, ipflags, df);
+        } else {
+            vlog(0x3, "[*] - NOT CHECKING OTHER PACKAGE\n");
+        }
+        return;
+    }
+}
+
 void prepare_ip6 (packetinfo *pi)
 {
     vlog(0x3, "[*] Got IPv6 Packet...\n");
@@ -452,6 +309,81 @@ void prepare_ip6 (packetinfo *pi)
     pi->our = filter_packet(pi->af, pi->ip_src);
     dlog("Got %s IPv6 Packet...\n", (pi->our?"our":"foregin"));
     return;
+}
+
+void parse_ip6 (packetinfo *pi)
+{
+    if (pi->ip6->next == IP_PROTO_TCP) {
+        prepare_tcp(pi);
+        if (!pi->our)
+            return;
+        parse_tcp6(pi);
+        return;
+        return;
+    } else if (pi->ip6->next == IP_PROTO_UDP) {
+        prepare_udp(pi);
+        if (!pi->our)
+            return;
+        if (pi->s_check != 0) {
+            /*
+             * fp_udp(ip6, ttl, ipopts, len, id, ipflags, df);
+             */
+            pi->payload =
+                (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + UDP_HEADER_LEN);
+            service_udp6(pi->ip6, pi->udph, pi->payload,
+                         (pi->pheader->caplen - UDP_HEADER_LEN -
+                          IP6_HEADER_LEN - pi->eth_hlen));
+        } else {
+            vlog(0x3, "[*] - NOT CHECKING UDP PACKAGE\n");
+        }
+        return;
+    } else if (pi->ip6->next == IP6_PROTO_ICMP) {
+        prepare_icmp(pi);
+        if (!pi->our)
+            return;
+        if (pi->s_check != 0) {
+            /*
+             * service_icmp(*ip6,*tcph)
+             */
+            fp_icmp6(pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
+        } else {
+            vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
+        }
+        return;
+    } else {
+        prepare_other(pi);
+        /*
+         * if (s_check != 0) { 
+         * printf("[*] - CHECKING OTHER PACKAGE\n"); 
+         * update_asset(AF_INET6,ip6->ip_src); 
+         * service_other(*pi->ip4,*tcph) 
+         * fp_other(ip, ttl, ipopts, len, id, ipflags, df); 
+         * }else{ 
+         * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
+         * } 
+         */
+        return;
+    }
+}
+
+void parse_arp (packetinfo *pi)
+{
+    vlog(0x3, "[*] Got ARP packet...\n");
+    pi->af = AF_INET;
+    pi->arph = (ether_arp *) (pi->packet + pi->eth_hlen);
+
+    if (ntohs(pi->arph->ea_hdr.ar_op) == ARPOP_REPLY) {
+        memcpy(&pi->ip_src.s6_addr32[0], pi->arph->arp_spa,
+               sizeof(u_int8_t) * 4);
+        if (filter_packet(pi->af, pi->ip_src)) {
+            update_asset_arp(pi->arph->arp_sha, pi->ip_src);
+        }
+        /*
+         * arp_check(eth_hdr,tstamp);
+         */
+    } else {
+        vlog(0x3, "[*] ARP TYPE: %d\n",ntohs(pi->arph->ea_hdr.ar_op));
+    }
 }
 
 void set_pkt_end_ptr (packetinfo *pi)
@@ -488,6 +420,92 @@ void prepare_tcp (packetinfo *pi)
     return; 
 }
 
+void parse_tcp6 (packetinfo *pi)
+{
+    if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+        && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
+        fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYN, pi->ip6->ip_src);
+        vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
+    } else if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+               && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
+        vlog(0x3, "[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
+        fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip6->ip_src);
+    }
+    if (pi->s_check != 0) {
+        if (TCP_ISFLAGSET(pi->tcph, (TF_ACK))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))) {
+            fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_ACK, pi->ip6->ip_src);
+        }
+        pi->payload =
+            (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi->tcph)*4));
+        if (pi->s_check == 2) {
+            vlog(0x3, "[*] - checking tcp server package\n");
+            service_tcp6(pi->ip6, pi->tcph, pi->payload,
+                         (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)*4) -
+                          IP6_HEADER_LEN - pi->eth_hlen));
+        } else {
+            vlog(0x3, "[*] - checking tcp client package\n");
+            client_tcp6(pi->ip6, pi->tcph, pi->payload,
+                        (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)*4) -
+                         IP6_HEADER_LEN - pi->eth_hlen));
+        }
+    } else {
+        vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
+    }
+}
+
+void parse_tcp4 (packetinfo *pi)
+{
+    if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+        && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
+        vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
+        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
+        update_asset_service(pi->ip_src,
+                             pi->tcph->dst_port,
+                             pi->ip4->ip_p,
+                             UNKNOWN,
+                             UNKNOWN, pi->af, CLIENT);
+    } else if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+               && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
+        vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
+        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
+        update_asset_service(pi->ip_src,
+                             pi->tcph->src_port,
+                             pi->ip4->ip_p,
+                             UNKNOWN,
+                             UNKNOWN, pi->af, SERVICE);
+    } else if (TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
+        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
+    } else if (TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
+        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
+    }
+
+    if (pi->s_check != 0) {
+        if (TCP_ISFLAGSET(pi->tcph, (TF_ACK))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
+            vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
+            fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
+        }
+        pi->payload =
+            (char *)(pi->packet + pi->eth_hlen +
+                     (IP_HL(pi->ip4) * 4) + (TCP_OFFSET(pi->tcph) * 4));
+        if (pi->s_check == 2) {
+            service_tcp4(pi->ip4, pi->tcph, pi->payload,
+                         (pi->pheader->caplen -
+                          (TCP_OFFSET(pi->tcph)) * 4 - pi->eth_hlen));
+        } else if (pi->s_check == 1) {
+            client_tcp4(pi->ip4, pi->tcph, pi->payload,
+                        (pi->pheader->caplen -
+                         (TCP_OFFSET(pi->tcph)) * 4 - pi->eth_hlen));
+        }
+    } else {
+        vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
+    }
+    return;
+}
+
 void prepare_udp (packetinfo *pi)
 {
     if (pi->af==AF_INET) {
@@ -506,6 +524,22 @@ void prepare_udp (packetinfo *pi)
                          pi->ip6->next, pi->ip6->len, 0, tstamp, pi->af);
     }
     return;
+}
+
+void parse_udp (packetinfo *pi)
+{
+    if (pi->s_check != 0) {
+        pi->payload =
+            (char *)(pi->packet + pi->eth_hlen +
+                     (IP_HL(pi->ip4) * 4) + UDP_HEADER_LEN);
+        service_udp4(pi->ip4, pi->udph, pi->payload,
+                     (pi->pheader->caplen -
+                      UDP_HEADER_LEN -
+                      (IP_HL(pi->ip4) * 4) - pi->eth_hlen));
+        fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
+    } else {
+        vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
+    }
 }
 
 void prepare_icmp (packetinfo *pi)

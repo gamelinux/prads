@@ -55,7 +55,6 @@ Kacper's TODO items & krazy ideas:
     > Take away multiple matches.
     > Normalize OS, provides "best guess"
  .service fingerprints == good regex module
- - .optimize SERVICE matching - reduce universe of regexes to match by
   finding byte-sigs before regex.
  - NAT detection
  - PRADS console (woot. leet!)
@@ -69,6 +68,15 @@ Kacper's TODO items & krazy ideas:
 - switch/router topology by sniffing OSPF/BGP/RSTP
 -.geoip maps ( passive lookup )
 -.sniff DNS lookups
+ 
+Optimizations: 
+ - .optimize SERVICE matching - reduce universe of regexes to match by
+ * optimize PCRE matcher ( try n implementations like snort)
+ - use SIMD instructions for parsing & matching (vectorize data)
+ - profile using rdtsc
+ - examine cache locality, TLB misses (cachegrind, perfctr), pipelines,
+ instruction pairing
+
 
 
 --- random ideas for implementation ---
@@ -88,7 +96,6 @@ Kacper's TODO items & krazy ideas:
  * mobile (wifi,ether,ip,tcp)-frame scanning app for android/iPhone (+ autohack?)
  * autogen nagios host table
  * autogen snort host attributes
- * optimize PCRE matcher
  * graphviz dot visualizations
  * realitme / SDL visio map
 
