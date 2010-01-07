@@ -75,6 +75,8 @@ www,v/Server: $1///,Server: (.*)\r\n
 wwwproxy,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 wwwproxy,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 
+# X-SOAP-Server: NuSOAP/0.7.2 (1.94)
+#www,v/NuSOAP/$1/$2/X-SOAP-Server: NuSOAP\/([.\d]+) \(([.\d]+)\)
 # Fallback WWW Signature
 #www,v/Unknown HTTP//$1/,^(HTTP/\d.\d)
 

@@ -19,7 +19,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
 
     connection *cxt = NULL;
     connection *head = NULL;
-    uint64_t hash;
+    uint32_t hash;
 
     if (af == AF_INET) {
         hash = ((ip_src->s6_addr32[0] + ip_dst->s6_addr32[0])) % BUCKET_SIZE;
@@ -152,7 +152,6 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
         cxt->proto = ip_proto;
         cxt->next = head;
         cxt->prev = NULL;
-
         /*
          * New connections are pushed on to the head of bucket[s_hash] 
          */
@@ -161,7 +160,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
         /*
          * Return value should be 1, telling to do client service fingerprinting 
          */
-        return 1;               // Client - check!
+        return 1;
     }
     /*
      * Should never be here! 

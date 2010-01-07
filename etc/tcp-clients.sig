@@ -25,6 +25,16 @@ ssl,v/TLS 1.0 Client Key Exchange///,^\x16\x03\x01..\x10...\x14\x03\x01..
 ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
 #ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
 
+# Mail Clients
+smtp,v/Mozilla-Thunderbird/$1/$2/,User-Agent: Mozilla-Thunderbird ([.\d]+) \((X11\/\d+)\)
+smtp,v/Thunderbird/$1/$2/,User-Agent: Thunderbird ([.\d]+) \((Macintosh\/\d+)\)
+smtp,v/Thunderbird/$1/$2/,User-Agent: Thunderbird ([.\d]+) \((Windows\/\d+)\)
+# X-Mailer: Zimbra 6.0.4_GA_2038.RHEL5_64 (ZimbraWebClient - FF3.0 (Linux)/6.0.4_GA_2038.RHEL5_64)
+smtp,v/Zimbra Web Client/$1//,X-Mailer: Zimbra (.*)\n
+# X-Mailer: YahooMailRC/240.3 YahooMailWebService/0.8.100.260964
+#smtp,v/Yahoo Mail Web Service///,X-Mailer: YahooMailRC\/[.\d]+ YahooMailWebService/[.\d]+
+
+
 # MySQL - Experimental !
 mysql,v/MySQL Login Request(Char:latin1)///,^..\x00\x01\..[\x03\x01]\x00\x00\x00\x00.\x08
 mysql,v/MySQL Request Ping///,^\x01\x00\x00\x00\x0e$
