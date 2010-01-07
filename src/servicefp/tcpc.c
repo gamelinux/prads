@@ -79,7 +79,7 @@ void client_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
         tmpsig = tmpsig->next;
     }
     // Should have a flag set to resolve unknowns to default service
-    if ( (service_name = (bstring) check_port(IP_PROTO_TCP,ntohs(tcph->dst_port))) !=NULL ) {
+    if ( (service_name = check_port(IP_PROTO_TCP,ntohs(tcph->dst_port))) !=NULL ) {
         update_asset_service(ip_addr, tcph->dst_port, ip4->ip_p,
                              UNKNOWN, bstrcpy(service_name), AF_INET, CLIENT);
     }
@@ -109,7 +109,7 @@ void client_tcp6(ip6_header * ip6, tcp_header * tcph, char *payload,
         }
         tmpsig = tmpsig->next;
     }
-    if ( (service_name = (bstring) check_port(IP_PROTO_TCP,ntohs(tcph->dst_port))) !=NULL ) {
+    if ( (service_name = check_port(IP_PROTO_TCP,ntohs(tcph->dst_port))) !=NULL ) {
         update_asset_service(ip6->ip_src, tcph->dst_port, ip6->next,
                              UNKNOWN, bstrcpy(service_name), AF_INET6, CLIENT);
     }

@@ -67,10 +67,12 @@ struct fmask {
     union {
         v4si addr_v;
         struct in6_addr addr;
+        uint64_t addr64[2];
     };
     union {
         v4si mask_v;
         struct in6_addr mask;
+        uint64_t addr64[2];
     };
 };
 
@@ -101,7 +103,7 @@ int  parse_netmask (char *f, int type, struct in6_addr *netmask);
 void parse_nets(const char *s_net, struct fmask *network);
 
 void set_pkt_end_ptr (packetinfo *pi);
-static inline int filter_packet(const int af, const struct in6_addr ip_s);
+static inline int filter_packet(const int af, const struct in6_addr *ip_s);
 
 /* F U N C T I O N S  ********************************************************/
 
@@ -148,17 +150,18 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
  * unfortunately pcap sends us packets in host order
  * Return value: boolean
  */
-static inline int filter_packet(const int af, const struct in6_addr ip_s)
+static inline int filter_packet(const int af, const struct in6_addr *ip_s)
 {
     uint32_t ip;
     ip6v ip_vec;
+    ip6v t;
 
     int i, our = 0;
     char output[MAX_NETS];
     switch (af) {
         case AF_INET:
         {
-            ip = ip_s.s6_addr32[0];
+            ip = ip_s->s6_addr32[0];
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if (network[i].type != AF_INET)
                     continue;
@@ -186,7 +189,7 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
              *
              * PS: use same code for ipv4 - 0 bytes and SIMD doesnt care*/
 
-            ip_vec.ip6 = ip_s;
+            ip_vec.ip6 = *ip_s;
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
@@ -199,18 +202,23 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
                 dlog("ip: %s\n", output);
 #endif
                 if (network[i].type == AF_INET6) {
+#if(1)
+                /* apologies for the uglyness */
 #ifdef HAVE_SSE2
-                    v4si tmp = ip_vec.v & network[i].mask_v;
-                    v4si tmp2 = network[i].addr_v;
-                    //if(memcmp(&tmp,&network[i].addr_v,16) == 0){
-                    // only on sse2! 
-                    v4si tmp3 = __builtin_ia32_pcmpeqd128(tmp,tmp2);
-                    ip6v t;
-                    t.v = tmp3;
-                    if(tmp3){
-                    //if(t.i[0] && t.i[1]){
-                        //network[i].addr_v ){
-                           // network[i].addr_v)){
+#define compare128(x,y) __builtin_ia32_pcmpeqd128((x), (y))
+                    // the builtin is only available on sse2! 
+                    t.v = __builtin_ia32_pcmpeqd128(
+                      ip_vec.v & network[i].mask_v,
+                      network[i].addr_v);
+                    if (t.i[0] & t.i[1])
+#else
+#define compare128(x,y) memcmp(&(x),&(y),16)
+                    t.v = ip_vec.v & network[i].mask_v;
+                    // xor(a,b) == 0 iff a==b
+                    if (!( (t.i[0] ^ network[i].addr64[0]) & 
+                           (t.i[1] ^ network[i].addr64[1]) ))
+#endif
+                    {
                         our = 1;
                         break;
                     }
@@ -287,7 +295,7 @@ void prepare_ip4 (packetinfo *pi)
     pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
     pi->ip_src.s6_addr32[0] = pi->ip4->ip_src;
     pi->ip_dst.s6_addr32[0] = pi->ip4->ip_dst;
-    pi->our = filter_packet(pi->af, pi->ip_src);
+    pi->our = filter_packet(pi->af, &pi->ip_src);
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
     return;
 }
@@ -345,7 +353,7 @@ void prepare_ip6 (packetinfo *pi)
     pi->packet_bytes = pi->ip6->len;
     pi->ip_src = pi->ip6->ip_src;
     pi->ip_dst = pi->ip6->ip_dst;
-    pi->our = filter_packet(pi->af, pi->ip_src);
+    pi->our = filter_packet(pi->af, &pi->ip_src);
     dlog("Got %s IPv6 Packet...\n", (pi->our?"our":"foregin"));
     return;
 }
@@ -413,7 +421,7 @@ void parse_arp (packetinfo *pi)
     if (ntohs(pi->arph->ea_hdr.ar_op) == ARPOP_REPLY) {
         memcpy(&pi->ip_src.s6_addr32[0], pi->arph->arp_spa,
                sizeof(u_int8_t) * 4);
-        if (filter_packet(pi->af, pi->ip_src)) {
+        if (filter_packet(pi->af, &pi->ip_src)) {
             update_asset_arp(pi->arph->arp_sha, pi->ip_src);
         }
         /*

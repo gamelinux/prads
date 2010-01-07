@@ -80,6 +80,8 @@ void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
             if (ilen) {
                 quirks |= QUIRK_PAST;
             }
+            break;
+
         case TCPOPT_NOP:
             /*
              * NOP 
@@ -318,7 +320,7 @@ void fp_tcp6(ip6_header * ip6, tcp_header * tcph, const uint8_t * end_ptr,
              * MSS LEN D0 D1 
              */
             if (opt_ptr + 3 > end_ptr) {
-              borken:
+borken:
                 quirks |= QUIRK_BROKEN;
                 goto end_parsing;
             }
