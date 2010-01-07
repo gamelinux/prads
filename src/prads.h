@@ -463,6 +463,7 @@ typedef struct _os_asset {
     bstring raw_fp;             /* The raw fingerprint [*:*:*:*:*:*:....] */
     bstring matched_fp;         /* The FP that matched [*:*:*:*.*:*:---] */
     uint16_t mtu;               /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
+    uint32_t uptime;            /* Asset uptime */
 } os_asset;
 
 /* Holds one entery for an ARP/NDP or IPv4/IPv6 asset */

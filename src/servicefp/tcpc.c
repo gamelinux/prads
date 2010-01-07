@@ -45,6 +45,8 @@
 #include "../sys_func.h"
 #include "servicefp.h"
 
+extern bstring UNKNOWN;
+
 void client_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
                  int plen)
 {
@@ -54,7 +56,13 @@ void client_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
     int ovector[15];
     extern signature *sig_client_tcp;
     signature *tmpsig;
-    bstring app;
+    bstring app, service_name;
+
+    struct in6_addr ip_addr;
+    ip_addr.s6_addr32[0] = ip4->ip_src;
+    ip_addr.s6_addr32[1] = 0;
+    ip_addr.s6_addr32[2] = 0;
+    ip_addr.s6_addr32[3] = 0;
 
     tmpsig = sig_client_tcp;
     while (tmpsig != NULL) {
@@ -63,17 +71,17 @@ void client_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
         if (rc != -1) {
             app = get_app_name(tmpsig, payload, ovector, rc);
             //printf("[*] - MATCH CLIENT IPv4/TCP: %s\n",(char *)bdata(app));
-            struct in6_addr ip_addr;
-            ip_addr.s6_addr32[0] = ip4->ip_src;
-            ip_addr.s6_addr32[1] = 0;
-            ip_addr.s6_addr32[2] = 0;
-            ip_addr.s6_addr32[3] = 0;
             update_asset_service(ip_addr, tcph->dst_port, ip4->ip_p,
                                  tmpsig->service, app, AF_INET, CLIENT);
             bdestroy(app);
             return;
         }
         tmpsig = tmpsig->next;
+    }
+    // Should have a flag set to resolve unknowns to default service
+    if ( (service_name = (bstring) check_port(IP_PROTO_TCP,ntohs(tcph->dst_port))) !=NULL ) {
+        update_asset_service(ip_addr, tcph->dst_port, ip4->ip_p,
+                             UNKNOWN, bstrcpy(service_name), AF_INET, CLIENT);
     }
 }
 
@@ -85,7 +93,7 @@ void client_tcp6(ip6_header * ip6, tcp_header * tcph, char *payload,
     int ovector[15];
     extern signature *sig_client_tcp;
     signature *tmpsig;
-    bstring app;
+    bstring app, service_name;
 
     tmpsig = sig_client_tcp;
     while (tmpsig != NULL) {
@@ -100,5 +108,9 @@ void client_tcp6(ip6_header * ip6, tcp_header * tcph, char *payload,
             return;
         }
         tmpsig = tmpsig->next;
+    }
+    if ( (service_name = (bstring) check_port(IP_PROTO_TCP,ntohs(tcph->dst_port))) !=NULL ) {
+        update_asset_service(ip6->ip_src, tcph->dst_port, ip6->next,
+                             UNKNOWN, bstrcpy(service_name), AF_INET6, CLIENT);
     }
 }

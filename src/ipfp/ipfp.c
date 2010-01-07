@@ -92,10 +92,14 @@ void gen_fp_tcp(uint8_t ttl,
     else
         bformata(fp, "%d", wss);
 
-    if (tot < PACKET_BIG)
-        bformata(fp, ":%d:%d:%d:", ttl, df, tot);
-    else
-        bformata(fp, ":%d:%d:*(%d):", ttl, df, tot);
+    if ( ftype == TF_ACK || ftype == TF_RST ) {
+        bformata(fp, ":%d:%d:*:",ttl,df);
+    } else {
+        if (tot < PACKET_BIG)
+            bformata(fp, ":%d:%d:%d:", ttl, df, tot);
+        else
+            bformata(fp, ":%d:%d:*(%d):", ttl, df, tot);
+    }
 
     for (j = 0; j < ocnt; j++) {
         switch (op[j]) {
@@ -179,7 +183,9 @@ void gen_fp_tcp(uint8_t ttl,
             bformata(fp, "!");
     }
 
-    update_asset_os(ip_src, port, de, fp, af);
+    // This should get into the asset somehow: tstamp
+    //if (tstamp) printf("(* uptime: %d hrs)\n",tstamp/360000);
+    update_asset_os(ip_src, port, de, fp, af, tstamp?tstamp:0);
     // cleanup
     bdestroy(fp);
     bdestroy(de);
@@ -212,7 +218,8 @@ void gen_fp_icmp(uint8_t type,
 
     //printf("[%s]\n",(char*)bdata(fp));
     bstring t = bformat("icmp");
-    update_asset_os(ip_src, htons(type), t, fp, af);
+    //icmp might have uptime?
+    update_asset_os(ip_src, htons(type), t, fp, af,0);
     bdestroy(t);
     bdestroy(fp);
     // add mss ? for MTU detection ?
@@ -247,7 +254,7 @@ void gen_fp_udp(uint16_t totlen,
     bstring t = bformat("udp");
 
     //printf("[%s]\n",(char*)bdata(fp));
-    update_asset_os(ip_src, port, t, fp, af);
+    update_asset_os(ip_src, port, t, fp, af,0);
     bdestroy(fp);
     bdestroy(t);
 }

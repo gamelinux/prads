@@ -377,11 +377,13 @@ S4:64:1:60:M1430,S,T,N,W0:.:Linux:2.4-2.6 (Google crawlbot)
 S2:64:1:60:M*,S,T,N,W0:.:Linux:2.4 (large MTU?)
 S3:64:1:60:M*,S,T,N,W0:.:Linux:2.4 (newer)
 S4:64:1:60:M*,S,T,N,W0:.:Linux:2.4-2.6
+S4:64:1:52:M*,N,N,S,N,W0:.:Linux:2.4 (mips, newer)
 
 S3:64:1:60:M*,S,T,N,W1:.:Linux:2.6, seldom 2.4 (older, 1)
 S4:64:1:60:M*,S,T,N,W1:.:Linux:2.6, seldom 2.4 (older, 2)
 S3:64:1:60:M*,S,T,N,W2:.:Linux:2.6, seldom 2.4 (older, 3)
 S4:64:1:60:M*,S,T,N,W2:.:Linux:2.6, seldom 2.4 (older, 4)
+S4:64:1:60:M*,S,T,N,W2:!:Linux:2.6, seldom 2.4 (arm)
 T4:64:1:60:M*,S,T,N,W2:.:Linux:2.6 (older, 5)
 
 S4:64:1:60:M*,S,T,N,W5:.:Linux:2.6 (newer, 5)

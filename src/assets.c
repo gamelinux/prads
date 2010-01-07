@@ -66,11 +66,9 @@ void update_asset(int af, struct in6_addr ip_addr)
  *              : 1 - Failure!
  * ---------------------------------------------------------- */
 
-//update_asset_os(ip_addr, port, detection, raw_fp, af);
-
 short update_asset_os(struct in6_addr ip_addr,
                       u_int16_t port,
-                      bstring detection, bstring raw_fp, int af)
+                      bstring detection, bstring raw_fp, int af, int uptime)
 {
 
     extern asset *passet[BUCKET_SIZE];
@@ -115,6 +113,7 @@ short update_asset_os(struct in6_addr ip_addr,
                     tmp_oa->raw_fp = bstrcpy(raw_fp);
                     //tmp_sa->i_attempts++;
                     tmp_oa->last_seen = tstamp;
+                    if (uptime) tmp_oa->uptime = uptime;
                     static char ip_addr_s[INET6_ADDRSTRLEN];
                     u_ntop(ip_addr, af, ip_addr_s);
                     dlog("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
@@ -131,6 +130,7 @@ short update_asset_os(struct in6_addr ip_addr,
                 //new_oa->i_attempts = 1;
                 new_oa->first_seen = tstamp;
                 new_oa->last_seen = tstamp;
+                if (uptime) new_oa->uptime = uptime;
                 //new_oa->next = rec->os;
                 new_oa->next = head_oa;
                 if (head_oa != NULL)
@@ -158,7 +158,7 @@ short update_asset_os(struct in6_addr ip_addr,
      * If no asset: 
      */
     update_asset(af, ip_addr);
-    update_asset_os(ip_addr, port, detection, raw_fp, af);
+    update_asset_os(ip_addr, port, detection, raw_fp, af, uptime);
     // arguments must be destroyed by caller
     //bdestroy(raw_fp);
     //bdestroy(detection);
@@ -776,6 +776,7 @@ void print_assets()
                         printf(",[%s:%s]",
                                (char *)bdata(tmp_oa->detection),
                                (char *)bdata(tmp_oa->raw_fp));
+                        if (tmp_oa->uptime) printf(",[uptime:%dhrs]",tmp_oa->uptime/360000);
                     }
                     /*
                      * If the asset is getting too old - delete it 
