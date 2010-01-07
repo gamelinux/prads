@@ -2,7 +2,7 @@
 
 CC=gcc
 LDFLAGS=-lpcap -lpcre
-CFLAGS=-O3
+CFLAGS='-O3 -msse2'
 DCFLAGS=-g
 PCFLAGS='-g -pg'
 ifneq (${DEBUG},)

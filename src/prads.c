@@ -207,7 +207,8 @@ static inline int filter_packet(const int af, const struct in6_addr ip_s)
                     v4si tmp3 = __builtin_ia32_pcmpeqd128(tmp,tmp2);
                     ip6v t;
                     t.v = tmp3;
-                    if(t.i[0] && t.i[1]){
+                    if(tmp3){
+                    //if(t.i[0] && t.i[1]){
                         //network[i].addr_v ){
                            // network[i].addr_v)){
                         our = 1;
