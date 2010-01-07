@@ -12,8 +12,8 @@
 /* void cx_track(uint64_t ip_src,uint16_t src_port,uint64_t ip_dst,uint16_t dst_port,
                uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af) { */
 
-int cx_track(struct in6_addr ip_src, uint16_t src_port,
-             struct in6_addr ip_dst, uint16_t dst_port, uint8_t ip_proto,
+int cx_track(struct in6_addr *ip_src, uint16_t src_port,
+             struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
              uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af)
 {
 
@@ -22,13 +22,13 @@ int cx_track(struct in6_addr ip_src, uint16_t src_port,
     uint64_t hash;
 
     if (af == AF_INET) {
-        hash = ((ip_src.s6_addr32[0] + ip_dst.s6_addr32[0])) % BUCKET_SIZE;
+        hash = ((ip_src->s6_addr32[0] + ip_dst->s6_addr32[0])) % BUCKET_SIZE;
     } else if (af == AF_INET6) {
         hash =
-            ((ip_src.s6_addr32[0] + ip_src.s6_addr32[1] +
-              ip_src.s6_addr32[2] + ip_src.s6_addr32[3]
-              + ip_dst.s6_addr32[0] + ip_dst.s6_addr32[1] +
-              ip_dst.s6_addr32[2] + ip_dst.s6_addr32[3]
+            ((ip_src->s6_addr32[0] + ip_src->s6_addr32[1] +
+              ip_src->s6_addr32[2] + ip_src->s6_addr32[3] +
+              ip_dst->s6_addr32[0] + ip_dst->s6_addr32[1] +
+              ip_dst->s6_addr32[2] + ip_dst->s6_addr32[3]
              )) % BUCKET_SIZE;
     }
     extern connection *bucket[BUCKET_SIZE];
@@ -37,8 +37,8 @@ int cx_track(struct in6_addr ip_src, uint16_t src_port,
 
     while (cxt != NULL) {
         if (af == AF_INET) {
-            if (cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0]
-                && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
+            if (   cxt->s_ip.s6_addr32[0] == ip_src->s6_addr32[0]
+                && cxt->d_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
                 && cxt->s_port == src_port && cxt->d_port == dst_port) {
                 cxt->s_tcpFlags |= tcpflags;
                 cxt->s_total_bytes += p_bytes;
@@ -49,8 +49,8 @@ int cx_track(struct in6_addr ip_src, uint16_t src_port,
                     return 0;   // Dont check!
                 }
                 return 1;       // Client should send the first packet (TCP/SYN - UDP?), hence this is a client
-            } else if (cxt->s_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[0] == ip_src.s6_addr32[0]
+            } else if (cxt->s_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
+                       && cxt->d_ip.s6_addr32[0] == ip_src->s6_addr32[0]
                        && cxt->d_port == src_port
                        && cxt->s_port == dst_port) {
                 cxt->d_tcpFlags |= tcpflags;
@@ -64,15 +64,15 @@ int cx_track(struct in6_addr ip_src, uint16_t src_port,
                 return 2;       // This should be a server (Maybe not when we start up but in the long run)
             }
         } else if (af == AF_INET6) {
-            if (cxt->s_ip.s6_addr32[0] == ip_src.s6_addr32[0]
-                && cxt->s_ip.s6_addr32[1] == ip_src.s6_addr32[1]
-                && cxt->s_ip.s6_addr32[2] == ip_src.s6_addr32[2]
-                && cxt->s_ip.s6_addr32[3] == ip_src.s6_addr32[3]
+            if (   cxt->s_ip.s6_addr32[0] == ip_src->s6_addr32[0]
+                && cxt->s_ip.s6_addr32[1] == ip_src->s6_addr32[1]
+                && cxt->s_ip.s6_addr32[2] == ip_src->s6_addr32[2]
+                && cxt->s_ip.s6_addr32[3] == ip_src->s6_addr32[3]
 
-                && cxt->d_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
-                && cxt->d_ip.s6_addr32[1] == ip_dst.s6_addr32[1]
-                && cxt->d_ip.s6_addr32[2] == ip_dst.s6_addr32[2]
-                && cxt->d_ip.s6_addr32[3] == ip_dst.s6_addr32[3]
+                && cxt->d_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
+                && cxt->d_ip.s6_addr32[1] == ip_dst->s6_addr32[1]
+                && cxt->d_ip.s6_addr32[2] == ip_dst->s6_addr32[2]
+                && cxt->d_ip.s6_addr32[3] == ip_dst->s6_addr32[3]
 
                 && cxt->s_port == src_port && cxt->d_port == dst_port) {
 
@@ -85,15 +85,15 @@ int cx_track(struct in6_addr ip_src, uint16_t src_port,
                     return 0;   // Dont Check!
                 }
                 return 1;       // Client
-            } else if (cxt->s_ip.s6_addr32[0] == ip_dst.s6_addr32[0]
-                       && cxt->s_ip.s6_addr32[1] == ip_dst.s6_addr32[1]
-                       && cxt->s_ip.s6_addr32[2] == ip_dst.s6_addr32[2]
-                       && cxt->s_ip.s6_addr32[3] == ip_dst.s6_addr32[3]
+            } else if (cxt->s_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
+                       && cxt->s_ip.s6_addr32[1] == ip_dst->s6_addr32[1]
+                       && cxt->s_ip.s6_addr32[2] == ip_dst->s6_addr32[2]
+                       && cxt->s_ip.s6_addr32[3] == ip_dst->s6_addr32[3]
 
-                       && cxt->d_ip.s6_addr32[0] == ip_src.s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[1] == ip_src.s6_addr32[1]
-                       && cxt->d_ip.s6_addr32[2] == ip_src.s6_addr32[2]
-                       && cxt->d_ip.s6_addr32[3] == ip_src.s6_addr32[3]
+                       && cxt->d_ip.s6_addr32[0] == ip_src->s6_addr32[0]
+                       && cxt->d_ip.s6_addr32[1] == ip_src->s6_addr32[1]
+                       && cxt->d_ip.s6_addr32[2] == ip_src->s6_addr32[2]
+                       && cxt->d_ip.s6_addr32[3] == ip_src->s6_addr32[3]
 
                        && cxt->d_port == src_port
                        && cxt->s_port == dst_port) {
@@ -133,31 +133,17 @@ int cx_track(struct in6_addr ip_src, uint16_t src_port,
         cxt->start_time = tstamp;
         cxt->last_pkt_time = tstamp;
 
-        cxt->s_ip = ip_src;
-        cxt->d_ip = ip_dst;
+        cxt->s_ip = *ip_src;
+        cxt->d_ip = *ip_dst;
 
         /*
          * if (af = AF_INET) { 
-         */
-        /*
          * cxt->s_ip6.s6_addr32[1]          = 0; 
-         */
-        /*
          * cxt->s_ip6.s6_addr32[2]          = 0; 
-         */
-        /*
          * cxt->s_ip6.s6_addr32[3]          = 0; 
-         */
-        /*
          * cxt->d_ip6.s6_addr32[1]          = 0; 
-         */
-        /*
          * cxt->d_ip6.s6_addr32[2]          = 0; 
-         */
-        /*
          * cxt->d_ip6.s6_addr32[3]          = 0; 
-         */
-        /*
          * } 
          */
 

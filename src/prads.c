@@ -451,15 +451,16 @@ void prepare_tcp (packetinfo *pi)
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->s_check =
-                cx_track(pi->ip_src, pi->tcph->src_port, pi->ip_dst,
-                         pi->tcph->dst_port, pi->ip4->ip_p, pi->packet_bytes,
+                cx_track(&pi->ip_src, pi->tcph->src_port, 
+                         &pi->ip_dst, pi->tcph->dst_port, 
+                         pi->ip4->ip_p, pi->packet_bytes,
                          pi->tcph->t_flags, pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
         pi->s_check =
-                cx_track(pi->ip6->ip_src, pi->tcph->src_port,
-                         pi->ip6->ip_dst, pi->tcph->dst_port,
+                cx_track(&pi->ip6->ip_src, pi->tcph->src_port,
+                         &pi->ip6->ip_dst, pi->tcph->dst_port,
                          pi->ip6->next, pi->ip6->len, pi->tcph->t_flags,
                          pi->pheader->ts.tv_sec, pi->af);
     }
@@ -558,16 +559,18 @@ void prepare_udp (packetinfo *pi)
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE UDP:\n");
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->s_check =
-                cx_track(pi->ip_src, pi->udph->src_port, pi->ip_dst,
-                         pi->udph->dst_port, pi->ip4->ip_p, pi->packet_bytes, 0,
+                cx_track(&pi->ip_src, pi->udph->src_port, 
+                         &pi->ip_dst, pi->udph->dst_port,
+                         pi->ip4->ip_p, pi->packet_bytes, 0,
                          pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE UDP:\n");
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + + IP6_HEADER_LEN);
         pi->s_check =
-                cx_track(pi->ip6->ip_src, pi->udph->src_port,
-                         pi->ip6->ip_dst, pi->udph->dst_port,
-                         pi->ip6->next, pi->ip6->len, 0, pi->pheader->ts.tv_sec, pi->af);
+                cx_track(&pi->ip6->ip_src, pi->udph->src_port,
+                         &pi->ip6->ip_dst, pi->udph->dst_port,
+                         pi->ip6->next, pi->ip6->len, 0,
+                         pi->pheader->ts.tv_sec, pi->af);
     }
     return;
 }
@@ -594,18 +597,20 @@ void prepare_icmp (packetinfo *pi)
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE ICMP:\n");
         pi->icmph = (icmp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->s_check =
-                cx_track(pi->ip_src, pi->icmph->s_icmp_id, pi->ip_dst,
-                         pi->icmph->s_icmp_id, pi->ip4->ip_p, pi->packet_bytes,
-                         0, pi->pheader->ts.tv_sec, pi->af);
+                cx_track(&pi->ip_src, pi->icmph->s_icmp_id, 
+                         &pi->ip_dst, pi->icmph->s_icmp_id,
+                         pi->ip4->ip_p, pi->packet_bytes, 0,
+                         pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE ICMP:\n");
         pi->icmp6h = (icmp6_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
         /*
          * DO change ip6->hop_lmt to 0 or something
          */
-        pi->s_check = cx_track(pi->ip6->ip_src, 0, pi->ip6->ip_dst,
-                              0, pi->ip6->next, pi->ip6->len, 0,
-                              pi->pheader->ts.tv_sec, pi->af);
+        pi->s_check = cx_track(&pi->ip6->ip_src, 0,
+                               &pi->ip6->ip_dst, 0,
+                               pi->ip6->next, pi->ip6->len, 0,
+                               pi->pheader->ts.tv_sec, pi->af);
     }
     return;
 }
@@ -615,13 +620,17 @@ void prepare_other (packetinfo *pi)
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE OTHER: %d\n",pi->ip4->ip_p); 
         pi->s_check =
-                cx_track(pi->ip_src, 0, pi->ip_dst, 0, pi->ip4->ip_p,
+                cx_track(&pi->ip_src, 0, 
+                         &pi->ip_dst, 0,
+                         pi->ip4->ip_p,
                          pi->packet_bytes, 0, pi->pheader->ts.tv_sec, pi->af);
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE OTHER: %d\n",pi->ip6->next);
         pi->s_check = 
-                cx_track(pi->ip6->ip_src, 0, pi->ip6->ip_dst, 0,
-                         pi->ip6->next, pi->ip6->len, 0, pi->pheader->ts.tv_sec, pi->af);
+                cx_track(&pi->ip6->ip_src, 0,
+                         &pi->ip6->ip_dst, 0,
+                         pi->ip6->next, pi->ip6->len, 0,
+                         pi->pheader->ts.tv_sec, pi->af);
     }
     return;
 }
