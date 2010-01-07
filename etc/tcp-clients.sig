@@ -2,16 +2,20 @@
 ## Mozilla
 www,v/Mozilla Gecko/$2/$1,Mozilla\/([.\d]+).*Gecko\/([.\d]+)
 www,v/Mozilla Browser/$1/$2/,User-Agent\x3a Mozilla\/([\S]+) (.*)[\r\n]+
+#User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.0.5) Gecko/2008120122 Firefox/3.0.5
+
 ## Perl
 www,v/Perl LWP/$1/$2,lwp-request\/([.\d]+) libwww-perl/([.\d]+)
 www,v/Perl LWP/$1//,User-Agent\x3a lwp-request\/([.\d]+)
+
 ## Opera
 www,v/Opera/$1/$2/,User-Agent\x3a Opera\/([\S]+) (.*)\r\n
+
 ## CUPS
 www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
-## Pidgin
-im,v/Pidgin Instant Messaging/$1//,User Agent: pidgin\/([\S]+)
+
 ## Unknown/Failback
+# User-Agent: Java/1.4.1_04
 #www,v/HTTP Browser/$3//,^.+\[(.{26})\] \"(.+)HTTP/1..\".*(\".+\")$
 www,v/User Agent: $1///,User-Agent\x3a (.*)\r\n
 
@@ -47,4 +51,6 @@ mysql,v/MySQL Request Quit///,^\x01\x00\x00\x00\x01$
 # P2P / Torrent
 
 # IM
+## Pidgin
+im,v/Pidgin Instant Messaging/$1//,User Agent: pidgin\/([\S]+)
 
