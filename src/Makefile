@@ -19,7 +19,7 @@ OBJECTS = bstrlib.o sys_func.o bstraux.o cxt.o assets.o prads.o ${IPFP_OBJ} ${SE
 all: prads
 
 prads: $(OBJECTS)
-	$(CC) $(OCFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
 
 debug:
 	 ${MAKE} DEBUG=y
