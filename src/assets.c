@@ -102,11 +102,13 @@ short update_asset_os(struct in6_addr ip_addr,
             head_oa = rec->os;
 
             while (tmp_oa != NULL) {
-                if ((bstrcmp(detection, tmp_oa->detection) == 0)
-                    && (bstrcmp(raw_fp, tmp_oa->raw_fp) == 0)) {
+                // 
+                if ((biseq(detection, tmp_oa->detection) == 1)
+                    && (biseq(raw_fp, tmp_oa->raw_fp) == 1)) {
                     /*
                      * Found! 
                      */
+                    //printf("IM HERE\n");
                     bdestroy(tmp_oa->detection);
                     tmp_oa->detection = bstrcpy(detection);
                     bdestroy(tmp_oa->raw_fp);
@@ -263,10 +265,10 @@ short update_asset_service(struct in6_addr ip_addr,
                      * If we have an id for the service which is != unknown AND the id now is unknown 
                      * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
                      */
-                    if (!(bstrcmp(UNKNOWN, application) == 0)
+                    if (!(biseq(UNKNOWN, application) == 1)
                         &&
-                        (bstrcmp(UNKNOWN, tmp_sa->application))
-                        == 0) {
+                        (biseq(UNKNOWN, tmp_sa->application))
+                        == 1) {
                         tmp_sa->i_attempts = 0;
                         bdestroy(tmp_sa->service);
                         bdestroy(tmp_sa->application);
@@ -283,7 +285,7 @@ short update_asset_service(struct in6_addr ip_addr,
                         }
 
                         return 0;
-                    } else if (!(bstrcmp(application, tmp_sa->application) == 0)) {
+                    } else if (!(biseq(application, tmp_sa->application) == 1)) {
                         if (tmp_sa->i_attempts > MAX_SERVICE_CHECK) {
                             tmp_sa->i_attempts = 0;
                             bdestroy(tmp_sa->service);

@@ -449,6 +449,7 @@ typedef struct _serv_asset {
     bstring service;            /* Asset service (i.e. SSH, WWW, ICMP etc.) */
     bstring application;        /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
     int role;                   /* server or client */
+    int unknown;                /* 1 = Uknown, 0 = Known "Asset application" */
 } serv_asset;
 
 typedef struct _os_asset {
