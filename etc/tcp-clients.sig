@@ -37,7 +37,8 @@ smtp,v/Thunderbird/$1/$2/,User-Agent: Thunderbird ([.\d]+) \((Windows\/\d+)\)
 smtp,v/Zimbra Web Client/$1//,X-Mailer: Zimbra (.*)\n
 # X-Mailer: YahooMailRC/240.3 YahooMailWebService/0.8.100.260964
 #smtp,v/Yahoo Mail Web Service///,X-Mailer: YahooMailRC\/[.\d]+ YahooMailWebService/[.\d]+
-
+# X-Mailer: Microsoft Office Outlook 12.0
+smtp,v/Microsoft Office Outlook/$1//,X-Mailer: Microsoft Office Outlook ([.\d]+)
 
 # MySQL - Experimental !
 mysql,v/MySQL Login Request(Char:latin1)///,^..\x00\x01\..[\x03\x01]\x00\x00\x00\x00.\x08

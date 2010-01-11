@@ -39,6 +39,15 @@
 #define MAX_PKT_CHECK                 20
 #define MAX_SERVICE_CHECK             5         /* How many new services*/
 
+#define CF_SYN                        0x01      /* Check SYN packets */
+#define CF_SYNACK                     0x02      /* Check SYNACK packets */
+#define CF_ACK                        0x04      /* Check Stray-ACK packets */
+#define CF_FIN                        0x08      /* Check FIN packets */
+#define CF_RST                        0x10      /* Check RST packets */
+#define CF_X                          0x20      /* Add unknown assets */
+#define CF_ICMP                       0x40      /* Check ICMP Packets */
+#define CF_Z                          0x80      /* Check UDP Packets */
+
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806
 #define ETHERNET_TYPE_IPV6            0x86dd
@@ -47,13 +56,13 @@
 #define ETHERNET_TYPE_802Q1MT2        0x9200
 #define ETHERNET_TYPE_802Q1MT3        0x9300
 #define ETHERNET_TYPE_8021AD          0x88a8
-#define ARPOP_REQUEST                 1 /* ARP request.  */
-#define ARPOP_REPLY                   2 /* ARP reply.  */
-#define ARPOP_RREQUEST                3 /* RARP request.  */
-#define ARPOP_RREPLY                  4 /* RARP reply.  */
-#define ARPOP_InREQUEST               8 /* InARP request.  */
-#define ARPOP_InREPLY                 9 /* InARP reply.  */
-#define ARPOP_NAK                     10        /* (ATM)ARP NAK.  */
+#define ARPOP_REQUEST                 1  /* ARP request.  */
+#define ARPOP_REPLY                   2  /* ARP reply.  */
+#define ARPOP_RREQUEST                3  /* RARP request.  */
+#define ARPOP_RREPLY                  4  /* RARP reply.  */
+#define ARPOP_InREQUEST               8  /* InARP request.  */
+#define ARPOP_InREPLY                 9  /* InARP reply.  */
+#define ARPOP_NAK                     10 /* (ATM)ARP NAK.  */
 
 #define IP_PROTO_TCP                  6
 #define IP_PROTO_UDP                  17
@@ -83,7 +92,7 @@
 #define TF_URG                        0x20
 #define TF_ECE                        0x40
 #define TF_CWR                        0x80
-#define TF_SYNACK                     0x12
+#define TF_SYNACK                     0x12 /* dont use for ip flag check :) */
 #define TF_NORESERVED (TF_FIN|TF_SYN|TF_RST|TF_PUSH|TF_ACK|TF_URG)
 #define TF_FLAGS      (TF_FIN|TF_SYN|TF_RST|TF_ACK|TF_URG|TF_ECE|TF_CWR)
 
@@ -436,6 +445,7 @@ typedef struct _packetinfo {
     const uint8_t   *end_ptr;       /* Paranoid end pointer of packet */
     const char      *payload;       /* char pointer to transport payload */
     uint32_t        our;            /* Is the asset in our defined network */
+    uint8_t         up;             /* Set if the asset has been updated */
 } packetinfo;
 
 typedef struct _serv_asset {
@@ -460,6 +470,7 @@ typedef struct _os_asset {
     unsigned short i_attempts;  /* Failed attempts at identifying the os_asset. (hench just unknown) */
     bstring vendor;             /* Vendor (MS,Linux,Sun,HP...) */
     bstring os;                 /* OS (WinXP SP2, 2.4/2.6, 10.2..) */
+    uint8_t dflags;             /* Flag describing detection method (SYN/UDP/ICMP...) */
     bstring detection;          /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
     bstring raw_fp;             /* The raw fingerprint [*:*:*:*:*:*:....] */
     bstring matched_fp;         /* The FP that matched [*:*:*:*.*:*:---] */
@@ -554,19 +565,24 @@ typedef struct _globalconfig {
     signature   *sig_serv_udp;          /* Pointer to list of udp service signatures */
     signature   *sig_client_tcp;        /* Pointer to list of tcp client signatures */
     signature   *sig_client_udp;        /* Pointer to list of udp client signatures */
-    fmask       *network[MAX_NETS];      /* Struct for fmask */
-    char *dev;                   /* Device name to use for sniffing */
-    char *dpath;                 /* ... */
-    char *chroot_dir;            /* Directory to chroot to */
-    char *group_name;            /* Groupe to drop privileges too */
-    char *user_name;             /* User to drop privileges too */
-    char *true_pid_name;         /* Pid name */
-    char *pidfile;               /* pidfile */
-    char *pidpath;               /* Path to pidfile */
-    char *s_net;                 /* Nets to collect assets for */
+    fmask       *network[MAX_NETS];     /* Struct for fmask */
+    char        *dev;                   /* Device name to use for sniffing */
+    char        *dpath;                 /* ... */
+    char        *chroot_dir;            /* Directory to chroot to */
+    char        *group_name;            /* Groupe to drop privileges too */
+    char        *user_name;             /* User to drop privileges too */
+    char        *true_pid_name;         /* Pid name */
+    char        *pidfile;               /* pidfile */
+    char        *pidpath;               /* Path to pidfile */
+    char        *s_net;                 /* Nets to collect assets for */
     uint32_t    verbose;                /* Verbose or not */
     uint32_t    use_syslog;             /* Use syslog or not */
+    uint8_t     ctf;                    /* Flags for TCP checks, SYN,RST,FIN.... */
+    uint8_t     cof;                    /* Flags for other; icmp,udp,other,.... */
 } globalconfig;
+
+#define IS_CTSET(globalconfig, flags) (((globalconfig)->ctf & ((flags)) == (flags)))
+#define IS_COSET(globalconfig, flags) (((globalconfig)->cof & ((flags)) == (flags)))
 
 /*  P R O T O T Y P E S  ******************************************************/
 

@@ -32,6 +32,7 @@
 
 /*  G L O B A L E S  *********************************************************/
 uint64_t cxtrackerid;
+globalconfig config;
 time_t tstamp;
 pcap_t *handle;
 connection *bucket[BUCKET_SIZE];
@@ -321,7 +322,7 @@ void parse_ip4 (packetinfo *pi)
         if (!pi->our)
             return;
 
-        if (pi->s_check != 0) {
+        if (IS_CTSET(&config,CF_ICMP) && pi->s_check != 0) {
             fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
             // could look for icmp spesific data in package abcde...
             // service_icmp(*pi->ip4,*tcph)
@@ -469,17 +470,20 @@ void prepare_tcp (packetinfo *pi)
 
 void parse_tcp6 (packetinfo *pi)
 {
-    if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+    if (IS_CTSET(&config,CF_SYN)
+        && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYN, pi->ip6->ip_src);
         vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-    } else if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+    } else if (IS_CTSET(&config,CF_SYNACK)
+               && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip6->ip_src);
     }
     if (pi->s_check != 0) {
-        if (TCP_ISFLAGSET(pi->tcph, (TF_ACK))
+        if (IS_CTSET(&config,CF_ACK)
+            && TCP_ISFLAGSET(pi->tcph, (TF_ACK))
             && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))) {
             fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_ACK, pi->ip6->ip_src);
         }
@@ -503,7 +507,8 @@ void parse_tcp6 (packetinfo *pi)
 
 void parse_tcp4 (packetinfo *pi)
 {
-    if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+    if (IS_CTSET(&config,CF_SYN)
+        && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
@@ -512,7 +517,8 @@ void parse_tcp4 (packetinfo *pi)
                              pi->ip4->ip_p,
                              UNKNOWN,
                              UNKNOWN, pi->af, CLIENT);
-    } else if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+    } else if (IS_CTSET(&config,CF_SYNACK)
+               && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
@@ -521,14 +527,17 @@ void parse_tcp4 (packetinfo *pi)
                              pi->ip4->ip_p,
                              UNKNOWN,
                              UNKNOWN, pi->af, SERVICE);
-    } else if (TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
+    } else if (IS_CTSET(&config,CF_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
+        vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
-    } else if (TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
+    } else if (IS_CTSET(&config,CF_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
+        vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
     }
 
     if (pi->s_check != 0) {
-        if (TCP_ISFLAGSET(pi->tcph, (TF_ACK))
+        if (IS_CTSET(&config,CF_ACK)
+            && TCP_ISFLAGSET(pi->tcph, (TF_ACK))
             && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
@@ -802,6 +811,13 @@ static void usage()
 int main(int argc, char *argv[])
 {
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
+    memset(&config, 0, sizeof(globalconfig));
+    config.ctf |= CF_SYN;
+    //config.ctf |= CF_RST;
+    //config.ctf |= CF_FIN;
+    //config.ctf |= CF_ACK;
+    config.ctf |= CF_SYNACK;
+    printf("FLAGS: %d\n", config.ctf);
     int ch, fromfile, setfilter, version, drop_privs_flag, daemon_flag;
     int use_syslog = 0;
     struct in_addr addr;

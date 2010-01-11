@@ -63,18 +63,18 @@ void gen_fp_tcp(uint8_t ttl,
     //uint8_t q = 0;
     bstring fp, de;
 
-    if (ftype == TF_SYN)
+    if (ftype == TF_SYN) {
         de = bformat("syn");
-    else if (ftype == TF_SYNACK)
+    } else if (ftype == TF_SYNACK) {
         de = bformat("synack");
-    else if (ftype == TF_RST)
-        de = bformat("rst");
-    else if (ftype == TF_FIN)
-        de = bformat("fin");
-    else if (ftype == TF_ACK) {
+    } else if (ftype == TF_ACK) {
         de = bformat("ack");
-        //ocnt = 4;
-    }else{
+        ocnt = 3;
+    } else if (ftype == TF_RST) {
+        de = bformat("rst");
+    } else if (ftype == TF_FIN) {
+        de = bformat("fin");
+    } else {
         de = bformat("error");
     }
 
@@ -92,11 +92,10 @@ void gen_fp_tcp(uint8_t ttl,
         bformata(fp, "*(12345)");
     else if (wss == 65535)
         bformata(fp, "*(65535)");
-    else if (ftype==TF_ACK || ftype==TF_FIN || ftype==TF_RST) {
-        bformata(fp, "*");
-        ocnt = 3;
-        //q = 1;
-    } else {
+    //else if (ftype==TF_ACK || ftype==TF_FIN || ftype==TF_RST) {
+    //    bformata(fp, "*");
+    //} 
+    else {
         bformata(fp, "%d", wss);
     }
 
