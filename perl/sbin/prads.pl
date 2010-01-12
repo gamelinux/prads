@@ -1904,10 +1904,6 @@ sub commit_db {
 sub print_asset {
    my ($time, $service, $ip, $os, $details, $fp, $dist, $link)= @_;
 
-   for(@_){
-      print;
-      print ":";
-   }print"\n";
    printf "%11d [%-8s] ip:%-15s %s - %s [%s] distance:%d link:%s\n",
           $time, $service, $ip, $os, $details, $fp, $dist, $link;
 }
