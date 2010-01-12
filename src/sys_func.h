@@ -23,5 +23,6 @@ int daemonize();
 void print_assets();
 void set_end_sessions();
 void end_sessions();
+void display_config();
 
 #endif

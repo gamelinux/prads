@@ -2,6 +2,8 @@
 #include "prads.h"
 #include "sys_func.h"
 
+extern globalconfig config;
+
 void bucket_keys_NULL()
 {
     int cxkey;
@@ -47,10 +49,10 @@ void game_over()
     extern int inpacket, intr_flag;
 
     if (inpacket == 0) {
-        extern pcap_t *handle;
+        //extern pcap_t *handle;
         print_assets();
         end_all_sessions();
-        pcap_close(handle);
+        pcap_close(config.handle);
         //del_assets(0);
         printf("\nprads ended\n");
         exit(0);
@@ -63,7 +65,6 @@ int set_chroot(void)
     char *absdir;
     char *logdir;
     int abslen;
-    extern char *chroot_dir;
 
     /*
      * logdir = get_abs_path(logpath); 
@@ -72,8 +73,8 @@ int set_chroot(void)
     /*
      * change to the directory 
      */
-    if (chdir(chroot_dir) != 0) {
-        printf("set_chroot: Can not chdir to \"%s\": %s\n", chroot_dir,
+    if (chdir(config.chroot_dir) != 0) {
+        printf("set_chroot: Can not chdir to \"%s\": %s\n", config.chroot_dir,
                strerror(errno));
     }
 
@@ -87,7 +88,7 @@ int set_chroot(void)
      * make the chroot call 
      */
     if (chroot(absdir) < 0) {
-        printf("Can not chroot to \"%s\": absolute: %s: %s\n", chroot_dir,
+        printf("Can not chroot to \"%s\": absolute: %s: %s\n", config.chroot_dir,
                absdir, strerror(errno));
     }
 
@@ -109,30 +110,29 @@ int drop_privs(void)
     int do_setgid = 0;
     unsigned long groupid = 0;
     unsigned long userid = 0;
-    extern char *group_name, *user_name;
 
-    if (group_name != NULL) {
+    if (config.group_name != NULL) {
         do_setgid = 1;
-        if (isdigit(group_name[0]) == 0) {
-            gr = getgrnam(group_name);
+        if (isdigit(config.group_name[0]) == 0) {
+            gr = getgrnam(config.group_name);
             groupid = gr->gr_gid;
         } else {
-            groupid = strtoul(group_name, &endptr, 10);
+            groupid = strtoul(config.group_name, &endptr, 10);
         }
     }
 
-    if (user_name != NULL) {
+    if (config.user_name != NULL) {
         do_setuid = 1;
         do_setgid = 1;
-        if (isdigit(user_name[0]) == 0) {
-            pw = getpwnam(user_name);
+        if (isdigit(config.user_name[0]) == 0) {
+            pw = getpwnam(config.user_name);
             userid = pw->pw_uid;
         } else {
-            userid = strtoul(user_name, &endptr, 10);
+            userid = strtoul(config.user_name, &endptr, 10);
             pw = getpwuid(userid);
         }
 
-        if (group_name == NULL) {
+        if (config.group_name == NULL) {
             groupid = pw->pw_gid;
         }
     }
@@ -147,8 +147,8 @@ int drop_privs(void)
     endpwent();
 
     if (do_setuid) {
-        if (getuid() == 0 && initgroups(user_name, groupid) < 0) {
-            printf("Unable to init group names (%s/%lu)", user_name,
+        if (getuid() == 0 && initgroups(config.user_name, groupid) < 0) {
+            printf("Unable to init group names (%s/%lu)", config.user_name,
                    groupid);
         }
         if ((i = setuid(userid)) < 0) {
@@ -183,18 +183,17 @@ int create_pid_file(const char *path, const char *filename)
     struct flock lock;
     int rval;
     int fd;
-    extern char *pidfile, *pidpath, *true_pid_name;
 
     memset(filepath, 0, STDBUF);
 
     if (!filename) {
-        fn = pidfile;
+        fn = config.pidfile;
     } else {
         fn = filename;
     }
 
     if (!path) {
-        fp = pidpath;
+        fp = config.pidpath;
     } else {
         fp = path;
     }
@@ -205,7 +204,7 @@ int create_pid_file(const char *path, const char *filename)
         printf("PID path \"%s\" isn't a writeable directory!", fp);
     }
 
-    true_pid_name = strdup(filename);
+    config.true_pid_name = strdup(filename);
 
     if ((fd = open(filepath, O_CREAT | O_WRONLY,
                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
@@ -243,8 +242,7 @@ int daemonize()
 {
     pid_t pid;
     int fd;
-    extern int use_syslog;
-    extern char *pidfile, *pidpath;
+    //extern char *pidfile, *pidpath;
 
     pid = fork();
 
@@ -252,7 +250,7 @@ int daemonize()
         exit(0);                /* parent */
     }
 
-    use_syslog = 1;
+    config.use_syslog = 1;
     if (pid < 0) {
         return ERROR;
     }
@@ -274,9 +272,21 @@ int daemonize()
         }
     }
 
-    if (pidfile) {
-        return create_pid_file(pidpath, pidfile);
+    if (config.pidfile) {
+        return create_pid_file(config.pidpath, config.pidfile);
     }
 
     return SUCCESS;
+}
+
+void display_config()
+{
+    printf("[*] Checks enabled:");
+    if (IS_COSET(&config,CO_SYN))    printf (" SYN");
+    if (IS_COSET(&config,CO_SYNACK)) printf (" SYNACK");
+    if (IS_COSET(&config,CO_RST))    printf (" RST");
+    if (IS_COSET(&config,CO_SYN))    printf (" FIN");
+    if (IS_COSET(&config,CO_ACK))    printf (" ACK");
+    printf("\n");
+    return;
 }

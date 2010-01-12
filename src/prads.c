@@ -34,7 +34,6 @@
 uint64_t cxtrackerid;
 globalconfig config;
 time_t tstamp;
-pcap_t *handle;
 connection *bucket[BUCKET_SIZE];
 connection *cxtbuffer = NULL;
 asset *passet[BUCKET_SIZE];
@@ -44,17 +43,9 @@ signature *sig_serv_udp = NULL;
 signature *sig_client_tcp = NULL;
 signature *sig_client_udp = NULL;
 char src_s[INET6_ADDRSTRLEN], dst_s[INET6_ADDRSTRLEN];
-static char *dev, *dpath;
-char *chroot_dir;
-char *group_name, *user_name, *true_pid_name;
-char *pidfile = "prads.pid";
-char *pidpath = "/var/run";
-int verbose, inpacket, gameover, use_syslog, intr_flag;
+int inpacket, gameover, intr_flag;
 uint64_t hash;
-// default source net owns everything
-char *s_net = "0.0.0.0/0,::/0";
 int nets = 1;
-//char *s_net = "87.238.44.0/255.255.255.0,87.238.45.0/26,87.238.44.60/32";
 
 // vector types :-)
 typedef int v4si __attribute__((vector_size(16)));
@@ -322,7 +313,7 @@ void parse_ip4 (packetinfo *pi)
         if (!pi->our)
             return;
 
-        if (IS_CTSET(&config,CF_ICMP) && pi->s_check != 0) {
+        if (IS_COSET(&config,CO_ICMP) && pi->s_check != 0) {
             fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
             // could look for icmp spesific data in package abcde...
             // service_icmp(*pi->ip4,*tcph)
@@ -470,19 +461,19 @@ void prepare_tcp (packetinfo *pi)
 
 void parse_tcp6 (packetinfo *pi)
 {
-    if (IS_CTSET(&config,CF_SYN)
+    if (IS_COSET(&config,CO_SYN)
         && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYN, pi->ip6->ip_src);
         vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-    } else if (IS_CTSET(&config,CF_SYNACK)
+    } else if (IS_COSET(&config,CO_SYNACK)
                && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip6->ip_src);
     }
     if (pi->s_check != 0) {
-        if (IS_CTSET(&config,CF_ACK)
+        if (IS_COSET(&config,CO_ACK)
             && TCP_ISFLAGSET(pi->tcph, (TF_ACK))
             && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))) {
             fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_ACK, pi->ip6->ip_src);
@@ -507,7 +498,7 @@ void parse_tcp6 (packetinfo *pi)
 
 void parse_tcp4 (packetinfo *pi)
 {
-    if (IS_CTSET(&config,CF_SYN)
+    if (IS_COSET(&config,CO_SYN)
         && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
@@ -517,7 +508,7 @@ void parse_tcp4 (packetinfo *pi)
                              pi->ip4->ip_p,
                              UNKNOWN,
                              UNKNOWN, pi->af, CLIENT);
-    } else if (IS_CTSET(&config,CF_SYNACK)
+    } else if (IS_COSET(&config,CO_SYNACK)
                && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
@@ -527,16 +518,16 @@ void parse_tcp4 (packetinfo *pi)
                              pi->ip4->ip_p,
                              UNKNOWN,
                              UNKNOWN, pi->af, SERVICE);
-    } else if (IS_CTSET(&config,CF_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
+    } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
-    } else if (IS_CTSET(&config,CF_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
+    } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
         vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
     }
 
     if (pi->s_check != 0) {
-        if (IS_CTSET(&config,CF_ACK)
+        if (IS_COSET(&config,CO_ACK)
             && TCP_ISFLAGSET(pi->tcph, (TF_ACK))
             && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
@@ -594,7 +585,7 @@ void parse_udp (packetinfo *pi)
                      (pi->pheader->caplen -
                       UDP_HEADER_LEN -
                       (IP_HL(pi->ip4) * 4) - pi->eth_hlen));
-        fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
+        if (IS_COSET(&config,CO_ICMP)) fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
     } else {
         vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
     }
@@ -812,27 +803,24 @@ int main(int argc, char *argv[])
 {
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
-    config.ctf |= CF_SYN;
-    //config.ctf |= CF_RST;
-    //config.ctf |= CF_FIN;
-    //config.ctf |= CF_ACK;
-    config.ctf |= CF_SYNACK;
-    printf("FLAGS: %d\n", config.ctf);
-    int ch, fromfile, setfilter, version, drop_privs_flag, daemon_flag;
-    int use_syslog = 0;
-    struct in_addr addr;
-    struct bpf_program cfilter = {0};
-    char *bpff, errbuf[PCAP_ERRBUF_SIZE], *user_filter;
-    char *net_ip_string;
-    bpf_u_int32 net_mask;
-    ch = fromfile = setfilter = version = drop_privs_flag =
-        daemon_flag = 0;
-    dev = "eth0";
-    bpff = "";
-    dpath = "/tmp";
+
+    config.ctf |= CO_SYN;
+    //config.ctf |= CO_RST;
+    //config.ctf |= CO_FIN;
+    //config.ctf |= CO_ACK;
+    config.ctf |= CO_SYNACK;
+    config.ctf |= CO_ICMP;
+    int ch = 0;
+    config.dev = "eth0";
+    config.bpff = "";
+    config.dpath = "/tmp";
+    config.pidfile = "prads.pid";
+    config.pidpath = "/var/run";
     cxtbuffer = NULL;
     cxtrackerid = 0;
     inpacket = gameover = intr_flag = 0;
+    // default source net owns everything
+    config.s_net = "0.0.0.0/0,::/0";
 
     signal(SIGTERM, game_over);
     signal(SIGINT, game_over);
@@ -842,40 +830,40 @@ int main(int argc, char *argv[])
     while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:va:")) != -1)
         switch (ch) {
         case 'a':
-            s_net = strdup(optarg);
+            config.s_net = strdup(optarg);
             break;
         case 'i':
-            dev = strdup(optarg);
+            config.dev = strdup(optarg);
             break;
         case 'b':
-            bpff = strdup(optarg);
+            config.bpff = strdup(optarg);
             break;
         case 'v':
-            verbose = 1;
+            config.verbose = 1;
             break;
         case 'd':
-            dpath = strdup(optarg);
+            config.dpath = strdup(optarg);
             break;
         case 'h':
             usage();
             exit(0);
             break;
         case 'D':
-            daemon_flag = 1;
+            config.daemon_flag = 1;
             break;
         case 'u':
-            user_name = strdup(optarg);
-            drop_privs_flag = 1;
+            config.user_name = strdup(optarg);
+            config.drop_privs_flag = 1;
             break;
         case 'g':
-            group_name = strdup(optarg);
-            drop_privs_flag = 1;
+            config.group_name = strdup(optarg);
+            config.drop_privs_flag = 1;
             break;
         case 'p':
-            pidfile = strdup(optarg);
+            config.pidfile = strdup(optarg);
             break;
         case 'P':
-            pidpath = strdup(optarg);
+            config.pidpath = strdup(optarg);
             break;
         default:
             exit(1);
@@ -887,8 +875,9 @@ int main(int argc, char *argv[])
         return (1);
     }
 
-    parse_nets(s_net, network);
+    parse_nets(config.s_net, network);
     printf("[*] Running prads %s\n", VERSION);
+    if (config.verbose) display_config();
     load_servicefp_file(1, "../etc/tcp-service.sig");
     load_servicefp_file(2, "../etc/udp-service.sig");
     load_servicefp_file(3, "../etc/tcp-clients.sig");
@@ -897,43 +886,43 @@ int main(int argc, char *argv[])
     add_known_port(17,123,bfromcstr("@ntp"));
     add_known_port(6,631,bfromcstr("@cups"));
 
-    errbuf[0] = '\0';
+    config.errbuf[0] = '\0';
     /*
      * look up an available device if non specified
      */
-    if (dev == 0x0)
-        dev = pcap_lookupdev(errbuf);
-    printf("[*] Device: %s\n", dev);
+    if (config.dev == 0x0)
+        config.dev = pcap_lookupdev(config.errbuf);
+    printf("[*] Device: %s\n", config.dev);
 
-    if ((handle = pcap_open_live(dev, SNAPLENGTH, 1, 500, errbuf)) == NULL) {
-        printf("[*] Error pcap_open_live: %s \n", errbuf);
+    if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
+        printf("[*] Error pcap_open_live: %s \n", config.errbuf);
         exit(1);
-    } else if ((pcap_compile(handle, &cfilter, bpff, 1, net_mask)) == -1) {
+    } else if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
         printf("[*] Error pcap_compile user_filter: %s\n",
-               pcap_geterr(handle));
+               pcap_geterr(config.handle));
         exit(1);
     }
 
-    pcap_setfilter(handle, &cfilter);
+    pcap_setfilter(config.handle, &config.cfilter);
 
     /*
      * B0rk if we see an error...
      */
-    if (strlen(errbuf) > 0) {
-        printf("[*] Error errbuf: %s \n", errbuf);
+    if (strlen(config.errbuf) > 0) {
+        printf("[*] Error errbuf: %s \n", config.errbuf);
         exit(1);
     }
 
-    if (daemon_flag) {
-        if (!is_valid_path(pidpath))
+    if (config.daemon_flag) {
+        if (!is_valid_path(config.pidpath))
             printf
-                ("[*] PID path \"%s\" is bad, check privilege.", pidpath);
+                ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
         printf("[*] Daemonizing...\n\n");
         daemonize(NULL);
     }
 
-    if (drop_privs_flag) {
+    if (config.drop_privs_flag) {
         printf("[*] Dropping privs...\n\n");
         drop_privs();
     }
@@ -941,8 +930,8 @@ int main(int argc, char *argv[])
     alarm(CHECK_TIMEOUT);
 
     printf("[*] Sniffing...\n\n");
-    pcap_loop(handle, -1, got_packet, NULL);
+    pcap_loop(config.handle, -1, got_packet, NULL);
 
-    pcap_close(handle);
+    pcap_close(config.handle);
     return (0);
 }

@@ -30,7 +30,7 @@
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.7"
-#define CHECK_TIMEOUT                 30        /* Time between cxt and asset cleaning/printing */
+#define CHECK_TIMEOUT                 5        /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 600       /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669
@@ -39,14 +39,22 @@
 #define MAX_PKT_CHECK                 20
 #define MAX_SERVICE_CHECK             5         /* How many new services*/
 
-#define CF_SYN                        0x01      /* Check SYN packets */
-#define CF_SYNACK                     0x02      /* Check SYNACK packets */
-#define CF_ACK                        0x04      /* Check Stray-ACK packets */
-#define CF_FIN                        0x08      /* Check FIN packets */
-#define CF_RST                        0x10      /* Check RST packets */
-#define CF_X                          0x20      /* Add unknown assets */
-#define CF_ICMP                       0x40      /* Check ICMP Packets */
-#define CF_Z                          0x80      /* Check UDP Packets */
+/* Flags to set for enabling different OS Fingerprinting checks */
+#define CO_SYN                        0x01      /* Check SYN packets */
+#define CO_SYNACK                     0x02      /* Check SYNACK packets */
+#define CO_ACK                        0x04      /* Check Stray-ACK packets */
+#define CO_FIN                        0x08      /* Check FIN packets */
+#define CO_RST                        0x10      /* Check RST packets */
+#define CO_ICMP                       0x20      /* Check ICMP Packets */
+#define CO_UDP                        0x40      /* Check UDP Packets */
+#define CO_DHCP                       0x80      /* Check DHCP Packets */
+
+/* Flags to set for enabling different service/client checks */
+#define CS_TCP_SERVER                 0x01
+#define CS_TCP_CLIENT                 0x02
+#define CS_UDP_SERVER                 0x04
+#define CS_UDP_CLIENT                 0x08
+#define CS_ICMP                       0x10
 
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806
@@ -557,6 +565,12 @@ typedef struct _fmask {
 
 typedef struct _globalconfig {
     pcap_t      *handle;                /* Pointer to libpcap handle */
+    struct bpf_program  cfilter;        /**/
+    bpf_u_int32         net_mask;       /**/
+    char        *bpff;                  /**/
+    char        errbuf[PCAP_ERRBUF_SIZE];   /**/
+    char        *user_filter;           /**/
+    char        *net_ip_string;         /**/
     connection  *bucket[BUCKET_SIZE];   /* Pointer to list of ongoing connections */
     connection  *cxtbuffer;             /* Pointer to list of expired connections */
     asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
@@ -575,14 +589,17 @@ typedef struct _globalconfig {
     char        *pidfile;               /* pidfile */
     char        *pidpath;               /* Path to pidfile */
     char        *s_net;                 /* Nets to collect assets for */
-    uint32_t    verbose;                /* Verbose or not */
-    uint32_t    use_syslog;             /* Use syslog or not */
+    uint8_t     verbose;                /* Verbose or not */
+    uint8_t     use_syslog;             /* Use syslog or not */
+    uint8_t     setfilter;
+    uint8_t     drop_privs_flag;
+    uint8_t     daemon_flag;
     uint8_t     ctf;                    /* Flags for TCP checks, SYN,RST,FIN.... */
     uint8_t     cof;                    /* Flags for other; icmp,udp,other,.... */
 } globalconfig;
 
-#define IS_CTSET(globalconfig, flags) (((globalconfig)->ctf & ((flags)) == (flags)))
-#define IS_COSET(globalconfig, flags) (((globalconfig)->cof & ((flags)) == (flags)))
+#define IS_COSET(globalconfig, flags) (((globalconfig)->ctf & (flags)) == (flags))
+#define IS_CSSET(globalconfig, flags) (((globalconfig)->cof & (flags)) == (flags))
 
 /*  P R O T O T Y P E S  ******************************************************/
 
