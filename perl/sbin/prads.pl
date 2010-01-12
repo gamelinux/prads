@@ -250,8 +250,12 @@ if ($DUMP) {
    my $MAC_SIGS = load_mac($MAC_SIGNATURE_FILE);
    print Dumper $MAC_SIGS;
 
-   print "\n *** Loading OS fingerprints *** \n\n";
-   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE);
+   print "\n *** Loading OS SYN fingerprints *** \n\n";
+   my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE);
+   print Dumper $OS_SYN_SIGS;
+
+   print "\n *** Loading OS SYNACK fingerprints *** \n\n";
+   my $OS_SYNACK_SIGS = load_os_syn_fingerprints($OS_SYNACK_FINGERPRINT_FILE);
    print Dumper $OS_SYN_SIGS;
 
    print "\n *** Loading Service signatures *** \n\n";
@@ -281,6 +285,12 @@ warn "Starting prads.pl...\n";
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
 my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
+my $OS_SYNACK_SIGS;
+if ($OS_SYNACK) {
+    $OS_SYNACK_SIGS = load_os_syn_fingerprints($OS_SYNACK_FINGERPRINT_FILE)
+              or Getopt::Long::HelpMessage();
+}
+
 my $OS_SYN_DB = {};
 
 warn "Loading MAC fingerprints\n" if ($DEBUG>0);
@@ -727,20 +737,26 @@ sub packet_tcp {
         # TODO: make a list of previously matched OS'es (NAT ips) and
         # check on $db->{$ip}->{$fingerprint}
 
-        my ($os, $details, @more) = tcp_os_find_match(
+        my ($sigs, $type, $link, $os, $details, @more);
+        if ($tcpflags & ACK) {
+            if (not $OS_SYNACK) {
+                $sigs = $OS_SYNACK_SIGS;
+                $type = 'SYNACK';
+            }
+        } else {
+            $type = 'SYN';
+            $sigs = $OS_SYN_SIGS;
+        }
+        if(defined($sigs)){
+            ($os, $details, @more) = tcp_os_find_match($sigs,
                                 $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
                                 $winsize, $gttl, $optstr, $src_ip, $fpstring);
-
-        # Get link type
-        my $link = get_mtu_link($mss);
-
-        # asset database: want to know the following intel:
-        # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
-        # maybe also add binary IP packet for audit?
-        if (($tcpflags & ACK) && $OS_SYNACK == 1) {
-           add_asset('SYNACK', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
-        }elsif ($OS_SYN == 1){
-           add_asset('SYN', $src_ip, $fpstring, $dist, $link, $os, $details, @more);
+            # Get link type
+            $link = get_mtu_link($mss);
+            # asset database: want to know the following intel:
+            # src ip, {OS,DETAILS}, service (port), timestamp, fingerprint
+            # maybe also add binary IP packet for audit?
+            add_asset($type, $src_ip, $fpstring, $dist, $link, $os, $details, @more);
         }
     }
 
@@ -810,9 +826,9 @@ sub match_opts {
 
 sub tcp_os_find_match{
 # Port of p0f matching code
-    my ($tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $ip, $fp) = @_;
+    my ($sigs, $tot, $optcnt, $t0, $df, $qq, $mss, $scale, $winsize, $gttl, $optstr, $ip, $fp) = @_;
     my @quirks = @$qq;
-    my $sigs = $OS_SYN_SIGS;
+
     my $guesses = 0;
 
     #warn "Matching $packet\n" if $DEBUG;
