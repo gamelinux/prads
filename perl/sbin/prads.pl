@@ -153,7 +153,7 @@ sub pre_config
 {
    # make an educated confdir guess.
    for my $dir ($CONFDIR, qw(../etc /etc/prads)){
-      if (-d $dir) {
+      if (-d $dir and -f "$dir/prads.conf") {
          $CONFDIR = $dir;
          $CONFIG = "$dir/prads.conf";
          last;
@@ -283,7 +283,7 @@ $SIG{"ALRM"}  = sub { if($PERSIST) { asset_db(); commit_db(); } alarm $TIMEOUT; 
 warn "Starting prads.pl...\n";
 
 warn "Loading OS fingerprints\n" if ($DEBUG>0);
-my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE, $OS_SYNACK_FINGERPRINT_FILE)
+my $OS_SYN_SIGS = load_os_syn_fingerprints($OS_SYN_FINGERPRINT_FILE)
               or Getopt::Long::HelpMessage();
 my $OS_SYNACK_SIGS;
 if ($OS_SYNACK) {
@@ -739,7 +739,7 @@ sub packet_tcp {
 
         my ($sigs, $type, $link, $os, $details, @more);
         if ($tcpflags & ACK) {
-            if (not $OS_SYNACK) {
+            if ($OS_SYNACK) {
                 $sigs = $OS_SYNACK_SIGS;
                 $type = 'SYNACK';
             }
