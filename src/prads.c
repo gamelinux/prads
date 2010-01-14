@@ -22,6 +22,8 @@
 */
 
 /*  I N C L U D E S  *********************************************************/
+#include <malloc.h>
+
 #include "common.h"
 #include "prads.h"
 #include "sys_func.h"
@@ -658,7 +660,7 @@ int parse_network (char *net_s, struct in6_addr *network)
             perror("parse_nets");
             return -1;
         }
-        printf("Network4 %16s \t-> %010p\n", net_s, network->s6_addr32[0]);
+        printf("Network4 %16s \t-> 0x%08lx\n", net_s, network->s6_addr32[0]);
     }
     return type;
 }
@@ -672,7 +674,7 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
     if (type == AF_INET && (t = strchr(f, '.')) > f && t-f < 4) {
         // full ipv4 netmask : dotted quads
         inet_pton(type, f, &netmask->s6_addr32[0]);
-        printf("mask 4 %s \t-> %010p\n", f, netmask->s6_addr32[0]);
+        printf("mask 4 %s \t-> 0x%08lx\n", f, netmask->s6_addr32[0]);
     } else if (type == AF_INET6 && NULL != (t = strchr(f, ':'))) {
         // full ipv6 netmasĸ
         printf("mask 6 %s\n", f);
@@ -688,7 +690,7 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             else
                 netmask->s6_addr32[0] = 0;
 
-            printf("%010p\n", netmask->s6_addr32[0]);
+            printf("0x%08lx\n", netmask->s6_addr32[0]);
         } else if (type == AF_INET6) {
             //mask = 128 - mask;
             int j = 0;
@@ -767,7 +769,7 @@ void parse_nets(const char *s_net, struct fmask *network)
         nets = ++i;
 
         if (i > MAX_NETS) {
-            elog("Max networks reached, stopped parsing at %lu nets.\n", i-1);
+            elog("Max networks reached, stopped parsing at %d nets.\n", i-1);
             goto nets_end;
         }
 
@@ -799,6 +801,16 @@ static void usage()
     printf(" -a             : home nets (eg: '87.238.44.0/25,10.0.0.0/255.0.0.0')\n\n");
 }
 
+int preallocate_cxt (void)
+{
+    int i;
+    for (i=0;i<BUCKET_SIZE;i++) {
+        bucket[i] = (connection *)calloc(1, sizeof(connection));
+        if(bucket[i] == NULL)
+            return 0;
+    }
+    return 1;
+}
 int main(int argc, char *argv[])
 {
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
@@ -925,6 +937,10 @@ int main(int argc, char *argv[])
     if (config.drop_privs_flag) {
         printf("[*] Dropping privs...\n\n");
         drop_privs();
+    }
+    if (preallocate_cxt() == 0) {
+        printf("pre allocation of connection trackers failed\n");
+        exit(1);
     }
     bucket_keys_NULL();
     alarm(CHECK_TIMEOUT);

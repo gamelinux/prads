@@ -12,6 +12,44 @@
 /* void cx_track(uint64_t ip_src,uint16_t src_port,uint64_t ip_dst,uint16_t dst_port,
                uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af) { */
 
+void setup_cxt_info(connection *cxt, connection *head, struct in6_addr *ip_src,
+                    uint16_t src_port, struct in6_addr *ip_dst, uint16_t dst_port,
+                    uint8_t ip_proto, uint16_t p_bytes, uint8_t tcpflags,
+                    time_t tstamp, int af)
+{
+    extern u_int64_t cxtrackerid;
+    cxtrackerid += 1;
+    if (cxt == NULL) {
+        cxt = (connection *) calloc(1, sizeof (connection));
+        /*
+         * printf("[*] New connection...\n");
+         */
+    }
+    if (head != NULL) {
+        head->prev = cxt;
+    }
+    
+    cxt->cxid = cxtrackerid;
+    cxt->af = af;
+    cxt->s_tcpFlags = tcpflags;
+    cxt->d_tcpFlags = 0x00;
+    cxt->s_total_bytes = p_bytes;
+    cxt->s_total_pkts = 1;
+    cxt->d_total_bytes = 0;
+    cxt->d_total_pkts = 0;
+    cxt->start_time = tstamp;
+    cxt->last_pkt_time = tstamp;
+
+    cxt->s_ip = *ip_src;
+    cxt->d_ip = *ip_dst;
+
+    cxt->s_port = src_port;
+    cxt->d_port = dst_port;
+    cxt->proto = ip_proto;
+    cxt->next = head;
+    cxt->prev = NULL;
+    
+}
 int cx_track(struct in6_addr *ip_src, uint16_t src_port,
              struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
              uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af)
@@ -34,6 +72,8 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
     extern connection *bucket[BUCKET_SIZE];
     cxt = bucket[hash];
     head = cxt;
+    setup_cxt_info(cxt, head, ip_src, src_port, ip_dst, src_port, ip_proto,
+                   p_bytes, tcpflags, tstamp, af);
 
     while (cxt != NULL) {
         if (af == AF_INET) {
@@ -112,7 +152,8 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
         cxt = cxt->next;
     }
 
-    if (cxt == NULL) {
+    /*if (cxt == NULL) {
+        printf("hi\n");
         extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
         cxt = (connection *) calloc(1, sizeof(connection));
@@ -122,7 +163,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
         /*
          * printf("[*] New connection...\n"); 
          */
-        cxt->cxid = cxtrackerid;
+        /*cxt->cxid = cxtrackerid;
         cxt->af = af;
         cxt->s_tcpFlags = tcpflags;
         cxt->d_tcpFlags = 0x00;
@@ -147,7 +188,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
          * } 
          */
 
-        cxt->s_port = src_port;
+        /*cxt->s_port = src_port;
         cxt->d_port = dst_port;
         cxt->proto = ip_proto;
         cxt->next = head;
@@ -155,17 +196,17 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
         /*
          * New connections are pushed on to the head of bucket[s_hash] 
          */
-        bucket[hash] = cxt;
+        //bucket[hash] = cxt;
 
         /*
          * Return value should be 1, telling to do client service fingerprinting 
          */
-        return 1;
-    }
+      //  return 1;
+    //}
     /*
      * Should never be here! 
      */
-    return 0;
+    return 1;
 }
 
 /*
