@@ -46,7 +46,7 @@
 
 extern bstring UNKNOWN;
 
-void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
+void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
                   int plen)
 {
 
@@ -92,7 +92,7 @@ void service_udp4(ip4_header * ip4, udp_header * udph, char *payload,
 
 }
 
-void service_udp6(ip6_header * ip6, udp_header * udph, char *payload,
+void service_udp6(ip6_header * ip6, udp_header * udph, const char *payload,
                   int plen)
 {
     const char *err = NULL;     /* PCRE */

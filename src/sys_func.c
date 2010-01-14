@@ -14,7 +14,7 @@ void bucket_keys_NULL()
     }
 }
 
-void check_interupt()
+void check_interrupt()
 {
     extern int intr_flag;
 

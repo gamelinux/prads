@@ -24,5 +24,6 @@ void print_assets();
 void set_end_sessions();
 void end_sessions();
 void display_config();
+void check_interrupt();
 
 #endif

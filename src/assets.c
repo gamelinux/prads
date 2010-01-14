@@ -78,7 +78,6 @@ short update_asset_os(struct in6_addr ip_addr,
     asset *rec = passet[hash];
     //asset *rec = passet;
 
-    int counter = 0;
     int asset_match = 0;
 
     /*
@@ -191,7 +190,6 @@ short update_asset_service(struct in6_addr ip_addr,
     asset *rec = passet[hash];
     //asset *rec = passet;
 
-    int counter = 0;
     int asset_match = 0;
     //dlog("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
 

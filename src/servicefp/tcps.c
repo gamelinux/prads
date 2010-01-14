@@ -45,7 +45,7 @@
 #include "../sys_func.h"
 #include "servicefp.h"
 
-void service_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
+void service_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload,
                   int plen)
 {
 
@@ -81,7 +81,7 @@ void service_tcp4(ip4_header * ip4, tcp_header * tcph, char *payload,
     }
 }
 
-void service_tcp6(ip6_header * ip6, tcp_header * tcph, char *payload,
+void service_tcp6(ip6_header * ip6, tcp_header * tcph, const char *payload,
                   int plen)
 {
     const char *err = NULL;     /* PCRE */
