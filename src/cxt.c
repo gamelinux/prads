@@ -24,31 +24,30 @@ void setup_cxt_info(connection *cxt, connection *head, struct in6_addr *ip_src,
         /*
          * printf("[*] New connection...\n");
          */
-    }
-    if (head != NULL) {
-        head->prev = cxt;
-    }
-    
-    cxt->cxid = cxtrackerid;
-    cxt->af = af;
-    cxt->s_tcpFlags = tcpflags;
-    cxt->d_tcpFlags = 0x00;
-    cxt->s_total_bytes = p_bytes;
-    cxt->s_total_pkts = 1;
-    cxt->d_total_bytes = 0;
-    cxt->d_total_pkts = 0;
-    cxt->start_time = tstamp;
-    cxt->last_pkt_time = tstamp;
+        if (head != NULL) {
+            head->prev = cxt;
+        }
 
-    cxt->s_ip = *ip_src;
-    cxt->d_ip = *ip_dst;
+        cxt->cxid = cxtrackerid;
+        cxt->af = af;
+        cxt->s_tcpFlags = tcpflags;
+        cxt->d_tcpFlags = 0x00;
+        cxt->s_total_bytes = p_bytes;
+        cxt->s_total_pkts = 1;
+        cxt->d_total_bytes = 0;
+        cxt->d_total_pkts = 0;
+        cxt->start_time = tstamp;
+        cxt->last_pkt_time = tstamp;
 
-    cxt->s_port = src_port;
-    cxt->d_port = dst_port;
-    cxt->proto = ip_proto;
-    cxt->next = head;
-    cxt->prev = NULL;
-    
+        cxt->s_ip = *ip_src;
+        cxt->d_ip = *ip_dst;
+
+        cxt->s_port = src_port;
+        cxt->d_port = dst_port;
+        cxt->proto = ip_proto;
+        cxt->next = head;
+        cxt->prev = NULL;
+    }
 }
 int cx_track(struct in6_addr *ip_src, uint16_t src_port,
              struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
