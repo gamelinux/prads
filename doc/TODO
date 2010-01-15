@@ -31,6 +31,12 @@
    /net class abc/mail/os/service/ssh/web server/web client/
    /trends/.
 
+9. Webapplication detection!
+   - have a sett off known signatures for known webapps,
+     say wordpress, drupal, phpmyadmin, and so on, so that
+     we can know what Snort/ET/Suricata rules to enable :)
+     automatic! 
+
 
 MAC asset detection
 
