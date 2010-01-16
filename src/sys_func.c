@@ -63,7 +63,7 @@ void game_over()
 int set_chroot(void)
 {
     char *absdir;
-    char *logdir;
+    //char *logdir;
     int abslen;
 
     /*

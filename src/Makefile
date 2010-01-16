@@ -6,7 +6,7 @@ CFLAGS=-O3
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
-CFLAGS = -g -DDEBUG -Wall
+CFLAGS = -g -pg -DDEBUG -Wall
 endif
 
 SERVICE_OBJ = \

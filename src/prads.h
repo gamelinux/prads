@@ -30,7 +30,7 @@
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.7"
-#define CHECK_TIMEOUT                 5        /* Time between cxt and asset cleaning/printing */
+#define CHECK_TIMEOUT                 60        /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 600       /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669
@@ -445,6 +445,8 @@ typedef struct _packetinfo {
     uint16_t        packet_bytes;   /* Lenght of IP payload in packet */
     struct in6_addr ip_src;         /* source address */
     struct in6_addr ip_dst;         /* destination address */
+    uint16_t        s_port;         /* source port */
+    uint16_t        d_port;         /* destination port */
     uint32_t        s_check;        /* return value from cxtracker */
     tcp_header      *tcph;          /* tcp header struct pointer */
     udp_header      *udph;          /* udp header struct pointer */

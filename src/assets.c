@@ -540,7 +540,7 @@ void del_assets(int ctime)
 {
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
-    time_t check_time = tstamp;
+    //time_t check_time = tstamp;
     //extern asset *bucket[BUCKET_SIZE];
     //for ( int akey = 0; akey < BUCKET_SIZE; akey++ ) {
     //   passet = bucket[akey];

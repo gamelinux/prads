@@ -43,15 +43,14 @@
 
 #include "../prads.h"
 #include "../sys_func.h"
+#include "../assets.h"
 #include "servicefp.h"
 
 extern bstring UNKNOWN;
 
 void client_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload, int plen)
 {
-
-    const char *err = NULL;     /* PCRE */
-    int erroffset, rc;          /* PCRE */
+    int rc;                     /* PCRE */
     int ovector[15];
     extern signature *sig_client_tcp;
     signature *tmpsig;
@@ -86,8 +85,7 @@ void client_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload, int p
 
 void client_tcp6(ip6_header * ip6, tcp_header * tcph, const char *payload, int plen)
 {
-    const char *err = NULL;     /* PCRE */
-    int erroffset, rc;          /* PCRE */
+    int rc;                     /* PCRE */
     int ovector[15];
     extern signature *sig_client_tcp;
     signature *tmpsig;

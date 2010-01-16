@@ -42,6 +42,7 @@
 
 #include "../common.h"
 #include "../prads.h"
+#include "../assets.h"
 #include "ipfp.h"
 
 void gen_fp_tcp(uint8_t ttl,

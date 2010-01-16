@@ -71,7 +71,7 @@ void fp_icmp6(ip6_header * ip6, icmp6_header * icpmh,
 {
 
     uint8_t *opt_ptr;
-    int32_t ilen, olen;
+    //int32_t ilen, olen;
     uint32_t quirks = 0;
     uint8_t *payload = 0;
 
@@ -98,7 +98,7 @@ void fp_icmp6(ip6_header * ip6, icmp6_header * icpmh,
         quirks |= QUIRK_DATA;
         payload = opt_ptr + ip6->len;
     }
-    uint8_t idata = (uint8_t *) end_ptr - payload;
+    //uint8_t idata = (uint8_t *) end_ptr - payload;
 
     if (!IP6_FL(ip6))
         quirks |= QUIRK_ZEROID;

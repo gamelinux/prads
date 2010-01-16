@@ -42,6 +42,7 @@
  */
 
 #include "../prads.h"
+#include "../assets.h"
 #include "servicefp.h"
 
 extern bstring UNKNOWN;
@@ -49,9 +50,7 @@ extern bstring UNKNOWN;
 void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
                   int plen)
 {
-
-    const char *err = NULL;     /* PCRE */
-    int erroffset, rc;          /* PCRE */
+    int rc;                     /* PCRE */
     int ovector[15];
     extern signature *sig_serv_udp;
     signature *tmpsig;
@@ -95,8 +94,7 @@ void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
 void service_udp6(ip6_header * ip6, udp_header * udph, const char *payload,
                   int plen)
 {
-    const char *err = NULL;     /* PCRE */
-    int erroffset, rc;          /* PCRE */
+    int rc;                     /* PCRE */
     int ovector[15];
     extern signature *sig_serv_udp;
     signature *tmpsig;
