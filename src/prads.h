@@ -152,6 +152,10 @@
 #define MAX_NETS                       128
 #define SERVICE                        1
 #define CLIENT                         2
+#define FROMSERVER                     0
+#define FROMCLIENT                     1
+#define CXT_DEFAULT_HASHSIZE           65536
+#define CXT_DEFAULT_PREALLOC           10000
 
 /*  D A T A  S T R U C T U R E S  *********************************************/
 
@@ -413,6 +417,8 @@ typedef struct _icmp6_header {
 typedef struct _connection {
     struct _connection *prev;
     struct _connection *next;
+    struct _connection *hprev;  /* Hash bucket list */
+    struct _connection *hnext;
     time_t start_time;          /* connection start time */
     time_t last_pkt_time;       /* last seen packet time */
     uint64_t cxid;              /* connection id */
@@ -428,6 +434,7 @@ typedef struct _connection {
     uint64_t d_total_bytes;     /* total destination bytes */
     uint8_t s_tcpFlags;         /* tcpflags sent by source */
     uint8_t d_tcpFlags;         /* tcpflags sent by destination */
+    struct _cxtbucket *cb;
 } connection;
 
 typedef struct _packetinfo {

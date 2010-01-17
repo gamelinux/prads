@@ -745,7 +745,8 @@ void parse_nets(const char *s_net, struct fmask *network)
 
     // snet is a mutable copy of the args,freed @ nets_end
     len = strlen(s_net);
-    snet = calloc(1, len);
+    //snet = calloc(1, len);
+    snet = calloc(1, (len + 1)); /* to have \0 too :-) */
     strncpy(snet, s_net, len);
     f = snet;
     while (f && 0 != (p = strchr(f, '/'))) {
