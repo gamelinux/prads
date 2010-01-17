@@ -220,23 +220,16 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
    return -1;
 }
 
-// void connection_tracking (packetinfo *pi)
-//pi->s_check =
-//cx_track(&pi->ip_src, pi->tcph->src_port, 
-// &pi->ip_dst, pi->tcph->dst_port, 
-// pi->ip4->ip_p, pi->packet_bytes,
-// pi->tcph->t_flags, pi->pheader->ts.tv_sec, pi->af);
-
 uint32_t make_hash(packetinfo *pi)
 {
     if (pi->ip4 != NULL) {
         return ((pi->ip_src.s6_addr32[0] + pi->ip_dst.s6_addr32[0])) % BUCKET_SIZE;
     } else {
         return ((pi->ip_src.s6_addr32[0] + pi->ip_src.s6_addr32[1] +
-                pi->ip_src.s6_addr32[2] + pi->ip_src.s6_addr32[3] +
-                pi->ip_dst.s6_addr32[0] + pi->ip_dst.s6_addr32[1] +
-                pi->ip_dst.s6_addr32[2] + pi->ip_dst.s6_addr32[3]
-                )) % BUCKET_SIZE;
+                 pi->ip_src.s6_addr32[2] + pi->ip_src.s6_addr32[3] +
+                 pi->ip_dst.s6_addr32[0] + pi->ip_dst.s6_addr32[1] +
+                 pi->ip_dst.s6_addr32[2] + pi->ip_dst.s6_addr32[3]
+                 )) % BUCKET_SIZE;
     }
 }
 

@@ -452,7 +452,7 @@ void prepare_tcp (packetinfo *pi)
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
-        //ip->s_check =
+        //pi->s_check =
         //        cx_track(&pi->ip6->ip_src, pi->tcph->src_port,
         //                 &pi->ip6->ip_dst, pi->tcph->dst_port,
         //                 pi->ip6->next, pi->ip6->len, pi->tcph->t_flags,
