@@ -2,6 +2,7 @@
 #include "prads.h"
 #include "cxt.h"
 #include "sys_func.h"
+#include "util-cxt.h"
 
 /* For prads, I guess cx_track needs to return a value, which can
  * be used for evaluating if we should do some fingerprinting
@@ -247,111 +248,51 @@ void connection_tracking(packetinfo *pi)
 
     while (cxt != NULL) {
         if (pi->af == AF_INET) {
-            if (cxt->s_port == pi->s_port && cxt->d_port == pi->d_port
-                && cxt->s_ip.s6_addr32[0] == pi->ip_src.s6_addr32[0]
-                && cxt->d_ip.s6_addr32[0] == pi->ip_dst.s6_addr32[0]) {
+            if (   CMP_PORT(cxt->s_port, pi->s_port)
+                && CMP_PORT(cxt->d_port, pi->d_port)
+                && CMP_ADDR4(&cxt->s_ip, &pi->ip_src)
+                && CMP_ADDR4(&cxt->d_ip, &pi->ip_dst)) {
 
-                cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
-                cxt->s_total_bytes += pi->packet_bytes;
-                cxt->s_total_pkts += 1;
-                cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-                if (cxt->s_total_bytes > MAX_BYTE_CHECK
-                    || cxt->s_total_pkts > MAX_PKT_CHECK) {
-                    pi->s_check = 0; // Don't check!
-                    return;
-                }
-                pi->s_check = 1; // Client & check
+                dlog("[*] Updating src connection: %lu\n",cxt->cxid);
+                cxt_update_src(cxt,pi);
                 return;
-            } else if (cxt->s_port == pi->d_port && cxt->d_port == pi->s_port
-                       && cxt->s_ip.s6_addr32[0] == pi->ip_dst.s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[0] == pi->ip_src.s6_addr32[0]) {
+            } else if (   CMP_PORT(cxt->s_port, pi->d_port)
+                       && CMP_PORT(cxt->d_port, pi->s_port)
+                       && CMP_ADDR4(&cxt->s_ip, &pi->ip_dst)
+                       && CMP_ADDR4(&cxt->d_ip, &pi->ip_src)) {
 
-                cxt->d_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
-                cxt->d_total_bytes += pi->packet_bytes;
-                cxt->d_total_pkts += 1;
-                cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-                if (cxt->d_total_bytes > MAX_BYTE_CHECK
-                    || cxt->d_total_pkts > MAX_PKT_CHECK) {
-                    pi->s_check = 0; // Don't check!
-                    return;
-                }
-                pi->s_check = 2; // Server & check
+                dlog("[*] Updating dst connection: %lu\n",cxt->cxid);
+                cxt_update_dst(cxt,pi);
                 return;
             }
         } else if (pi->af == AF_INET6) {
-            if (cxt->s_port == pi->s_port && cxt->d_port == pi->d_port
-                && cxt->s_ip.s6_addr32[3] == pi->ip_src.s6_addr32[3]
-                && cxt->s_ip.s6_addr32[2] == pi->ip_src.s6_addr32[2]
-                && cxt->s_ip.s6_addr32[1] == pi->ip_src.s6_addr32[1]
-                && cxt->s_ip.s6_addr32[0] == pi->ip_src.s6_addr32[0]
-
-                && cxt->d_ip.s6_addr32[3] == pi->ip_dst.s6_addr32[3]
-                && cxt->d_ip.s6_addr32[2] == pi->ip_dst.s6_addr32[2]
-                && cxt->d_ip.s6_addr32[1] == pi->ip_dst.s6_addr32[1]
-                && cxt->d_ip.s6_addr32[0] == pi->ip_dst.s6_addr32[0]) {
-
-                cxt->s_tcpFlags |= pi->tcph->t_flags;
-                cxt->s_total_bytes += pi->packet_bytes;
-                cxt->s_total_pkts += 1;
-                cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-                if (cxt->s_total_bytes > MAX_BYTE_CHECK
-                    || cxt->s_total_pkts > MAX_PKT_CHECK) {
-                    pi->s_check = 0; // Don't check
-                    return;
-                }
-                pi->s_check = 1; // Client & check
+            if (   CMP_PORT(cxt->s_port, pi->s_port)
+                && CMP_PORT(cxt->d_port, pi->d_port)
+                && CMP_ADDR6(&cxt->s_ip, &pi->ip_src)
+                && CMP_ADDR6(&cxt->d_ip, &pi->ip_dst)) {
+                dlog("[*] Updating src connection: %lu\n",cxt->cxid);
+                cxt_update_src(cxt,pi);
                 return;
-            } else if (cxt->d_port == pi->s_port && cxt->s_port == pi->d_port
-                       && cxt->s_ip.s6_addr32[0] == pi->ip_dst.s6_addr32[0]
-                       && cxt->s_ip.s6_addr32[1] == pi->ip_dst.s6_addr32[1]
-                       && cxt->s_ip.s6_addr32[2] == pi->ip_dst.s6_addr32[2]
-                       && cxt->s_ip.s6_addr32[3] == pi->ip_dst.s6_addr32[3]
-
-                       && cxt->d_ip.s6_addr32[0] == pi->ip_src.s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[1] == pi->ip_src.s6_addr32[1]
-                       && cxt->d_ip.s6_addr32[2] == pi->ip_src.s6_addr32[2]
-                       && cxt->d_ip.s6_addr32[3] == pi->ip_src.s6_addr32[3]) {
-
-                cxt->d_tcpFlags |= pi->tcph->t_flags;
-                cxt->d_total_bytes += pi->packet_bytes;
-                cxt->d_total_pkts += 1;
-                cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-                if (cxt->d_total_bytes > MAX_BYTE_CHECK
-                    || cxt->d_total_pkts > MAX_PKT_CHECK) {
-                    pi->s_check = 0; // Don't check
-                    return;
-                }
-                pi->s_check = 2; // Server & check
+            } else if (   CMP_PORT(cxt->s_port, pi->d_port)
+                       && CMP_PORT(cxt->d_port, pi->s_port)
+                       && CMP_ADDR4(&cxt->s_ip, &pi->ip_dst)
+                       && CMP_ADDR4(&cxt->d_ip, &pi->ip_src)) {
+                dlog("[*] Updating dst connection: %lu\n",cxt->cxid);
+                cxt_update_dst(cxt,pi);
                 return;
             }
         }
         cxt = cxt->next;
     }
     if (cxt == NULL) {
-        extern u_int64_t cxtrackerid;
-        cxtrackerid += 1;
-
         cxt = (connection *) calloc(1, sizeof(connection));
-        vlog(0x3, "[*] New connection: %lu",cxtrackerid);
         if (head != NULL) {
             head->prev = cxt;
         }
-        cxt->cxid = cxtrackerid;
-        cxt->af = pi->af;
-        cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
-        cxt->s_total_bytes = pi->packet_bytes;
-        cxt->s_total_pkts = 1;
-        cxt->start_time = pi->pheader->ts.tv_sec;
-        cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-        cxt->s_ip = pi->ip_src;
-        cxt->d_ip = pi->ip_dst;
-        cxt->s_port = pi->s_port;
-        cxt->d_port = pi->d_port;
-        cxt->proto = (pi->ip4 ? pi->ip4->ip_p : pi->ip6->next);
-
+        cxt_new(cxt,pi);
+        dlog("[*] New connection: %lu\n",cxt->cxid);
         cxt->next = head;
         bucket[hash] = cxt;
-        pi->s_check = 1;
         return;
     }
     printf("[*] Error in session tracking...\n");
