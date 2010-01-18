@@ -848,17 +848,18 @@ int main(int argc, char *argv[])
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
 
-//    config.ctf |= CO_SYN;
+    // Remind me to get this into a config something!
+    config.ctf |= CO_SYN;
     //config.ctf |= CO_RST;
     //config.ctf |= CO_FIN;
     //config.ctf |= CO_ACK;
-//    config.ctf |= CO_SYNACK;
-//    config.ctf |= CO_ICMP;
-//    config.ctf |= CO_UDP;
+    config.ctf |= CO_SYNACK;
+    config.ctf |= CO_ICMP;
+    config.ctf |= CO_UDP;
     //config.ctf |= CO_OTHER;
-//    config.cof |= CS_TCP_SERVER;
-//    config.cof |= CS_TCP_CLIENT;
-//    config.cof |= CS_UDP_SERVICES;
+    config.cof |= CS_TCP_SERVER;
+    config.cof |= CS_TCP_CLIENT;
+    config.cof |= CS_UDP_SERVICES;
     int ch = 0;
     config.dev = "eth0";
     config.bpff = "";
