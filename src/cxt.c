@@ -164,7 +164,6 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
 //                       p_bytes, tcpflags, tstamp, af);
 //    return 1;
     if (cxt == NULL) {
-        printf("hi\n");
         extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
         cxt = (connection *) calloc(1, sizeof(connection));
@@ -236,57 +235,29 @@ uint32_t make_hash(packetinfo *pi)
 }
 
 inline
-void connection_tracking(packetinfo *pi)
-{
+void connection_tracking(packetinfo *pi) {
     connection *cxt = NULL;
-    connection *head = NULL;
+    //connection *head = NULL;
     uint32_t hash;
 
     // add to packetinfo ? dont through int32 around :)
     hash = make_hash(pi);
-    extern connection *bucket[BUCKET_SIZE];
-    cxt = bucket[hash];
-    head = cxt;
+    //extern connection *bucket[BUCKET_SIZE];
+    cxt = cxt_get_from_hash(pi, hash);
+    if (cxt == NULL)
+        return;
+    //head = cxt;
+    if (pi->flags & PKT_IS_FROM_CLIENT) {
+        dlog("[*] Updating src connection: %lu\n", cxt->cxid);
+        cxt_update_src(cxt, pi);
 
-    while (cxt != NULL) {
-        if (pi->af == AF_INET) {
-            if (   CMP_PORT(cxt->s_port, pi->s_port)
-                && CMP_PORT(cxt->d_port, pi->d_port)
-                && CMP_ADDR4(&cxt->s_ip, &pi->ip_src)
-                && CMP_ADDR4(&cxt->d_ip, &pi->ip_dst)) {
-
-                dlog("[*] Updating src connection: %lu\n",cxt->cxid);
-                cxt_update_src(cxt,pi);
-                return;
-            } else if (   CMP_PORT(cxt->s_port, pi->d_port)
-                       && CMP_PORT(cxt->d_port, pi->s_port)
-                       && CMP_ADDR4(&cxt->s_ip, &pi->ip_dst)
-                       && CMP_ADDR4(&cxt->d_ip, &pi->ip_src)) {
-
-                dlog("[*] Updating dst connection: %lu\n",cxt->cxid);
-                cxt_update_dst(cxt,pi);
-                return;
-            }
-        } else if (pi->af == AF_INET6) {
-            if (   CMP_PORT(cxt->s_port, pi->s_port)
-                && CMP_PORT(cxt->d_port, pi->d_port)
-                && CMP_ADDR6(&cxt->s_ip, &pi->ip_src)
-                && CMP_ADDR6(&cxt->d_ip, &pi->ip_dst)) {
-                dlog("[*] Updating src connection: %lu\n",cxt->cxid);
-                cxt_update_src(cxt,pi);
-                return;
-            } else if (   CMP_PORT(cxt->s_port, pi->d_port)
-                       && CMP_PORT(cxt->d_port, pi->s_port)
-                       && CMP_ADDR4(&cxt->s_ip, &pi->ip_dst)
-                       && CMP_ADDR4(&cxt->d_ip, &pi->ip_src)) {
-                dlog("[*] Updating dst connection: %lu\n",cxt->cxid);
-                cxt_update_dst(cxt,pi);
-                return;
-            }
-        }
-        cxt = cxt->next;
+    } else {
+        dlog("[*] Updating dst connection: %lu\n", cxt->cxid);
+        cxt_update_dst(cxt, pi);
     }
-    if (cxt == NULL) {
+
+    return;
+    /*if (cxt == NULL) {
         cxt = (connection *) connection_alloc();
         //cxt = (connection *) calloc(1, sizeof(connection));
         if (head != NULL) {
@@ -299,7 +270,7 @@ void connection_tracking(packetinfo *pi)
         return;
     }
     printf("[*] Error in session tracking...\n");
-    exit (1);
+    exit (1);*/
 }
 
 /*

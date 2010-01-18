@@ -6,6 +6,7 @@
 
 #include "prads.h"
 #include "util-cxt.h"
+#include "util-cxt-queue.h"
 #include <stddef.h>
 
 /* Allocate a connection */
@@ -31,117 +32,7 @@ void connection_free(connection *cxt)
     free(cxt);
 }
 
-/* initialize the connection from the first packet we see from it. */
-void connection_init(connection *cxt, struct in6_addr *ip_src, uint16_t src_port,
-             struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
-             uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af)
-{
-
-    extern u_int64_t cxtrackerid;
-    cxtrackerid += 1;
-
-    cxt->cxid = cxtrackerid;
-    cxt->af = af;
-    cxt->s_tcpFlags = tcpflags;
-    cxt->d_tcpFlags = 0x00;
-    cxt->s_total_bytes = p_bytes;
-    cxt->s_total_pkts = 1;
-    cxt->d_total_bytes = 0;
-    cxt->d_total_pkts = 0;
-    cxt->start_time = tstamp;
-    cxt->last_pkt_time = tstamp;
-
-    cxt->s_ip = *ip_src;
-    cxt->d_ip = *ip_dst;
-    cxt->s_port = src_port;
-    cxt->d_port = dst_port;
-    cxt->proto = ip_proto;
-}
-
-cxtqueue *cxtqueue_new()
-{
-    cxtqueue *q = (cxtqueue *)calloc(1, sizeof(cxtqueue));
-    if (q == NULL) {
-        printf("Error allocating connection queue\n");
-        exit(EXIT_FAILURE);
-    }
-    return q;
-}
-
-void cxt_enqueue (cxtqueue *q, connection *cxt) {
-    /* more connection in the queue */
-    if (q->top != NULL) {
-        cxt->next = q->top;
-        q->top->prev = cxt;
-        q->top = cxt;
-    /* only one connection */
-    } else {
-        q->top = cxt;
-        q->bot = cxt;
-    }
-    q->len++;
-}
-
-connection *cxt_dequeue (cxtqueue *q) {
-
-    connection *cxt = q->bot;
-    if (cxt == NULL)
-        return NULL;
-
-    /* more connection trackers in queue */
-    if (q->bot->prev != NULL) {
-        q->bot = q->bot->prev;
-        q->bot->next = NULL;
-    /* just the one we remove, so now empty */
-    } else {
-        q->top = NULL;
-        q->bot = NULL;
-    }
-
-    q->len--;
-
-    cxt->next = NULL;
-    cxt->prev = NULL;
-
-    return cxt;
-}
-
-void cxt_requeue(connection *cxt, cxtqueue *srcq, cxtqueue *dstq)
-{
-    if (srcq != NULL)
-    {
-        /* remove from old queue */
-        if (srcq->top == cxt)
-            srcq->top = cxt->next;       /* remove from queue top */
-        if (srcq->bot == cxt)
-            srcq->bot = cxt->prev;       /* remove from queue bot */
-        if (cxt->prev)
-            cxt->prev->next = cxt->next; /* remove from flow prev */
-        if (cxt->next)
-            cxt->next->prev = cxt->prev; /* remove from flow next */
-
-        srcq->len--; /* adjust len */
-
-        cxt->next = NULL;
-        cxt->prev = NULL;
-
-    }
-
-    /* now put it in dst, add to new queue (append) */
-    cxt->prev = dstq->bot;
-    if (cxt->prev)
-        cxt->prev->next = cxt;
-    cxt->next = NULL;
-    dstq->bot = cxt;
-    if (dstq->top == NULL)
-        dstq->top = cxt;
-
-    dstq->len++;
-}
-
-connection *cxt_get_from_hash (struct in6_addr *ip_src, uint16_t src_port,
-             struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
-             uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af, uint32_t hash)
+inline connection *cxt_get_from_hash (packetinfo *pi, uint32_t hash)
 {
     connection *cxt = NULL;
     int ret = 0;
@@ -163,8 +54,7 @@ connection *cxt_get_from_hash (struct in6_addr *ip_src, uint16_t src_port,
         cxt->hprev = NULL;
 
         /* got one, initialize and return */
-        connection_init(cxt,ip_src, src_port, ip_dst, dst_port, ip_proto,
-                        p_bytes, tcpflags, tstamp, af);
+        cxt_new(cxt,pi);
         cxt_requeue(cxt, NULL, &cxt_est_q);
         cxt->cb = cb;
 
@@ -175,10 +65,22 @@ connection *cxt_get_from_hash (struct in6_addr *ip_src, uint16_t src_port,
     cxt = cb->cxt;
 
     /* see if this is the flow we are looking for */
-    if (af == AF_INET) {
-        ret = CMP_CXT4(cxt, ip_src, src_port, ip_dst, dst_port);
-    } else if (af == AF_INET6){
-        ret = CMP_CXT6(cxt, ip_src, src_port, ip_dst, dst_port);
+    if (pi->af == AF_INET) {
+        if (CMP_CXT4SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+            ret = 1;
+            pi->flags |= PKT_IS_FROM_CLIENT;
+        } else if (CMP_CXT4DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+            ret = 1;
+            pi->flags |= PKT_IS_FROM_SERVER;
+        }
+    } else if (pi->af == AF_INET6){
+        if (CMP_CXT6SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+            ret = 1;
+            pi->flags |= PKT_IS_FROM_CLIENT;
+        } else if (CMP_CXT6DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+            ret = 1;
+            pi->flags |= PKT_IS_FROM_SERVER;
+        }
     }
 
     if (ret == 0) {
@@ -203,8 +105,7 @@ connection *cxt_get_from_hash (struct in6_addr *ip_src, uint16_t src_port,
                 cxt->hprev = pcxt;
 
                 /* lock, initialize and return */
-                connection_init(cxt,ip_src, src_port, ip_dst, dst_port,
-                                ip_proto, p_bytes, tcpflags, tstamp, af);
+                cxt_new(cxt,pi);
                 cxt_requeue(cxt, NULL, &cxt_est_q);
 
                 cxt->cb = cb;
@@ -212,10 +113,22 @@ connection *cxt_get_from_hash (struct in6_addr *ip_src, uint16_t src_port,
                 return cxt;
             }
 
-            if (af == AF_INET) {
-                ret = CMP_CXT4(cxt, ip_src, src_port, ip_dst, dst_port);
-            } else if (af == AF_INET6) {
-                ret = CMP_CXT6(cxt, ip_src, src_port, ip_dst, dst_port);
+            if (pi->af == AF_INET) {
+                if (CMP_CXT4SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                    ret = 1;
+                    pi->flags |= PKT_IS_FROM_CLIENT;
+                } else if (CMP_CXT4DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                    ret = 1;
+                    pi->flags |= PKT_IS_FROM_SERVER;
+                }
+            } else if (pi->af == AF_INET6) {
+                if (CMP_CXT6SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                    ret = 1;
+                    pi->flags |= PKT_IS_FROM_CLIENT;
+                } else if (CMP_CXT6DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                    ret = 1;
+                    pi->flags |= PKT_IS_FROM_SERVER;
+                }
             }
             if ( ret != 0) {
                 /* we found our flow, lets put it on top of the
@@ -289,6 +202,8 @@ void cxt_update_src (connection *cxt, packetinfo *pi)
     pi->s_check = 1; // Client & check
     return;
 }
+
+/* initialize the connection from the first packet we see from it. */
 
 inline
 void cxt_new (connection *cxt, packetinfo *pi)

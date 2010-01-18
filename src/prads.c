@@ -31,6 +31,8 @@
 #include "cxt.h"
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
+#include "util-cxt.h"
+#include "util-cxt-queue.h"
 
 /*  G L O B A L E S  *********************************************************/
 uint64_t cxtrackerid;
@@ -811,6 +813,27 @@ nets_end:
     return;
 }
 
+void cxt_init()
+ {
+    /* alloc hash memory */
+    cxt_hash = calloc(CXT_DEFAULT_HASHSIZE, sizeof(cxtbucket));
+    if (cxt_hash == NULL) {
+        printf("calloc failed %s\n", strerror(errno));
+        exit(1);
+    }
+    uint32_t i = 0;
+
+    /* pre allocate conection trackers */
+    for (i = 0; i < CXT_DEFAULT_PREALLOC; i++) {
+        connection *cxt = connection_alloc();
+        if (cxt == NULL) {
+            printf("ERROR: connection_alloc failed: %s\n", strerror(errno));
+            exit(1);
+        }
+        cxt_enqueue(&cxt_spare_q,cxt);
+     }
+}
+
 static void usage()
 {
     printf("USAGE:\n");
@@ -844,17 +867,17 @@ int main(int argc, char *argv[])
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
 
-    config.ctf |= CO_SYN;
+//    config.ctf |= CO_SYN;
     //config.ctf |= CO_RST;
     //config.ctf |= CO_FIN;
     //config.ctf |= CO_ACK;
-    config.ctf |= CO_SYNACK;
-    config.ctf |= CO_ICMP;
-    config.ctf |= CO_UDP;
+//    config.ctf |= CO_SYNACK;
+//    config.ctf |= CO_ICMP;
+//    config.ctf |= CO_UDP;
     //config.ctf |= CO_OTHER;
-    config.cof |= CS_TCP_SERVER;
-    config.cof |= CS_TCP_CLIENT;
-    config.cof |= CS_UDP_SERVICES;
+//    config.cof |= CS_TCP_SERVER;
+//    config.cof |= CS_TCP_CLIENT;
+//    config.cof |= CS_UDP_SERVICES;
     int ch = 0;
     config.dev = "eth0";
     config.bpff = "";
@@ -978,6 +1001,7 @@ int main(int argc, char *argv[])
     bucket_keys_NULL();
     alarm(CHECK_TIMEOUT);
 
+    cxt_init();
     printf("[*] Sniffing...\n\n");
     pcap_loop(config.handle, -1, got_packet, NULL);
 

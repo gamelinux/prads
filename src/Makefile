@@ -13,7 +13,7 @@ SERVICE_OBJ = \
 servicefp/servicefp.o \
 servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o
 IPFP_OBJ = ipfp/ipfp.o ipfp/tcp_fp.o ipfp/udp_fp.o ipfp/icmp_fp.o
-OBJECTS = bstrlib.o sys_func.o util-cxt.o cxt.o assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
+OBJECTS = bstrlib.o sys_func.o util-cxt-queue.o util-cxt.o cxt.o assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
 
 
 all: prads

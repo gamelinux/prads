@@ -411,6 +411,8 @@ typedef struct _icmp6_header {
 /* Minus 1 due to the 'body' field  */
 #define ICMP6_MIN_HEADER_LEN (sizeof(ICMP6Hdr) )
 
+#define PKT_IS_FROM_CLIENT  0
+#define PKT_IS_FROM_SERVER  1
 /*
  * Structure for connections
  */
@@ -464,6 +466,7 @@ typedef struct _packetinfo {
     const char      *payload;       /* char pointer to transport payload */
     uint32_t        our;            /* Is the asset in our defined network */
     uint8_t         up;             /* Set if the asset has been updated */
+    uint8_t         flags;
 } packetinfo;
 
 typedef struct _serv_asset {
