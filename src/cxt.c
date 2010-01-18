@@ -221,6 +221,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
    return -1;
 }
 
+inline
 uint32_t make_hash(packetinfo *pi)
 {
     if (pi->ip4 != NULL) {
@@ -234,6 +235,7 @@ uint32_t make_hash(packetinfo *pi)
     }
 }
 
+inline
 void connection_tracking(packetinfo *pi)
 {
     connection *cxt = NULL;
@@ -285,7 +287,8 @@ void connection_tracking(packetinfo *pi)
         cxt = cxt->next;
     }
     if (cxt == NULL) {
-        cxt = (connection *) calloc(1, sizeof(connection));
+        cxt = (connection *) connection_alloc();
+        //cxt = (connection *) calloc(1, sizeof(connection));
         if (head != NULL) {
             head->prev = cxt;
         }
