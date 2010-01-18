@@ -4,6 +4,16 @@
 #include "sys_func.h"
 #include "util-cxt.h"
 
+// vector fill: srcprt,dstprt,srcip,dstip = 96 bytes. rest is 0
+#define VEC_FILL(vec, _ipsrc,_ipdst,_portsrc,_portdst) do {\
+    vec.s[0] = (_portsrc); \
+    vec.s[1] = (_portdst); \
+    vec.w[1] = (_ipsrc); \
+    vec.w[2] = (_ipdst); \
+    vec.w[3] = 0; \
+} while (0)
+
+
 /* For prads, I guess cx_track needs to return a value, which can
  * be used for evaluating if we should do some fingerprinting
  * I suggest:
@@ -234,6 +244,93 @@ uint32_t make_hash(packetinfo *pi)
     }
 }
 
+/* vector comparisons to speed up cx tracking.
+ * meaning, compare source:port and dest:port at the same time.
+ *
+ * about vectors and potential improvements:
+ *
+ * all 64bit machines have at least SSE2 instructions
+ * *BUT* there is no guarantee we won't loose time on
+ * copying the vectors around.
+ * ... indeed, a quick objdump shows us that
+ * there is a shitton of mov instructions to align the addresses.
+ *
+ * Needs support to give improvements: 
+ * the addresses should already be aligned as a 128-bit word
+ * in the connection tracking bucket.
+ *
+ * note, we can employ the same technique for ipv6 addresses, but
+ * one address at a time.
+ */
+inline void cx_track_simd_ipv4(packetinfo *pi)
+{
+    connection *cxt = NULL;
+    connection *head = NULL;
+    uint32_t hash;
+
+    // add to packetinfo ? dont through int32 around :)
+    hash = make_hash(pi);
+    extern connection *bucket[BUCKET_SIZE];
+    cxt = bucket[hash];
+    head = cxt;
+
+    ip6v incoming;
+    ip6v compare;
+    VEC_FILL(incoming,
+        pi->ip_src.s6_addr32[0],
+        pi->ip_dst.s6_addr32[0],
+        pi->s_port,
+        pi->d_port);
+    while (cxt != NULL) {
+        VEC_FILL(compare,
+        cxt->s_ip.s6_addr32[0],
+        cxt->d_ip.s6_addr32[0],
+        cxt->s_port,
+        cxt->d_port);
+
+        // single-instruction compare -msse2
+        compare.v = __builtin_ia32_pcmpeqd128(incoming.v,compare.v);
+        // same thing, really. c == v iff c ^ v == 0
+        //compare.v = compare.v ^ incoming.v;
+
+        // 64-bit compare reduce
+        if(!(compare.i[0] & compare.i[1])){
+            //ok
+            dlog("[*] Updating src connection: %lu\n",cxt->cxid);
+            cxt_update_src(cxt,pi);
+            return;
+        }
+
+        // compare the other direction
+        VEC_FILL(compare,
+        cxt->d_ip.s6_addr32[0],
+        cxt->s_ip.s6_addr32[0],
+        cxt->d_port,
+        cxt->s_port);
+
+        compare.v = __builtin_ia32_pcmpeqd128(incoming.v,compare.v);
+        if(!(compare.i[0] & compare.i[1])){
+            dlog("[*] Updating dst connection: %lu\n",cxt->cxid);
+            cxt_update_dst(cxt,pi);
+            return;
+        }
+        cxt = cxt->next;
+    }
+    if (cxt == NULL) {
+        cxt = (connection *) connection_alloc();
+        //cxt = (connection *) calloc(1, sizeof(connection));
+        if (head != NULL) {
+            head->prev = cxt;
+        }
+        cxt_new(cxt,pi);
+        dlog("[*] New connection: %lu\n",cxt->cxid);
+        cxt->next = head;
+        bucket[hash] = cxt;
+        return;
+    }
+    printf("[*] Error in session tracking...\n");
+    exit (1);
+}
 inline
 void connection_tracking(packetinfo *pi) {
     connection *cxt = NULL;
@@ -255,7 +352,6 @@ void connection_tracking(packetinfo *pi) {
         dlog("[*] Updating dst connection: %lu\n", cxt->cxid);
         cxt_update_dst(cxt, pi);
     }
-
     return;
     /*if (cxt == NULL) {
         cxt = (connection *) connection_alloc();
