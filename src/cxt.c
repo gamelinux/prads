@@ -339,9 +339,11 @@ void connection_tracking(packetinfo *pi) {
 
     // add to packetinfo ? dont through int32 around :)
     hash = make_hash(pi);
+    cxt_update(pi, hash);
+    return;
     //extern connection *bucket[BUCKET_SIZE];
-    cxt = cxt_get_from_hash(pi, hash);
-    if (cxt == NULL)
+    //cxt = cxt_get_from_hash(pi, hash);
+/*    if (cxt == NULL)
         return;
     //head = cxt;
     if (pi->flags & PKT_IS_FROM_CLIENT) {
@@ -352,7 +354,7 @@ void connection_tracking(packetinfo *pi) {
         dlog("[*] Updating dst connection: %lu\n", cxt->cxid);
         cxt_update_dst(cxt, pi);
     }
-    return;
+    return; */
     /*if (cxt == NULL) {
         cxt = (connection *) connection_alloc();
         //cxt = (connection *) calloc(1, sizeof(connection));

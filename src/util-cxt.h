@@ -5,7 +5,7 @@
  */
 
 #ifndef _UTIL_CXT_H
-#define    _UTIL_CXT_H
+#define _UTIL_CXT_H
 
 #include "prads.h"
 
@@ -33,27 +33,18 @@ cxtbucket *cxt_hash;
 
 /* Since two or more connections can have the same hash key, we need to
  * compare the connections with the current hash key. */
-#define CMP_CXT4SRC(cxt1,src, sp, dst, dp) \
+#define CMP_CXT4(cxt1,src, sp, dst, dp) \
     ((CMP_ADDR4(&(cxt1)->s_ip, src) && \
        CMP_ADDR4(&(cxt1)->d_ip, dst) && \
        CMP_PORT((cxt1)->s_port, sp) && CMP_PORT((cxt1)->d_port, dp)))
-#define CMP_CXT4DST(cxt1,src, sp, dst, dp) \
-      ((CMP_ADDR4(&(cxt1)->s_ip, dst) && \
-       CMP_ADDR4(&(cxt1)->d_ip, src) && \
-       CMP_PORT((cxt1)->s_port, dp) && CMP_PORT((cxt1)->d_port, sp)))
 
-#define CMP_CXT6SRC(cxt1,src, sp, dst, dp) \
+#define CMP_CXT6(cxt1,src, sp, dst, dp) \
     ((CMP_ADDR6(&(cxt1)->s_ip, src) && \
        CMP_ADDR6(&(cxt1)->d_ip, dst) && \
        CMP_PORT((cxt1)->s_port, sp) && CMP_PORT((cxt1)->d_port, dp)))
 
-#define CMP_CXT6DST(cxt1,src, sp, dst, dp) \
-      ((CMP_ADDR6(&(cxt1)->s_ip, dst) && \
-       CMP_ADDR6(&(cxt1)->d_ip, src) && \
-       CMP_PORT((cxt1)->s_port, dp) && CMP_PORT((cxt1)->d_port, sp)))
-
 /* prototypes */
-inline connection *cxt_get_from_hash (packetinfo *, uint32_t);
+inline void cxt_update (packetinfo *, uint32_t);
 connection *connection_alloc(void);
 void cxt_update_dst (connection *cxt, packetinfo *pi);
 void cxt_update_src (connection *cxt, packetinfo *pi);

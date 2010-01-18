@@ -10,7 +10,6 @@
 #include <stddef.h>
 
 /* Allocate a connection */
-inline
 connection *connection_alloc(void)
 {
     connection *cxt;
@@ -32,7 +31,41 @@ void connection_free(connection *cxt)
     free(cxt);
 }
 
-inline connection *cxt_get_from_hash (packetinfo *pi, uint32_t hash)
+inline
+void cxt_update_dst (connection *cxt, packetinfo *pi)
+{
+    printf("dst\n");
+    cxt->d_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
+    cxt->d_total_bytes += pi->packet_bytes;
+    cxt->d_total_pkts += 1;
+    cxt->last_pkt_time = pi->pheader->ts.tv_sec;
+    if (cxt->d_total_bytes > MAX_BYTE_CHECK
+        || cxt->d_total_pkts > MAX_PKT_CHECK) {
+        pi->s_check = 0; // Don't check
+        return;
+    }
+    pi->s_check = 2; // Server & check
+    return;
+}
+
+inline
+void cxt_update_src (connection *cxt, packetinfo *pi)
+{
+    printf("src\n");
+    cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
+    cxt->s_total_bytes += pi->packet_bytes;
+    cxt->s_total_pkts += 1;
+    cxt->last_pkt_time = pi->pheader->ts.tv_sec;
+    if (cxt->d_total_bytes > MAX_BYTE_CHECK
+        || cxt->d_total_pkts > MAX_PKT_CHECK) {
+        pi->s_check = 0; // Don't check
+        return;
+    }
+    pi->s_check = 1; // Client & check
+    return;
+}
+
+inline void cxt_update (packetinfo *pi, uint32_t hash)
 {
     connection *cxt = NULL;
     int ret = 0;
@@ -46,7 +79,7 @@ inline connection *cxt_get_from_hash (packetinfo *pi, uint32_t hash)
         if (cxt == NULL) {
             cxt = cb->cxt = connection_alloc();
             if (cxt == NULL) {
-                return NULL;
+                return;
             }
         }
         /* these are protected by the bucket lock */
@@ -57,8 +90,9 @@ inline connection *cxt_get_from_hash (packetinfo *pi, uint32_t hash)
         cxt_new(cxt,pi);
         cxt_requeue(cxt, NULL, &cxt_est_q);
         cxt->cb = cb;
-
-        return cxt;
+        cxt_update_src(cxt, pi);
+        pi->cxt = cxt;
+        return;
     }
 
     /* ok, we have a flow in the bucket. Let's find out if it is our flow */
@@ -66,20 +100,20 @@ inline connection *cxt_get_from_hash (packetinfo *pi, uint32_t hash)
 
     /* see if this is the flow we are looking for */
     if (pi->af == AF_INET) {
-        if (CMP_CXT4SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+        if (CMP_CXT4(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+            cxt_update_src(cxt, pi);
             ret = 1;
-            pi->flags |= PKT_IS_FROM_CLIENT;
-        } else if (CMP_CXT4DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+        } else if (CMP_CXT4(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+            cxt_update_dst(cxt, pi);
             ret = 1;
-            pi->flags |= PKT_IS_FROM_SERVER;
         }
     } else if (pi->af == AF_INET6){
-        if (CMP_CXT6SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+        if (CMP_CXT6(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+            cxt_update_src(cxt, pi);
             ret = 1;
-            pi->flags |= PKT_IS_FROM_CLIENT;
-        } else if (CMP_CXT6DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+        } else if (CMP_CXT6(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+            cxt_update_dst(cxt, pi);
             ret = 1;
-            pi->flags |= PKT_IS_FROM_SERVER;
         }
     }
 
@@ -97,37 +131,38 @@ inline connection *cxt_get_from_hash (packetinfo *pi, uint32_t hash)
 
                     cxt = cb->cxt = connection_alloc();
                     if (cxt == NULL) {
-                        return NULL;
+                        return;
                     }
                 }
 
                 cxt->hnext = NULL;
                 cxt->hprev = pcxt;
 
-                /* lock, initialize and return */
+                /* initialize and return */
                 cxt_new(cxt,pi);
                 cxt_requeue(cxt, NULL, &cxt_est_q);
 
                 cxt->cb = cb;
-
-                return cxt;
+                cxt_update_src(cxt, pi);
+                pi->cxt = cxt;
+                return;
             }
 
             if (pi->af == AF_INET) {
-                if (CMP_CXT4SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                if (CMP_CXT4(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                    cxt_update_src(cxt, pi);
                     ret = 1;
-                    pi->flags |= PKT_IS_FROM_CLIENT;
-                } else if (CMP_CXT4DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                } else if (CMP_CXT4(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+                    cxt_update_dst(cxt, pi);
                     ret = 1;
-                    pi->flags |= PKT_IS_FROM_SERVER;
                 }
             } else if (pi->af == AF_INET6) {
-                if (CMP_CXT6SRC(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                if (CMP_CXT6(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                    cxt_update_src(cxt, pi);
                     ret = 1;
-                    pi->flags |= PKT_IS_FROM_CLIENT;
-                } else if (CMP_CXT6DST(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                } else if (CMP_CXT6(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+                    cxt_update_dst(cxt, pi);
                     ret = 1;
-                    pi->flags |= PKT_IS_FROM_SERVER;
                 }
             }
             if ( ret != 0) {
@@ -142,15 +177,16 @@ inline connection *cxt_get_from_hash (packetinfo *pi, uint32_t hash)
                 cb->cxt = cxt;
 
                 /* found our connection */
-                return cxt;
+                pi->cxt = cxt;
+                return;
             }
 
             /* not found, try the next... */
         }
     }
-
+    pi->cxt = cxt;
     /* The 'root' connection was our connection, return it. */
-    return cxt;
+    return;
 }
 
 void free_queue()
@@ -171,45 +207,13 @@ void free_queue()
     printf("queue memory has been cleared\n");
 }
 
-inline
-void cxt_update_dst (connection *cxt, packetinfo *pi)
-{
-    cxt->d_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
-    cxt->d_total_bytes += pi->packet_bytes;
-    cxt->d_total_pkts += 1;
-    cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-    if (cxt->d_total_bytes > MAX_BYTE_CHECK
-        || cxt->d_total_pkts > MAX_PKT_CHECK) {
-        pi->s_check = 0; // Don't check
-        return;
-    }
-    pi->s_check = 2; // Server & check
-    return;
-}
-
-inline
-void cxt_update_src (connection *cxt, packetinfo *pi)
-{
-    cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
-    cxt->s_total_bytes += pi->packet_bytes;
-    cxt->s_total_pkts += 1;
-    cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-    if (cxt->d_total_bytes > MAX_BYTE_CHECK
-        || cxt->d_total_pkts > MAX_PKT_CHECK) {
-        pi->s_check = 0; // Don't check
-        return;
-    }
-    pi->s_check = 1; // Client & check
-    return;
-}
-
 /* initialize the connection from the first packet we see from it. */
 
-inline
 void cxt_new (connection *cxt, packetinfo *pi)
 {
         extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
+        printf("hi\n");
 
         cxt->cxid = cxtrackerid;
         cxt->af = pi->af;
