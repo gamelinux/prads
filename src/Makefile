@@ -6,7 +6,7 @@ CFLAGS=-O3
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
-CFLAGS = -g -pg -DDEBUG -Wall
+CFLAGS = -g -DDEBUG -Wall
 endif
 
 SERVICE_OBJ = \
@@ -25,7 +25,7 @@ debug:
 	 ${MAKE} DEBUG=y
 
 profile:
-	${MAKE} CFLAGS+=${PCFLAGS}
+	${MAKE} CFLAGS+='${PCFLAGS}'
 
 clean:
 	-rm -v $(OBJECTS)
