@@ -49,27 +49,6 @@ int inpacket, gameover, intr_flag;
 uint64_t hash;
 int nets = 1;
 
-// vector types :-)
-typedef int v4si __attribute__((vector_size(16)));
-typedef union _i4vector {
-    v4si v;
-    struct in6_addr ip6;
-    uint64_t i[2];
-} ip6v;
-struct fmask { 
-    int type;
-    union {
-        v4si addr_v;
-        struct in6_addr addr;
-        uint64_t addr64[2];
-    };
-    union {
-        v4si mask_v;
-        struct in6_addr mask;
-        uint64_t addr64[2];
-    };
-};
-
 struct fmask network[MAX_NETS];
 
 // static strings for comparison
@@ -449,7 +428,8 @@ void prepare_tcp (packetinfo *pi)
     }
     pi->s_port = pi->tcph->src_port;
     pi->d_port = pi->tcph->dst_port;
-    connection_tracking(pi);
+    //connection_tracking(pi);
+    cx_track_simd_ipv4(pi);
     return; 
 }
 
@@ -568,7 +548,8 @@ void prepare_udp (packetinfo *pi)
     }
     pi->s_port = pi->udph->src_port;
     pi->d_port = pi->udph->dst_port;
-    connection_tracking(pi);
+    //connection_tracking(pi);
+    cx_track_simd_ipv4(pi);
     return;
 }
 

@@ -608,6 +608,30 @@ typedef struct _globalconfig {
     uint8_t     cof;                    /* Flags for other; icmp,udp,other,.... */
 } globalconfig;
 
+// vector types :-)
+typedef int v4si __attribute__((vector_size(16)));
+typedef union _i4vector {
+    v4si v;
+    struct in6_addr ip6;
+    uint64_t i[2];
+    uint32_t w[4];
+    uint16_t s[8];
+} ip6v;
+struct fmask { 
+    int type;
+    union {
+        v4si addr_v;
+        struct in6_addr addr;
+        uint64_t addr64[2];
+    };
+    union {
+        v4si mask_v;
+        struct in6_addr mask;
+        uint64_t addr64[2];
+    };
+};
+
+
 #define IS_COSET(globalconfig, flags) (((globalconfig)->ctf & (flags)) == (flags))
 #define IS_CSSET(globalconfig, flags) (((globalconfig)->cof & (flags)) == (flags))
 
