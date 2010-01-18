@@ -48,11 +48,12 @@
 #define CO_ICMP                       0x20      /* Check ICMP Packets */
 #define CO_UDP                        0x40      /* Check UDP Packets */
 #define CO_DHCP                       0x80      /* Check DHCP Packets */
+#define CO_OTHER                      0x80      /* Check Other Packets - need a flag! */
 
 /* Flags to set for enabling different service/client checks */
 #define CS_TCP_SERVER                 0x01
 #define CS_TCP_CLIENT                 0x02
-#define CS_UDP_SERVER                 0x04
+#define CS_UDP_SERVICES               0x04  /* Currently implying server+client*/
 #define CS_UDP_CLIENT                 0x08
 #define CS_ICMP                       0x10
 

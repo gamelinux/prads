@@ -91,6 +91,8 @@ void parse_ip6 (packetinfo *pi);
 void parse_tcp4 (packetinfo *pi);
 void parse_tcp6 (packetinfo *pi);
 void parse_udp (packetinfo *pi);
+void parse_icmp (packetinfo *pi);
+void parse_other (packetinfo *pi);
 void parse_arp (packetinfo *pi);
 int  parse_network (char *net_s, struct in6_addr *network);
 int  parse_netmask (char *f, int type, struct in6_addr *netmask);
@@ -315,26 +317,13 @@ void parse_ip4 (packetinfo *pi)
         if (!pi->our)
             return;
 
-        if (IS_COSET(&config,CO_ICMP) && pi->s_check != 0) {
-            fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
-            // could look for icmp spesific data in package abcde...
-            // service_icmp(*pi->ip4,*tcph)
-        } else {
-            vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
-        }
+        parse_icmp(pi);
         return;
     } else {
         prepare_other(pi);
         if (!pi->our)
             return;
-
-        if (pi->s_check != 0) {
-            update_asset(pi->af, pi->ip_src);
-            // service_other(*pi->ip4,*transporth)
-            // fp_other(pi->ipX, ttl, ipopts, len, id, ipflags, df);
-        } else {
-            vlog(0x3, "[*] - NOT CHECKING OTHER PACKAGE\n");
-        }
+        parse_other(pi);
         return;
     }
 }
@@ -485,12 +474,12 @@ void parse_tcp6 (packetinfo *pi)
         }
         pi->payload =
             (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi->tcph)*4));
-        if (pi->s_check == 2) {
+        if (IS_CSSET(&config,CS_TCP_SERVER) && pi->s_check == 2) {
             vlog(0x3, "[*] - checking tcp server package\n");
             service_tcp6(pi->ip6, pi->tcph, pi->payload,
                          (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)*4) -
                           IP6_HEADER_LEN - pi->eth_hlen));
-        } else {
+        } else if (IS_CSSET(&config,CS_TCP_CLIENT) && pi->s_check == 1) {
             vlog(0x3, "[*] - checking tcp client package\n");
             client_tcp6(pi->ip6, pi->tcph, pi->payload,
                         (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)*4) -
@@ -543,11 +532,11 @@ void parse_tcp4 (packetinfo *pi)
         pi->payload =
             (char *)(pi->packet + pi->eth_hlen +
                      (IP_HL(pi->ip4) * 4) + (TCP_OFFSET(pi->tcph) * 4));
-        if (pi->s_check == 2) {
+        if (IS_CSSET(&config,CS_TCP_SERVER) && pi->s_check == 2) {
             service_tcp4(pi->ip4, pi->tcph, pi->payload,
                          (pi->pheader->caplen -
                           (TCP_OFFSET(pi->tcph)) * 4 - pi->eth_hlen));
-        } else if (pi->s_check == 1) {
+        } else if (IS_CSSET(&config,CS_TCP_CLIENT) && pi->s_check == 1) {
             client_tcp4(pi->ip4, pi->tcph, pi->payload,
                         (pi->pheader->caplen -
                          (TCP_OFFSET(pi->tcph)) * 4 - pi->eth_hlen));
@@ -585,7 +574,7 @@ void prepare_udp (packetinfo *pi)
 
 void parse_udp (packetinfo *pi)
 {
-    if (pi->s_check != 0) {
+    if (IS_CSSET(&config,CS_UDP_SERVICES) && pi->s_check != 0) {
         pi->payload =
             (char *)(pi->packet + pi->eth_hlen +
                      (IP_HL(pi->ip4) * 4) + UDP_HEADER_LEN);
@@ -593,7 +582,7 @@ void parse_udp (packetinfo *pi)
                      (pi->pheader->caplen -
                       UDP_HEADER_LEN -
                       (IP_HL(pi->ip4) * 4) - pi->eth_hlen));
-        if (IS_COSET(&config,CO_ICMP)) fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
+        if (IS_COSET(&config,CO_UDP)) fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
     } else {
         vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
     }
@@ -626,6 +615,19 @@ void prepare_icmp (packetinfo *pi)
     return;
 }
 
+void parse_icmp (packetinfo *pi)
+{
+    if (pi->s_check != 0) {
+        if (IS_COSET(&config,CO_ICMP)) {
+            fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
+            // could look for icmp spesific data in package abcde...
+            // service_icmp(*pi->ip4,*tcph)
+        } else {
+            vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
+        }
+    }
+}
+
 void prepare_other (packetinfo *pi)
 {
     if (pi->af==AF_INET) {
@@ -647,6 +649,19 @@ void prepare_other (packetinfo *pi)
     pi->d_port = 0;
     connection_tracking(pi);
     return;
+}
+
+void parse_other (packetinfo *pi)
+{
+    if (pi->s_check != 0) {
+        if (IS_COSET(&config,CO_OTHER)) {
+            update_asset(pi->af, pi->ip_src);
+            // service_other(*pi->ip4,*transporth);
+            // fp_other(pi->ipX, ttl, ipopts, len, id, ipflags, df);
+        } else {
+            vlog(0x3, "[*] - NOT CHECKING *OTHER* PACKAGE\n");
+        }
+    }
 }
 
 int parse_network (char *net_s, struct in6_addr *network)
@@ -829,12 +844,17 @@ int main(int argc, char *argv[])
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
 
-    //config.ctf |= CO_SYN;
+    config.ctf |= CO_SYN;
     //config.ctf |= CO_RST;
     //config.ctf |= CO_FIN;
     //config.ctf |= CO_ACK;
-    //config.ctf |= CO_SYNACK;
+    config.ctf |= CO_SYNACK;
     //config.ctf |= CO_ICMP;
+    //config.ctf |= CO_UDP;
+    //config.ctf |= CO_OTHER;
+    config.cof |= CS_TCP_SERVER;
+    config.cof |= CS_TCP_CLIENT;
+    config.cof |= CS_UDP_SERVICES;
     int ch = 0;
     config.dev = "eth0";
     config.bpff = "";
