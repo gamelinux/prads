@@ -574,8 +574,21 @@ typedef struct _fmask {
     struct in6_addr mask;
 } fmask;
 
+typedef struct _prads_stat {
+    uint32_t got_packets;  /* number of packets received by prads */
+    uint32_t eth_recv;     /* number of Ethernet packets received */
+    uint32_t ip4_recv;     /* number of IPv4 packets received */
+    uint32_t ip6_recv;     /* number of IPv6 packets received */
+    uint32_t tcp_recv;     /* number of tcp packets received */
+    uint32_t udp_recv;     /* number of udp packets received */
+    uint32_t icmp_recv;    /* number of icmp packets received */
+    uint32_t other_recv;   /* number of other packets received */
+} prads_stat;
+
 typedef struct _globalconfig {
-    pcap_t      *handle;                /* Pointer to libpcap handle */
+    pcap_t              *handle;        /* Pointer to libpcap handle */
+    struct pcap_stat    ps;             /* libpcap stats */
+    prads_stat          pr_s;          /* prads stats */
     struct bpf_program  cfilter;        /**/
     bpf_u_int32         net_mask;       /**/
     char        *bpff;                  /**/

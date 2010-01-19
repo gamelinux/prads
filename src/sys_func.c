@@ -53,12 +53,38 @@ void game_over()
         print_assets();
         end_all_sessions();
         free_queue();
+        print_prads_stats();
+        print_pcap_stats();
         pcap_close(config.handle);
         //del_assets(0);
         printf("\nprads ended\n");
         exit(0);
     }
     intr_flag = 1;
+}
+
+void print_pcap_stats()
+{
+    if (pcap_stats(config.handle, &config.ps) == -1) {
+        pcap_perror(config.handle, "pcap_stats");
+    }
+    printf("-- libpcap:\n");
+    printf("-- Total packets received              :%12u\n",config.ps.ps_recv);
+    printf("-- Total packets dropped               :%12u\n",config.ps.ps_drop);
+    printf("-- Total packets dropped by Interface  :%12u\n",config.ps.ps_ifdrop);
+}
+
+void print_prads_stats()
+{
+    printf("-- prads:\n");
+    printf("-- Total packets received from libpcap :%12u\n",config.pr_s.got_packets);
+    printf("-- Total Ethernet packets received     :%12u\n",config.pr_s.eth_recv);
+    printf("-- Total IPv4 packets received         :%12u\n",config.pr_s.ip4_recv);
+    printf("-- Total IPv6 packets received         :%12u\n",config.pr_s.ip6_recv);
+    printf("-- Total TCP packets received          :%12u\n",config.pr_s.tcp_recv);
+    printf("-- Total UDP packets received          :%12u\n",config.pr_s.udp_recv);
+    printf("-- Total ICMP packets received         :%12u\n",config.pr_s.icmp_recv);
+    printf("-- Total Other packets received        :%12u\n",config.pr_s.other_recv);
 }
 
 int set_chroot(void)

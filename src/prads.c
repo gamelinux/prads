@@ -87,6 +87,7 @@ static inline int filter_packet(const int af, const struct in6_addr *ip_s);
 void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 const u_char * packet)
 {
+    config.pr_s.got_packets++;
     packetinfo pi;
     memset(&pi, 0, sizeof(packetinfo));
     //pi = (packetinfo *) calloc(1, sizeof(packetinfo));
@@ -239,6 +240,7 @@ static inline int filter_packet(const int af, const struct in6_addr *ip_s)
 
 void prepare_eth (packetinfo *pi)
 {
+    config.pr_s.eth_recv++;
     pi->eth_hdr  = (ether_header *) (pi->packet);
     pi->eth_type = ntohs(pi->eth_hdr->eth_ip_type);
     pi->eth_hlen = ETHERNET_HEADER_LEN;
@@ -267,6 +269,7 @@ void check_vlan (packetinfo *pi)
 
 void prepare_ip4 (packetinfo *pi)
 {
+    config.pr_s.ip4_recv++;
     pi->af = AF_INET;
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
     pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
@@ -311,14 +314,14 @@ void parse_ip4 (packetinfo *pi)
 
 void prepare_ip6 (packetinfo *pi)
 {
-    vlog(0x3, "[*] Got IPv6 Packet...\n");
+    config.pr_s.ip6_recv++;
     pi->af = AF_INET6;
     pi->ip6 = (ip6_header *) (pi->packet + pi->eth_hlen);
     pi->packet_bytes = pi->ip6->len;
     pi->ip_src = pi->ip6->ip_src;
     pi->ip_dst = pi->ip6->ip_dst;
     pi->our = filter_packet(pi->af, &pi->ip_src);
-    dlog("Got %s IPv6 Packet...\n", (pi->our?"our":"foregin"));
+    vlog(0x3, "Got %s IPv6 Packet...\n", (pi->our?"our":"foregin"));
     return;
 }
 
@@ -411,6 +414,7 @@ void set_pkt_end_ptr (packetinfo *pi)
 
 void prepare_tcp (packetinfo *pi)
 {
+    config.pr_s.tcp_recv++;
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
@@ -437,6 +441,7 @@ void prepare_tcp (packetinfo *pi)
 
 void parse_tcp6 (packetinfo *pi)
 {
+    config.pr_s.tcp_recv++;
     if (IS_COSET(&config,CO_SYN)
         && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
@@ -531,6 +536,7 @@ void parse_tcp4 (packetinfo *pi)
 
 void prepare_udp (packetinfo *pi)
 {
+    config.pr_s.udp_recv++;
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE UDP:\n");
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
@@ -573,6 +579,7 @@ void parse_udp (packetinfo *pi)
 
 void prepare_icmp (packetinfo *pi)
 {
+    config.pr_s.icmp_recv++;
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE ICMP:\n");
         pi->icmph = (icmp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
@@ -613,6 +620,7 @@ void parse_icmp (packetinfo *pi)
 
 void prepare_other (packetinfo *pi)
 {
+    config.pr_s.other_recv++;
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE OTHER: %d\n",pi->ip4->ip_p); 
         //pi->s_check =
@@ -976,10 +984,12 @@ int main(int argc, char *argv[])
         printf("[*] Dropping privs...\n\n");
         drop_privs();
     }
+
 //    if (preallocate_cxt() == 0) {
 //        printf("pre allocation of connection trackers failed\n");
 //        exit(1);
 //    }
+
     bucket_keys_NULL();
     alarm(CHECK_TIMEOUT);
 

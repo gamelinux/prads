@@ -25,5 +25,7 @@ void set_end_sessions();
 void end_sessions();
 void display_config();
 void check_interrupt();
+void print_pcap_stats();
+void print_prads_stats();
 
 #endif
