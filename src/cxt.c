@@ -448,9 +448,19 @@ void end_sessions()
         if (xpir == 1) {
             expired++;
             xpir = 0;
+            /* remove from the hash */
+            if (cxt->hprev)
+                cxt->hprev->hnext = cxt->hnext;
+            if (cxt->hnext)
+                cxt->hnext->hprev = cxt->hprev;
+            if (cxt->cb->cxt == cxt)
+                cxt->cb->cxt = cxt->hnext;
+
             connection *tmp = cxt;
             cxt = cxt->prev;
+
             cxt_requeue(tmp, &cxt_est_q, &cxt_spare_q);
+            CLEAR_CXT(tmp);
             //printf("[*] connection deleted!!!\n");
         } else {
             cxt = cxt->prev;

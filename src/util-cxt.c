@@ -21,6 +21,8 @@ connection *connection_alloc(void)
     }
     cxt->next = NULL;
     cxt->prev = NULL;
+    cxt->hnext = NULL;
+    cxt->hprev = NULL;
 
     return cxt;
 }

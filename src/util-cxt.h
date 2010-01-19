@@ -43,6 +43,26 @@ cxtbucket *cxt_hash;
        CMP_ADDR6(&(cxt1)->d_ip, dst) && \
        CMP_PORT((cxt1)->s_port, sp) && CMP_PORT((cxt1)->d_port, dp)))
 
+/* clears the cxt parts */
+#define CLEAR_CXT(cxt) { \
+    (cxt)->s_port = 0; \
+    (cxt)->d_port = 0; \
+    (cxt)->s_total_pkts = 0; \
+    (cxt)->s_total_bytes = 0; \
+    (cxt)->d_total_pkts = 0; \
+    (cxt)->d_total_bytes = 0; \
+    (cxt)->s_tcpFlags = 0; \
+    (cxt)->d_tcpFlags = 0; \
+    (cxt)->start_time = 0; \
+    (cxt)->last_pkt_time = 0; \
+    (cxt)->af = 0; \
+    (cxt)->proto = 0; \
+    (cxt)->cxid = 0; \
+    (cxt)->hnext = NULL; \
+    (cxt)->hprev = NULL; \
+    (cxt)->cb = NULL; \
+}
+
 /* prototypes */
 inline void cxt_update (packetinfo *, uint32_t);
 connection *connection_alloc(void);
