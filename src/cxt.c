@@ -262,7 +262,7 @@ uint32_t make_hash(packetinfo *pi)
  * note, we can employ the same technique for ipv6 addresses, but
  * one address at a time.
  */
-inline void cx_track_simd_ipv4(packetinfo *pi)
+/*inline void cx_track_simd_ipv4(packetinfo *pi)
 {
     connection *cxt = NULL;
     connection *head = NULL;
@@ -330,7 +330,7 @@ inline void cx_track_simd_ipv4(packetinfo *pi)
     }
     printf("[*] Error in session tracking...\n");
     exit (1);
-}
+}*/
 inline
 void connection_tracking(packetinfo *pi) {
     connection *cxt = NULL;

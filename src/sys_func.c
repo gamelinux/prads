@@ -52,6 +52,7 @@ void game_over()
         //extern pcap_t *handle;
         print_assets();
         end_all_sessions();
+        free_queue();
         pcap_close(config.handle);
         //del_assets(0);
         printf("\nprads ended\n");

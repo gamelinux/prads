@@ -430,8 +430,8 @@ void prepare_tcp (packetinfo *pi)
     }
     pi->s_port = pi->tcph->src_port;
     pi->d_port = pi->tcph->dst_port;
-    //connection_tracking(pi);
-    cx_track_simd_ipv4(pi);
+    connection_tracking(pi);
+    //cx_track_simd_ipv4(pi);
     return; 
 }
 
@@ -550,8 +550,8 @@ void prepare_udp (packetinfo *pi)
     }
     pi->s_port = pi->udph->src_port;
     pi->d_port = pi->udph->dst_port;
-    //connection_tracking(pi);
-    cx_track_simd_ipv4(pi);
+    connection_tracking(pi);
+    //cx_track_simd_ipv4(pi);
     return;
 }
 
