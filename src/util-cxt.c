@@ -34,7 +34,6 @@ void connection_free(connection *cxt)
 inline
 void cxt_update_dst (connection *cxt, packetinfo *pi)
 {
-    printf("dst\n");
     cxt->d_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
     cxt->d_total_bytes += pi->packet_bytes;
     cxt->d_total_pkts += 1;
@@ -51,7 +50,6 @@ void cxt_update_dst (connection *cxt, packetinfo *pi)
 inline
 void cxt_update_src (connection *cxt, packetinfo *pi)
 {
-    printf("src\n");
     cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);
     cxt->s_total_bytes += pi->packet_bytes;
     cxt->s_total_pkts += 1;
@@ -213,7 +211,6 @@ void cxt_new (connection *cxt, packetinfo *pi)
 {
         extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
-        printf("hi\n");
 
         cxt->cxid = cxtrackerid;
         cxt->af = pi->af;

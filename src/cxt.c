@@ -3,6 +3,7 @@
 #include "cxt.h"
 #include "sys_func.h"
 #include "util-cxt.h"
+#include "util-cxt-queue.h"
 
 // vector fill: srcprt,dstprt,srcip,dstip = 96 bytes. rest is 0
 #define VEC_FILL(vec, _ipsrc,_ipdst,_portsrc,_portdst) do {\
@@ -381,37 +382,33 @@ void end_sessions()
     connection *cxt;
     time_t check_time;
     check_time = time(NULL);
-    int cxkey, xpir;
+    int xpir;
     uint32_t curcxt = 0;
     uint32_t expired = 0;
-    extern connection *cxtbuffer, *bucket[BUCKET_SIZE];
-    cxtbuffer = NULL;
-
-    for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
-        cxt = bucket[cxkey];
+    //extern connection *cxtbuffer, *bucket[BUCKET_SIZE];
+    //cxtbuffer = NULL;
+    
+    for (cxt = cxt_est_q.bot; cxt != NULL;) {
         xpir = 0;
-        while (cxt != NULL) {
-            curcxt++;
+        curcxt++;
+        /*
+         * TCP
+         */
+        if (cxt->proto == IP_PROTO_TCP) {
             /*
-             * TCP 
+             * FIN from both sides
              */
-            if (cxt->proto == IP_PROTO_TCP) {
-                /*
-                 * FIN from both sides 
-                 */
-                if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
+            if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
                     && (check_time - cxt->last_pkt_time) > 5) {
-                    xpir = 1;
-                }
-                /*
+                xpir = 1;
+            }                /*
                  * RST from eather side 
                  */
-                else if ((cxt->s_tcpFlags & TF_RST
-                          || cxt->d_tcpFlags & TF_RST)
-                         && (check_time - cxt->last_pkt_time) > 5) {
-                    xpir = 1;
-                }
-                // Commented out, since &TF_SYNACK is wrong!
+            else if ((cxt->s_tcpFlags & TF_RST
+                    || cxt->d_tcpFlags & TF_RST)
+                    && (check_time - cxt->last_pkt_time) > 5) {
+                xpir = 1;
+            }                // Commented out, since &TF_SYNACK is wrong!
                 /*
                  * if not a complete TCP 3-way handshake 
                  */
@@ -424,46 +421,39 @@ void end_sessions()
                 //else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
                 //   xpir = 1;
                 //}
-                else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-                    xpir = 1;
-                }
-            }
-            /*
-             * UDP 
-             */
-            else if (cxt->proto == IP_PROTO_UDP
-                     && (check_time - cxt->last_pkt_time) > 60) {
-                xpir = 1;
-            }
-            /*
-             * ICMP 
-             */
-            else if (cxt->proto == IP_PROTO_ICMP
-                     || cxt->proto == IP6_PROTO_ICMP) {
-                if ((check_time - cxt->last_pkt_time) > 60) {
-                    xpir = 1;
-                }
-            }
-            /*
-             * All Other protocols 
-             */
             else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
                 xpir = 1;
             }
-
-            if (xpir == 1) {
-                expired++;
-                xpir = 0;
-                connection *tmp = cxt;
-                if (cxt == cxt->next) {
-                    cxt->next = NULL;
-                }
-                cxt = cxt->next;
-                del_connection(tmp, &bucket[cxkey]);
-                //printf("[*] connection deleted!!!\n");
-            } else {
-                cxt = cxt->next;
+        }            /*
+             * UDP 
+             */
+        else if (cxt->proto == IP_PROTO_UDP
+                && (check_time - cxt->last_pkt_time) > 60) {
+            xpir = 1;
+        }            /*
+             * ICMP 
+             */
+        else if (cxt->proto == IP_PROTO_ICMP
+                || cxt->proto == IP6_PROTO_ICMP) {
+            if ((check_time - cxt->last_pkt_time) > 60) {
+                xpir = 1;
             }
+        }            /*
+             * All Other protocols 
+             */
+        else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
+            xpir = 1;
+        }
+
+        if (xpir == 1) {
+            expired++;
+            xpir = 0;
+            connection *tmp = cxt;
+            cxt = cxt->prev;
+            cxt_requeue(tmp, &cxt_est_q, &cxt_spare_q);
+            //printf("[*] connection deleted!!!\n");
+        } else {
+            cxt = cxt->prev;
         }
     }
     /*
