@@ -985,11 +985,6 @@ int main(int argc, char *argv[])
         drop_privs();
     }
 
-//    if (preallocate_cxt() == 0) {
-//        printf("pre allocation of connection trackers failed\n");
-//        exit(1);
-//    }
-
     bucket_keys_NULL();
     alarm(CHECK_TIMEOUT);
 
