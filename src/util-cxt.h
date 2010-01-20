@@ -43,10 +43,20 @@ cxtbucket *cxt_hash;
        CMP_ADDR6(&(cxt1)->d_ip, dst) && \
        CMP_PORT((cxt1)->s_port, sp) && CMP_PORT((cxt1)->d_port, dp)))
 
+/* clear the address structure by setting all fields to 0 */
+#define CLEAR_ADDR(a) { \
+    (a)->s6_addr32[0] = 0; \
+    (a)->s6_addr32[1] = 0; \
+    (a)->s6_addr32[2] = 0; \
+    (a)->s6_addr32[3] = 0; \
+}
+
 /* clears the cxt parts */
 #define CLEAR_CXT(cxt) { \
     (cxt)->s_port = 0; \
     (cxt)->d_port = 0; \
+    CLEAR_ADDR(&(cxt)->s_ip); \
+    CLEAR_ADDR(&(cxt)->d_ip); \
     (cxt)->s_total_pkts = 0; \
     (cxt)->s_total_bytes = 0; \
     (cxt)->d_total_pkts = 0; \
