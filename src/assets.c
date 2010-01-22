@@ -229,15 +229,6 @@ short update_asset_service(struct in6_addr ip_addr,
                 /*
                  * verbose info for sanity checking 
                  */
-                //static char ip_addr_s[INET6_ADDRSTRLEN];
-                //if ( af == AF_INET) {
-                //   if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
-                //      perror("Something died in inet_ntop");
-                //}
-                //else if ( af == AF_INET6) {
-                //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
-                //      perror("Something died in inet_ntop");
-                //}
                 static char ip_addr_s[INET6_ADDRSTRLEN];
                 u_ntop(ip_addr, af, ip_addr_s);
                 if (role == 1) {
@@ -245,15 +236,6 @@ short update_asset_service(struct in6_addr ip_addr,
                 } else {
                     dlog("[*] new client: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
                 }
-                //if (port == 0) {
-                //   printf("[*] new client: %s %s\n",ip_addr_s,(char *)bdata(application));
-                //}
-                //else {
-                //   printf("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-                //}
-                // XXX: let caller clean up args
-                //bdestroy(service);      // dont understand why this cant be :(
-                //bdestroy(application);  // dont understand why this cant be :(
                 return 0;
             }
             while (tmp_sa != NULL) {
@@ -300,21 +282,11 @@ short update_asset_service(struct in6_addr ip_addr,
                         } else {
                             tmp_sa->i_attempts++;
                             tmp_sa->last_seen = tstamp;
-                            //bdestroy(service);
-                            //bdestroy(application);
                             return 0;
                         }
                     } else {
                         tmp_sa->i_attempts = 0;
                         tmp_sa->last_seen = tstamp;
-                        //if (cs == 0) { // cs needs to be defined - to say if its a client or server
-                        //   printf("[*] client asset updated\n");
-                        //}
-                        //else {
-                        //   printf("[*] service asset updated\n");
-                        //}
-                        //bdestroy(service);
-                        //bdestroy(application);
                         return 0;
                     }
                 }
@@ -337,15 +309,6 @@ short update_asset_service(struct in6_addr ip_addr,
                     /*
                      * verbose info for sanity checking 
                      */
-                    //static char ip_addr_s[INET6_ADDRSTRLEN];
-                    //if ( af == AF_INET) {
-                    //   if (!inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 ))
-                    //      perror("Something died in inet_ntop");
-                    //}
-                    //else if ( af == AF_INET6) {
-                    //   if (!inet_ntop(AF_INET6, &ip_addr, ip_addr_s, INET6_ADDRSTRLEN + 1 ))
-                    //      perror("Something died in inet_ntop");
-                    //}
                     //if (role == 2) {
                     //   printf("[*] new client asset: %s %s\n",ip_addr_s,(char *)bdata(application));
                     //}
@@ -370,9 +333,6 @@ short update_asset_service(struct in6_addr ip_addr,
         return 0;
     }
     printf("[*] Im I here ?\n");
-    // XXX: caller cleans up
-    //bdestroy(service);
-    //bdestroy(application);
     return 1;
 }
 
@@ -409,7 +369,6 @@ void add_asset(int af, struct in6_addr ip_addr)
      * this is to insert it at the head for quick access since it is going 
      * through the identification process.
      */
-    //TAILQ_INSERT_HEAD(&assets, rec, next);
     rec->next = passet[hash];
     if (passet[hash] != NULL)
         passet[hash]->prev = rec;

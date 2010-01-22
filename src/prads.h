@@ -73,9 +73,12 @@
 #define ARPOP_InREPLY                 9  /* InARP reply.  */
 #define ARPOP_NAK                     10 /* (ATM)ARP NAK.  */
 
+#define IP_PROTO_ICMP                 1
 #define IP_PROTO_TCP                  6
 #define IP_PROTO_UDP                  17
-#define IP_PROTO_ICMP                 1
+#define IP_PROTO_IP6                  41
+#define IP_PROTO_GRE                  47
+#define IP_PROTO_IP4                  94
 #define IP6_PROTO_HOPOPT              0
 #define IP6_PROTO_ROUTE               43
 #define IP6_PROTO_FRAG                44

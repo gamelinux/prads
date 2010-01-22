@@ -35,6 +35,15 @@
  * Logs are written to a text output file
  *
  * Comments:
+ * Format should be something like this:
+ * [N|U]||IP||ASSET
+ * N=NEW U=UPDATED
+ * 
+ * N||192.168.0.5||[client:User Agent: lwp-request/5.818 libwww-perl/5.820:80:6]
+ * N||192.168.0.5||[syn:S4:64:1:60:M1460,S,T,N,W7:!:Linux:something]
+ * N||192.168.0.1||[service:Server: Apache:80:6]
+ * U||192.168.0.1||[synack:5792:55:1:60:M1460,S,T,N,W5:ZAT!:Linux:something else]
+ * U||192.168.0.1||[uptime:300hrs]
  *
  * Old school...
  */

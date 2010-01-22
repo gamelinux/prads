@@ -19,6 +19,10 @@ www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
 #www,v/HTTP Browser/$3//,^.+\[(.{26})\] \"(.+)HTTP/1..\".*(\".+\")$
 www,v/User Agent: $1///,User-Agent\x3a (.*)\r\n
 
+# RSS
+# Liferea/1.7.2-svn
+# Apple-PubSub/65.11
+
 # SSH
 ssh,v/OpenSSH/$2/Protocol $1/,SSH-([.\d]+)-OpenSSH[_-](\S+)
 ssh,v/libssh/$2/Protocol $1/,SSH-([.\d]+)-libssh-(\S+)
