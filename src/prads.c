@@ -401,6 +401,10 @@ void parse_ip6 (packetinfo *pi)
             vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
         }
         return;
+    } else if (pi->ip6->next == IP_PROTO_IP4 || pi->ip6->next == IP_PROTO_IP6) {
+        //Experimental !! Need to test it
+        prepare_ip6ip(pi);
+        return;
     } else {
         prepare_other(pi);
         /*
