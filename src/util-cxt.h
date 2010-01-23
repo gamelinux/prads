@@ -79,4 +79,5 @@ connection *connection_alloc(void);
 void cxt_update_dst (connection *cxt, packetinfo *pi);
 void cxt_update_src (connection *cxt, packetinfo *pi);
 inline void cxt_new (connection *cxt, packetinfo *pi);
+void free_queue();
 #endif /* _UTIL_CXT_H */

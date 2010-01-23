@@ -664,16 +664,11 @@ void del_asset(asset * passet, asset ** bucket_ptr)
 
 void print_assets()
 {
-
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
     extern uint64_t hash;
     asset *rec = NULL;
-    //hash = (( ip_addr.s6_addr32[0] )) % BUCKET_SIZE;
-    //asset *rec = passet[hash];
-    //asset *rec = passet;
     int akey;
-    //fprintf(stderr, "Printing assets...\n");
 
     for (akey = 0; akey < BUCKET_SIZE; akey++) {
         rec = passet[akey];

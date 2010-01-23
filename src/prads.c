@@ -68,6 +68,8 @@ void prepare_ip6ip (packetinfo *pi);
 void prepare_tcp (packetinfo *pi);
 void prepare_udp (packetinfo *pi);
 void prepare_icmp (packetinfo *pi);
+void prepare_gre (packetinfo *pi);
+void prepare_greip (packetinfo *pi);
 void prepare_other (packetinfo *pi);
 void parse_ip4 (packetinfo *pi);
 void parse_ip6 (packetinfo *pi);
@@ -75,6 +77,7 @@ void parse_tcp4 (packetinfo *pi);
 void parse_tcp6 (packetinfo *pi);
 void parse_udp (packetinfo *pi);
 void parse_icmp (packetinfo *pi);
+void parse_gre (packetinfo *pi);
 void parse_other (packetinfo *pi);
 void parse_arp (packetinfo *pi);
 int  parse_network (char *net_s, struct in6_addr *network);
@@ -306,9 +309,14 @@ void parse_ip4 (packetinfo *pi)
         parse_icmp(pi);
         return;
     } else if (pi->ip4->ip_p == IP_PROTO_IP4 || pi->ip4->ip_p == IP_PROTO_IP6) {
-        //Experimental !! Need to test it
+        //Experimental !! Need more testing!
         prepare_ip4ip(pi);
         return;
+    } else if (pi->ip4->ip_p == IP_PROTO_GRE) {
+        //Experimental !! Need to test it
+        prepare_gre(pi);
+        parse_gre(pi);
+        return; 
     } else {
         prepare_other(pi);
         if (!pi->our)
@@ -318,13 +326,114 @@ void parse_ip4 (packetinfo *pi)
     }
 }
 
+void prepare_gre (packetinfo *pi)
+{
+    config.pr_s.gre_recv++;
+    if((pi->pheader->caplen - pi->eth_hlen) < GRE_HDR_LEN)    {
+        return;
+    }
+    if (pi->af == AF_INET) {
+        vlog(0x3, "[*] IPv4 PROTOCOL TYPE GRE:\n");
+        pi->greh = (gre_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
+    } else if (pi->af == AF_INET6) {
+        vlog(0x3, "[*] IPv6 PROTOCOL TYPE GRE:\n");
+        pi->greh = (gre_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
+    }
+    return;
+}
+
+void parse_gre (packetinfo *pi)
+{
+    uint16_t gre_header_len = GRE_HDR_LEN;
+    gre_sre_header *gsre = NULL;
+    uint16_t len = (pi->pheader->caplen - pi->eth_hlen);
+
+    switch (GRE_GET_VERSION(pi->greh))
+    {
+        case GRE_VERSION_0:
+            /* Adjust header length based on content */
+            if (GRE_FLAG_ISSET_KY(pi->greh))
+                gre_header_len += GRE_KEY_LEN;
+            if (GRE_FLAG_ISSET_SQ(pi->greh))
+                gre_header_len += GRE_SEQ_LEN;
+            if (GRE_FLAG_ISSET_CHKSUM(pi->greh) || GRE_FLAG_ISSET_ROUTE(pi->greh))
+                gre_header_len += GRE_CHKSUM_LEN + GRE_OFFSET_LEN;
+            if (gre_header_len > len)   {
+                return;
+            }
+            if (GRE_FLAG_ISSET_ROUTE(pi->greh))
+            {
+                gsre = (gre_sre_header *)(pi->greh + gre_header_len);
+                if (gsre == NULL) return;
+                while (1)
+                {
+                    if ((gre_header_len+GRE_SRE_HDR_LEN) > len) {
+                        break;
+                    }
+                    gre_header_len += GRE_SRE_HDR_LEN;
+
+                    if (gsre != NULL && (ntohs(gsre->af) == 0) && (gsre->sre_length == 0))
+                        break;
+
+                    gre_header_len += gsre->sre_length;
+                    gsre = (gre_sre_header *)(pi->greh + gre_header_len);
+                    if (gsre == NULL)
+                        return;
+                }
+            }
+            break;
+
+        case GRE_VERSION_1:
+            /* GRE version 1 doenst support the fields below RFC 1701 */
+            if (GRE_FLAG_ISSET_CHKSUM(pi->greh))    {
+                return;
+            }
+            if (GRE_FLAG_ISSET_ROUTE(pi->greh)) {
+                return;
+            }
+            if (GRE_FLAG_ISSET_SSR(pi->greh))   {
+                return;
+            }
+            if (GRE_FLAG_ISSET_RECUR(pi->greh)) {
+                return;
+            }
+            if (GREV1_FLAG_ISSET_FLAGS(pi->greh))   {
+                return;
+            }
+            if (GRE_GET_PROTO(pi->greh) != GRE_PROTO_PPP)  {
+                return;
+            }
+            if (!(GRE_FLAG_ISSET_KY(pi->greh))) {
+                return;
+            }
+
+            gre_header_len += GRE_KEY_LEN;
+
+            /* Adjust header length based on content */
+            if (GRE_FLAG_ISSET_SQ(pi->greh))
+                gre_header_len += GRE_SEQ_LEN;
+            if (GREV1_FLAG_ISSET_ACK(pi->greh))
+                gre_header_len += GREV1_ACK_LEN;
+            if (gre_header_len > len)   {
+                return;
+            }
+            break;
+
+        default:
+            /* Error */
+            return;
+    }
+
+    prepare_greip(pi);
+    return;
+}
+
 void prepare_ip6ip (packetinfo *pi)
 {
     packetinfo pipi;
     memset(&pipi, 0, sizeof(packetinfo));
     pipi.pheader = pi->pheader;
-    pipi.packet =
-        (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
+    pipi.packet = (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
     pipi.end_ptr = pi->end_ptr;
     if (pi->ip6->next == IP_PROTO_IP4) {
         prepare_ip4(&pipi);
@@ -337,13 +446,33 @@ void prepare_ip6ip (packetinfo *pi)
     }
 }
 
+void prepare_greip (packetinfo *pi)
+{
+    packetinfo pipi;
+    memset(&pipi, 0, sizeof(packetinfo));
+    pipi.pheader = pi->pheader;
+    pipi.packet = (pi->packet + pi->eth_hlen + pi->gre_hlen);
+    pipi.end_ptr = pi->end_ptr;
+    if (GRE_GET_PROTO(pi->greh) == IP_PROTO_IP4) {
+        prepare_ip4(&pipi);
+        parse_ip4(&pipi);
+        return;
+    } else if (GRE_GET_PROTO(pi->greh) == IP_PROTO_IP6) {
+        prepare_ip6(&pipi);
+        parse_ip6(&pipi);
+        return;
+    } else {
+        /* Not more implemented atm */
+        vlog(0x3, "[*] - NOT CHECKING GRE PACKAGE TYPE Other\n");
+        return;
+    }
+}
 void prepare_ip4ip (packetinfo *pi)
 {
     packetinfo pipi;
     memset(&pipi, 0, sizeof(packetinfo));
     pipi.pheader = pi->pheader;
-    pipi.packet =
-        (char *)(pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
+    pipi.packet = (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
     pipi.end_ptr = pi->end_ptr;
     if (pi->ip4->ip_p == IP_PROTO_IP4) {
         prepare_ip4(&pipi);

@@ -86,11 +86,24 @@
 #define IP6_PROTO_NONXT               59
 #define MAX_IP_PROTO                  255
 
+#define GRE_VERSION_0                 0x0000
+#define GRE_VERSION_1                 0x0001
+#define GRE_HDR_LEN                   4
+#define GREV1_ACK_LEN                 4
+#define GREV1_HDR_LEN                 8
+#define GRE_CHKSUM_LEN                2
+#define GRE_OFFSET_LEN                2
+#define GRE_KEY_LEN                   4
+#define GRE_SEQ_LEN                   4
+#define GRE_SRE_HDR_LEN               4
+#define GRE_PROTO_PPP                 0x880b
+
 #define IP4_HEADER_LEN                20
 #define IP6_HEADER_LEN                40
 #define TCP_HEADER_LEN                20
 #define UDP_HEADER_LEN                8
 #define ICMP_HEADER_LEN               4
+#define GRE_HDR_LEN                   4
 #define MAC_ADDR_LEN                  6
 #define ETHERNET_HEADER_LEN           14
 #define ETHERNET_8021Q_HEADER_LEN     18
@@ -414,6 +427,32 @@ typedef struct _icmp6_header {
 /* Minus 1 due to the 'body' field  */
 #define ICMP6_MIN_HEADER_LEN (sizeof(ICMP6Hdr) )
 
+typedef struct _gre_header
+{
+    uint8_t flags; /**< GRE packet flags */
+    uint8_t version; /**< GRE version */
+    uint16_t ether_type; /**< ether type of the encapsulated traffic */
+} gre_header;
+#define GRE_FLAG_ISSET_CHKSUM(r)  (r->flags & 0x80)
+#define GRE_FLAG_ISSET_ROUTE(r)   (r->flags & 0x40)
+#define GRE_FLAG_ISSET_KY(r)      (r->flags & 0x20)
+#define GRE_FLAG_ISSET_SQ(r)      (r->flags & 0x10)
+#define GRE_FLAG_ISSET_SSR(r)     (r->flags & 0x08)
+#define GRE_FLAG_ISSET_RECUR(r)   (r->flags & 0x07)
+#define GRE_GET_VERSION(r)        (r->version & 0x07)
+#define GRE_GET_FLAGS(r)          (r->version & 0xF8)
+#define GRE_GET_PROTO(r)          ntohs(r->ether_type)
+#define GREV1_FLAG_ISSET_FLAGS(r) (r->version & 0x78)
+#define GREV1_FLAG_ISSET_ACK(r)   (r->version & 0x80)
+
+typedef struct _gre_sre_header
+{
+    uint16_t    af;            
+    uint8_t     sre_offset;
+    uint8_t     sre_length;
+    uint8_t     *routing;
+} gre_sre_header;
+
 /*
  * Structure for connections
  */
@@ -463,6 +502,8 @@ typedef struct _packetinfo {
     udp_header      *udph;          /* udp header struct pointer */
     icmp_header     *icmph;         /* icmp header struct pointer */
     icmp6_header    *icmp6h;        /* icmp6 header struct pointer */ 
+    gre_header      *greh;          /* GRE header struct pointer */
+    uint16_t        gre_hlen;       /* Length of dynamic GRE header length */
     const uint8_t   *end_ptr;       /* Paranoid end pointer of packet */
     const char      *payload;       /* char pointer to transport payload */
     uint32_t        our;            /* Is the asset in our defined network */
@@ -582,6 +623,7 @@ typedef struct _prads_stat {
     uint32_t eth_recv;     /* number of Ethernet packets received */
     uint32_t ip4_recv;     /* number of IPv4 packets received */
     uint32_t ip6_recv;     /* number of IPv6 packets received */
+    uint32_t gre_recv;     /* number of GRE packets received */
     uint32_t tcp_recv;     /* number of tcp packets received */
     uint32_t udp_recv;     /* number of udp packets received */
     uint32_t icmp_recv;    /* number of icmp packets received */
