@@ -39,6 +39,11 @@
 #define MAX_PKT_CHECK                 20
 #define MAX_SERVICE_CHECK             5         /* How many new services*/
 
+/* Flags to identify ASSET TYPE */
+#define ASSET_ARP                     0x01
+#define ASSET_TYPE_OS                 0x02
+#define ASSET_TYPE_SERVICE            0x04
+
 /* Flags to set for enabling different OS Fingerprinting checks */
 #define CO_SYN                        0x01      /* Check SYN packets */
 #define CO_SYNACK                     0x02      /* Check SYNACK packets */
@@ -537,6 +542,7 @@ typedef struct _os_asset {
     bstring detection;          /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
     bstring raw_fp;             /* The raw fingerprint [*:*:*:*:*:*:....] */
     bstring matched_fp;         /* The FP that matched [*:*:*:*.*:*:---] */
+    uint16_t port;              /* Asset port detected on */
     uint16_t mtu;               /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
     uint32_t uptime;            /* Asset uptime */
 } os_asset;

@@ -5,6 +5,23 @@
 
 extern globalconfig config;
 
+const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
+{
+    if (af == AF_INET) {
+        if (!inet_ntop
+            (AF_INET, &ip_addr.s6_addr32[0], dest, INET_ADDRSTRLEN + 1)) {
+            perror("Something died in inet_ntop");
+            return NULL;
+        }
+    } else if (af == AF_INET6) {
+        if (!inet_ntop(AF_INET6, &ip_addr, dest, INET6_ADDRSTRLEN + 1)) {
+            perror("Something died in inet_ntop");
+            return NULL;
+        }
+    }
+    return dest;
+}
+
 void bucket_keys_NULL()
 {
     int cxkey;
