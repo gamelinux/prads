@@ -4,6 +4,7 @@
 #include "sys_func.h"
 #include "output-plugins/log_dispatch.h"
 
+extern globalconfig config;
 // static strings for comparison
 extern bstring UNKNOWN;
 
@@ -647,9 +648,8 @@ void del_asset(asset * passet, asset ** bucket_ptr)
     passet = NULL;
 }
 
-void print_assets()
+void update_asset_list()
 {
-return;
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
     extern uint64_t hash;
@@ -659,28 +659,21 @@ return;
     for (akey = 0; akey < BUCKET_SIZE; akey++) {
         rec = passet[akey];
         while (rec != NULL) {
-            /*
-             * Checks if something has been updated in the asset since last time 
-             */
+            /* Checks if something has been updated in the asset since last time */
             if (tstamp - rec->last_seen <= CHECK_TIMEOUT) {
                 serv_asset *tmp_sa = NULL;
                 os_asset *tmp_oa = NULL;
                 tmp_sa = rec->services;
                 tmp_oa = rec->os;
+                if (config.print_updates) log_asset_arp(rec);
 
-                log_asset_arp(rec);
                 while (tmp_sa != NULL) {
-                    /*
-                     * Just print out the asset if it is updated since lasttime 
-                     */
-                    if (tstamp - tmp_sa->last_seen <= CHECK_TIMEOUT) {
+                    /* Just print out the asset if it is updated since lasttime */
+                    if (config.print_updates && tstamp - tmp_sa->last_seen <= CHECK_TIMEOUT) {
                         log_asset_service(rec,tmp_sa);
                     }
-                    /*
-                     * If the asset is getting too old - delete it 
-                     */
-                    if (tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
-                        //printf("[*] we could delete this service-asset!");
+                    /* If the asset is getting too old - delete it */
+                    if (config.print_updates && tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
                         serv_asset *stmp = tmp_sa;
                         tmp_sa = tmp_sa->next;
                         del_serv_asset(&rec->services, stmp);
@@ -690,17 +683,12 @@ return;
                 }
 
                 while (tmp_oa != NULL) {
-                    /*
-                     * Just print out the asset if it is updated since lasttime 
-                     */
-                    if (tstamp - tmp_oa->last_seen <= CHECK_TIMEOUT) {
+                    /* Just print out the asset if it is updated since lasttime */
+                    if (config.print_updates && tstamp - tmp_oa->last_seen <= CHECK_TIMEOUT) {
                         log_asset_os(rec, tmp_oa);
                     }
-                    /*
-                     * If the asset is getting too old - delete it 
-                     */
+                    /* If the asset is getting too old - delete it */
                     if (tstamp - tmp_oa->last_seen >= ASSET_TIMEOUT) {
-                        //printf("[*] We could delete this os-asset!");
                         os_asset *otmp = tmp_oa;
                         tmp_oa = tmp_oa->next;
                         del_os_asset(&rec->os, otmp);
@@ -708,15 +696,10 @@ return;
                         tmp_oa = tmp_oa->next;
                     }
                 }
-                printf("\n");
             }
 
-            /*
-             * If nothing in the asset has been updated for some time - delete it!
-             */
+            /* If nothing in the asset has been updated for some time - delete it! */
             if (tstamp - rec->last_seen >= ASSET_TIMEOUT) {
-            //if (1) {            // test - deleting all assets all the time - look for memleak
-                //printf("  *deleting this asset*\n");
                 asset *tmp = rec;
                 rec = rec->next;
                 del_asset(tmp, &passet[akey]);

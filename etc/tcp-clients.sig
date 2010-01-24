@@ -33,6 +33,9 @@ ssl,v/TLS 1.0 Client Key Exchange///,^\x16\x03\x01..\x10...\x14\x03\x01..
 ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
 #ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
 
+# Others
+# User Agent: ClamAV/0.95.3 (OS: linux-gnu, ARCH: x86_64, CPU: x86_64)
+
 # Mail Clients
 smtp,v/Mozilla-Thunderbird/$1/$2/,User-Agent: Mozilla-Thunderbird ([.\d]+) \((X11\/\d+)\)
 smtp,v/Thunderbird/$1/$2/,User-Agent: Thunderbird ([.\d]+) \((Macintosh\/\d+)\)

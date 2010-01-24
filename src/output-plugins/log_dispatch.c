@@ -8,11 +8,13 @@
 #include "log_stdout.h"
 #include "../sys_func.h"
 
+extern globalconfig config;
+
 void log_asset_arp (asset *main)
 {
-    //if (config.verbose == 1) {
+    if (config.verbose) {
         stdout_arp (main);
-    //}
+    }
 }
 
 void log_asset_os (asset *main, os_asset *os)
@@ -23,9 +25,9 @@ void log_asset_os (asset *main, os_asset *os)
     //dlog("[%lu] Incoming asset, %s: %s:%u [%s]\n",
     //os->last_seen, (char*)bdata(os->detection),ip_addr_s,ntohs(os->port),(char*)bdata(os->raw_fp));
 #endif
-    //if (config.verbose == 1) {
+    if (config.verbose) {
         stdout_os (main,os);
-    //}
+    }
 }
 
 void log_asset_service (asset *main, serv_asset *service)
@@ -39,8 +41,8 @@ void log_asset_service (asset *main, serv_asset *service)
         dlog("[*] new client: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));
     }
 #endif
-    //if (config.verbose == 1) {
+    if (config.verbose) {
         stdout_service (main,service);
-    //}
+    }
 }
 

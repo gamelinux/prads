@@ -30,9 +30,9 @@
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.7"
-#define CHECK_TIMEOUT                 60        /* Time between cxt and asset cleaning/printing */
+#define CHECK_TIMEOUT                 60       /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
-#define ASSET_TIMEOUT                 600       /* Time befor an asset is deleted if no updates */
+#define ASSET_TIMEOUT                 180      /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
@@ -665,6 +665,7 @@ typedef struct _globalconfig {
     char        *pidpath;               /* Path to pidfile */
     char        *s_net;                 /* Nets to collect assets for */
     uint8_t     verbose;                /* Verbose or not */
+    uint8_t     print_updates;          /* Prints updates */
     uint8_t     use_syslog;             /* Use syslog or not */
     uint8_t     setfilter;
     uint8_t     drop_privs_flag;

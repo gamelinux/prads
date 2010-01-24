@@ -39,7 +39,7 @@ void check_interrupt()
     if (intr_flag == 1) {
         game_over();
     } else if (intr_flag == 2) {
-        print_assets();
+        update_asset_list();
     } else if (intr_flag == 3) {
         set_end_sessions();
     } else {
@@ -56,7 +56,7 @@ void set_end_sessions()
         extern time_t tstamp;
         tstamp = time(NULL);
         end_sessions();
-        print_assets();
+        update_asset_list();
         intr_flag = 0;
         alarm(CHECK_TIMEOUT);
     }
@@ -68,7 +68,7 @@ void game_over()
 
     if (inpacket == 0) {
         //extern pcap_t *handle;
-        print_assets();
+        update_asset_list();
         end_all_sessions();
         free_queue();
         print_prads_stats();
