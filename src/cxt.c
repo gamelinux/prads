@@ -334,7 +334,7 @@ uint32_t make_hash(packetinfo *pi)
 }*/
 inline
 void connection_tracking(packetinfo *pi) {
-    connection *cxt = NULL;
+    //connection *cxt = NULL;
     //connection *head = NULL;
     uint32_t hash;
 

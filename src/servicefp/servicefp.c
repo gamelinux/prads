@@ -207,6 +207,7 @@ int parse_raw_signature(bstring line, int lineno, int storage)
             //add_signature (sig);
             if (storage == 1) {
                 extern signature *sig_serv_tcp;
+            /* Should be put on tail for all signatures! */
                 head = sig_serv_tcp;
                 sig->next = head;
                 sig_serv_tcp = sig;
@@ -243,6 +244,69 @@ int parse_raw_signature(bstring line, int lineno, int storage)
         bdestroy(pcre_string);
 
     return ret;
+}
+
+void del_signature_lists()
+{
+    signature *head, *tmp;
+
+    if (1) {
+    /* server tcp */
+        extern signature *sig_serv_tcp;
+        head = sig_serv_tcp;
+        while (head != NULL) {
+            bdestroy(head->service);
+            bdestroy(head->title.app);
+            bdestroy(head->title.ver);
+            bdestroy(head->title.misc);
+            tmp = head->next;
+            free(head);
+            head = tmp;
+        }
+    }
+    if (1) {
+    /* server udp */
+        extern signature *sig_serv_udp;
+        head = sig_serv_udp;
+        while (head != NULL) {
+            bdestroy(head->service);
+            bdestroy(head->title.app);
+            bdestroy(head->title.ver);
+            bdestroy(head->title.misc);
+            tmp = head->next;
+            free(head);
+            head = tmp;
+        }
+    }
+    if (1) {
+    /* client tcp */
+        extern signature *sig_client_tcp;
+        head = sig_client_tcp;
+        while (head != NULL) {
+            bdestroy(head->service);
+            bdestroy(head->title.app);
+            bdestroy(head->title.ver);
+            bdestroy(head->title.misc);
+            tmp = head->next;
+            free(head);
+            head = tmp;
+        }
+    }
+    if (1) {
+    /* client udp */
+        extern signature *sig_client_udp;
+        head = sig_client_udp;
+        while (head != NULL) {
+            bdestroy(head->service);
+            bdestroy(head->title.app);
+            bdestroy(head->title.ver);
+            bdestroy(head->title.misc);
+            tmp = head->next;
+            free(head);
+            head = tmp;
+        }
+    } 
+    printf("\nsignature list memory has been cleared");
 }
 
 /* ----------------------------------------------------------
@@ -355,6 +419,23 @@ void add_known_port(uint8_t proto, uint16_t port, bstring service_name)
         lports[proto] = new_port;
     }
 
+    return;
+}
+
+void del_known_port(uint8_t proto)
+{
+    extern port_t *lports[255];
+    port_t *tmp_lports;
+    port_t *port_list;
+    port_list = lports[proto];
+
+    while (port_list != NULL) {
+        bdestroy(port_list->service_name);
+        tmp_lports = port_list->next;
+        free(port_list);
+        port_list = tmp_lports;
+    }
+    printf("\nport list %u memory has been cleared",proto);
     return;
 }
 

@@ -14,10 +14,16 @@ www,v/Opera/$1/$2/,User-Agent\x3a Opera\/([\S]+) (.*)\r\n
 ## CUPS
 www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
 
+## User Agent: Ubuntu APT-HTTP/1.3 (0.7.20.2ubuntu6)
+
 ## Unknown/Failback
 # User-Agent: Java/1.4.1_04
 #www,v/HTTP Browser/$3//,^.+\[(.{26})\] \"(.+)HTTP/1..\".*(\".+\")$
 www,v/User Agent: $1///,User-Agent\x3a (.*)\r\n
+
+# RSS
+# Liferea/1.7.2-svn
+# Apple-PubSub/65.11
 
 # SSH
 ssh,v/OpenSSH/$2/Protocol $1/,SSH-([.\d]+)-OpenSSH[_-](\S+)
@@ -28,6 +34,14 @@ ssl,v/TLS 1.0 Client Hello///,^\x16\x03\x01..\x01...\x03\x01
 ssl,v/TLS 1.0 Client Key Exchange///,^\x16\x03\x01..\x10...\x14\x03\x01..
 ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
 #ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
+
+# Others
+# User Agent: ClamAV/0.95.3 (OS: linux-gnu, ARCH: x86_64, CPU: x86_64)
+# User Agent: RealMedia Player HelixDNAClient/10.0.0.13597 (linux-2.2-libc6-gcc32-i586)
+# User Agent: check_http/v1.4.14 (nagios-plugins 1.4.14)
+# User Agent: ELinks/0.11.4-3 (textmode; Debian; Linux 2.6.26-2-686 i686; -)
+# User Agent: WWW-Mechanize/1.52
+# User Agent: Debian APT-HTTP/1.3 (0.7.20.2)
 
 # Mail Clients
 smtp,v/Mozilla-Thunderbird/$1/$2/,User-Agent: Mozilla-Thunderbird ([.\d]+) \((X11\/\d+)\)

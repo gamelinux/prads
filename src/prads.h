@@ -30,14 +30,19 @@
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.1.7"
-#define CHECK_TIMEOUT                 60        /* Time between cxt and asset cleaning/printing */
+#define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
-#define ASSET_TIMEOUT                 600       /* Time befor an asset is deleted if no updates */
+#define ASSET_TIMEOUT                 1800      /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
 #define MAX_PKT_CHECK                 20
 #define MAX_SERVICE_CHECK             5         /* How many new services*/
+
+/* Flags to identify ASSET TYPE */
+#define ASSET_ARP                     0x01
+#define ASSET_TYPE_OS                 0x02
+#define ASSET_TYPE_SERVICE            0x04
 
 /* Flags to set for enabling different OS Fingerprinting checks */
 #define CO_SYN                        0x01      /* Check SYN packets */
@@ -73,9 +78,12 @@
 #define ARPOP_InREPLY                 9  /* InARP reply.  */
 #define ARPOP_NAK                     10 /* (ATM)ARP NAK.  */
 
+#define IP_PROTO_ICMP                 1
 #define IP_PROTO_TCP                  6
 #define IP_PROTO_UDP                  17
-#define IP_PROTO_ICMP                 1
+#define IP_PROTO_IP6                  41
+#define IP_PROTO_GRE                  47
+#define IP_PROTO_IP4                  94
 #define IP6_PROTO_HOPOPT              0
 #define IP6_PROTO_ROUTE               43
 #define IP6_PROTO_FRAG                44
@@ -83,11 +91,24 @@
 #define IP6_PROTO_NONXT               59
 #define MAX_IP_PROTO                  255
 
+#define GRE_VERSION_0                 0x0000
+#define GRE_VERSION_1                 0x0001
+#define GRE_HDR_LEN                   4
+#define GREV1_ACK_LEN                 4
+#define GREV1_HDR_LEN                 8
+#define GRE_CHKSUM_LEN                2
+#define GRE_OFFSET_LEN                2
+#define GRE_KEY_LEN                   4
+#define GRE_SEQ_LEN                   4
+#define GRE_SRE_HDR_LEN               4
+#define GRE_PROTO_PPP                 0x880b
+
 #define IP4_HEADER_LEN                20
 #define IP6_HEADER_LEN                40
 #define TCP_HEADER_LEN                20
 #define UDP_HEADER_LEN                8
 #define ICMP_HEADER_LEN               4
+#define GRE_HDR_LEN                   4
 #define MAC_ADDR_LEN                  6
 #define ETHERNET_HEADER_LEN           14
 #define ETHERNET_8021Q_HEADER_LEN     18
@@ -411,6 +432,32 @@ typedef struct _icmp6_header {
 /* Minus 1 due to the 'body' field  */
 #define ICMP6_MIN_HEADER_LEN (sizeof(ICMP6Hdr) )
 
+typedef struct _gre_header
+{
+    uint8_t flags; /**< GRE packet flags */
+    uint8_t version; /**< GRE version */
+    uint16_t ether_type; /**< ether type of the encapsulated traffic */
+} gre_header;
+#define GRE_FLAG_ISSET_CHKSUM(r)  (r->flags & 0x80)
+#define GRE_FLAG_ISSET_ROUTE(r)   (r->flags & 0x40)
+#define GRE_FLAG_ISSET_KY(r)      (r->flags & 0x20)
+#define GRE_FLAG_ISSET_SQ(r)      (r->flags & 0x10)
+#define GRE_FLAG_ISSET_SSR(r)     (r->flags & 0x08)
+#define GRE_FLAG_ISSET_RECUR(r)   (r->flags & 0x07)
+#define GRE_GET_VERSION(r)        (r->version & 0x07)
+#define GRE_GET_FLAGS(r)          (r->version & 0xF8)
+#define GRE_GET_PROTO(r)          ntohs(r->ether_type)
+#define GREV1_FLAG_ISSET_FLAGS(r) (r->version & 0x78)
+#define GREV1_FLAG_ISSET_ACK(r)   (r->version & 0x80)
+
+typedef struct _gre_sre_header
+{
+    uint16_t    af;            
+    uint8_t     sre_offset;
+    uint8_t     sre_length;
+    uint8_t     *routing;
+} gre_sre_header;
+
 /*
  * Structure for connections
  */
@@ -460,6 +507,8 @@ typedef struct _packetinfo {
     udp_header      *udph;          /* udp header struct pointer */
     icmp_header     *icmph;         /* icmp header struct pointer */
     icmp6_header    *icmp6h;        /* icmp6 header struct pointer */ 
+    gre_header      *greh;          /* GRE header struct pointer */
+    uint16_t        gre_hlen;       /* Length of dynamic GRE header length */
     const uint8_t   *end_ptr;       /* Paranoid end pointer of packet */
     const char      *payload;       /* char pointer to transport payload */
     uint32_t        our;            /* Is the asset in our defined network */
@@ -493,6 +542,7 @@ typedef struct _os_asset {
     bstring detection;          /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
     bstring raw_fp;             /* The raw fingerprint [*:*:*:*:*:*:....] */
     bstring matched_fp;         /* The FP that matched [*:*:*:*.*:*:---] */
+    uint16_t port;              /* Asset port detected on */
     uint16_t mtu;               /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
     uint32_t uptime;            /* Asset uptime */
 } os_asset;
@@ -577,12 +627,18 @@ typedef struct _fmask {
 typedef struct _prads_stat {
     uint32_t got_packets;  /* number of packets received by prads */
     uint32_t eth_recv;     /* number of Ethernet packets received */
+    uint32_t arp_recv;     /* number of ARP packets received */
+    uint32_t otherl_recv;  /* number of other Link layer packets received */
+    uint32_t vlan_recv;    /* number of VLAN packets received */
     uint32_t ip4_recv;     /* number of IPv4 packets received */
     uint32_t ip6_recv;     /* number of IPv6 packets received */
+    uint32_t ip4ip_recv;   /* number of IP4/6 packets in IPv4 packets */
+    uint32_t ip6ip_recv;   /* number of IP4/6 packets in IPv6 packets */
+    uint32_t gre_recv;     /* number of GRE packets received */
     uint32_t tcp_recv;     /* number of tcp packets received */
     uint32_t udp_recv;     /* number of udp packets received */
     uint32_t icmp_recv;    /* number of icmp packets received */
-    uint32_t other_recv;   /* number of other packets received */
+    uint32_t othert_recv;  /* number of other transport layer packets received */
 } prads_stat;
 
 typedef struct _globalconfig {
@@ -614,6 +670,7 @@ typedef struct _globalconfig {
     char        *pidpath;               /* Path to pidfile */
     char        *s_net;                 /* Nets to collect assets for */
     uint8_t     verbose;                /* Verbose or not */
+    uint8_t     print_updates;          /* Prints updates */
     uint8_t     use_syslog;             /* Use syslog or not */
     uint8_t     setfilter;
     uint8_t     drop_privs_flag;

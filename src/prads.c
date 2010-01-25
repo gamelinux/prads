@@ -62,10 +62,14 @@ static void usage();
 void check_vlan (packetinfo *pi);
 void prepare_eth (packetinfo *pi);
 void prepare_ip4 (packetinfo *pi);
+void prepare_ip4ip (packetinfo *pi);
 void prepare_ip6 (packetinfo *pi);
+void prepare_ip6ip (packetinfo *pi);
 void prepare_tcp (packetinfo *pi);
 void prepare_udp (packetinfo *pi);
 void prepare_icmp (packetinfo *pi);
+void prepare_gre (packetinfo *pi);
+void prepare_greip (packetinfo *pi);
 void prepare_other (packetinfo *pi);
 void parse_ip4 (packetinfo *pi);
 void parse_ip6 (packetinfo *pi);
@@ -73,6 +77,7 @@ void parse_tcp4 (packetinfo *pi);
 void parse_tcp6 (packetinfo *pi);
 void parse_udp (packetinfo *pi);
 void parse_icmp (packetinfo *pi);
+void parse_gre (packetinfo *pi);
 void parse_other (packetinfo *pi);
 void parse_arp (packetinfo *pi);
 int  parse_network (char *net_s, struct in6_addr *network);
@@ -106,13 +111,16 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     if (pi.eth_type == ETHERNET_TYPE_IP) {
         prepare_ip4(&pi);
         parse_ip4(&pi);
+        goto packet_end;
     } else if (pi.eth_type == ETHERNET_TYPE_IPV6) {
         prepare_ip6(&pi);
         parse_ip6(&pi);
+        goto packet_end;
     } else if (pi.eth_type == ETHERNET_TYPE_ARP) {
         parse_arp(&pi);
         goto packet_end;
     }
+    config.pr_s.otherl_recv++;
     vlog(0x3, "[*] ETHERNET TYPE : %x\n",pi.eth_hdr->eth_ip_type);
   packet_end:
 #ifdef DEBUG
@@ -251,6 +259,7 @@ void check_vlan (packetinfo *pi)
 {
     if (pi->eth_type == ETHERNET_TYPE_8021Q) {
     vlog(0x3, "[*] ETHERNET TYPE 8021Q\n");
+    config.pr_s.vlan_recv++;
     pi->vlan = pi->eth_hdr->eth_8_vid;
     pi->eth_type = ntohs(pi->eth_hdr->eth_8_ip_type);
     pi->eth_hlen += 4;
@@ -282,32 +291,202 @@ void prepare_ip4 (packetinfo *pi)
 
 void parse_ip4 (packetinfo *pi)
 {
-    if (pi->ip4->ip_p == IP_PROTO_TCP) {
-        prepare_tcp(pi);
-        if (!pi->our)
-            return;
+    switch (pi->ip4->ip_p) {
+        case IP_PROTO_TCP:
+            prepare_tcp(pi);
+            if (!pi->our)
+                break;
+            parse_tcp4(pi);
+            break;
+        case IP_PROTO_UDP:
+            prepare_udp(pi);
+            if (!pi->our)
+                break;
+            parse_udp(pi);
+            break;
+        case IP_PROTO_ICMP:
+            prepare_icmp(pi);
+            if (!pi->our)
+                break;
+            parse_icmp(pi);
+            break;
+        case IP_PROTO_IP4:
+            prepare_ip4ip(pi);
+            break;
+        case IP_PROTO_IP6:
+            prepare_ip4ip(pi);
+            break;
+        case IP_PROTO_GRE:
+            prepare_gre(pi);
+            parse_gre(pi);
+            break;
 
-        parse_tcp4(pi);
-        return;
-    } else if (pi->ip4->ip_p == IP_PROTO_UDP) {
-        prepare_udp(pi);
-        if (!pi->our)
-            return;
-
-        parse_udp(pi);
-        return;
-    } else if (pi->ip4->ip_p == IP_PROTO_ICMP) {
-        prepare_icmp(pi);
-        if (!pi->our)
-            return;
-
-        parse_icmp(pi);
-        return;
-    } else {
+        default:
         prepare_other(pi);
         if (!pi->our)
-            return;
+            break;
         parse_other(pi);
+    }
+    return;
+}
+
+void prepare_gre (packetinfo *pi)
+{
+    config.pr_s.gre_recv++;
+    if((pi->pheader->caplen - pi->eth_hlen) < GRE_HDR_LEN)    {
+        return;
+    }
+    if (pi->af == AF_INET) {
+        vlog(0x3, "[*] IPv4 PROTOCOL TYPE GRE:\n");
+        pi->greh = (gre_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
+    } else if (pi->af == AF_INET6) {
+        vlog(0x3, "[*] IPv6 PROTOCOL TYPE GRE:\n");
+        pi->greh = (gre_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
+    }
+    return;
+}
+
+void parse_gre (packetinfo *pi)
+{
+    uint16_t gre_header_len = GRE_HDR_LEN;
+    gre_sre_header *gsre = NULL;
+    uint16_t len = (pi->pheader->caplen - pi->eth_hlen);
+
+    switch (GRE_GET_VERSION(pi->greh))
+    {
+        case GRE_VERSION_0:
+            /* Adjust header length based on content */
+            if (GRE_FLAG_ISSET_KY(pi->greh))
+                gre_header_len += GRE_KEY_LEN;
+            if (GRE_FLAG_ISSET_SQ(pi->greh))
+                gre_header_len += GRE_SEQ_LEN;
+            if (GRE_FLAG_ISSET_CHKSUM(pi->greh) || GRE_FLAG_ISSET_ROUTE(pi->greh))
+                gre_header_len += GRE_CHKSUM_LEN + GRE_OFFSET_LEN;
+            if (gre_header_len > len)   {
+                return;
+            }
+            if (GRE_FLAG_ISSET_ROUTE(pi->greh))
+            {
+                gsre = (gre_sre_header *)(pi->greh + gre_header_len);
+                if (gsre == NULL) return;
+                while (1)
+                {
+                    if ((gre_header_len+GRE_SRE_HDR_LEN) > len) {
+                        break;
+                    }
+                    gre_header_len += GRE_SRE_HDR_LEN;
+
+                    if (gsre != NULL && (ntohs(gsre->af) == 0) && (gsre->sre_length == 0))
+                        break;
+
+                    gre_header_len += gsre->sre_length;
+                    gsre = (gre_sre_header *)(pi->greh + gre_header_len);
+                    if (gsre == NULL)
+                        return;
+                }
+            }
+            break;
+
+        case GRE_VERSION_1:
+            /* GRE version 1 doenst support the fields below RFC 1701 */
+            if (GRE_FLAG_ISSET_CHKSUM(pi->greh))    {
+                return;
+            }
+            if (GRE_FLAG_ISSET_ROUTE(pi->greh)) {
+                return;
+            }
+            if (GRE_FLAG_ISSET_SSR(pi->greh))   {
+                return;
+            }
+            if (GRE_FLAG_ISSET_RECUR(pi->greh)) {
+                return;
+            }
+            if (GREV1_FLAG_ISSET_FLAGS(pi->greh))   {
+                return;
+            }
+            if (GRE_GET_PROTO(pi->greh) != GRE_PROTO_PPP)  {
+                return;
+            }
+            if (!(GRE_FLAG_ISSET_KY(pi->greh))) {
+                return;
+            }
+
+            gre_header_len += GRE_KEY_LEN;
+
+            /* Adjust header length based on content */
+            if (GRE_FLAG_ISSET_SQ(pi->greh))
+                gre_header_len += GRE_SEQ_LEN;
+            if (GREV1_FLAG_ISSET_ACK(pi->greh))
+                gre_header_len += GREV1_ACK_LEN;
+            if (gre_header_len > len)   {
+                return;
+            }
+            break;
+
+        default:
+            /* Error */
+            return;
+    }
+
+    prepare_greip(pi);
+    return;
+}
+
+void prepare_ip6ip (packetinfo *pi)
+{
+    packetinfo pipi;
+    memset(&pipi, 0, sizeof(packetinfo));
+    config.pr_s.ip6ip_recv++;
+    pipi.pheader = pi->pheader;
+    pipi.packet = (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
+    pipi.end_ptr = pi->end_ptr;
+    if (pi->ip6->next == IP_PROTO_IP4) {
+        prepare_ip4(&pipi);
+        parse_ip4(&pipi);
+        return;
+    } else {
+        prepare_ip6(&pipi);
+        parse_ip6(&pipi);
+        return;
+    }
+}
+
+void prepare_greip (packetinfo *pi)
+{
+    packetinfo pipi;
+    memset(&pipi, 0, sizeof(packetinfo));
+    pipi.pheader = pi->pheader;
+    pipi.packet = (pi->packet + pi->eth_hlen + pi->gre_hlen);
+    pipi.end_ptr = pi->end_ptr;
+    if (GRE_GET_PROTO(pi->greh) == IP_PROTO_IP4) {
+        prepare_ip4(&pipi);
+        parse_ip4(&pipi);
+        return;
+    } else if (GRE_GET_PROTO(pi->greh) == IP_PROTO_IP6) {
+        prepare_ip6(&pipi);
+        parse_ip6(&pipi);
+        return;
+    } else {
+        /* Not more implemented atm */
+        vlog(0x3, "[*] - NOT CHECKING GRE PACKAGE TYPE Other\n");
+        return;
+    }
+}
+void prepare_ip4ip (packetinfo *pi)
+{
+    packetinfo pipi;
+    memset(&pipi, 0, sizeof(packetinfo));
+    config.pr_s.ip4ip_recv++;
+    pipi.pheader = pi->pheader;
+    pipi.packet = (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
+    pipi.end_ptr = pi->end_ptr;
+    if (pi->ip4->ip_p == IP_PROTO_IP4) {
+        prepare_ip4(&pipi);
+        parse_ip4(&pipi);
+        return;
+    } else {
+        prepare_ip6(&pipi);
+        parse_ip6(&pipi);
         return;
     }
 }
@@ -327,43 +506,33 @@ void prepare_ip6 (packetinfo *pi)
 
 void parse_ip6 (packetinfo *pi)
 {
-    if (pi->ip6->next == IP_PROTO_TCP) {
-        prepare_tcp(pi);
-        if (!pi->our)
-            return;
-        parse_tcp6(pi);
-        return;
-    } else if (pi->ip6->next == IP_PROTO_UDP) {
-        prepare_udp(pi);
-        if (!pi->our)
-            return;
-        if (pi->s_check != 0) {
-            /*
-             * fp_udp(ip6, ttl, ipopts, len, id, ipflags, df);
-             */
-            pi->payload =
-                (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + UDP_HEADER_LEN);
-            service_udp6(pi->ip6, pi->udph, pi->payload,
-                         (pi->pheader->caplen - UDP_HEADER_LEN -
-                          IP6_HEADER_LEN - pi->eth_hlen));
-        } else {
-            vlog(0x3, "[*] - NOT CHECKING UDP PACKAGE\n");
-        }
-        return;
-    } else if (pi->ip6->next == IP6_PROTO_ICMP) {
-        prepare_icmp(pi);
-        if (!pi->our)
-            return;
-        if (pi->s_check != 0) {
-            /*
-             * service_icmp(*ip6,*tcph)
-             */
-            fp_icmp6(pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
-        } else {
-            vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
-        }
-        return;
-    } else {
+    switch (pi->ip6->next) {
+        case IP_PROTO_TCP:
+            prepare_tcp(pi);
+            if (!pi->our) 
+                break;
+            parse_tcp6(pi);
+            break;
+        case IP_PROTO_UDP:
+            prepare_udp(pi);
+            if (!pi->our)
+                break;
+            parse_udp(pi);
+            break;
+        case IP6_PROTO_ICMP:
+            prepare_icmp(pi);
+            if (!pi->our)
+                break;
+            parse_icmp(pi);
+            break;
+        case IP_PROTO_IP4:
+            prepare_ip6ip(pi);
+            break;
+        case IP_PROTO_IP6:
+            prepare_ip6ip(pi);
+            break;
+
+        default:
         prepare_other(pi);
         /*
          * if (s_check != 0) { 
@@ -375,13 +544,15 @@ void parse_ip6 (packetinfo *pi)
          * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
          * } 
          */
-        return;
+        break;
     }
+    return;
 }
 
 void parse_arp (packetinfo *pi)
 {
     vlog(0x3, "[*] Got ARP packet...\n");
+    config.pr_s.arp_recv++;
     pi->af = AF_INET;
     pi->arph = (ether_arp *) (pi->packet + pi->eth_hlen);
 
@@ -391,9 +562,7 @@ void parse_arp (packetinfo *pi)
         if (filter_packet(pi->af, &pi->ip_src)) {
             update_asset_arp(pi->arph->arp_sha, pi->ip_src);
         }
-        /*
-         * arp_check(eth_hdr,pi->pheader->ts.tv_sec);
-         */
+        /* arp_check(eth_hdr,pi->pheader->ts.tv_sec); */
     } else {
         vlog(0x3, "[*] ARP TYPE: %d\n",ntohs(pi->arph->ea_hdr.ar_op));
     }
@@ -401,9 +570,7 @@ void parse_arp (packetinfo *pi)
 
 void set_pkt_end_ptr (packetinfo *pi)
 {
-    /*
-     * Paranoia!
-     */
+    /* Paranoia! */
     if (pi->pheader->len <= SNAPLENGTH) {
         pi->end_ptr = (pi->packet + pi->pheader->len);
     } else {
@@ -418,19 +585,11 @@ void prepare_tcp (packetinfo *pi)
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
-        //pi->s_check =
-        //        cx_track(&pi->ip_src, pi->tcph->src_port, 
-        //                 &pi->ip_dst, pi->tcph->dst_port, 
-        //                 pi->ip4->ip_p, pi->packet_bytes,
-        //                 pi->tcph->t_flags, pi->pheader->ts.tv_sec, pi->af);
+
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
-        //pi->s_check =
-        //        cx_track(&pi->ip6->ip_src, pi->tcph->src_port,
-        //                 &pi->ip6->ip_dst, pi->tcph->dst_port,
-        //                 pi->ip6->next, pi->ip6->len, pi->tcph->t_flags,
-        //                 pi->pheader->ts.tv_sec, pi->af);
+
     }
     pi->s_port = pi->tcph->src_port;
     pi->d_port = pi->tcph->dst_port;
@@ -540,19 +699,11 @@ void prepare_udp (packetinfo *pi)
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE UDP:\n");
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
-        //pi->s_check =
-        //        cx_track(&pi->ip_src, pi->udph->src_port, 
-        //                 &pi->ip_dst, pi->udph->dst_port,
-        //                 pi->ip4->ip_p, pi->packet_bytes, 0,
-        //                 pi->pheader->ts.tv_sec, pi->af);
+
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE UDP:\n");
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + + IP6_HEADER_LEN);
-        //pi->s_check =
-        //        cx_track(&pi->ip6->ip_src, pi->udph->src_port,
-        //                 &pi->ip6->ip_dst, pi->udph->dst_port,
-        //                 pi->ip6->next, pi->ip6->len, 0,
-        //                 pi->pheader->ts.tv_sec, pi->af);
+
     }
     pi->s_port = pi->udph->src_port;
     pi->d_port = pi->udph->dst_port;
@@ -564,16 +715,29 @@ void prepare_udp (packetinfo *pi)
 void parse_udp (packetinfo *pi)
 {
     if (IS_CSSET(&config,CS_UDP_SERVICES) && pi->s_check != 0) {
-        pi->payload =
-            (char *)(pi->packet + pi->eth_hlen +
+        if (pi->af == AF_INET) {
+            pi->payload =
+                (char *)(pi->packet + pi->eth_hlen +
                      (IP_HL(pi->ip4) * 4) + UDP_HEADER_LEN);
-        service_udp4(pi->ip4, pi->udph, pi->payload,
+            service_udp4(pi->ip4, pi->udph, pi->payload,
                      (pi->pheader->caplen -
                       UDP_HEADER_LEN -
                       (IP_HL(pi->ip4) * 4) - pi->eth_hlen));
-        if (IS_COSET(&config,CO_UDP)) fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
+            if (IS_COSET(&config,CO_UDP)) fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
+        } else if (pi->af == AF_INET6) {
+            pi->payload =
+                (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + UDP_HEADER_LEN);
+            service_udp6(pi->ip6, pi->udph, pi->payload,
+                         (pi->pheader->caplen - UDP_HEADER_LEN -
+                          IP6_HEADER_LEN - pi->eth_hlen));
+            /*
+             * fp_udp(ip6, ttl, ipopts, len, id, ipflags, df);
+             */
+        }
+        return;
     } else {
-        vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
+        vlog(0x3, "[*] - NOT CHECKING UDP PACKAGE\n");
+        return;
     }
 }
 
@@ -583,35 +747,32 @@ void prepare_icmp (packetinfo *pi)
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE ICMP:\n");
         pi->icmph = (icmp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
-        //pi->s_check =
-        //        cx_track(&pi->ip_src, pi->icmph->s_icmp_id, 
-        //                 &pi->ip_dst, pi->icmph->s_icmp_id,
-        //                 pi->ip4->ip_p, pi->packet_bytes, 0,
-        //                 pi->pheader->ts.tv_sec, pi->af);
+
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE ICMP:\n");
         pi->icmp6h = (icmp6_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
-        /*
-         * DO change ip6->hop_lmt to 0 or something
-         */
-        //pi->s_check = cx_track(&pi->ip6->ip_src, 0,
-        //                       &pi->ip6->ip_dst, 0,
-        //                       pi->ip6->next, pi->ip6->len, 0,
-        //                       pi->pheader->ts.tv_sec, pi->af);
+
     }
     pi->s_port = 0;
     pi->d_port = 0;
+    /*
+     * DO change ip6->hop_lmt to 0 or something
+     */
     connection_tracking(pi);
     return;
 }
 
 void parse_icmp (packetinfo *pi)
 {
-    if (pi->s_check != 0) {
-        if (IS_COSET(&config,CO_ICMP)) {
-            fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
-            // could look for icmp spesific data in package abcde...
-            // service_icmp(*pi->ip4,*tcph)
+    if (IS_COSET(&config,CO_ICMP)) {
+        if (pi->s_check != 0) {
+            if (pi->af==AF_INET) {
+                fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
+                // could look for icmp spesific data in package abcde...
+                // service_icmp(*pi->ip4,*tcph
+            } else if (pi->af==AF_INET6) {
+                fp_icmp6(pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
+            }
         } else {
             vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
         }
@@ -620,21 +781,13 @@ void parse_icmp (packetinfo *pi)
 
 void prepare_other (packetinfo *pi)
 {
-    config.pr_s.other_recv++;
+    config.pr_s.othert_recv++;
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE OTHER: %d\n",pi->ip4->ip_p); 
-        //pi->s_check =
-        //        cx_track(&pi->ip_src, 0, 
-        //                 &pi->ip_dst, 0,
-        //                 pi->ip4->ip_p,
-        //                 pi->packet_bytes, 0, pi->pheader->ts.tv_sec, pi->af);
+
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE OTHER: %d\n",pi->ip6->next);
-        //pi->s_check = 
-        //        cx_track(&pi->ip6->ip_src, 0,
-        //                 &pi->ip6->ip_dst, 0,
-        //                 pi->ip6->next, pi->ip6->len, 0,
-        //                 pi->pheader->ts.tv_sec, pi->af);
+
     }
     pi->s_port = 0;
     pi->d_port = 0;

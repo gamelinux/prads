@@ -13,7 +13,9 @@ SERVICE_OBJ = \
 servicefp/servicefp.o \
 servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o
 IPFP_OBJ = ipfp/ipfp.o ipfp/tcp_fp.o ipfp/udp_fp.o ipfp/icmp_fp.o
-OBJECTS = bstrlib.o sys_func.o util-cxt-queue.o util-cxt.o cxt.o assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
+LOG_OBJ = output-plugins/log_dispatch.o output-plugins/log_stdout.o
+CXT_OBJ = util-cxt-queue.o util-cxt.o cxt.o
+OBJECTS = bstrlib.o sys_func.o ${CXT_OBJ} ${LOG_OBJ} assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
 
 
 all: prads

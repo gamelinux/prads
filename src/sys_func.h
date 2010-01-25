@@ -11,6 +11,7 @@
 #endif
 size_t strlcpy(char *dst, const char *src, size_t size);
 size_t strlcat(char *dst, const char *src, size_t len);
+const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest);
 void bucket_keys_NULL();
 int set_chroot(void);
 int drop_privs(void);
@@ -20,7 +21,6 @@ void game_over();
 void end_all_sessions();
 void del_assets(int ctime);
 int daemonize();
-void print_assets();
 void set_end_sessions();
 void end_sessions();
 void display_config();
