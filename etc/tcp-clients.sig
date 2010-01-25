@@ -37,6 +37,11 @@ ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
 
 # Others
 # User Agent: ClamAV/0.95.3 (OS: linux-gnu, ARCH: x86_64, CPU: x86_64)
+# User Agent: RealMedia Player HelixDNAClient/10.0.0.13597 (linux-2.2-libc6-gcc32-i586)
+# User Agent: check_http/v1.4.14 (nagios-plugins 1.4.14)
+# User Agent: ELinks/0.11.4-3 (textmode; Debian; Linux 2.6.26-2-686 i686; -)
+# User Agent: WWW-Mechanize/1.52
+# User Agent: Debian APT-HTTP/1.3 (0.7.20.2)
 
 # Mail Clients
 smtp,v/Mozilla-Thunderbird/$1/$2/,User-Agent: Mozilla-Thunderbird ([.\d]+) \((X11\/\d+)\)

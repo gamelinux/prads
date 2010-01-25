@@ -627,7 +627,9 @@ typedef struct _fmask {
 typedef struct _prads_stat {
     uint32_t got_packets;  /* number of packets received by prads */
     uint32_t eth_recv;     /* number of Ethernet packets received */
-    uint32_t vlan_recv;     /* number of VLAN packets received */
+    uint32_t arp_recv;     /* number of ARP packets received */
+    uint32_t otherl_recv;  /* number of other Link layer packets received */
+    uint32_t vlan_recv;    /* number of VLAN packets received */
     uint32_t ip4_recv;     /* number of IPv4 packets received */
     uint32_t ip6_recv;     /* number of IPv6 packets received */
     uint32_t ip4ip_recv;   /* number of IP4/6 packets in IPv4 packets */
@@ -636,7 +638,7 @@ typedef struct _prads_stat {
     uint32_t tcp_recv;     /* number of tcp packets received */
     uint32_t udp_recv;     /* number of udp packets received */
     uint32_t icmp_recv;    /* number of icmp packets received */
-    uint32_t other_recv;   /* number of other packets received */
+    uint32_t othert_recv;  /* number of other transport layer packets received */
 } prads_stat;
 
 typedef struct _globalconfig {

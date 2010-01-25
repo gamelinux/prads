@@ -111,13 +111,16 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     if (pi.eth_type == ETHERNET_TYPE_IP) {
         prepare_ip4(&pi);
         parse_ip4(&pi);
+        goto packet_end;
     } else if (pi.eth_type == ETHERNET_TYPE_IPV6) {
         prepare_ip6(&pi);
         parse_ip6(&pi);
+        goto packet_end;
     } else if (pi.eth_type == ETHERNET_TYPE_ARP) {
         parse_arp(&pi);
         goto packet_end;
     }
+    config.pr_s.otherl_recv++;
     vlog(0x3, "[*] ETHERNET TYPE : %x\n",pi.eth_hdr->eth_ip_type);
   packet_end:
 #ifdef DEBUG
@@ -549,6 +552,7 @@ void parse_ip6 (packetinfo *pi)
 void parse_arp (packetinfo *pi)
 {
     vlog(0x3, "[*] Got ARP packet...\n");
+    config.pr_s.arp_recv++;
     pi->af = AF_INET;
     pi->arph = (ether_arp *) (pi->packet + pi->eth_hlen);
 
@@ -777,7 +781,7 @@ void parse_icmp (packetinfo *pi)
 
 void prepare_other (packetinfo *pi)
 {
-    config.pr_s.other_recv++;
+    config.pr_s.othert_recv++;
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE OTHER: %d\n",pi->ip4->ip_p); 
 

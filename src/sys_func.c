@@ -87,25 +87,28 @@ void print_pcap_stats()
         pcap_perror(config.handle, "pcap_stats");
     }
     printf("-- libpcap:\n");
-    printf("-- Total packets received              :%12u\n",config.ps.ps_recv);
-    printf("-- Total packets dropped               :%12u\n",config.ps.ps_drop);
-    printf("-- Total packets dropped by Interface  :%12u\n",config.ps.ps_ifdrop);
+    printf("-- Total packets received                 :%12u\n",config.ps.ps_recv);
+    printf("-- Total packets dropped                  :%12u\n",config.ps.ps_drop);
+    printf("-- Total packets dropped by Interface     :%12u\n",config.ps.ps_ifdrop);
 }
 
 void print_prads_stats()
 {
     printf("-- prads:\n");
-    printf("-- Total packets received from libpcap :%12u\n",config.pr_s.got_packets);
-    printf("-- Total Ethernet packets received     :%12u\n",config.pr_s.eth_recv);
-    printf("-- Total IPv4 packets received         :%12u\n",config.pr_s.ip4_recv);
-    printf("-- Total IPv6 packets received         :%12u\n",config.pr_s.ip6_recv);
-    printf("-- Total IPinIPv4 packets received     :%12u\n",config.pr_s.ip4ip_recv);
-    printf("-- Total IPinIPv6 packets received     :%12u\n",config.pr_s.ip6ip_recv);
-    printf("-- Total GRE packets received          :%12u\n",config.pr_s.gre_recv);
-    printf("-- Total TCP packets received          :%12u\n",config.pr_s.tcp_recv);
-    printf("-- Total UDP packets received          :%12u\n",config.pr_s.udp_recv);
-    printf("-- Total ICMP packets received         :%12u\n",config.pr_s.icmp_recv);
-    printf("-- Total Other packets received        :%12u\n",config.pr_s.other_recv);
+    printf("-- Total packets received from libpcap    :%12u\n",config.pr_s.got_packets);
+    printf("-- Total Ethernet packets received        :%12u\n",config.pr_s.eth_recv);
+    printf("-- Total ARP packets received             :%12u\n",config.pr_s.arp_recv);
+    printf("-- Total VLAN packets received            :%12u\n",config.pr_s.vlan_recv);
+    printf("-- Total IPv4 packets received            :%12u\n",config.pr_s.ip4_recv);
+    printf("-- Total IPv6 packets received            :%12u\n",config.pr_s.ip6_recv);
+    printf("-- Total Other link packets received      :%12u\n",config.pr_s.otherl_recv);
+    printf("-- Total IPinIPv4 packets received        :%12u\n",config.pr_s.ip4ip_recv);
+    printf("-- Total IPinIPv6 packets received        :%12u\n",config.pr_s.ip6ip_recv);
+    printf("-- Total GRE packets received             :%12u\n",config.pr_s.gre_recv);
+    printf("-- Total TCP packets received             :%12u\n",config.pr_s.tcp_recv);
+    printf("-- Total UDP packets received             :%12u\n",config.pr_s.udp_recv);
+    printf("-- Total ICMP packets received            :%12u\n",config.pr_s.icmp_recv);
+    printf("-- Total Other transport packets received :%12u\n",config.pr_s.othert_recv);
 }
 
 int set_chroot(void)
