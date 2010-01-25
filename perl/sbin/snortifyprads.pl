@@ -2,7 +2,10 @@
 
 # Convert PRADS db to SNORT host-attribute table
 #
-# Work-in-progress: missing attribute table and services!
+# Usage: 
+# 
+# Work-in-progress: services!
+#
 #
 # Copyright 2010 Kacper Wysocki <kwy@redpill-linpro.com>
 
@@ -15,6 +18,7 @@ our $DATABASE = 'dbi:SQLite:dbname=../prads.db';
 our $DB_USERNAME;
 our $DB_PASSWORD;
 our $DB_TABLE = 'asset';
+our $DBH;
 
 our $SQL_IP = 'ipaddress';
 our $SQL_FP = 'os_fingerprint';
@@ -26,12 +30,25 @@ our $SQL_TIME = 'timestamp';
 our $SW = 4;
 our $IL = 0;
 
+# start attributes at this number
+our $ATTR_NUM = 1337;
+our %attr;
+
 sub tab {
     $IL++;
 }
 sub bat {
     $IL--;
 }
+
+sub out_hat {
+    out ('<SNORT_ATTRIBUTES>');
+    tab;
+    db_suck($DATABASE,$DB_USERNAME,$DB_PASSWORD,$DB_TABLE);
+    bat;
+    out ('</SNORT_ATTRIBUTES>');
+}
+
 sub out {
     print " " x ($SW * $IL);
     for (@_){
@@ -45,20 +62,17 @@ sub out_tag {
     out ("<$tag>$value</$tag>");
 }
 
+sub out_ai {
+    my ($value) = @_;
+    out_tag ('ATTRIBUTE_ID', $value);
+}
 sub out_av {
     my ($value) = @_;
     out_tag ('ATTRIBUTE_VALUE', $value);
 }
-
-out ('<SNORT_ATTRIBUTES>');
-tab;
-db_suck($DATABASE,$DB_USERNAME,$DB_PASSWORD,$DB_TABLE);
-bat;
-out ('</SNORT_ATTRIBUTES>');
-
 sub db_suck {
     my ($db, $user, $pass, $table) = @_;
-    my $dbh = DBI->connect($db, $user, $pass);
+    $DBH = DBI->connect($db, $user, $pass);
 
 
     if ($db =~ /dbi:sqlite/i) {
@@ -72,18 +86,21 @@ sub db_suck {
 
     # do attribute map
     out ('<ATTRIBUTE_TABLE>');
-    print_hosts($dbh, $table);
+    out_hosts($table);
     out ('</ATTRIBUTE_TABLE>');
+    out_attribute_map();
 }
 
-sub print_hosts {
-    my ($dbh, $table) = @_;
+sub out_hosts {
+    my ($table) = @_;
     #todo : should be uniq'ed somehhow!
-    my $sql = "SELECT $SQL_IP,$SQL_TIME, service, $SQL_MAC, os, $SQL_DETAILS FROM $table WHERE service = 'SYN' OR service = 'SYNACK'";
+    #my $sql = "SELECT $SQL_IP,$SQL_TIME, service, $SQL_MAC, os, $SQL_DETAILS FROM $table WHERE service = 'SYN' OR service = 'SYNACK'";
+    my $sql = "SELECT DISTINCT $SQL_IP,$SQL_TIME, service, $SQL_MAC, os, $SQL_DETAILS FROM $table WHERE service = 'SYN' OR service = 'SYNACK' OR service = 'UDP' OR service = 'ICMP'";
 
-    my $sth = $dbh->prepare_cached($sql);
+    my $sth = $DBH->prepare_cached($sql);
     $sth->execute();
     my ($ip, $time, $service, $mac, $os, $details);
+#meh 
 #while ( ($ip, $time, $service, $mac, $os, $details) = $sth->fetchrow_array()) {
 #    print "$ip $time $service $mac $os $details\n";
 #}
@@ -96,12 +113,12 @@ sub print_hosts {
         tab;
         out ('<OPERATING_SYSTEM>');
         tab;
-        print_os($ref);
+        out_os($ref);
         bat;
         out ('</OPERATING_SYSTEM>');
         out ('<SERVICES>');
         tab;
-        print_services($ref->{'ip'});
+        out_services($ref->{'ip'});
         bat;
         out ('</SERVICES>');
         bat;
@@ -110,11 +127,11 @@ sub print_hosts {
     }
 }
 
-sub print_os {
+sub out_os {
     my ($ref) = @_;
     out ('<NAME>');
     tab;
-    out_av ('1337');
+    out_ai(gen_attribute_id($ref->{'os'}));
     bat;
     out ('</NAME>');
     out ('<VENDOR>');
@@ -131,12 +148,32 @@ sub print_os {
     out ('</STREAM_POLICY>');
 }
 
+sub out_attribute_map {
+    out('<ATTRIBUTE_MAP>');
+    for (keys %attr){
+        out('<ENTRY>');
+        out_tag('ID', $attr{$_});
+        out_tag('VALUE', $_);
+        out('</ENTRY>');
+    }
+    out('</ATTRIBUTE_MAP>');
+}
+
+
+sub gen_attribute_id {
+    my ($name) = @_;
+    $attr{$name} = $ATTR_NUM++;
+
+    return $attr{$name};
+}
+
+
 sub gen_vendor {
     my ($os) = @_;
     $_ = $os;
     /windows/i and return "Microsoft" or
     /linux/i and return "Linux" or
-    return ucfirst lc $os;
+    return ucfirst $os;
 }
 sub gen_version {
     my ($os, $details) = @_;
@@ -170,13 +207,24 @@ sub gen_streampolicy {
     gen_fragpolicy($os, $details);
 }
 
-sub print_services {
-    # XXX
+# generate PORT IPPROTO PROTOCOL (CONFIDENCE) APPLICATION (VERSION)_
+sub out_services {
+    my ($ip) = @_;
+    my $sql = "SELECT $SQL_IP,$SQL_TIME, service, $SQL_MAC, os, $SQL_DETAILS FROM $DB_TABLE WHERE service LIKE 'SERVICE_%' AND $SQL_IP = ?";
+
+    my $sth = $DBH->prepare($sql);
+    $sth->execute($ip);
+
+    my $ref;
+    while ($ref = $sth->fetchrow_hashref()) {
+        out ("<!-- services for $ref->{'ip'} are forthcoming -->");
+    }
 }
+
 
 # extract <operating_system>ip, os Vendor, Version, frag_policy, stream_policy,
 # & all services: 
 # <services><service><port><attribute_value/>
 # IPPROTO, PROTOCOL <Confidence>
 
-
+out_hat;
