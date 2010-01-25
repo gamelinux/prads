@@ -648,6 +648,43 @@ void del_asset(asset * passet, asset ** bucket_ptr)
     passet = NULL;
 }
 
+void clear_asset_list()
+{
+    extern asset *passet[BUCKET_SIZE];
+    asset *rec = NULL;
+    int akey;
+
+    for (akey = 0; akey < BUCKET_SIZE; akey++) {
+        rec = passet[akey];
+        while (rec != NULL) {
+            serv_asset *tmp_sa = NULL;
+            os_asset   *tmp_oa = NULL;
+            tmp_sa = rec->services;
+            tmp_oa = rec->os;
+
+            while (tmp_sa != NULL) {
+                /* Delete service asset */
+                serv_asset *stmp = tmp_sa;
+                tmp_sa = tmp_sa->next;
+                del_serv_asset(&rec->services, stmp);
+            }
+
+            while (tmp_oa != NULL) {
+                /* Delete os asset */
+                os_asset *otmp = tmp_oa;
+                tmp_oa = tmp_oa->next;
+                del_os_asset(&rec->os, otmp);
+            }
+                
+            /* Delete the main asset */
+            asset *tmp = rec;
+            rec = rec->next;
+            del_asset(tmp, &passet[akey]);
+        }
+    }
+    printf("\nasset memory has been cleared");
+}
+
 void update_asset_list()
 {
     extern asset *passet[BUCKET_SIZE];

@@ -2,6 +2,8 @@
 #include "prads.h"
 #include "sys_func.h"
 #include "util-cxt.h"
+#include "assets.h"
+#include "servicefp/servicefp.h"
 
 extern globalconfig config;
 
@@ -67,14 +69,16 @@ void game_over()
     extern int inpacket, intr_flag;
 
     if (inpacket == 0) {
-        //extern pcap_t *handle;
-        update_asset_list();
+        //update_asset_list();
+        clear_asset_list();
         end_all_sessions();
         free_queue();
+        del_known_port(6);
+        del_known_port(17);
+        del_signature_lists();
         print_prads_stats();
         print_pcap_stats();
         pcap_close(config.handle);
-        //del_assets(0);
         printf("\nprads ended\n");
         exit(0);
     }
@@ -86,29 +90,31 @@ void print_pcap_stats()
     if (pcap_stats(config.handle, &config.ps) == -1) {
         pcap_perror(config.handle, "pcap_stats");
     }
-    printf("-- libpcap:\n");
-    printf("-- Total packets received                 :%12u\n",config.ps.ps_recv);
-    printf("-- Total packets dropped                  :%12u\n",config.ps.ps_drop);
-    printf("-- Total packets dropped by Interface     :%12u\n",config.ps.ps_ifdrop);
+    printf("\n-- libpcap:");
+    printf("\n-- Total packets received                 :%12u",config.ps.ps_recv);
+    printf("\n-- Total packets dropped                  :%12u",config.ps.ps_drop);
+    printf("\n-- Total packets dropped by Interface     :%12u",config.ps.ps_ifdrop);
 }
 
 void print_prads_stats()
 {
-    printf("-- prads:\n");
-    printf("-- Total packets received from libpcap    :%12u\n",config.pr_s.got_packets);
-    printf("-- Total Ethernet packets received        :%12u\n",config.pr_s.eth_recv);
-    printf("-- Total ARP packets received             :%12u\n",config.pr_s.arp_recv);
-    printf("-- Total VLAN packets received            :%12u\n",config.pr_s.vlan_recv);
-    printf("-- Total IPv4 packets received            :%12u\n",config.pr_s.ip4_recv);
-    printf("-- Total IPv6 packets received            :%12u\n",config.pr_s.ip6_recv);
-    printf("-- Total Other link packets received      :%12u\n",config.pr_s.otherl_recv);
-    printf("-- Total IPinIPv4 packets received        :%12u\n",config.pr_s.ip4ip_recv);
-    printf("-- Total IPinIPv6 packets received        :%12u\n",config.pr_s.ip6ip_recv);
-    printf("-- Total GRE packets received             :%12u\n",config.pr_s.gre_recv);
-    printf("-- Total TCP packets received             :%12u\n",config.pr_s.tcp_recv);
-    printf("-- Total UDP packets received             :%12u\n",config.pr_s.udp_recv);
-    printf("-- Total ICMP packets received            :%12u\n",config.pr_s.icmp_recv);
-    printf("-- Total Other transport packets received :%12u\n",config.pr_s.othert_recv);
+    extern u_int64_t cxtrackerid;
+    printf("\n-- prads:");
+    printf("\n-- Total packets received from libpcap    :%12u",config.pr_s.got_packets);
+    printf("\n-- Total Ethernet packets received        :%12u",config.pr_s.eth_recv);
+    printf("\n-- Total VLAN packets received            :%12u",config.pr_s.vlan_recv);
+    printf("\n-- Total ARP packets received             :%12u",config.pr_s.arp_recv);
+    printf("\n-- Total IPv4 packets received            :%12u",config.pr_s.ip4_recv);
+    printf("\n-- Total IPv6 packets received            :%12u",config.pr_s.ip6_recv);
+    printf("\n-- Total Other link packets received      :%12u",config.pr_s.otherl_recv);
+    printf("\n-- Total IPinIPv4 packets received        :%12u",config.pr_s.ip4ip_recv);
+    printf("\n-- Total IPinIPv6 packets received        :%12u",config.pr_s.ip6ip_recv);
+    printf("\n-- Total GRE packets received             :%12u",config.pr_s.gre_recv);
+    printf("\n-- Total TCP packets received             :%12u",config.pr_s.tcp_recv);
+    printf("\n-- Total UDP packets received             :%12u",config.pr_s.udp_recv);
+    printf("\n-- Total ICMP packets received            :%12u",config.pr_s.icmp_recv);
+    printf("\n-- Total Other transport packets received :%12u",config.pr_s.othert_recv);
+    printf("\n-- Total sessions tracked                 :%12lu",cxtrackerid);
 }
 
 int set_chroot(void)

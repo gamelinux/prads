@@ -21,7 +21,6 @@ void game_over();
 void end_all_sessions();
 void del_assets(int ctime);
 int daemonize();
-void update_asset_list();
 void set_end_sessions();
 void end_sessions();
 void display_config();

@@ -11,3 +11,5 @@ void service_udp6(ip6_header *ip6, udp_header *udph, const char *payload, int pl
 void client_tcp6 (ip6_header *ip6, tcp_header *tcph, const char *payload, int plen);
 void client_tcp4 (ip4_header *ip4, tcp_header *tcph, const char *payload, int plen);
 void add_known_port(uint8_t proto, uint16_t port, bstring service_name);
+void del_known_port(uint8_t proto);
+void del_signature_lists();

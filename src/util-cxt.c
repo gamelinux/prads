@@ -204,7 +204,7 @@ void free_queue()
     if (cxt_hash != NULL) {
         free(cxt_hash);
     }
-    printf("queue memory has been cleared\n");
+    printf("\nqueue memory has been cleared");
 }
 
 /* initialize the connection from the first packet we see from it. */
