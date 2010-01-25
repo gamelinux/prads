@@ -450,7 +450,7 @@ bstring check_port(uint8_t proto, uint16_t port)
     while(ports_head!=NULL){
         //if(port >= ports_head->l_port && port <= ports_head->h_port) {
         if(port == ports_head->h_port) {
-            return ports_head->service_name;
+            return bstrcpy(ports_head->service_name);
         }
         tmp_lports=ports_head;
         ports_head=tmp_lports->next;

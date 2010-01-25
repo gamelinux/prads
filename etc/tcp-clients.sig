@@ -19,7 +19,7 @@ www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
 ## Unknown/Failback
 # User-Agent: Java/1.4.1_04
 #www,v/HTTP Browser/$3//,^.+\[(.{26})\] \"(.+)HTTP/1..\".*(\".+\")$
-www,v/User Agent: $1///,User-Agent\x3a (.*)\r\n
+www,v/User Agent: $1///,User-Agent\x3a (\w*)\r\n
 
 # RSS
 # Liferea/1.7.2-svn
