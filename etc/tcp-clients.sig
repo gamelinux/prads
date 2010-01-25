@@ -14,6 +14,8 @@ www,v/Opera/$1/$2/,User-Agent\x3a Opera\/([\S]+) (.*)\r\n
 ## CUPS
 www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
 
+## User Agent: Ubuntu APT-HTTP/1.3 (0.7.20.2ubuntu6)
+
 ## Unknown/Failback
 # User-Agent: Java/1.4.1_04
 #www,v/HTTP Browser/$3//,^.+\[(.{26})\] \"(.+)HTTP/1..\".*(\".+\")$

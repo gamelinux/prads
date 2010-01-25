@@ -627,8 +627,11 @@ typedef struct _fmask {
 typedef struct _prads_stat {
     uint32_t got_packets;  /* number of packets received by prads */
     uint32_t eth_recv;     /* number of Ethernet packets received */
+    uint32_t vlan_recv;     /* number of VLAN packets received */
     uint32_t ip4_recv;     /* number of IPv4 packets received */
     uint32_t ip6_recv;     /* number of IPv6 packets received */
+    uint32_t ip4ip_recv;   /* number of IP4/6 packets in IPv4 packets */
+    uint32_t ip6ip_recv;   /* number of IP4/6 packets in IPv6 packets */
     uint32_t gre_recv;     /* number of GRE packets received */
     uint32_t tcp_recv;     /* number of tcp packets received */
     uint32_t udp_recv;     /* number of udp packets received */

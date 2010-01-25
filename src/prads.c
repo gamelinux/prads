@@ -256,6 +256,7 @@ void check_vlan (packetinfo *pi)
 {
     if (pi->eth_type == ETHERNET_TYPE_8021Q) {
     vlog(0x3, "[*] ETHERNET TYPE 8021Q\n");
+    config.pr_s.vlan_recv++;
     pi->vlan = pi->eth_hdr->eth_8_vid;
     pi->eth_type = ntohs(pi->eth_hdr->eth_8_ip_type);
     pi->eth_hlen += 4;
@@ -287,43 +288,43 @@ void prepare_ip4 (packetinfo *pi)
 
 void parse_ip4 (packetinfo *pi)
 {
-    if (pi->ip4->ip_p == IP_PROTO_TCP) {
-        prepare_tcp(pi);
-        if (!pi->our)
-            return;
+    switch (pi->ip4->ip_p) {
+        case IP_PROTO_TCP:
+            prepare_tcp(pi);
+            if (!pi->our)
+                break;
+            parse_tcp4(pi);
+            break;
+        case IP_PROTO_UDP:
+            prepare_udp(pi);
+            if (!pi->our)
+                break;
+            parse_udp(pi);
+            break;
+        case IP_PROTO_ICMP:
+            prepare_icmp(pi);
+            if (!pi->our)
+                break;
+            parse_icmp(pi);
+            break;
+        case IP_PROTO_IP4:
+            prepare_ip4ip(pi);
+            break;
+        case IP_PROTO_IP6:
+            prepare_ip4ip(pi);
+            break;
+        case IP_PROTO_GRE:
+            prepare_gre(pi);
+            parse_gre(pi);
+            break;
 
-        parse_tcp4(pi);
-        return;
-    } else if (pi->ip4->ip_p == IP_PROTO_UDP) {
-        prepare_udp(pi);
-        if (!pi->our)
-            return;
-
-        parse_udp(pi);
-        return;
-    } else if (pi->ip4->ip_p == IP_PROTO_ICMP) {
-        prepare_icmp(pi);
-        if (!pi->our)
-            return;
-
-        parse_icmp(pi);
-        return;
-    } else if (pi->ip4->ip_p == IP_PROTO_IP4 || pi->ip4->ip_p == IP_PROTO_IP6) {
-        //Experimental !! Need more testing!
-        prepare_ip4ip(pi);
-        return;
-    } else if (pi->ip4->ip_p == IP_PROTO_GRE) {
-        //Experimental !! Need to test it
-        prepare_gre(pi);
-        parse_gre(pi);
-        return; 
-    } else {
+        default:
         prepare_other(pi);
         if (!pi->our)
-            return;
+            break;
         parse_other(pi);
-        return;
     }
+    return;
 }
 
 void prepare_gre (packetinfo *pi)
@@ -432,6 +433,7 @@ void prepare_ip6ip (packetinfo *pi)
 {
     packetinfo pipi;
     memset(&pipi, 0, sizeof(packetinfo));
+    config.pr_s.ip6ip_recv++;
     pipi.pheader = pi->pheader;
     pipi.packet = (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
     pipi.end_ptr = pi->end_ptr;
@@ -471,6 +473,7 @@ void prepare_ip4ip (packetinfo *pi)
 {
     packetinfo pipi;
     memset(&pipi, 0, sizeof(packetinfo));
+    config.pr_s.ip4ip_recv++;
     pipi.pheader = pi->pheader;
     pipi.packet = (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
     pipi.end_ptr = pi->end_ptr;
@@ -500,41 +503,33 @@ void prepare_ip6 (packetinfo *pi)
 
 void parse_ip6 (packetinfo *pi)
 {
-    if (pi->ip6->next == IP_PROTO_TCP) {
-        prepare_tcp(pi);
-        if (!pi->our)
-            return;
-        parse_tcp6(pi);
-        return;
-    } else if (pi->ip6->next == IP_PROTO_UDP) {
-        prepare_udp(pi);
-        if (!pi->our)
-            return;
-        if (pi->s_check != 0) {
+    switch (pi->ip6->next) {
+        case IP_PROTO_TCP:
+            prepare_tcp(pi);
+            if (!pi->our) 
+                break;
+            parse_tcp6(pi);
+            break;
+        case IP_PROTO_UDP:
+            prepare_udp(pi);
+            if (!pi->our)
+                break;
             parse_udp(pi);
-            return;
-        } else {
-            vlog(0x3, "[*] - NOT CHECKING UDP PACKAGE\n");
-        }
-        return;
-    } else if (pi->ip6->next == IP6_PROTO_ICMP) {
-        prepare_icmp(pi);
-        if (!pi->our)
-            return;
-        if (pi->s_check != 0) {
-            /*
-             * service_icmp(*ip6,*tcph)
-             */
-            fp_icmp6(pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
-        } else {
-            vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
-        }
-        return;
-    } else if (pi->ip6->next == IP_PROTO_IP4 || pi->ip6->next == IP_PROTO_IP6) {
-        //Experimental !! Need to test it
-        prepare_ip6ip(pi);
-        return;
-    } else {
+            break;
+        case IP6_PROTO_ICMP:
+            prepare_icmp(pi);
+            if (!pi->our)
+                break;
+            parse_icmp(pi);
+            break;
+        case IP_PROTO_IP4:
+            prepare_ip6ip(pi);
+            break;
+        case IP_PROTO_IP6:
+            prepare_ip6ip(pi);
+            break;
+
+        default:
         prepare_other(pi);
         /*
          * if (s_check != 0) { 
@@ -546,8 +541,9 @@ void parse_ip6 (packetinfo *pi)
          * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
          * } 
          */
-        return;
+        break;
     }
+    return;
 }
 
 void parse_arp (packetinfo *pi)
@@ -562,9 +558,7 @@ void parse_arp (packetinfo *pi)
         if (filter_packet(pi->af, &pi->ip_src)) {
             update_asset_arp(pi->arph->arp_sha, pi->ip_src);
         }
-        /*
-         * arp_check(eth_hdr,pi->pheader->ts.tv_sec);
-         */
+        /* arp_check(eth_hdr,pi->pheader->ts.tv_sec); */
     } else {
         vlog(0x3, "[*] ARP TYPE: %d\n",ntohs(pi->arph->ea_hdr.ar_op));
     }
@@ -572,9 +566,7 @@ void parse_arp (packetinfo *pi)
 
 void set_pkt_end_ptr (packetinfo *pi)
 {
-    /*
-     * Paranoia!
-     */
+    /* Paranoia! */
     if (pi->pheader->len <= SNAPLENGTH) {
         pi->end_ptr = (pi->packet + pi->pheader->len);
     } else {
@@ -768,11 +760,15 @@ void prepare_icmp (packetinfo *pi)
 
 void parse_icmp (packetinfo *pi)
 {
-    if (pi->s_check != 0) {
-        if (IS_COSET(&config,CO_ICMP)) {
-            fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
-            // could look for icmp spesific data in package abcde...
-            // service_icmp(*pi->ip4,*tcph)
+    if (IS_COSET(&config,CO_ICMP)) {
+        if (pi->s_check != 0) {
+            if (pi->af==AF_INET) {
+                fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
+                // could look for icmp spesific data in package abcde...
+                // service_icmp(*pi->ip4,*tcph
+            } else if (pi->af==AF_INET6) {
+                fp_icmp6(pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
+            }
         } else {
             vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
         }

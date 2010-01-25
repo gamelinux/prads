@@ -99,6 +99,9 @@ void print_prads_stats()
     printf("-- Total Ethernet packets received     :%12u\n",config.pr_s.eth_recv);
     printf("-- Total IPv4 packets received         :%12u\n",config.pr_s.ip4_recv);
     printf("-- Total IPv6 packets received         :%12u\n",config.pr_s.ip6_recv);
+    printf("-- Total IPinIPv4 packets received     :%12u\n",config.pr_s.ip4ip_recv);
+    printf("-- Total IPinIPv6 packets received     :%12u\n",config.pr_s.ip6ip_recv);
+    printf("-- Total GRE packets received          :%12u\n",config.pr_s.gre_recv);
     printf("-- Total TCP packets received          :%12u\n",config.pr_s.tcp_recv);
     printf("-- Total UDP packets received          :%12u\n",config.pr_s.udp_recv);
     printf("-- Total ICMP packets received         :%12u\n",config.pr_s.icmp_recv);

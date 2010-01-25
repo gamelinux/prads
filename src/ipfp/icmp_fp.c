@@ -104,7 +104,7 @@ void fp_icmp6(ip6_header * ip6, icmp6_header * icpmh,
         quirks |= QUIRK_ZEROID;
 
 
-printf("[*] icmp6: type:%u,code:%u,ttl:%u,len:%u,ver:0x%x,class:0x%x,label:0x%x\n",icpmh->type,icpmh->code,ip6->hop_lmt,
+printf("\n[*] icmp6: type:%u,code:%u,ttl:%u,len:%u,ver:0x%x,class:0x%x,label:0x%x",icpmh->type,icpmh->code,ip6->hop_lmt,
                                                ntohs(ip6->len),IP6_V(ip6),IP6_TC(ip6),
                                                IP6_FL(ip6));
 /*
