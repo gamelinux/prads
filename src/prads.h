@@ -168,7 +168,7 @@
 #define INSTALL_SYSCONFDIR             ""
 #define TCP_SIGNATURE_LIST             "/../etc/tcp-service.sig"
 
-#define MAX_APP                        140
+#define MAX_APP                        100
 #define MAX_VER                        25
 #define MAX_MISC                       100
 #define MAX_NETS                       128
@@ -555,6 +555,7 @@ typedef struct _asset {
     time_t last_seen;           /* Time at which asset was last seen. */
     unsigned short i_attempts;  /* Attempts at identifying the asset. */
     int af;                     /* IP AF_INET */
+    uint16_t        vlan;       /* vlan tag */
     struct in6_addr ip_addr;    /* IP asset address */
     unsigned char mac_addr[MAC_ADDR_LEN];       /* Asset MAC address */
     bstring mac_resolved;       /* Asset MAC vendor name */
