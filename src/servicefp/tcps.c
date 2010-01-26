@@ -18,29 +18,6 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* $Id$ */
-
-/* service_tcp
- *
- * Purpose:
- *
- * This file eats an *IP-packet and tcp-header and adds/enter
- * a service to asset if any match is made, and the fingerprint.
- *
- * Arguments:
- *
- * *IP-packet, tcp-header
- *
- * Effect:
- *
- * Adds a fingerprint match and the fingerprint it matched
- * to the asset
- *
- * Comments:
- *
- * Old school...
- */
-
 #include "../prads.h"
 #include "../sys_func.h"
 #include "../assets.h"

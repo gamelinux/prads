@@ -248,65 +248,38 @@ int parse_raw_signature(bstring line, int lineno, int storage)
 
 void del_signature_lists()
 {
-    signature *head, *tmp;
+    extern signature *sig_serv_tcp;
+    extern signature *sig_serv_udp;
+    extern signature *sig_client_tcp;
+    extern signature *sig_client_udp;
 
-    if (1) {
     /* server tcp */
-        extern signature *sig_serv_tcp;
-        head = sig_serv_tcp;
-        while (head != NULL) {
-            bdestroy(head->service);
-            bdestroy(head->title.app);
-            bdestroy(head->title.ver);
-            bdestroy(head->title.misc);
-            tmp = head->next;
-            free(head);
-            head = tmp;
-        }
-    }
-    if (1) {
+    free_signature_list(sig_serv_tcp);
     /* server udp */
-        extern signature *sig_serv_udp;
-        head = sig_serv_udp;
-        while (head != NULL) {
-            bdestroy(head->service);
-            bdestroy(head->title.app);
-            bdestroy(head->title.ver);
-            bdestroy(head->title.misc);
-            tmp = head->next;
-            free(head);
-            head = tmp;
-        }
-    }
-    if (1) {
+    free_signature_list(sig_serv_udp);
     /* client tcp */
-        extern signature *sig_client_tcp;
-        head = sig_client_tcp;
-        while (head != NULL) {
-            bdestroy(head->service);
-            bdestroy(head->title.app);
-            bdestroy(head->title.ver);
-            bdestroy(head->title.misc);
-            tmp = head->next;
-            free(head);
-            head = tmp;
-        }
-    }
-    if (1) {
+    free_signature_list(sig_client_tcp);
     /* client udp */
-        extern signature *sig_client_udp;
-        head = sig_client_udp;
-        while (head != NULL) {
+    free_signature_list(sig_client_udp);
+
+    printf("\nsignature list memory has been cleared");
+}
+
+void free_signature_list (signature *head)
+{
+    signature *tmp;
+    while (head != NULL) {
             bdestroy(head->service);
             bdestroy(head->title.app);
             bdestroy(head->title.ver);
             bdestroy(head->title.misc);
+            if (head->regex != NULL) free(head->regex);
+            if (head->study != NULL) free(head->study);
             tmp = head->next;
             free(head);
+            head = NULL;
             head = tmp;
-        }
-    } 
-    printf("\nsignature list memory has been cleared");
+    }
 }
 
 /* ----------------------------------------------------------
