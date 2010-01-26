@@ -168,7 +168,7 @@
 #define INSTALL_SYSCONFDIR             ""
 #define TCP_SIGNATURE_LIST             "/../etc/tcp-service.sig"
 
-#define MAX_APP                        100
+#define MAX_APP                        140
 #define MAX_VER                        25
 #define MAX_MISC                       100
 #define MAX_NETS                       128

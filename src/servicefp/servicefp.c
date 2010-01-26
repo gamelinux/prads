@@ -207,21 +207,25 @@ int parse_raw_signature(bstring line, int lineno, int storage)
             //add_signature (sig);
             if (storage == 1) {
                 extern signature *sig_serv_tcp;
-            /* Should be put on tail for all signatures! */
-                head = sig_serv_tcp;
-                sig->next = head;
-                sig_serv_tcp = sig;
+                /* Should be put on tail for all signatures! */
+                while (sig_serv_tcp != NULL) {
+                    sig_serv_tcp = sig_serv_tcp->next;
+                }
+                if (sig_serv_tcp == NULL ) sig_serv_tcp = sig;
             } else if (storage == 2) {
                 extern signature *sig_serv_udp;
-                head = sig_serv_udp;
-                sig->next = head;
-                sig_serv_udp = sig;
+                while (sig_serv_udp != NULL) {
+                    sig_serv_udp = sig_serv_udp->next;
+                }
+                if (sig_serv_udp == NULL ) sig_serv_udp = sig;
             } else if (storage == 3) {
                 extern signature *sig_client_tcp;
-                head = sig_client_tcp;
-                sig->next = head;
-                sig_client_tcp = sig;
+                while (sig_client_tcp != NULL) {
+                    sig_client_tcp = sig_client_tcp->next;
+                }
+                if (sig_client_tcp == NULL ) sig_client_tcp = sig;
             } else if (storage == 4) {
+                /* old head implementation (wrong, matches Fallback sigs first!) */
                 extern signature *sig_client_udp;
                 head = sig_client_udp;
                 sig->next = head;
