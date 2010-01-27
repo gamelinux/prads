@@ -273,7 +273,7 @@ void fp_tcp6(ip6_header * ip6, tcp_header * tcph, const uint8_t * end_ptr,
                           | (open_mode ? TF_PUSH : 0)))
         quirks |= QUIRK_FLAGS;
 
-    ilen = ((tcph->t_offx2) << 2) - TCP_HEADER_LEN;
+    ilen = (TCP_OFFSET(tcph) << 2) - TCP_HEADER_LEN;
 
     if ((uint8_t *) opt_ptr + ilen < end_ptr) {
         if (!open_mode)
