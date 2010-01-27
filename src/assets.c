@@ -236,7 +236,7 @@ short update_asset_service(struct in6_addr ip_addr,
                         return 0;
 
                     } else if (!(biseq(application, tmp_sa->application) == 1)) {
-                        if (tmp_sa->i_attempts > MAX_SERVICE_CHECK) {
+                        if (tmp_sa->i_attempts > MAX_PKT_CHECK*2) {
                             tmp_sa->i_attempts = 0;
                             bdestroy(tmp_sa->service);
                             bdestroy(tmp_sa->application);

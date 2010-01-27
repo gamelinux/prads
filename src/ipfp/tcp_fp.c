@@ -18,10 +18,11 @@ void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
      * If the declared length is shorter than the snapshot (etherleak
      * or such), truncate the package. 
      */
-    opt_ptr = (uint8_t *) ip4 + htons(ip4->ip_len);
+    opt_ptr = (uint8_t *)ip4 + htons(ip4->ip_len);
     if (end_ptr > opt_ptr)
         end_ptr = opt_ptr;
 
+    //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
     opt_ptr = (uint8_t *) (tcph + 1);
     ilen = ip4->ip_vhl & 15;
     /*
@@ -55,7 +56,7 @@ void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
                           | (open_mode ? TF_PUSH : 0)))
         quirks |= QUIRK_FLAGS;
 
-    ilen = ((tcph->t_offx2) << 2) - TCP_HEADER_LEN;
+    ilen = (TCP_OFFSET(tcph) << 2) - TCP_HEADER_LEN;
 
     if ((uint8_t *) opt_ptr + ilen < end_ptr) {
         if (!open_mode)

@@ -91,11 +91,6 @@ void gen_fp_tcp(uint8_t ttl,
         bformata(fp, "T%d", (wss / 1500));
     else if (wss == 12345)
         bformata(fp, "*(12345)");
-    else if (wss == 65535)
-        bformata(fp, "*(65535)");
-    //else if (ftype==TF_ACK || ftype==TF_FIN || ftype==TF_RST) {
-    //    bformata(fp, "*");
-    //} 
     else {
         bformata(fp, "%d", wss);
     }
