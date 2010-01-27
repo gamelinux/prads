@@ -204,36 +204,9 @@ int parse_raw_signature(bstring line, int lineno, int storage)
          * Add signature to 'signature_list' data structure. 
          */
         if (ret != -1) {
-            //add_signature (sig);
-            if (storage == 1) {
-                extern signature *sig_serv_tcp;
-                /* Should be put on tail for all signatures! */
-                while (sig_serv_tcp != NULL) {
-                    sig_serv_tcp = sig_serv_tcp->next;
-                }
-                if (sig_serv_tcp == NULL ) sig_serv_tcp = sig;
-            } else if (storage == 2) {
-                extern signature *sig_serv_udp;
-                while (sig_serv_udp != NULL) {
-                    sig_serv_udp = sig_serv_udp->next;
-                }
-                if (sig_serv_udp == NULL ) sig_serv_udp = sig;
-            } else if (storage == 3) {
-                extern signature *sig_client_tcp;
-                while (sig_client_tcp != NULL) {
-                    sig_client_tcp = sig_client_tcp->next;
-                }
-                if (sig_client_tcp == NULL ) sig_client_tcp = sig;
-            } else if (storage == 4) {
-                /* old head implementation (wrong, matches Fallback sigs first!) */
-                extern signature *sig_client_udp;
-                head = sig_client_udp;
-                sig->next = head;
-                sig_client_udp = sig;
+            if(add_service_sig(sig, storage)) {
+             //dlog("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); 
             }
-            /*
-             * printf("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); 
-             */
         }
     }
 
@@ -248,6 +221,69 @@ int parse_raw_signature(bstring line, int lineno, int storage)
         bdestroy(pcre_string);
 
     return ret;
+}
+
+int add_service_sig(signature *sig, int storage)
+{
+    signature *tail;
+    if (storage == 1) {
+        extern signature *sig_serv_tcp;
+        tail = sig_serv_tcp;
+        if (sig_serv_tcp == NULL) {
+            sig_serv_tcp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    } else if (storage == 2) {
+        extern signature *sig_serv_udp;
+        tail = sig_serv_udp;
+        if (sig_serv_udp == NULL) {
+            sig_serv_udp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    } else if (storage == 3) {
+        extern signature *sig_client_tcp;
+        tail = sig_client_tcp;
+        if (sig_client_tcp == NULL) {
+            sig_client_tcp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    } else if (storage == 4) {
+        extern signature *sig_client_udp;
+        tail = sig_client_udp;
+        if (sig_client_udp == NULL) {
+            sig_client_udp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    }
+    return 0;
 }
 
 void del_signature_lists()
