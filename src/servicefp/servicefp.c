@@ -173,6 +173,8 @@ int parse_raw_signature(bstring line, int lineno, int storage)
      */
     if (ret != -1) {
         sig = (signature *) calloc(1, sizeof(signature));
+        sig->next = NULL;
+        sig->prev = NULL;
         if (raw_sig->entry[0] != NULL)
             sig->service = bstrcpy(raw_sig->entry[0]);
         if (title->entry[1] != NULL)

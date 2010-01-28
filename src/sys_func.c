@@ -79,6 +79,7 @@ void game_over()
         print_prads_stats();
         print_pcap_stats();
         pcap_close(config.handle);
+        free_config();
         printf("\nprads ended\n");
         exit(0);
     }

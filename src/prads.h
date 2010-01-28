@@ -584,6 +584,7 @@ typedef struct _signature {
     pcre *regex;                /* Signature - Compiled Regular Expression */
     pcre_extra *study;          /* Studied version of the compiled regex. */
     struct _signature *next;    /* Next record in the list. */
+    struct _signature *prev;    /* Next record in the list. */
 } signature;
 
 typedef struct _vendor {
@@ -708,5 +709,5 @@ struct fmask {
 #define IS_CSSET(globalconfig, flags) (((globalconfig)->cof & (flags)) == (flags))
 
 /*  P R O T O T Y P E S  ******************************************************/
-
+void free_config();
 #endif                          // PRADS_H
