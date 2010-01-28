@@ -1,7 +1,38 @@
+############################################################################
+#
+# PRADS - Passive Real-time Asset Detection System
+#  - TCP client signature list
+#
+# This contains a database of device signatures to be used with
+# Passive Real-time Asset Detection System.
+#
+# Format:
+# <service>,<version info>,<signature>
+#
+# Service: This describes the service name used by the signature.
+# Examples would include SSH, HTTP, SMTP, etc.
+#
+# Version Info:  This contains a NMAP-like template for the service
+# discovered by the signature.  The field follows this format:
+#   v/vendorproductname/version/info/
+#
+# Signature:  This is a PCRE compatable regular expression without the
+# surrounding /'s.  The signature should have one or two sets of ()'s
+# depending on the Version Info field. 
+#
+# Matching: The matching rutine starts with the first signature in this
+# file and ends with the last signature in this file. If a match is
+# found, no more signatures will be checked.
+# The signatures that you think will match the most in your environment,
+# should be on top in this file. Wildcards/Fallback (.* etc) signatures
+# should be the last signatures in a match signature group.
+#
+############################################################################
+
 # Web clients
 ## Mozilla
 www,v/Mozilla Gecko/$2/$1,Mozilla\/([.\d]+).*Gecko\/([.\d]+)
-www,v/Mozilla Browser/$1/$2/,User-Agent\x3a Mozilla\/([\S]+) (.*)[\r\n]+
+www,v/Mozilla Browser/$1/$2/,User-Agent\x3a Mozilla\/([\S]+) (\w*)[\r\n]+
 #User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.0.5) Gecko/2008120122 Firefox/3.0.5
 
 ## Perl
@@ -9,7 +40,7 @@ www,v/Perl LWP/$1/$2,lwp-request\/([.\d]+) libwww-perl/([.\d]+)
 www,v/Perl LWP/$1//,User-Agent\x3a lwp-request\/([.\d]+)
 
 ## Opera
-www,v/Opera/$1/$2/,User-Agent\x3a Opera\/([\S]+) (.*)\r\n
+www,v/Opera/$1/$2/,User-Agent\x3a Opera\/([\S]+) (\w*)\r\n
 
 ## CUPS
 www,v/Cups Client/$1//,User-Agent\x3a CUPS\/([\S]+)\r\n
@@ -48,7 +79,7 @@ smtp,v/Mozilla-Thunderbird/$1/$2/,User-Agent: Mozilla-Thunderbird ([.\d]+) \((X1
 smtp,v/Thunderbird/$1/$2/,User-Agent: Thunderbird ([.\d]+) \((Macintosh\/\d+)\)
 smtp,v/Thunderbird/$1/$2/,User-Agent: Thunderbird ([.\d]+) \((Windows\/\d+)\)
 # X-Mailer: Zimbra 6.0.4_GA_2038.RHEL5_64 (ZimbraWebClient - FF3.0 (Linux)/6.0.4_GA_2038.RHEL5_64)
-smtp,v/Zimbra Web Client/$1//,X-Mailer: Zimbra (.*)\n
+smtp,v/Zimbra Web Client/$1//,X-Mailer: Zimbra (\w*)\n
 # X-Mailer: YahooMailRC/240.3 YahooMailWebService/0.8.100.260964
 #smtp,v/Yahoo Mail Web Service///,X-Mailer: YahooMailRC\/[.\d]+ YahooMailWebService/[.\d]+
 # X-Mailer: Microsoft Office Outlook 12.0
