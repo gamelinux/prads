@@ -62,6 +62,11 @@ void client_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload, int p
     ip_addr.s6_addr32[2] = 0;
     ip_addr.s6_addr32[3] = 0;
 
+    /* should make a config.tcp_client_flowdept etc
+     * a range between 500-1000 should be good!
+     */
+    if (plen > 600) plen = 600;
+
     tmpsig = sig_client_tcp;
     while (tmpsig != NULL) {
         rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
