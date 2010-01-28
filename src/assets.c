@@ -38,6 +38,17 @@ void update_asset(int af, struct in6_addr ip_addr)
     return;
 }
 
+void update_service_stats(int role, uint16_t proto)
+{
+    if (role==1) {
+        if (proto== 6) config.pr_s.tcp_services++;
+        if (proto==17) config.pr_s.udp_services++;
+    } else {
+        if (proto== 6) config.pr_s.tcp_clients++;
+        if (proto==17) config.pr_s.udp_clients++;
+    }
+}
+
 /* ----------------------------------------------------------
  * FUNCTION     : update_asset_os
  * DESCRIPTION  : This function will update the OS
@@ -186,6 +197,7 @@ short update_asset_service(struct in6_addr ip_addr,
             head_sa = rec->services;
 
             if (tmp_sa == NULL) {
+                update_service_stats(role, proto);
                 serv_asset *new_sa = NULL;
                 new_sa = (serv_asset *) calloc(1, sizeof(serv_asset));
                 new_sa->port = port;
@@ -259,6 +271,7 @@ short update_asset_service(struct in6_addr ip_addr,
                     }
                 }
                 if (tmp_sa->next == NULL) {
+                    update_service_stats(role, proto);
                     serv_asset *new_sa = NULL;
                     new_sa = (serv_asset *) calloc(1, sizeof(serv_asset));
                     new_sa->port = port;
@@ -311,6 +324,7 @@ void add_asset(int af, struct in6_addr ip_addr)
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
     extern uint64_t hash;
+    config.pr_s.assets++;
     hash = ((ip_addr.s6_addr32[0])) % BUCKET_SIZE;
     //asset *rec = passet[hash];
     asset *rec = NULL;

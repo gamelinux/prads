@@ -80,12 +80,12 @@ ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
 ############################################################################
 
 ####### SMTP Section START #################################################
-smtp,v/X-Mailer/$1//,X-Mailer: (.*)
+#smtp,v/X-Mailer/$1//,X-Mailer: (.*)
 ####### SMTP Section END #################################################
 
-mysql,v/MySQL Login Request(Char:latin1)///,^..\x00\x01\..[\x03\x01]\x00\x00\x00\x00.\x08
-mysql,v/MySQL Request Query (SET NAMES)///,^.\x00\x00\x00\x03SET NAMES utf8$
-mysql,v/MySQL Request Query (SELECT)///,^..\x00\x00\x03\x53\x45\x4c\x45\x43\x54\x20\x60
+#mysql,v/MySQL Login Request(Char:latin1)///,^..\x00\x01\..[\x03\x01]\x00\x00\x00\x00.\x08
+#mysql,v/MySQL Request Query (SET NAMES)///,^.\x00\x00\x00\x03SET NAMES utf8$
+#mysql,v/MySQL Request Query (SELECT)///,^..\x00\x00\x03\x53\x45\x4c\x45\x43\x54\x20\x60
 
 
 ############################################################################
