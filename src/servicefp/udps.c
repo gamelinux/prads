@@ -57,6 +57,11 @@ void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
     bstring app, service_name;
     app = service_name = NULL;
 
+    /* should make a config.tcp_client_flowdept etc
+     * a range between 500-1000 should be good!
+     */
+    if (plen > 600) plen = 600;
+
     struct in6_addr ip_addr;
     ip_addr.s6_addr32[0] = ip4->ip_src;
     ip_addr.s6_addr32[1] = 0;
@@ -100,6 +105,10 @@ void service_udp6(ip6_header * ip6, udp_header * udph, const char *payload,
     extern signature *sig_serv_udp;
     signature *tmpsig;
     bstring app;
+    /* should make a config.tcp_client_flowdept etc
+     * a range between 500-1000 should be good!
+     */
+    if (plen > 600) plen = 600;
 
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {
