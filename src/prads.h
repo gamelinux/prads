@@ -555,6 +555,7 @@ typedef struct _asset {
     time_t last_seen;           /* Time at which asset was last seen. */
     unsigned short i_attempts;  /* Attempts at identifying the asset. */
     int af;                     /* IP AF_INET */
+    uint16_t        vlan;       /* vlan tag */
     struct in6_addr ip_addr;    /* IP asset address */
     unsigned char mac_addr[MAC_ADDR_LEN];       /* Asset MAC address */
     bstring mac_resolved;       /* Asset MAC vendor name */
@@ -574,7 +575,6 @@ typedef struct _signature {
     /*
      * Not sure how to do that... yet.... 
      */
-
     struct {                    /* Application Title, broken up into 3 parts. */
         bstring app;            /* Application */
         bstring ver;            /* Version */
@@ -582,7 +582,12 @@ typedef struct _signature {
     } title;
     pcre *regex;                /* Signature - Compiled Regular Expression */
     pcre_extra *study;          /* Studied version of the compiled regex. */
+    struct {                    /* Signature stats */
+        uint32_t    checked;    /* How many times the sig has been matched for */
+        uint32_t    matched;    /* How many times it has matched*/
+    } stats;
     struct _signature *next;    /* Next record in the list. */
+    struct _signature *prev;    /* Next record in the list. */
 } signature;
 
 typedef struct _vendor {
@@ -639,6 +644,11 @@ typedef struct _prads_stat {
     uint32_t udp_recv;     /* number of udp packets received */
     uint32_t icmp_recv;    /* number of icmp packets received */
     uint32_t othert_recv;  /* number of other transport layer packets received */
+    uint32_t assets;       /* total number of assets detected */
+    uint32_t tcp_services; /* total number of tcp services detected */
+    uint32_t tcp_clients;  /* total number of tcp clients detected */
+    uint32_t udp_services; /* total number of udp services detected */
+    uint32_t udp_clients;  /* total number of tcp clients detected */
 } prads_stat;
 
 typedef struct _globalconfig {
@@ -707,5 +717,5 @@ struct fmask {
 #define IS_CSSET(globalconfig, flags) (((globalconfig)->cof & (flags)) == (flags))
 
 /*  P R O T O T Y P E S  ******************************************************/
-
+void free_config();
 #endif                          // PRADS_H

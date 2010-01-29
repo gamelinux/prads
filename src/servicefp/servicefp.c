@@ -173,6 +173,8 @@ int parse_raw_signature(bstring line, int lineno, int storage)
      */
     if (ret != -1) {
         sig = (signature *) calloc(1, sizeof(signature));
+        sig->next = NULL;
+        sig->prev = NULL;
         if (raw_sig->entry[0] != NULL)
             sig->service = bstrcpy(raw_sig->entry[0]);
         if (title->entry[1] != NULL)
@@ -204,32 +206,9 @@ int parse_raw_signature(bstring line, int lineno, int storage)
          * Add signature to 'signature_list' data structure. 
          */
         if (ret != -1) {
-            //add_signature (sig);
-            if (storage == 1) {
-                extern signature *sig_serv_tcp;
-            /* Should be put on tail for all signatures! */
-                head = sig_serv_tcp;
-                sig->next = head;
-                sig_serv_tcp = sig;
-            } else if (storage == 2) {
-                extern signature *sig_serv_udp;
-                head = sig_serv_udp;
-                sig->next = head;
-                sig_serv_udp = sig;
-            } else if (storage == 3) {
-                extern signature *sig_client_tcp;
-                head = sig_client_tcp;
-                sig->next = head;
-                sig_client_tcp = sig;
-            } else if (storage == 4) {
-                extern signature *sig_client_udp;
-                head = sig_client_udp;
-                sig->next = head;
-                sig_client_udp = sig;
+            if(add_service_sig(sig, storage)) {
+             //dlog("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); 
             }
-            /*
-             * printf("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); 
-             */
         }
     }
 
@@ -246,67 +225,103 @@ int parse_raw_signature(bstring line, int lineno, int storage)
     return ret;
 }
 
+int add_service_sig(signature *sig, int storage)
+{
+    signature *tail;
+    if (storage == 1) {
+        extern signature *sig_serv_tcp;
+        tail = sig_serv_tcp;
+        if (sig_serv_tcp == NULL) {
+            sig_serv_tcp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    } else if (storage == 2) {
+        extern signature *sig_serv_udp;
+        tail = sig_serv_udp;
+        if (sig_serv_udp == NULL) {
+            sig_serv_udp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    } else if (storage == 3) {
+        extern signature *sig_client_tcp;
+        tail = sig_client_tcp;
+        if (sig_client_tcp == NULL) {
+            sig_client_tcp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    } else if (storage == 4) {
+        extern signature *sig_client_udp;
+        tail = sig_client_udp;
+        if (sig_client_udp == NULL) {
+            sig_client_udp = sig;
+            return 1;
+        }
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        if (tail->next == NULL ) {
+            tail->next = sig;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void del_signature_lists()
 {
-    signature *head, *tmp;
+    extern signature *sig_serv_tcp;
+    extern signature *sig_serv_udp;
+    extern signature *sig_client_tcp;
+    extern signature *sig_client_udp;
 
-    if (1) {
     /* server tcp */
-        extern signature *sig_serv_tcp;
-        head = sig_serv_tcp;
-        while (head != NULL) {
-            bdestroy(head->service);
-            bdestroy(head->title.app);
-            bdestroy(head->title.ver);
-            bdestroy(head->title.misc);
-            tmp = head->next;
-            free(head);
-            head = tmp;
-        }
-    }
-    if (1) {
+    free_signature_list(sig_serv_tcp);
     /* server udp */
-        extern signature *sig_serv_udp;
-        head = sig_serv_udp;
-        while (head != NULL) {
-            bdestroy(head->service);
-            bdestroy(head->title.app);
-            bdestroy(head->title.ver);
-            bdestroy(head->title.misc);
-            tmp = head->next;
-            free(head);
-            head = tmp;
-        }
-    }
-    if (1) {
+    free_signature_list(sig_serv_udp);
     /* client tcp */
-        extern signature *sig_client_tcp;
-        head = sig_client_tcp;
-        while (head != NULL) {
-            bdestroy(head->service);
-            bdestroy(head->title.app);
-            bdestroy(head->title.ver);
-            bdestroy(head->title.misc);
-            tmp = head->next;
-            free(head);
-            head = tmp;
-        }
-    }
-    if (1) {
+    free_signature_list(sig_client_tcp);
     /* client udp */
-        extern signature *sig_client_udp;
-        head = sig_client_udp;
-        while (head != NULL) {
+    free_signature_list(sig_client_udp);
+
+    printf("\nsignature list memory has been cleared");
+}
+
+void free_signature_list (signature *head)
+{
+    signature *tmp;
+    while (head != NULL) {
             bdestroy(head->service);
             bdestroy(head->title.app);
             bdestroy(head->title.ver);
             bdestroy(head->title.misc);
+            if (head->regex != NULL) free(head->regex);
+            if (head->study != NULL) free(head->study);
             tmp = head->next;
             free(head);
+            head = NULL;
             head = tmp;
-        }
-    } 
-    printf("\nsignature list memory has been cleared");
+    }
 }
 
 /* ----------------------------------------------------------
@@ -450,7 +465,7 @@ bstring check_port(uint8_t proto, uint16_t port)
     while(ports_head!=NULL){
         //if(port >= ports_head->l_port && port <= ports_head->h_port) {
         if(port == ports_head->h_port) {
-            return ports_head->service_name;
+            return bstrcpy(ports_head->service_name);
         }
         tmp_lports=ports_head;
         ports_head=tmp_lports->next;

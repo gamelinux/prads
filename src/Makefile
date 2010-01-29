@@ -37,6 +37,7 @@ indent:
 deps:
 	-rm -f deps.d
 	for i in $(subst .o,.c,$(OBJECTS)); do gcc -MM $$i >> deps.d; done
+
 ifneq ($(wildcard deps.d),)
 include deps.d
 endif

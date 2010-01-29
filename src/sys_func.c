@@ -80,6 +80,7 @@ void game_over()
         print_prads_stats();
         print_pcap_stats();
         pcap_close(config.handle);
+        free_config();
         printf("\nprads ended\n");
         exit(0);
     }
@@ -115,7 +116,13 @@ void print_prads_stats()
     printf("\n-- Total UDP packets received             :%12u",config.pr_s.udp_recv);
     printf("\n-- Total ICMP packets received            :%12u",config.pr_s.icmp_recv);
     printf("\n-- Total Other transport packets received :%12u",config.pr_s.othert_recv);
+    printf("\n--");
     printf("\n-- Total sessions tracked                 :%12lu",cxtrackerid);
+    printf("\n-- Total assets detected                  :%12u",config.pr_s.assets);
+    printf("\n-- Total TCP service assets detected      :%12u",config.pr_s.tcp_services);
+    printf("\n-- Total TCP client assets detected       :%12u",config.pr_s.tcp_clients);
+    printf("\n-- Total UDP service assets detected      :%12u",config.pr_s.udp_services);
+    printf("\n-- Total UDP client assets detected       :%12u",config.pr_s.udp_clients);
 }
 
 int set_chroot(void)

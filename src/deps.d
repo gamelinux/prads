@@ -1,12 +1,21 @@
 bstrlib.o: bstrlib.c bstrlib.h
-sys_func.o: sys_func.c common.h prads.h bstrlib.h sys_func.h
+sys_func.o: sys_func.c common.h prads.h bstrlib.h sys_func.h util-cxt.h \
+  assets.h servicefp/servicefp.h
 util-cxt-queue.o: util-cxt-queue.c util-cxt-queue.h prads.h common.h \
   bstrlib.h
 util-cxt.o: util-cxt.c prads.h common.h bstrlib.h util-cxt.h \
   util-cxt-queue.h
 cxt.o: cxt.c common.h prads.h bstrlib.h cxt.h sys_func.h util-cxt.h \
   util-cxt-queue.h
-assets.o: assets.c common.h prads.h bstrlib.h assets.h sys_func.h
+log_dispatch.o: output-plugins/log_dispatch.c output-plugins/../prads.h \
+  output-plugins/../common.h output-plugins/../bstrlib.h \
+  output-plugins/log_dispatch.h output-plugins/log_stdout.h \
+  output-plugins/../sys_func.h
+log_stdout.o: output-plugins/log_stdout.c output-plugins/../prads.h \
+  output-plugins/../common.h output-plugins/../bstrlib.h \
+  output-plugins/log_stdout.h output-plugins/../sys_func.h
+assets.o: assets.c common.h prads.h bstrlib.h assets.h sys_func.h \
+  output-plugins/log_dispatch.h
 prads.o: prads.c common.h prads.h bstrlib.h sys_func.h assets.h cxt.h \
   ipfp/ipfp.h servicefp/servicefp.h util-cxt.h util-cxt-queue.h
 ipfp.o: ipfp/ipfp.c ipfp/../common.h ipfp/../prads.h ipfp/../common.h \

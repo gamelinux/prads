@@ -2,6 +2,7 @@ PREFIX=/usr/local
 SBINDIR=${PREFIX}/sbin
 CONFDIR=${PREFIX}/etc/prads
 PMDIR=${PREFIX}/lib/site_perl/
+LOGDIR=/var/log/prads/
 
 build:
 	@echo "You need libpcre-dev and libpcap-dev to compile this program."
@@ -41,5 +42,7 @@ install:
 	install -m 644 -o root -g root lib/NetPacket/Ethernet.pm ${DESTDIR}${PMDIR}/NetPacket/
 	install -m 644 -o root -g root lib/NetPacket/ICMP.pm ${DESTDIR}${PMDIR}/NetPacket/
 	install -m 644 -o root -g root lib/NetPacket/TCP.pm ${DESTDIR}${PMDIR}/NetPacket/
+	# prads.db
+	install -d ${LOGDIR}
 
 .PHONY: build clean install

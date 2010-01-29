@@ -1148,3 +1148,9 @@ int main(int argc, char *argv[])
     pcap_close(config.handle);
     return (0);
 }
+
+void free_config()
+{
+    if (config.dev != NULL) free (config.dev);
+    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
+}

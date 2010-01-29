@@ -1,14 +1,15 @@
 ############################################################################
 #
-# Perl Passive Asset Detection System - Signature List
+# PRADS - Passive Real-time Asset Detection System
+#  - TCP server signature list
 #
 # This contains a database of device signatures to be used with
-# the Perl Passive Asset Detection System.
+# Passive Real-time Asset Detection System.
 #
 # Format:
 # <service>,<version info>,<signature>
 #
-# Service:  This describes the service name used by the signature.
+# Service: This describes the service name used by the signature.
 # Examples would include SSH, HTTP, SMTP, etc.
 #
 # Version Info:  This contains a NMAP-like template for the service
@@ -19,15 +20,16 @@
 # surrounding /'s.  The signature should have one or two sets of ()'s
 # depending on the Version Info field.
 #
-# $Id: ppads-signature-list,v 0.1 2008/09/09 22:18:09 edward Exp $
+# Matching: The matching rutine starts with the first signature in this
+# file and ends with the last signature in this file. If a match is
+# found, no more signatures will be checked.
+# The signatures that you think will match the most in your environment,
+# should be on top in this file. Wildcards/Fallback (.* etc) signatures
+# should be the last signatures in a match signature group.
 #
 ############################################################################
-# Test sigs for Client applications
-#www,v/Mozilla Gecko/$2/$1,Mozilla/[.\d]+ \((.*)\) Gecko\/([.\d]+)
-#www,v/Perl LWP/$1/$2,lwp-request/([.\d]+) libwww-perl/([.\d]+)
-#www,v/HTTP Browser/$3//,^.+\[(.{26})\] \"(.+)HTTP/1..\".*(\".+\")$
-#www,v/Mozilla Browser/$1/$2/,User-Agent\x3a Mozilla\/([\S]+) (.*)
 
+# SSH Signatures
 ssh,v/OpenSSH/$2/Protocol $1/,SSH-([.\d]+)-OpenSSH[_-](\S+)
 ssh,v/Cisco SSH/$2/Protocol $1/,SSH-([.\d]+)-Cisco[_-](\S+)
 ssh,v/Sun SSH/$2/Protocol $1/,SSH-([.\d]+)-Sun_SSH[_-](\S+)
@@ -70,7 +72,7 @@ www,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
 #www,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 #Need to polish the Zope sig - this is just the raw string:
 #www,v/Zope/$1//,Server: Zope/(Zope 2.9.1-, python 2.4.2, linux2) ZServer/1.1
-www,v/Server: $1///,Server: (.*)\r\n
+www,v/Server: $1///,Server: (\w*)\r\n
 
 wwwproxy,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 wwwproxy,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]

@@ -38,6 +38,17 @@ void update_asset(int af, struct in6_addr ip_addr)
     return;
 }
 
+void update_service_stats(int role, uint16_t proto)
+{
+    if (role==1) {
+        if (proto== 6) config.pr_s.tcp_services++;
+        if (proto==17) config.pr_s.udp_services++;
+    } else {
+        if (proto== 6) config.pr_s.tcp_clients++;
+        if (proto==17) config.pr_s.udp_clients++;
+    }
+}
+
 /* ----------------------------------------------------------
  * FUNCTION     : update_asset_os
  * DESCRIPTION  : This function will update the OS
@@ -124,14 +135,7 @@ short update_asset_os(struct in6_addr ip_addr,
                 new_oa->prev = NULL;
                 rec->os = new_oa;
 
-                /*
-                 * verbose info for sanity checking 
-                 */
                 log_asset_os(rec,new_oa);
-                //static char ip_addr_s[INET6_ADDRSTRLEN];
-                //u_ntop(rec->ip_addr, af, ip_addr_s);
-                //dlog("[%lu] Incoming asset, %s: %s:%u [%s]\n",
-                //     tstamp, (char*)bdata(detection),ip_addr_s,ntohs(port),(char*)bdata(raw_fp));
                 return 0;
             }
         }
@@ -193,6 +197,7 @@ short update_asset_service(struct in6_addr ip_addr,
             head_sa = rec->services;
 
             if (tmp_sa == NULL) {
+                update_service_stats(role, proto);
                 serv_asset *new_sa = NULL;
                 new_sa = (serv_asset *) calloc(1, sizeof(serv_asset));
                 new_sa->port = port;
@@ -240,17 +245,10 @@ short update_asset_service(struct in6_addr ip_addr,
                         tmp_sa->last_seen = tstamp;
 
                         log_asset_service(rec,tmp_sa);
-                        /*static char ip_addr_s[INET6_ADDRSTRLEN];
-                        u_ntop(ip_addr, af, ip_addr_s);
-                        if (role == 1) {
-                            dlog("[*] service now known: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-                        } else {
-                            dlog("[*] client now known: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-                        }*/
-
                         return 0;
+
                     } else if (!(biseq(application, tmp_sa->application) == 1)) {
-                        if (tmp_sa->i_attempts > MAX_SERVICE_CHECK) {
+                        if (tmp_sa->i_attempts > MAX_PKT_CHECK*2) {
                             tmp_sa->i_attempts = 0;
                             bdestroy(tmp_sa->service);
                             bdestroy(tmp_sa->application);
@@ -259,11 +257,8 @@ short update_asset_service(struct in6_addr ip_addr,
                             tmp_sa->last_seen = tstamp;
 
                             log_asset_service(rec,tmp_sa);
-                            //static char ip_addr_s[INET6_ADDRSTRLEN];
-                            //u_ntop(ip_addr, af, ip_addr_s);
-                            //dlog("[*] changed service: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-
                             return 0;
+
                         } else {
                             tmp_sa->i_attempts++;
                             tmp_sa->last_seen = tstamp;
@@ -276,6 +271,7 @@ short update_asset_service(struct in6_addr ip_addr,
                     }
                 }
                 if (tmp_sa->next == NULL) {
+                    update_service_stats(role, proto);
                     serv_asset *new_sa = NULL;
                     new_sa = (serv_asset *) calloc(1, sizeof(serv_asset));
                     new_sa->port = port;
@@ -292,15 +288,6 @@ short update_asset_service(struct in6_addr ip_addr,
                     rec->services = new_sa;
 
                     log_asset_service(rec, new_sa);
-                    /*
-                     * verbose info for sanity checking 
-                     */
-                    //if (role == 2) {
-                    //   printf("[*] new client asset: %s %s\n",ip_addr_s,(char *)bdata(application));
-                    //}
-                    //else {
-                    //   printf("[*] new service asset: %s:%d %s\n",ip_addr_s,ntohs(port),(char *)bdata(application));
-                    //}
                     return 0;
                 }
                 tmp_sa = tmp_sa->next;
@@ -337,6 +324,7 @@ void add_asset(int af, struct in6_addr ip_addr)
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
     extern uint64_t hash;
+    config.pr_s.assets++;
     hash = ((ip_addr.s6_addr32[0])) % BUCKET_SIZE;
     //asset *rec = passet[hash];
     asset *rec = NULL;
@@ -372,26 +360,6 @@ void add_asset(int af, struct in6_addr ip_addr)
     
     return;
 }
-
-/* ----------------------------------------------------------
- * FUNCTION     : hex2mac
- * DESCRIPTION  : Converts a hex representation of a MAC
- *              : address into an ASCII string.  This is a
- *              : more portable equivalent of 'ether_ntoa'.
- * INPUT        : 0 - MAC Hex Address
- * RETURN       : 0 - MAC Address String
- * ---------------------------------------------------------- */
-/*char *hex2mac(const char *mac)
-{
-
-    static char buf[32];
-
-    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
-             (mac[0] & 0xFF), (mac[1] & 0xFF), (mac[2] & 0xFF),
-             (mac[3] & 0xFF), (mac[4] & 0xFF), (mac[5] & 0xFF));
-
-    return buf;
-}*/
 
 void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
                       struct in6_addr ip_addr)
@@ -479,24 +447,6 @@ void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
     dlog("[*] arp asset added: %s\n",ip_addr_s);
 
     return;
-}
-
-void del_assets(int ctime)
-{
-    extern asset *passet[BUCKET_SIZE];
-    extern time_t tstamp;
-    //time_t check_time = tstamp;
-    //extern asset *bucket[BUCKET_SIZE];
-    //for ( int akey = 0; akey < BUCKET_SIZE; akey++ ) {
-    //   passet = bucket[akey];
-    //   xpir = 0;
-//   while ( passet != NULL ) {
-//      if ( (passet->last_seen - check_time) >= ctime ) {
-//         del_serv_assets(passet);
-//         del_os_assets(passet);
-    //del_asset(passet, &bucket[akey]);
-//      }
-//   }
 }
 
 void del_os_asset(os_asset ** head_oa, os_asset * os)

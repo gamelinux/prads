@@ -57,6 +57,11 @@ void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
     bstring app, service_name;
     app = service_name = NULL;
 
+    /* should make a config.tcp_client_flowdept etc
+     * a range between 500-1000 should be good!
+     */
+    if (plen > 600) plen = 600;
+
     struct in6_addr ip_addr;
     ip_addr.s6_addr32[0] = ip4->ip_src;
     ip_addr.s6_addr32[1] = 0;
@@ -83,12 +88,13 @@ void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
      */
     if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->dst_port))) !=NULL ) {
         update_asset_service(ip_addr, udph->dst_port, ip4->ip_p,
-                             UNKNOWN, bstrcpy(service_name), AF_INET, CLIENT);
+                             UNKNOWN, service_name, AF_INET, CLIENT);
+        bdestroy(service_name);
     } else if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->src_port))) !=NULL ) {
         update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
-                             UNKNOWN, bstrcpy(service_name), AF_INET, SERVICE);
+                             UNKNOWN, service_name, AF_INET, SERVICE);
+        bdestroy(service_name);
     }
-
 }
 
 void service_udp6(ip6_header * ip6, udp_header * udph, const char *payload,
@@ -99,6 +105,10 @@ void service_udp6(ip6_header * ip6, udp_header * udph, const char *payload,
     extern signature *sig_serv_udp;
     signature *tmpsig;
     bstring app;
+    /* should make a config.tcp_client_flowdept etc
+     * a range between 500-1000 should be good!
+     */
+    if (plen > 600) plen = 600;
 
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {

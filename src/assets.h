@@ -12,3 +12,4 @@ short update_asset_service(struct in6_addr ip_addr, u_int16_t port,
 void update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], struct in6_addr ip_addr);
 void clear_asset_list();
 void update_asset_list();
+void update_service_stats(int role, uint16_t proto);

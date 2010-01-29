@@ -14,7 +14,7 @@ use warnings;
 
 use DBI;
 
-our $DATABASE = 'dbi:SQLite:dbname=../prads.db';
+our $DATABASE = 'dbi:SQLite:dbname=prads.db';
 our $DB_USERNAME;
 our $DB_PASSWORD;
 our $DB_TABLE = 'asset';
@@ -210,14 +210,24 @@ sub gen_streampolicy {
 # generate PORT IPPROTO PROTOCOL (CONFIDENCE) APPLICATION (VERSION)_
 sub out_services {
     my ($ip) = @_;
-    my $sql = "SELECT $SQL_IP,$SQL_TIME, service, $SQL_MAC, os, $SQL_DETAILS FROM $DB_TABLE WHERE service LIKE 'SERVICE_%' AND $SQL_IP = ?";
+    my $sql = "SELECT $SQL_IP,$SQL_TIME, fingerprint, service, $SQL_MAC, os, $SQL_DETAILS FROM $DB_TABLE WHERE service LIKE 'SERVICE_%' AND $SQL_IP = ?";
 
     my $sth = $DBH->prepare($sql);
     $sth->execute($ip);
 
-    my $ref;
+    my ($ref, $port, $t, @r);
     while ($ref = $sth->fetchrow_hashref()) {
-        out ("<!-- services for $ref->{'ip'} are forthcoming -->");
+        # XXX: figure out how to filter client ports
+        ($t, $port, @r) = split /:/, $ref->{'fingerprint'};
+        if($port){
+            out('<PORT>');
+            tab;
+            out_av($port);
+            bat;
+            out('</PORT>');
+        } else {
+            out ("<!-- services $ref->{'service'} with fp $ref->{'fingerprint'} for $ref->{'ip'} are forthcoming -->");
+        }
     }
 }
 

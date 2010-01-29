@@ -18,29 +18,6 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* $Id$ */
-
-/* service_tcp
- *
- * Purpose:
- *
- * This file eats an *IP-packet and tcp-header and adds/enter
- * a service to asset if any match is made, and the fingerprint.
- *
- * Arguments:
- *
- * *IP-packet, tcp-header
- *
- * Effect:
- *
- * Adds a fingerprint match and the fingerprint it matched
- * to the asset
- *
- * Comments:
- *
- * Old school...
- */
-
 #include "../prads.h"
 #include "../sys_func.h"
 #include "../assets.h"
@@ -54,6 +31,10 @@ void service_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload,
     extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app;
+    /* should make a config.tcp_server_flowdept etc
+     * a range between 500-1000 should be good?
+     */
+    if (plen > 600) plen = 600;
 
     tmpsig = sig_serv_tcp;
     while (tmpsig != NULL) {
@@ -88,6 +69,10 @@ void service_tcp6(ip6_header * ip6, tcp_header * tcph, const char *payload,
     extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app;
+    /* should make a config.tcp_client_flowdept etc
+     * a range between 500-1000 should be good!
+     */
+    if (plen > 600) plen = 600;
 
     tmpsig = sig_serv_tcp;
     while (tmpsig != NULL) {
