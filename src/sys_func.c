@@ -5,6 +5,7 @@
 #include "assets.h"
 #include "servicefp/servicefp.h"
 
+void free_queue(); // util-cxt.c
 extern globalconfig config;
 
 const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)

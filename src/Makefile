@@ -1,6 +1,5 @@
 #Makefile
-
-CC=gcc
+#CC=gcc
 LDFLAGS=-lpcap -lpcre
 CFLAGS=-O3
 DCFLAGS=-g
@@ -9,14 +8,12 @@ ifneq (${DEBUG},)
 CFLAGS = -g -DDEBUG -Wall
 endif
 
-SERVICE_OBJ = \
-servicefp/servicefp.o \
-servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o
+SERVICE_OBJ = servicefp/servicefp.o servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o 
+
 IPFP_OBJ = ipfp/ipfp.o ipfp/tcp_fp.o ipfp/udp_fp.o ipfp/icmp_fp.o
 LOG_OBJ = output-plugins/log_dispatch.o output-plugins/log_stdout.o
 CXT_OBJ = util-cxt-queue.o util-cxt.o cxt.o
 OBJECTS = bstrlib.o sys_func.o ${CXT_OBJ} ${LOG_OBJ} assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
-
 
 all: prads
 
@@ -39,8 +36,7 @@ indent:
 # oldschool header file dependency checking.
 deps:
 	-rm -f deps.d
-	for i in *.c ipfp/*.c servicefp/*.c output-plugins/*.c macfp/*.c; do gcc -MM $$i >> deps.d; done
-
+	for i in $(subst .o,.c,$(OBJECTS)); do gcc -MM $$i >> deps.d; done
 ifneq ($(wildcard deps.d),)
 include deps.d
 endif
