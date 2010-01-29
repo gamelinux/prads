@@ -5,7 +5,10 @@
 # Usage: 
 # 
 # Work-in-progress: services!
-#
+# XXX: 
+#  - figure out how to filter client ports (not a "service" per se
+#  - what is confidence and how does it affect the resulting rules?
+#  - why oh why attribute maps?
 #
 # Copyright 2010 Kacper Wysocki <kwy@redpill-linpro.com>
 
@@ -135,17 +138,17 @@ sub out_os {
     bat;
     out ('</NAME>');
     out ('<VENDOR>');
+    tab;
     out_av (gen_vendor($ref->{'os'}));
+    bat;
     out ('</VENDOR>');
     out ('<VERSION>');
+    tab;
     out_av (gen_version($ref->{'os'}, $ref->{$SQL_DETAILS}));
+    bat;
     out ('</VERSION>');
-    out ('<FRAG_POLICY>');
-    out_av (gen_fragpolicy($ref->{'os'}, $ref->{$SQL_DETAILS}));
-    out ('</FRAG_POLICY>');
-    out ('<STREAM_POLICY>');
-    out_av (gen_streampolicy($ref->{'os'}, $ref->{$SQL_DETAILS}));
-    out ('</STREAM_POLICY>');
+    out_tag('FRAG_POLICY', gen_fragpolicy($ref->{'os'}, $ref->{$SQL_DETAILS}));
+    out_tag('STREAM_POLICY', gen_streampolicy($ref->{'os'}, $ref->{$SQL_DETAILS}));
 }
 
 sub out_attribute_map {
@@ -161,8 +164,13 @@ sub out_attribute_map {
 
 
 sub gen_attribute_id {
-    my ($name) = @_;
-    $attr{$name} = $ATTR_NUM++;
+    ($_) = @_;
+    my $name;
+    /SSH/i and $name = 'ssh' or
+    $name = $_;
+    if(not defined $attr{$name}){
+        $attr{$name} = $ATTR_NUM++;
+    }
 
     return $attr{$name};
 }
@@ -215,19 +223,46 @@ sub out_services {
     my $sth = $DBH->prepare($sql);
     $sth->execute($ip);
 
-    my ($ref, $port, $t, @r);
+    my ($ref, $port, $t, $proto, @r);
     while ($ref = $sth->fetchrow_hashref()) {
-        # XXX: figure out how to filter client ports
+        out('<SERVICE>');
+        tab;
         ($t, $port, @r) = split /:/, $ref->{'fingerprint'};
+        $ref->{'service'} =~ s/SERVICE_//;
+        $proto = lc $ref->{'service'};
         if($port){
             out('<PORT>');
             tab;
             out_av($port);
             bat;
             out('</PORT>');
-        } else {
-            out ("<!-- services $ref->{'service'} with fp $ref->{'fingerprint'} for $ref->{'ip'} are forthcoming -->");
         }
+        out ("<!-- service $ref->{'service'} with fp $ref->{'fingerprint'} for $ref->{'ip'} are forthcoming: -->");
+        out ("<!-- $ref->{$SQL_MAC} $ref->{'os'}, '$ref->{$SQL_DETAILS}' -->");
+        out('<IPPROTO>');
+        tab;
+        out_av($proto);
+        bat;
+        out('</IPPROTO>');
+
+        if(defined $ref->{'os'}){
+            out('<APPLICATION>');
+            tab;
+            out_av($ref->{'os'});
+            if(defined $ref->{$SQL_DETAILS}){
+                out('<VERSION>');
+                tab;
+                out_av($ref->{$SQL_DETAILS});
+                bat;
+                out('</VERSION>');
+            }
+            bat;
+            out('</APPLICATION>');
+        }
+
+        bat;
+        out('</SERVICE>');
+
     }
 }
 
@@ -237,4 +272,7 @@ sub out_services {
 # <services><service><port><attribute_value/>
 # IPPROTO, PROTOCOL <Confidence>
 
+if(@ARGV){
+    $DATABASE = $ARGV[0];
+}
 out_hat;
