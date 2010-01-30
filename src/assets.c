@@ -14,26 +14,33 @@ void update_asset(int af, struct in6_addr ip_addr)
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
     extern uint64_t hash;
-    hash = ((ip_addr.s6_addr32[0])) % BUCKET_SIZE;
-    asset *rec = passet[hash];
-
-    while (rec != NULL) {
-        if (rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]
-            && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
-            && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2]
-            && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3]) {
-
-            /*
-             * printf("[*] ASSET Timestamp updated\n"); 
-             */
-            rec->last_seen = tstamp;
-            return;
+    if (af == AF_INET) {
+        hash = ((ip_addr.s6_addr32[0])) % BUCKET_SIZE;
+        asset *rec = passet[hash];
+        while (rec != NULL) {
+            if (rec->af == AF_INET
+                && rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]) {
+                rec->last_seen = tstamp;
+                return;
+            }
+            rec = rec->next;
         }
-        rec = rec->next;
+    } else if (af == AF_INET6) {
+        hash = ((ip_addr.s6_addr32[3])) % BUCKET_SIZE;
+        asset *rec = passet[hash];
+        while (rec != NULL) {
+            if (rec->af == AF_INET6 
+                && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3]
+                && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2]
+                && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
+                && rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]) {
+                rec->last_seen = tstamp;
+                return;
+            }
+            rec = rec->next;
+        }
     }
-    /*
-     * If no match, create the asset 
-     */
+    /* If no match, create the asset */
     add_asset(af, ip_addr);
     return;
 }

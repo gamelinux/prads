@@ -679,6 +679,7 @@ typedef struct _globalconfig {
     char        *pidfile;               /* pidfile */
     char        *pidpath;               /* Path to pidfile */
     char        *s_net;                 /* Nets to collect assets for */
+    uint8_t     cflags;                 /* config flags */
     uint8_t     verbose;                /* Verbose or not */
     uint8_t     print_updates;          /* Prints updates */
     uint8_t     use_syslog;             /* Use syslog or not */
@@ -688,6 +689,11 @@ typedef struct _globalconfig {
     uint8_t     ctf;                    /* Flags for TCP checks, SYN,RST,FIN.... */
     uint8_t     cof;                    /* Flags for other; icmp,udp,other,.... */
 } globalconfig;
+#define ISSET_CONFIG_VERBOSE(config)    (config->cflags & 0x01)
+#define ISSET_CONFIG_UPDATES(config)    (config->cflags & 0x02)
+#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & 0x04)
+//#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & 0x08)
+
 
 // vector types :-)
 typedef int v4si __attribute__((vector_size(16)));
