@@ -36,7 +36,7 @@
 #define BUCKET_SIZE                   1669
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                5000000
-#define MAX_PKT_CHECK                 20
+#define MAX_PKT_CHECK                 10
 #define MAX_SERVICE_CHECK             5         /* How many new services*/
 
 /* Flags to identify ASSET TYPE */
