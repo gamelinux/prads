@@ -35,7 +35,7 @@
 #define ASSET_TIMEOUT                 1800      /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669
 #define SNAPLENGTH                    1604
-#define MAX_BYTE_CHECK                5000000
+#define MAX_BYTE_CHECK                500000
 #define MAX_PKT_CHECK                 10
 #define MAX_SERVICE_CHECK             5         /* How many new services*/
 

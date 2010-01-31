@@ -31,6 +31,8 @@ void service_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload,
     extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app;
+
+    if (plen < 10) return; // if almost no payload - skip
     /* should make a config.tcp_server_flowdept etc
      * a range between 500-1000 should be good?
      */
@@ -69,6 +71,8 @@ void service_tcp6(ip6_header * ip6, tcp_header * tcph, const char *payload,
     extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app;
+
+    if (plen < 10) return; // if almost no payload - skip
     /* should make a config.tcp_client_flowdept etc
      * a range between 500-1000 should be good!
      */
