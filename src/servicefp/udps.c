@@ -18,65 +18,39 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* $Id$ */
-
-/* service_udp
- *
- * Purpose:
- *
- * This file eats an *IP-packet and udp-header and adds/enter
- * a service to asset if any match is made, and the fingerprint.
- *
- * Arguments:
- *
- * *IP-packet, udp-header
- *
- * Effect:
- *
- * Adds a fingerprint match and the fingerprint it matched
- * to the asset
- *
- * Comments:
- *
- * Old school...
- */
-
 #include "../prads.h"
 #include "../assets.h"
 #include "servicefp.h"
 
 extern bstring UNKNOWN;
 
-void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
-                  int plen)
+void service_udp4(packetinfo *pi)
 {
     int rc;                     /* PCRE */
     int ovector[15];
+    int tmplen;
     extern signature *sig_serv_udp;
     signature *tmpsig;
     bstring app, service_name;
     app = service_name = NULL;
 
+    if (pi->plen < 5 ) return;
     /* should make a config.tcp_client_flowdept etc
      * a range between 500-1000 should be good!
      */
-    if (plen > 600) plen = 600;
-
-    struct in6_addr ip_addr;
-    ip_addr.s6_addr32[0] = ip4->ip_src;
-    ip_addr.s6_addr32[1] = 0;
-    ip_addr.s6_addr32[2] = 0;
-    ip_addr.s6_addr32[3] = 0;
+    if (pi->plen > 600) tmplen = 600;
+        else tmplen = pi->plen;
 
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, pi->plen, 0, 0,
                        ovector, 15);
         if (rc != -1) {
-            app = get_app_name(tmpsig, payload, ovector, rc);
+            app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
-            update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
+            update_asset_service(pi->ip_src, pi->udph->src_port, pi->ip4->ip_p,
                                  tmpsig->service, app, AF_INET, SERVICE);
+            pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
         }
@@ -86,39 +60,48 @@ void service_udp4(ip4_header * ip4, udp_header * udph, const char *payload,
     /* 
      * If no sig is found/mached, use default port to determin.
      */
-    if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->dst_port))) !=NULL ) {
-        update_asset_service(ip_addr, udph->dst_port, ip4->ip_p,
+    if (!ISSET_CLIENT_UNKNOWN(pi) && pi->sc == SC_CLIENT
+        && (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(pi->udph->dst_port))) !=NULL ) {
+        update_asset_service(pi->ip_src, pi->udph->dst_port, pi->ip4->ip_p,
                              UNKNOWN, service_name, AF_INET, CLIENT);
+        pi->cxt->check |= CXT_CLIENT_UNKNOWN_SET;
         bdestroy(service_name);
-    } else if ( (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(udph->src_port))) !=NULL ) {
-        update_asset_service(ip_addr, udph->src_port, ip4->ip_p,
+
+    } else if (!ISSET_SERVICE_UNKNOWN(pi) && pi->sc == SC_SERVER
+        && (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(pi->udph->src_port))) !=NULL ) {
+        update_asset_service(pi->ip_src, pi->udph->src_port, pi->ip4->ip_p,
                              UNKNOWN, service_name, AF_INET, SERVICE);
+        pi->cxt->check |= CXT_SERVICE_UNKNOWN_SET;
         bdestroy(service_name);
     }
 }
 
-void service_udp6(ip6_header * ip6, udp_header * udph, const char *payload,
-                  int plen)
+void service_udp6(packetinfo *pi)
 {
     int rc;                     /* PCRE */
     int ovector[15];
+    int tmplen;
     extern signature *sig_serv_udp;
     signature *tmpsig;
     bstring app;
+    
+    if (pi->plen < 5) return; 
     /* should make a config.tcp_client_flowdept etc
      * a range between 500-1000 should be good!
      */
-    if (plen > 600) plen = 600;
+    if (pi->plen > 600) tmplen = 600;
+        else tmplen = pi->plen;
 
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
                        ovector, 15);
         if (rc != -1) {
-            app = get_app_name(tmpsig, payload, ovector, rc);
+            app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
-            update_asset_service(ip6->ip_src, udph->src_port, ip6->next,
-                                 tmpsig->service, app, AF_INET, SERVICE);
+            update_asset_service(pi->ip_src, pi->udph->src_port, pi->ip6->next,
+                                 tmpsig->service, app, AF_INET6, SERVICE);
+            pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
         }

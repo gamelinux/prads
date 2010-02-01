@@ -40,12 +40,12 @@ void cxt_update_dst (connection *cxt, packetinfo *pi)
     cxt->d_total_bytes += pi->packet_bytes;
     cxt->d_total_pkts += 1;
     cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-    if (cxt->d_total_bytes > MAX_BYTE_CHECK
-        || cxt->d_total_pkts > MAX_PKT_CHECK) {
-        pi->s_check = 0; // Don't check
-        return;
+    pi->sc = SC_SERVER;
+    if (!(cxt->check & CXT_DONT_CHECK_SERVER)
+            && (cxt->d_total_bytes > MAX_BYTE_CHECK
+            || cxt->d_total_pkts > MAX_PKT_CHECK)) {
+        cxt->check |= CXT_DONT_CHECK_SERVER; // Don't check
     }
-    pi->s_check = 2; // Server & check
     return;
 }
 
@@ -56,12 +56,12 @@ void cxt_update_src (connection *cxt, packetinfo *pi)
     cxt->s_total_bytes += pi->packet_bytes;
     cxt->s_total_pkts += 1;
     cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-    if (cxt->d_total_bytes > MAX_BYTE_CHECK
-        || cxt->d_total_pkts > MAX_PKT_CHECK) {
-        pi->s_check = 0; // Don't check
-        return;
+    pi->sc = SC_CLIENT;
+    if (!(cxt->check & CXT_DONT_CHECK_CLIENT)
+            && (cxt->d_total_bytes > MAX_BYTE_CHECK
+            || cxt->d_total_pkts > MAX_PKT_CHECK)) {
+        cxt->check |= CXT_DONT_CHECK_CLIENT; // Don't check
     }
-    pi->s_check = 1; // Client & check
     return;
 }
 
@@ -226,6 +226,7 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->s_port = pi->s_port;
         cxt->d_port = pi->d_port;
         cxt->proto = (pi->ip4 ? pi->ip4->ip_p : pi->ip6->next);
-        pi->s_check = 1;
+        cxt->check = 0x00;
+        pi->sc = SC_CLIENT;
 }
 

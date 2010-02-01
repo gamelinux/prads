@@ -101,6 +101,7 @@ asset *asset_lookup(struct in6_addr ip, int af)
  *              : 2 - detection method
  *              : 3 - raw_fp
  *              : 4 - AF_INET/6
+ *              : 5 - uptime
  * RETURN       : 0 - Success!
  *              : 1 - Failure!
  * ---------------------------------------------------------- */
