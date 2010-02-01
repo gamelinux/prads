@@ -126,7 +126,7 @@ short update_asset_shmem(packetinfo *pi)
         // (or mac resources) .. eventually have graph method
             return 1; // we did the computation straight on the *pi;
         case FINGERPRINT:
-            update_asset_os_shmem(pi);
+            //update_asset_os_shmem(pi);
             return 2; // whatever
         default:
             return 1338; // not leet.
