@@ -2,7 +2,7 @@
  *
  * (c) Kacper Wysocki <kacperw@gmail.com> for PRADS, 2009
  *
- * straight port of p0f load_config and support functions
+ * straight port of p0f load_config and support functions - nothing new here
  *
  * p0f loads sigs as struct fp_entry into the sig[] array 
  * ... and uses a static hash lookup to jump into this array
@@ -24,7 +24,8 @@
 
     match_fp(packetinfo) - guess OS based on packet info
 
-    matcher - might have to import find_match from p0f too
+    find_match(foo)
+
 
  */
 
@@ -33,6 +34,7 @@
 
 #define MAXLINE 1024
 #define MAXSIGS 1024
+#define MAXDIST 512
 
 // what the dillio? bh is 16 pointers?
 #define SIGHASH(tsize,optcnt,q,df) \
@@ -746,7 +748,7 @@ int load_sigs(const char *file, fp_entry sig[], int max)
 #ifdef DEBUG_HASH
     {
         int i;
-        struct fp_entry *p;
+        fp_entry *p;
         printf("Hash table layout: ");
         for (i = 0; i < 16; i++) {
             int z = 0;
@@ -769,6 +771,318 @@ int load_sigs(const char *file, fp_entry sig[], int max)
 
 }
 
+uint32_t matched_packets;
+
+
+static inline void find_match(uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
+                       uint32_t dst,uint16_t sp,uint16_t dp,uint8_t ocnt,uint8_t* op,uint16_t mss,
+                       uint8_t wsc,uint32_t tstamp,uint8_t tos,uint32_t quirks,uint8_t ecn,
+                       uint8_t* pkt,uint8_t plen,uint8_t* pay, struct timeval pts) {
+
+  uint32_t j;
+  uint8_t* a;
+  uint8_t  nat=0;
+  fp_entry* p;
+  uint8_t  orig_df  = df;
+  uint8_t* tos_desc = 0;
+
+  fp_entry* fuzzy = 0;
+  uint8_t fuzzy_now = 0;
+
+re_lookup:
+
+  p = bh[SIGHASH(tot,ocnt,quirks,df)];
+
+  //if (tos) tos_desc = lookup_tos(tos);
+
+  while (p) {
+  
+    /* Cheap and specific checks first... */
+
+      /* psize set to zero means >= PACKET_BIG */
+    if (p->size) { if (tot ^ p->size) { p = p->next; continue; } }
+    else if (tot < PACKET_BIG) { p = p->next; continue; }
+
+    if (ocnt ^ p->optcnt) { p = p->next; continue; }
+
+    if (p->zero_stamp ^ (!tstamp)) { p = p->next; continue; }
+    if (p->df ^ df) { p = p->next; continue; }
+    if (p->quirks ^ quirks) { p = p->next; continue; }
+
+    /* Check MSS and WSCALE... */
+    if (!p->mss_mod) {
+      if (mss ^ p->mss) { p = p->next; continue; }
+    } else if (mss % p->mss) { p = p->next; continue; }
+
+    if (!p->wsc_mod) {
+      if (wsc ^ p->wsc) { p = p->next; continue; }
+    } else if (wsc % p->wsc) { p = p->next; continue; }
+
+    /* Then proceed with the most complex WSS check... */
+    switch (p->wsize_mod) {
+      case 0:
+        if (wss ^ p->wsize) { p = p->next; continue; }
+        break;
+      case MOD_CONST:
+        if (wss % p->wsize) { p = p->next; continue; }
+        break;
+      case MOD_MSS:
+        if (mss && !(wss % mss)) {
+          if ((wss / mss) ^ p->wsize) { p = p->next; continue; }
+        } else if (!(wss % 1460)) {
+          if ((wss / 1460) ^ p->wsize) { p = p->next; continue; }
+        } else { p = p->next; continue; }
+        break;
+      case MOD_MTU:
+        if (mss && !(wss % (mss+40))) {
+          if ((wss / (mss+40)) ^ p->wsize) { p = p->next; continue; }
+        } else if (!(wss % 1500)) {
+          if ((wss / 1500) ^ p->wsize) { p = p->next; continue; }
+        } else { p = p->next; continue; }
+        break;
+     }
+
+    /* Numbers agree. Let's check options */
+
+    for (j=0;j<ocnt;j++)
+      if (p->opt[j] ^ op[j]) goto continue_search;
+
+    /* Check TTLs last because we might want to go fuzzy. */
+    if (p->ttl < ttl) {
+      if (use_fuzzy) fuzzy = p;
+      p = p->next;
+      continue;
+    }
+
+    /* Naah... can't happen ;-) */
+    if (!p->no_detail)
+      if (p->ttl - ttl > MAXDIST) { 
+        if (use_fuzzy) fuzzy = p;
+        p = p->next; 
+        continue; 
+      }
+
+continue_fuzzy:    
+    
+    /* Match! */
+    
+    matched_packets++;
+
+    if (mss & wss) {
+      if (p->wsize_mod == MOD_MSS) {
+        if ((wss % mss) && !(wss % 1460)) nat=1;
+      } else if (p->wsize_mod == MOD_MTU) {
+        if ((wss % (mss+40)) && !(wss % 1500)) nat=2;
+      }
+    }
+
+    if (!no_known) {
+
+      if (add_timestamp) put_date(pts);
+      a=(uint8_t*)&src;
+
+      printf("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
+             sp,p->os);
+
+      if (!no_osdesc) printf("%s ",p->desc);
+
+      if (nat == 1) printf("(NAT!) "); else
+        if (nat == 2) printf("(NAT2!) ");
+
+      if (ecn) printf("(ECN) ");
+      if (orig_df ^ df) printf("(firewall!) ");
+
+      if (tos) {
+        if (tos_desc) printf("[%s] ",tos_desc); else printf("[tos %d] ",tos);
+      }
+
+      if (p->generic) printf("[GENERIC] ");
+      if (fuzzy_now) printf("[FUZZY] ");
+
+      if (p->no_detail) printf("* "); else
+        if (tstamp) printf("(up: %d hrs) ",tstamp/360000);
+
+      if (always_sig || (p->generic && !no_unknown)) {
+
+        if (!mode_oneline) printf("\n  ");
+        printf("Signature: [");
+
+        display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+
+        if (p->generic)
+          printf(":%s:?] ",p->os);
+        else
+          printf("] ");
+
+      }
+
+      if (!no_extra && !p->no_detail) {
+	a=(uint8_t*)&dst;
+        if (!mode_oneline) printf("\n  ");
+
+        if (fuzzy_now) 
+          printf("-> %d.%d.%d.%d%s:%d (link: %s)",
+               a[0],a[1],a[2],a[3],grab_name(a),dp,
+               lookup_link(mss,1));
+        else
+          printf("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
+                 a[0],a[1],a[2],a[3],grab_name(a),dp,p->ttl - ttl,
+                 lookup_link(mss,1));
+      }
+
+      if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
+
+      putchar('\n');
+      if (full_dump) dump_packet(pkt,plen);
+
+    }
+
+/*
+   if (find_masq && !p->userland) {
+     int16_t sc = p0f_findmasq(src,p->os,(p->no_detail || fuzzy_now) ? -1 : 
+                            (p->ttl - ttl), mss, nat, orig_df ^ df,p-sig,
+                            tstamp ? tstamp / 360000 : -1);
+     a=(uint8_t*)&src;
+     if (sc > masq_thres) {
+       if (add_timestamp) put_date(pts);
+       printf(">> Masquerade at %u.%u.%u.%u%s: indicators at %d%%.",
+              a[0],a[1],a[2],a[3],grab_name(a),sc);
+       if (!mode_oneline) putchar('\n'); else printf(" -- ");
+       if (masq_flags) {
+         printf("   Flags: ");
+         p0f_descmasq();
+         putchar('\n');
+       }
+     }
+   }
+
+   if (use_cache || find_masq)
+     p0f_addcache(src,dst,sp,dp,p->os,p->desc,(p->no_detail || fuzzy_now) ? 
+                  -1 : (p->ttl - ttl),p->no_detail ? 0 : lookup_link(mss,0),
+                  tos_desc, orig_df ^ df, nat, !p->userland, mss, p-sig,
+                  tstamp ? tstamp / 360000 : -1);
+   */
+
+    fflush(0);
+
+    return;
+
+continue_search:
+
+    p = p->next;
+
+  }
+
+  if (!df) { df = 1; goto re_lookup; }
+
+  if (use_fuzzy && fuzzy) {
+    df = orig_df;
+    fuzzy_now = 1;
+    p = fuzzy;
+    fuzzy = 0;
+    goto continue_fuzzy;
+  }
+
+  if (mss & wss) {
+    if ((wss % mss) && !(wss % 1460)) nat=1;
+    else if ((wss % (mss+40)) && !(wss % 1500)) nat=2;
+  }
+
+  if (!no_unknown) { 
+    if (add_timestamp) put_date(pts);
+    a=(uint8_t*)&src;
+    printf("%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
+
+    display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+
+    printf(":?:?] ");
+
+    if (rst_mode) {
+
+      /* Display a reasonable diagnosis of the RST+ACK madness! */
+ 
+      switch (quirks & (QUIRK_RSTACK | QUIRK_SEQ0 | QUIRK_ACK)) {
+
+        /* RST+ACK, SEQ=0, ACK=0 */
+        case QUIRK_RSTACK | QUIRK_SEQ0:
+          printf("(invalid-K0) "); break;
+
+        /* RST+ACK, SEQ=0, ACK=n */
+        case QUIRK_RSTACK | QUIRK_ACK | QUIRK_SEQ0: 
+          printf("(refused) "); break;
+ 
+        /* RST+ACK, SEQ=n, ACK=0 */
+        case QUIRK_RSTACK: 
+          printf("(invalid-K) "); break;
+
+        /* RST+ACK, SEQ=n, ACK=n */
+        case QUIRK_RSTACK | QUIRK_ACK: 
+          printf("(invalid-KA) "); break; 
+
+        /* RST, SEQ=n, ACK=0 */
+        case 0:
+          printf("(dropped) "); break;
+
+        /* RST, SEQ=m, ACK=n */
+        case QUIRK_ACK: 
+          printf("(dropped 2) "); break;
+ 
+        /* RST, SEQ=0, ACK=0 */
+        case QUIRK_SEQ0: 
+          printf("(invalid-0) "); break;
+
+        /* RST, SEQ=0, ACK=n */
+        case QUIRK_ACK | QUIRK_SEQ0: 
+          printf("(invalid-0A) "); break; 
+
+      }
+
+    }
+
+    if (nat == 1) printf("(NAT!) ");
+      else if (nat == 2) printf("(NAT2!) ");
+
+    if (ecn) printf("(ECN) ");
+
+    if (tos) {
+      if (tos_desc) printf("[%s] ",tos_desc); else printf("[tos %d] ",tos);
+    }
+
+    if (tstamp) printf("(up: %d hrs) ",tstamp/360000);
+
+    if (!no_extra) {
+      a=(uint8_t*)&dst;
+      if (!mode_oneline) printf("\n  ");
+      printf("-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
+	       grab_name(a),dp,lookup_link(mss,1));
+    }
+
+    /*
+    if (use_cache)
+      p0f_addcache(src,dst,sp,dp,0,0,-1,lookup_link(mss,0),tos_desc,
+                   0,nat,0 // not real, we're not sure
+                   ,mss,(uint32_t)-1,
+                   tstamp ? tstamp / 360000 : -1);
+      */
+
+    if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
+    putchar('\n');
+    if (full_dump) dump_packet(pkt,plen);
+    fflush(0);
+
+  }
+
+}
+
+// pass the pointers
+// unresolved: pass the packet?
+static inline void find_match_e(fp_entry *e, uint32_t tstamp, void *packet)
+{
+    return find_match(e->size, e->df, e->ttl, e->wsize, e->optcnt, e->opt, e->mss, e->wsc, tstamp, e->tos, e->quirks, e->ecn, packet, 0, 0, 0);
+}
+
+
+/* my ideal interface
 fp_entry *lookup_sig(fp_entry sig[], packetinfo *pi)
 {
     fp_entry *e = bh[SIGHASH(s, sig[sigcnt].optcnt, sig[sigcnt].quirks, d)];
@@ -782,6 +1096,7 @@ fp_entry *lookup_sig(fp_entry sig[], packetinfo *pi)
             e->next = sig + sigcnt;
         }
 }
+*/
 
 void dump_sigs(fp_entry sig[], int sigcnt)
 {
