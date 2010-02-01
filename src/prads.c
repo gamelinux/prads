@@ -259,11 +259,11 @@ void prepare_eth (packetinfo *pi)
 void check_vlan (packetinfo *pi)
 {
     if (pi->eth_type == ETHERNET_TYPE_8021Q) {
-    vlog(0x3, "[*] ETHERNET TYPE 8021Q\n");
-    config.pr_s.vlan_recv++;
-    pi->vlan = pi->eth_hdr->eth_8_vid;
-    pi->eth_type = ntohs(pi->eth_hdr->eth_8_ip_type);
-    pi->eth_hlen += 4;
+        vlog(0x3, "[*] ETHERNET TYPE 8021Q\n");
+        config.pr_s.vlan_recv++;
+        pi->vlan = pi->eth_hdr->eth_8_vid;
+        pi->eth_type = ntohs(pi->eth_hdr->eth_8_ip_type);
+        pi->eth_hlen += 4;
 
     /* This is b0rked - kwy and ebf fix */
     } else if (pi->eth_type ==
