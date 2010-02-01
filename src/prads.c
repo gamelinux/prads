@@ -93,7 +93,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 const u_char * packet)
 {
     config.pr_s.got_packets++;
-    packetinfo pstruct;
+    packetinfo pstruct = {0};
     packetinfo *pi = &pstruct;
     // memset(&pi, 0, sizeof(packetinfo));
     //pi = (packetinfo *) calloc(1, sizeof(packetinfo));
