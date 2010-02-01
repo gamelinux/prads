@@ -12,10 +12,19 @@
   - decouple fingerprints from signatures,
   provide consistent interface for matching assets
   across services (arp,ip,tcp,udp,link,dhcp,...)
+
+  *** The interface (should be) ***
+
+    *** sigs ***
     load_sigs() <- create hashtable from file
     load_sigs_{syn,ack,synack,..}()
+
     match_fp(char *fp, struct *fp) <- take a fingerprint string/struct
       and lookup into hash. return unique, fuzzy, best match.
+
+    match_fp(packetinfo) - guess OS based on packet info
+
+    matcher - might have to import find_match from p0f too
 
  */
 
