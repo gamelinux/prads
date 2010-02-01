@@ -1,0 +1,6 @@
+ipc - interprocess communication
+copyless memory passing of asset data
+
+minimize memory copies by storing struct in shmem heap
+
+shmat 

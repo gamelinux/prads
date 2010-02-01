@@ -10,10 +10,15 @@
 
 extern globalconfig config;
 
-void log_asset_arp (asset *main)
+void log_asset_arp (asset *masset)
 {
+#ifdef DEBUG
+    //static char ip_addr_s[INET6_ADDRSTRLEN];
+    //inet_ntop(AF_INET, &masset->ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+    //dlog("[*] added mac address to asset: %s\n",ip_addr_s);
+#endif
     if (config.verbose) {
-        stdout_arp (main);
+        stdout_arp (masset);
     }
 }
 
