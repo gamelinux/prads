@@ -23,35 +23,32 @@
 #include "../assets.h"
 #include "servicefp.h"
 
-void service_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload,
-                  int plen)
+void service_tcp4(packetinfo *pi)
 {
     int rc;                     /* PCRE */
     int ovector[15];
+    int tmplen;
     extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app;
 
-    if (plen < 10) return; // if almost no payload - skip
+    if (pi->plen < 10) return; // if almost no payload - skip
     /* should make a config.tcp_server_flowdept etc
      * a range between 500-1000 should be good?
      */
-    if (plen > 600) plen = 600;
+    if (pi->plen > 600) tmplen = 600;
+        else tmplen = pi->plen;
 
     tmpsig = sig_serv_tcp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
                        ovector, 15);
         if (rc >= 0) {
-            app = get_app_name(tmpsig, payload, ovector, rc);
+            app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
-            struct in6_addr ip_addr;
-            ip_addr.s6_addr32[0] = ip4->ip_src;
-            ip_addr.s6_addr32[1] = 0;
-            ip_addr.s6_addr32[2] = 0;
-            ip_addr.s6_addr32[3] = 0;
-            update_asset_service(ip_addr, tcph->src_port, ip4->ip_p,
+            update_asset_service(pi->ip_src, pi->tcph->src_port, pi->ip4->ip_p,
                                  tmpsig->service, app, AF_INET, SERVICE);
+            pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
         //} else if (rc == PCRE_ERROR_NOMATCH) {
@@ -63,30 +60,32 @@ void service_tcp4(ip4_header * ip4, tcp_header * tcph, const char *payload,
     }
 }
 
-void service_tcp6(ip6_header * ip6, tcp_header * tcph, const char *payload,
-                  int plen)
+void service_tcp6(packetinfo *pi)
 {
     int rc;                     /* PCRE */
     int ovector[15];
+    int tmplen;
     extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app;
 
-    if (plen < 10) return; // if almost no payload - skip
+    if (pi->plen < 10) return; // if almost no payload - skip
     /* should make a config.tcp_client_flowdept etc
      * a range between 500-1000 should be good!
      */
-    if (plen > 600) plen = 600;
+    if (pi->plen > 600) tmplen = 600;
+        else tmplen = pi->plen;
 
     tmpsig = sig_serv_tcp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, payload, plen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
                        ovector, 15);
         if (rc >= 0) {
-            app = get_app_name(tmpsig, payload, ovector, rc);
+            app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv6/TCP: %s\n",(char *)bdata(app));
-            update_asset_service(ip6->ip_src, tcph->src_port, ip6->next,
+            update_asset_service(pi->ip_src, pi->tcph->src_port, pi->ip6->next,
                                  tmpsig->service, app, AF_INET6, SERVICE);
+            pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
         }

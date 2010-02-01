@@ -29,7 +29,7 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.1.7"
+#define VERSION                       "0.1.8"
 #define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 1800      /* Time befor an asset is deleted if no updates */
@@ -463,27 +463,41 @@ typedef struct _gre_sre_header
  */
 
 typedef struct _connection {
-    struct _connection *prev;
-    struct _connection *next;
-    struct _connection *hprev;  /* Hash bucket list */
-    struct _connection *hnext;
-    time_t start_time;          /* connection start time */
-    time_t last_pkt_time;       /* last seen packet time */
-    uint64_t cxid;              /* connection id */
-    uint32_t af;                /* IP version (4/6) AF_INET */
-    uint8_t proto;              /* IP protocoll type */
-    struct in6_addr s_ip;       /* source address */
-    struct in6_addr d_ip;       /* destination address */
-    uint16_t s_port;            /* source port */
-    uint16_t d_port;            /* destination port */
-    uint64_t s_total_pkts;      /* total source packets */
-    uint64_t s_total_bytes;     /* total source bytes */
-    uint64_t d_total_pkts;      /* total destination packets */
-    uint64_t d_total_bytes;     /* total destination bytes */
-    uint8_t s_tcpFlags;         /* tcpflags sent by source */
-    uint8_t d_tcpFlags;         /* tcpflags sent by destination */
-    struct _cxtbucket *cb;
+    struct   _connection *prev;
+    struct   _connection *next;
+    struct   _connection *hprev;  /* Hash bucket list */
+    struct   _connection *hnext;
+    time_t   start_time;          /* connection start time */
+    time_t   last_pkt_time;       /* last seen packet time */
+    uint64_t cxid;                /* connection id */
+    uint32_t af;                  /* IP version (4/6) AF_INET */
+    uint8_t  proto;               /* IP protocoll type */
+    struct   in6_addr s_ip;       /* source address */
+    struct   in6_addr d_ip;       /* destination address */
+    uint16_t s_port;              /* source port */
+    uint16_t d_port;              /* destination port */
+    uint64_t s_total_pkts;        /* total source packets */
+    uint64_t s_total_bytes;       /* total source bytes */
+    uint64_t d_total_pkts;        /* total destination packets */
+    uint64_t d_total_bytes;       /* total destination bytes */
+    uint8_t  s_tcpFlags;          /* tcpflags sent by source */
+    uint8_t  d_tcpFlags;          /* tcpflags sent by destination */
+    uint8_t  check;               /* Flags spesifying checking */
+    struct   _cxtbucket *cb;
 } connection;
+#define CXT_DONT_CHECK_SERVER     0x01  /* Dont check server packets */
+#define CXT_DONT_CHECK_CLIENT     0x02  /* Dont check client packets */
+#define CXT_SERVICE_DONT_CHECK    0x04  /* Dont check payload from server */
+#define CXT_CLIENT_DONT_CHECK     0x08  /* Dont check payload from client */
+#define CXT_SERVICE_UNKNOWN_SET   0x10  /* If service is set as unknown */
+#define CXT_CLIENT_UNKNOWN_SET    0x20  /* If client is set as unknown */
+
+#define ISSET_CXT_DONT_CHECK_CLIENT(pi)  (pi->cxt->check & CXT_DONT_CHECK_CLIENT)
+#define ISSET_CXT_DONT_CHECK_SERVER(pi)  (pi->cxt->check & CXT_DONT_CHECK_SERVER)
+#define ISSET_DONT_CHECK_SERVICE(pi)     (pi->cxt->check & CXT_SERVICE_DONT_CHECK)
+#define ISSET_DONT_CHECK_CLIENT(pi)      (pi->cxt->check & CXT_CLIENT_DONT_CHECK)
+#define ISSET_SERVICE_UNKNOWN(pi)        (pi->cxt->check & CXT_SERVICE_UNKNOWN_SET)
+#define ISSET_CLIENT_UNKNOWN(pi)         (pi->cxt->check & CXT_CLIENT_UNKNOWN_SET)
 
 typedef struct _packetinfo {
     const struct pcap_pkthdr *pheader; /* Libpcap packet header struct pointer */
@@ -502,7 +516,7 @@ typedef struct _packetinfo {
     struct in6_addr ip_dst;         /* destination address */
     uint16_t        s_port;         /* source port */
     uint16_t        d_port;         /* destination port */
-    uint32_t        s_check;        /* return value from cxtracker */
+    uint8_t         sc;             /* SC_SERVER or SC_CLIENT */
     tcp_header      *tcph;          /* tcp header struct pointer */
     udp_header      *udph;          /* udp header struct pointer */
     icmp_header     *icmph;         /* icmp header struct pointer */
@@ -511,10 +525,13 @@ typedef struct _packetinfo {
     uint16_t        gre_hlen;       /* Length of dynamic GRE header length */
     const uint8_t   *end_ptr;       /* Paranoid end pointer of packet */
     const char      *payload;       /* char pointer to transport payload */
+    uint32_t        plen;           /* transport payload length */
     uint32_t        our;            /* Is the asset in our defined network */
     uint8_t         up;             /* Set if the asset has been updated */
-    connection      *cxt;
+    connection      *cxt;           /* Access to the session state */
 } packetinfo;
+#define SC_CLIENT                 0x01  /* pi for this session is client */
+#define SC_SERVER                 0x02  /* pi for this session is server */
 
 typedef struct _serv_asset {
     struct _serv_asset *prev;   /* Prev serv_asset structure */
