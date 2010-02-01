@@ -4,3 +4,13 @@ copyless memory passing of asset data
 minimize memory copies by storing struct in shmem heap
 
 shmat 
+       #include <sys/types.h>
+       #include <sys/shm.h>
+
+       void *shmat(int shmid, const void *shmaddr, int shmflg);
+
+       int shmdt(const void *shmaddr);
+
+// grab a page locked in memory - SHM_RDONLY if reader
+shmat(31337, NULL, SHM_RND);
+

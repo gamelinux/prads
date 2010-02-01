@@ -62,6 +62,36 @@ void update_service_stats(int role, uint16_t proto)
  *              : 1 - Failure!
  * ---------------------------------------------------------- */
 
+short update_asset_shmem(packetinfo *pi)
+{
+    // flip it upside down: caller packs it?
+    // now how would that eat the program from the inside?
+    // pass the struct around but store it in a shared mem buffer
+    pi->ip_src; // src has the fingerprint
+    pi->ip_dst; // we r doing for both, now? - packet payload may be spooft
+    pi->s_port;
+    // what is detection?
+    //detection;
+    // must include this
+    //pi->raw_fp;
+    pi->af;
+    //pi->uptime;
+    // what more do we need in the *pi?
+    switch(pi->type){
+        case SIGNATURE:
+        // signatures identify HOSTS or SERVICES
+        // (or mac resources) .. eventually have graph method
+            return 1; // we did the computation straight on the *pi;
+        case FINGERPRINT:
+            update_asset_os_shmem(pi);
+            return 2; // whatever
+        default:
+            return 1338; // not leet.
+    }
+}
+
+
+
 short update_asset_os(struct in6_addr ip_addr,
                       u_int16_t port,
                       bstring detection, bstring raw_fp, int af, int uptime)

@@ -486,8 +486,12 @@ typedef struct _connection {
 } connection;
 
 typedef struct _packetinfo {
+    // macro out the need for some of these
+    // eth_type(pi) is same as pi->eth_type, no?
+    // marked candidates for deletion
     const struct pcap_pkthdr *pheader; /* Libpcap packet header struct pointer */
     const u_char *  packet;         /* Unsigned char pointer to raw packet */
+    // compute (all) these from packet
     uint32_t        eth_hlen;       /* Ethernet header lenght */
     uint16_t        mvlan;          /* Metro vlan tag */
     uint16_t        vlan;           /* vlan tag */
@@ -514,6 +518,7 @@ typedef struct _packetinfo {
     uint32_t        our;            /* Is the asset in our defined network */
     uint8_t         up;             /* Set if the asset has been updated */
     connection      *cxt;
+    enum { SIGNATURE, FINGERPRINT } type;
 } packetinfo;
 
 typedef struct _serv_asset {
