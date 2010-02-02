@@ -46,8 +46,7 @@ void service_tcp4(packetinfo *pi)
         if (rc >= 0) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
-            update_asset_service(pi->ip_src, pi->tcph->src_port, pi->ip4->ip_p,
-                                 tmpsig->service, app, AF_INET, SERVICE);
+            update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
@@ -83,8 +82,7 @@ void service_tcp6(packetinfo *pi)
         if (rc >= 0) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv6/TCP: %s\n",(char *)bdata(app));
-            update_asset_service(pi->ip_src, pi->tcph->src_port, pi->ip6->next,
-                                 tmpsig->service, app, AF_INET6, SERVICE);
+            update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;

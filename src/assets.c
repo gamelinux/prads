@@ -216,21 +216,18 @@ os_update:
  * RETURN       : 0 - Success!
  *              : 1 - Failure!
  * ---------------------------------------------------------- */
-short update_asset_service(struct in6_addr ip_addr,
-                           u_int16_t port,
-                           unsigned short proto,
-                           bstring service, bstring application, int af, int role)
+short update_asset_service(packetinfo *pi, bstring service, bstring application)
 {
     extern time_t tstamp;
     asset *rec = NULL;
 
-    rec = asset_lookup(ip_addr, af);
+    rec = asset_lookup(pi->ip_src, pi->af);
     if (rec != NULL) {
         goto service_update;
     } else {
         /* If no asset */
-        update_asset(af, ip_addr);
-        if (update_asset_service(ip_addr, port, proto, service, application, af, role) == 0) return 0;
+        update_asset(pi->af, pi->ip_src);
+        if (update_asset_service(pi, service, application) == 0) return 0;
         return 1;
     }
 
@@ -244,9 +241,12 @@ service_update:
     serv_asset *head_sa = NULL;
     tmp_sa = rec->services;
     head_sa = rec->services;
+    uint16_t port;
+    if (pi->sc == SC_CLIENT) port = pi->d_port;
+        else port = pi->s_port;
 
     while (tmp_sa != NULL) {
-        if (port == tmp_sa->port && proto == tmp_sa->proto) {
+        if (port == tmp_sa->port && pi->proto == tmp_sa->proto) {
             /*
              * Found! 
              * If we have an id for the service which is != unknown AND the id now is unknown 
@@ -293,14 +293,14 @@ service_update:
     }
 
     if (tmp_sa == NULL) {
-        update_service_stats(role, proto);
+        update_service_stats(pi->sc, pi->proto);
         serv_asset *new_sa = NULL;
         new_sa = (serv_asset *) calloc(1, sizeof(serv_asset));
         new_sa->port = port;
-        new_sa->proto = proto;
+        new_sa->proto = pi->proto;
         new_sa->service = bstrcpy(service);
         new_sa->application = bstrcpy(application);
-        new_sa->role = role;
+        new_sa->role = pi->sc;
         new_sa->i_attempts = 0;
         new_sa->first_seen = tstamp;
         new_sa->last_seen = tstamp;

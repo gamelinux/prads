@@ -35,6 +35,7 @@ ssh,v/Cisco SSH/$2/Protocol $1/,SSH-([.\d]+)-Cisco[_-](\S+)
 ssh,v/Sun SSH/$2/Protocol $1/,SSH-([.\d]+)-Sun_SSH[_-](\S+)
 ssh,v/Cisco IDS SSH/$2/Protocol $1/,SSH-([.\d]+)-CiscoIDS\/LoginServer[_-](\S+)
 ssh,v/libssh/$2/Protocol $1/,SSH-([.\d]+)-libssh-(\S+)
+# SSH-2.0-dropbear_0.51
 
 # WWW Signatures
 www,v/Apache/$1//,Server: Apache\/([\S]+)[\r\n]

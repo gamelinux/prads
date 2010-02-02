@@ -520,6 +520,7 @@ typedef struct _packetinfo {
     struct in6_addr ip_dst;         /* destination address */
     uint16_t        s_port;         /* source port */
     uint16_t        d_port;         /* destination port */
+    uint8_t         proto;          /* IP protocoll type */    
     uint8_t         sc;             /* SC_SERVER or SC_CLIENT */
     tcp_header      *tcph;          /* tcp header struct pointer */
     udp_header      *udph;          /* udp header struct pointer */
@@ -535,8 +536,8 @@ typedef struct _packetinfo {
     connection      *cxt;
     enum { SIGNATURE, FINGERPRINT } type;
 } packetinfo;
-#define SC_CLIENT                 0x01  /* pi for this session is client */
-#define SC_SERVER                 0x02  /* pi for this session is server */
+#define SC_SERVER                 0x01  /* pi for this session is client */
+#define SC_CLIENT                 0x02  /* pi for this session is server */
 
 typedef struct _serv_asset {
     struct _serv_asset *prev;   /* Prev serv_asset structure */

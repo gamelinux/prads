@@ -48,8 +48,7 @@ void client_tcp4(packetinfo *pi)
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH CLIENT IPv4/TCP: %s\n",(char *)bdata(app));
-            update_asset_service(pi->ip_src, pi->tcph->dst_port, pi->ip4->ip_p,
-                                 tmpsig->service, app, AF_INET, CLIENT);
+            update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_CLIENT_DONT_CHECK;
             bdestroy(app);
             return;
@@ -59,8 +58,7 @@ void client_tcp4(packetinfo *pi)
     // Should have a flag set to resolve unknowns to default service
     if ( !ISSET_CLIENT_UNKNOWN(pi)
         && (service_name = check_port(IP_PROTO_TCP,ntohs(pi->tcph->dst_port))) !=NULL ) {
-        update_asset_service(pi->ip_src, pi->tcph->dst_port, pi->ip4->ip_p,
-                             UNKNOWN, service_name, AF_INET, CLIENT);
+        update_asset_service(pi, UNKNOWN, service_name);
         pi->cxt->check |= CXT_CLIENT_UNKNOWN_SET;
         bdestroy(service_name);
     }
@@ -89,8 +87,7 @@ void client_tcp6(packetinfo *pi)
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
-            update_asset_service(pi->ip_src, pi->tcph->dst_port, pi->ip6->next,
-                                 tmpsig->service, app, AF_INET6, CLIENT);
+            update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_CLIENT_DONT_CHECK;
             bdestroy(app);
             return;
@@ -99,8 +96,7 @@ void client_tcp6(packetinfo *pi)
     }
     if (!ISSET_CLIENT_UNKNOWN(pi)
         && (service_name = check_port(IP_PROTO_TCP,ntohs(pi->tcph->dst_port))) !=NULL ) {
-        update_asset_service(pi->ip_src, pi->tcph->dst_port, pi->ip6->next,
-                             UNKNOWN, service_name, AF_INET6, CLIENT);
+        update_asset_service(pi, UNKNOWN, service_name);
         pi->cxt->check |= CXT_CLIENT_UNKNOWN_SET;
         bdestroy(service_name);
     }

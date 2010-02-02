@@ -344,6 +344,7 @@ void prepare_gre (packetinfo *pi)
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE GRE:\n");
         pi->greh = (gre_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
     }
+    pi->proto = IP_PROTO_GRE;
     return;
 }
 
@@ -598,6 +599,7 @@ void prepare_tcp (packetinfo *pi)
     }
     /* plen here might be wrong :/ */
     //pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - pi->eth_hlen);
+    pi->proto  = IP_PROTO_TCP;
     pi->s_port = pi->tcph->src_port;
     pi->d_port = pi->tcph->dst_port;
     connection_tracking(pi);
@@ -653,9 +655,7 @@ void parse_tcp4 (packetinfo *pi)
             && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
             fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
-            update_asset_service(pi->ip_src, pi->tcph->dst_port,
-                                 pi->ip4->ip_p, UNKNOWN,
-                                 UNKNOWN, pi->af, CLIENT);
+            update_asset_service(pi, UNKNOWN, UNKNOWN);
             return;
         }
         if (IS_CSSET(&config,CS_TCP_CLIENT)
@@ -671,9 +671,7 @@ void parse_tcp4 (packetinfo *pi)
             vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",
                     ntohs(pi->tcph->src_port));
             fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
-            update_asset_service(pi->ip_src, pi->tcph->src_port,
-                             pi->ip4->ip_p, UNKNOWN,
-                             UNKNOWN, pi->af, SERVICE);
+            update_asset_service(pi, UNKNOWN, UNKNOWN);
             return; // or are we loosing service check?
         }
         if (IS_CSSET(&config,CS_TCP_SERVER)
@@ -712,21 +710,13 @@ void parse_tcp8 (packetinfo *pi)
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
-        update_asset_service(pi->ip_src,
-                             pi->tcph->dst_port,
-                             pi->ip4->ip_p,
-                             UNKNOWN,
-                             UNKNOWN, pi->af, CLIENT);
+        update_asset_service(pi, UNKNOWN, UNKNOWN);
     } else if (IS_COSET(&config,CO_SYNACK)
                && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
-        update_asset_service(pi->ip_src,
-                             pi->tcph->src_port,
-                             pi->ip4->ip_p,
-                             UNKNOWN,
-                             UNKNOWN, pi->af, SERVICE);
+        update_asset_service(pi, UNKNOWN, UNKNOWN);
     } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
         fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
@@ -779,6 +769,7 @@ void prepare_udp (packetinfo *pi)
         pi->payload = (char *)(pi->packet + pi->eth_hlen +
                         IP6_HEADER_LEN + UDP_HEADER_LEN);
     }
+    pi->proto  = IP_PROTO_UDP;
     pi->s_port = pi->udph->src_port;
     pi->d_port = pi->udph->dst_port;
     connection_tracking(pi);
@@ -816,11 +807,12 @@ void prepare_icmp (packetinfo *pi)
     if (pi->af==AF_INET) {
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE ICMP:\n");
         pi->icmph = (icmp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
+        pi->proto  = IP_PROTO_ICMP;
 
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE ICMP:\n");
         pi->icmp6h = (icmp6_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
-
+        pi->proto  = IP6_PROTO_ICMP;
     }
     pi->s_port = 0;
     pi->d_port = 0;

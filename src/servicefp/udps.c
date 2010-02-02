@@ -48,8 +48,7 @@ void service_udp4(packetinfo *pi)
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv4/UDP: %s\n",(char *)bdata(app));
-            update_asset_service(pi->ip_src, pi->udph->src_port, pi->ip4->ip_p,
-                                 tmpsig->service, app, AF_INET, SERVICE);
+            update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
@@ -62,15 +61,13 @@ void service_udp4(packetinfo *pi)
      */
     if (!ISSET_CLIENT_UNKNOWN(pi) && pi->sc == SC_CLIENT
         && (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(pi->udph->dst_port))) !=NULL ) {
-        update_asset_service(pi->ip_src, pi->udph->dst_port, pi->ip4->ip_p,
-                             UNKNOWN, service_name, AF_INET, CLIENT);
+        update_asset_service(pi, UNKNOWN, service_name);
         pi->cxt->check |= CXT_CLIENT_UNKNOWN_SET;
         bdestroy(service_name);
 
     } else if (!ISSET_SERVICE_UNKNOWN(pi) && pi->sc == SC_SERVER
         && (service_name = (bstring) check_port(IP_PROTO_UDP,ntohs(pi->udph->src_port))) !=NULL ) {
-        update_asset_service(pi->ip_src, pi->udph->src_port, pi->ip4->ip_p,
-                             UNKNOWN, service_name, AF_INET, SERVICE);
+        update_asset_service(pi, UNKNOWN, service_name);
         pi->cxt->check |= CXT_SERVICE_UNKNOWN_SET;
         bdestroy(service_name);
     }
@@ -91,7 +88,7 @@ void service_udp6(packetinfo *pi)
      */
     if (pi->plen > 600) tmplen = 600;
         else tmplen = pi->plen;
-
+ 
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {
         rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
@@ -99,8 +96,7 @@ void service_udp6(packetinfo *pi)
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
             //printf("[*] - MATCH SERVICE IPv6/UDP: %s\n",(char *)bdata(app));
-            update_asset_service(pi->ip_src, pi->udph->src_port, pi->ip6->next,
-                                 tmpsig->service, app, AF_INET6, SERVICE);
+            update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
