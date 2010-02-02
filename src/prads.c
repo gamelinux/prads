@@ -93,38 +93,39 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
                 const u_char * packet)
 {
     config.pr_s.got_packets++;
-    packetinfo pi;
-    memset(&pi, 0, sizeof(packetinfo));
+    packetinfo pstruct = {0};
+    packetinfo *pi = &pstruct;
+    // memset(&pi, 0, sizeof(packetinfo));
     //pi = (packetinfo *) calloc(1, sizeof(packetinfo));
-    pi.our = 1;
-    pi.packet = packet;
-    pi.pheader = pheader;
-    set_pkt_end_ptr (&pi);
-    tstamp = pi.pheader->ts.tv_sec; // Global
+    pi->our = 1;
+    pi->packet = packet;
+    pi->pheader = pheader;
+    set_pkt_end_ptr (pi);
+    tstamp = pi->pheader->ts.tv_sec; // Global
     if (intr_flag != 0) {
         check_interrupt();
     }
     inpacket = 1;
-    prepare_eth(&pi);
-    check_vlan(&pi);
+    prepare_eth(pi);
+    check_vlan(pi);
 
-    if (pi.eth_type == ETHERNET_TYPE_IP) {
-        prepare_ip4(&pi);
-        parse_ip4(&pi);
+    if (pi->eth_type == ETHERNET_TYPE_IP) {
+        prepare_ip4(pi);
+        parse_ip4(pi);
         goto packet_end;
-    } else if (pi.eth_type == ETHERNET_TYPE_IPV6) {
-        prepare_ip6(&pi);
-        parse_ip6(&pi);
+    } else if (pi->eth_type == ETHERNET_TYPE_IPV6) {
+        prepare_ip6(pi);
+        parse_ip6(pi);
         goto packet_end;
-    } else if (pi.eth_type == ETHERNET_TYPE_ARP) {
-        parse_arp(&pi);
+    } else if (pi->eth_type == ETHERNET_TYPE_ARP) {
+        parse_arp(pi);
         goto packet_end;
     }
     config.pr_s.otherl_recv++;
-    vlog(0x3, "[*] ETHERNET TYPE : %x\n",pi.eth_hdr->eth_ip_type);
+    vlog(0x3, "[*] ETHERNET TYPE : %x\n",pi->eth_hdr->eth_ip_type);
   packet_end:
 #ifdef DEBUG
-    if (!pi.our) vlog(0x3, "Not our network packet. Tracked, but not logged.\n");
+    if (!pi->our) vlog(0x3, "Not our network packet. Tracked, but not logged.\n");
 #endif
     inpacket = 0;
     //free(pi);
@@ -258,11 +259,11 @@ void prepare_eth (packetinfo *pi)
 void check_vlan (packetinfo *pi)
 {
     if (pi->eth_type == ETHERNET_TYPE_8021Q) {
-    vlog(0x3, "[*] ETHERNET TYPE 8021Q\n");
-    config.pr_s.vlan_recv++;
-    pi->vlan = pi->eth_hdr->eth_8_vid;
-    pi->eth_type = ntohs(pi->eth_hdr->eth_8_ip_type);
-    pi->eth_hlen += 4;
+        vlog(0x3, "[*] ETHERNET TYPE 8021Q\n");
+        config.pr_s.vlan_recv++;
+        pi->vlan = pi->eth_hdr->eth_8_vid;
+        pi->eth_type = ntohs(pi->eth_hdr->eth_8_ip_type);
+        pi->eth_hlen += 4;
 
     /* This is b0rked - kwy and ebf fix */
     } else if (pi->eth_type ==

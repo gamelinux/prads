@@ -500,8 +500,12 @@ typedef struct _connection {
 #define ISSET_CLIENT_UNKNOWN(pi)         (pi->cxt->check & CXT_CLIENT_UNKNOWN_SET)
 
 typedef struct _packetinfo {
+    // macro out the need for some of these
+    // eth_type(pi) is same as pi->eth_type, no?
+    // marked candidates for deletion
     const struct pcap_pkthdr *pheader; /* Libpcap packet header struct pointer */
     const u_char *  packet;         /* Unsigned char pointer to raw packet */
+    // compute (all) these from packet
     uint32_t        eth_hlen;       /* Ethernet header lenght */
     uint16_t        mvlan;          /* Metro vlan tag */
     uint16_t        vlan;           /* vlan tag */
@@ -528,7 +532,8 @@ typedef struct _packetinfo {
     uint32_t        plen;           /* transport payload length */
     uint32_t        our;            /* Is the asset in our defined network */
     uint8_t         up;             /* Set if the asset has been updated */
-    connection      *cxt;           /* Access to the session state */
+    connection      *cxt;
+    enum { SIGNATURE, FINGERPRINT } type;
 } packetinfo;
 #define SC_CLIENT                 0x01  /* pi for this session is client */
 #define SC_SERVER                 0x02  /* pi for this session is server */

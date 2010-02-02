@@ -2,159 +2,109 @@
 #include "../prads.h"
 #include "ipfp.h"
 
-void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
-             uint8_t ftype, struct in6_addr ip_src)
+inline void parse_quirks_flag(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
 {
-
-    uint8_t *opt_ptr;
-    uint8_t *payload = 0;
-    uint8_t op[MAXOPT];
-    uint8_t ocnt = 0, open_mode = 0;    /* open_mode=stray ack */
-    uint16_t mss_val = 0, wsc_val = 0;
-    int32_t ilen, olen;
-    uint32_t quirks = 0, tstamp = 0;
-
-    /*
-     * If the declared length is shorter than the snapshot (etherleak
-     * or such), truncate the package. 
-     */
-    opt_ptr = (uint8_t *)ip4 + htons(ip4->ip_len);
-    if (end_ptr > opt_ptr)
-        end_ptr = opt_ptr;
-
-    //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
-    opt_ptr = (uint8_t *) (tcph + 1);
-    ilen = ip4->ip_vhl & 15;
-    /*
-     * B0rked packet 
-     */
-    if (ilen < 5)
-        return;
-
-    if (ilen > 5) {
-        quirks |= QUIRK_IPOPT;
-    }
-
-    /*
-     * If IP header ends past end_ptr 
-     */
-    if ((uint8_t *) (ip4 + 1) > end_ptr)
-        return;
-
-    if (ftype == TF_ACK)
-        open_mode = 1;
     if (ftype == TF_RST && (tcph->t_flags & TF_ACK))
-        quirks |= QUIRK_RSTACK;
+        *quirks |= QUIRK_RSTACK;
     if (ftype == TF_FIN && (tcph->t_flags & TF_ACK))
-        quirks |= QUIRK_FINACK;
+        *quirks |= QUIRK_FINACK;
 
     if (tcph->t_seq == tcph->t_ack)
-        quirks |= QUIRK_SEQEQ;
+        *quirks |= QUIRK_SEQEQ;
     if (!tcph->t_seq)
-        quirks |= QUIRK_SEQ0;
+        *quirks |= QUIRK_SEQ0;
     if (tcph->t_flags & ~(TF_SYN | TF_ACK | TF_RST | TF_ECE | TF_CWR
                           | (open_mode ? TF_PUSH : 0)))
-        quirks |= QUIRK_FLAGS;
+        *quirks |= QUIRK_FLAGS;
+    if (tcph->t_ack)
+        *quirks |= QUIRK_ACK;
+    if (tcph->t_urgp)
+        *quirks |= QUIRK_URG;
+    if (TCP_X2(tcph))
+        *quirks |= QUIRK_X2;
+}
 
-    ilen = (TCP_OFFSET(tcph) << 2) - TCP_HEADER_LEN;
 
-    if ((uint8_t *) opt_ptr + ilen < end_ptr) {
-        if (!open_mode)
-            quirks |= QUIRK_DATA;
-        payload = opt_ptr + ilen;
-    }
+/* parse TCP option header field
+ * yes, this function returns the timestamp for now */ 
+inline uint32_t parse_tcpopt(const uint8_t *opt_ptr, int32_t ilen, const uint8_t *end_ptr, fp_entry *e)
+{
+    uint8_t ocnt = 0, olen;
+    // mnemonics
+    uint32_t *quirks = &e->quirks;
+    uint8_t *op = e->opt;
+    // timestamp is 64bit, but see if I care
+    uint32_t tstamp = 0;
+
     while (ilen > 0) {
-
         ilen--;
 
-        /*
-         * let the phun begin... 
-         */
+        // * let the phun begin... 
         switch (*(opt_ptr++)) {
         case TCPOPT_EOL:
-            /*
-             * EOL 
-             */
+            // * EOL 
             op[ocnt] = TCPOPT_EOL;
-            ocnt++;
 
             if (ilen) {
-                quirks |= QUIRK_PAST;
+                *quirks |= QUIRK_PAST;
             }
             break;
 
         case TCPOPT_NOP:
-            /*
-             * NOP 
-             */
+            // * NOP 
             op[ocnt] = TCPOPT_NOP;
-            ocnt++;
             break;
 
         case TCPOPT_SACKOK:
-            /*
-             * SACKOK LEN 
-             */
+            // * SACKOK LEN 
             op[ocnt] = TCPOPT_SACKOK;
-            ocnt++;
             ilen--;
             opt_ptr++;
             break;
 
         case TCPOPT_MAXSEG:
-            /*
-             * MSS LEN D0 D1 
-             */
+            // * MSS LEN D0 D1 
             if (opt_ptr + 3 > end_ptr) {
 borken:
-                quirks |= QUIRK_BROKEN;
+                *quirks |= QUIRK_BROKEN;
                 goto end_parsing;
             }
             op[ocnt] = TCPOPT_MAXSEG;
-            mss_val = GET16(opt_ptr + 1);
-            ocnt++;
+            e->mss = GET16(opt_ptr + 1);
             ilen -= 3;
             opt_ptr += 3;
             break;
 
         case TCPOPT_WSCALE:
-            /*
-             * WSCALE LEN D0 
-             */
+            // * WSCALE LEN D0 
             if (opt_ptr + 2 > end_ptr)
                 goto borken;
             op[ocnt] = TCPOPT_WSCALE;
-            wsc_val = *(uint8_t *) (opt_ptr + 1);
-            ocnt++;
+            e->wsc = *(uint8_t *) (opt_ptr + 1);
             ilen -= 2;
             opt_ptr += 2;
             break;
 
         case TCPOPT_TIMESTAMP:
-            /*
-             * TSTAMP LEN T0 T1 T2 T3 A0 A1 A2 A3 
-             */
+            // * TSTAMP LEN T0 T1 T2 T3 A0 A1 A2 A3 
+            // ugly handling of a beautiful 64bit field
             if (opt_ptr + 9 > end_ptr)
                 goto borken;
             op[ocnt] = TCPOPT_TIMESTAMP;
 
             memcpy(&tstamp, opt_ptr + 5, 4);
             if (tstamp)
-                quirks |= QUIRK_T2;
+                *quirks |= QUIRK_T2;
 
             memcpy(&tstamp, opt_ptr + 1, 4);
             tstamp = ntohl(tstamp);
 
-            ocnt++;
             ilen -= 9;
             opt_ptr += 9;
             break;
 
         default:
-
-            /*
-             * Hrmpf... 
-             */
+            // * Hrmpf... 
             if (opt_ptr + 1 > end_ptr)
                 goto borken;
 
@@ -163,43 +113,128 @@ borken:
             if (olen > 32 || (olen < 0))
                 goto borken;
 
-            ocnt++;
             ilen -= olen;
             opt_ptr += olen;
             break;
 
         }
+        ocnt++;
         if (ocnt >= MAXOPT - 1)
             goto borken;
 
-        /*
-         * Whoops, we're past end_ptr 
-         */
+        // * Whoops, we're past end_ptr 
         if (ilen > 0)
             if (opt_ptr >= end_ptr)
                 goto borken;
-
     }
 
-  end_parsing:
+end_parsing:
+    e->optcnt = ocnt;
+    return tstamp;
+}
 
-    if (tcph->t_ack)
-        quirks |= QUIRK_ACK;
-    if (tcph->t_urgp)
-        quirks |= QUIRK_URG;
-    if (TCP_X2(tcph))
-        quirks |= QUIRK_X2;
-    if (!ip4->ip_id)
-        quirks |= QUIRK_ZEROID;
+void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
+             uint8_t ftype, struct in6_addr ip_src)
+{
 
-    gen_fp_tcp(ip4->ip_ttl, open_mode ? 0 : ntohs(ip4->ip_len),
-               (ntohs(ip4->ip_off) & IP_DF) != 0,
-               op,
-               ocnt,
-               mss_val,
-               ntohs(tcph->t_win),
-               wsc_val,
-               tstamp, quirks, ftype, ip_src, tcph->src_port, AF_INET);
+    uint8_t *opt_ptr;
+    uint8_t *payload = 0;
+    uint8_t op[MAXOPT];
+    fp_entry e = { 0 };
+    uint8_t open_mode = 0;    /* open_mode=stray ack */
+    int32_t ilen;
+    uint32_t tstamp = 0;
+
+    // convenience
+    ip4_header *ip4 = (ip4_header *)ip46;
+    ip6_header *ip6 = (ip6_header *)ip46;
+    
+    if (ftype == TF_ACK)
+        open_mode = 1;
+
+    /*
+     * If the declared length is shorter than the snapshot (etherleak
+     * or such), truncate the package. 
+     */
+    switch(af){
+        case AF_INET6:
+            opt_ptr = (uint8_t *) ip6 + IP6_HEADER_LEN + ntohs(ip6->len); //*
+            break;
+        case AF_INET:
+            opt_ptr = (uint8_t *)ip4 + ntohs(ip4->ip_len); // fixed from htons
+            break;
+        default:
+            fprintf(stderr, "tcp_fp: something very unsafe happened!\n");
+            return;
+    }
+    if (end_ptr > opt_ptr)
+        end_ptr = opt_ptr;
+
+    switch(af){
+        case AF_INET6:
+            // If IP header ends past end_ptr
+            if ((uint8_t *) (ip6 + 1) > end_ptr)
+                return;
+            if (IP6_FL(ip6) > 0) { //*
+                e.quirks |= QUIRK_FLOWL;
+            }
+            e.ttl = ip6->hop_lmt;
+            e.size = open_mode ? 0 : ntohs(ip6->len);
+            e.df = 1; // for now
+            if (!IP6_FL(ip6)) //*
+                e.quirks |= QUIRK_ZEROID;
+            break;
+        case AF_INET:
+            if ((uint8_t *) (ip4 + 1) > end_ptr)
+                return;
+            ilen = ip4->ip_vhl & 15;
+
+            /* * B0rked packet */
+            if (ilen < 5)
+                return;
+
+            if (ilen > 5) {
+                e.quirks |= QUIRK_IPOPT;
+            }
+            e.ttl = ip4->ip_ttl;
+            e.size = open_mode ? 0 : ntohs(ip4->ip_len);
+            e.df = (ntohs(ip4->ip_off) & IP_DF) != 0;
+            if (!ip4->ip_id)
+                e.quirks |= QUIRK_ZEROID;
+            break;
+            // default: there is no default
+    }
+    //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
+
+    parse_quirks_flag(ftype,tcph,&e.quirks, open_mode);
+    ilen = (TCP_OFFSET(tcph) << 2) - TCP_HEADER_LEN;
+
+    opt_ptr = (uint8_t *) (tcph + 1);
+    if ((uint8_t *) opt_ptr + ilen < end_ptr) {
+        if (!open_mode)
+            e.quirks |= QUIRK_DATA;
+        payload = opt_ptr + ilen;
+    }
+    tstamp = parse_tcpopt(opt_ptr, ilen, end_ptr, &e);
+
+    e.wsize = ntohs(tcph->t_win);
+
+    gen_fp_tcp(e.ttl, 
+               e.size,
+               e.df,
+               e.opt,
+               e.optcnt,
+               e.mss,
+               e.wsize,
+               e.wsc,
+               tstamp, e.quirks, ftype, ip_src, tcph->src_port, af);
+/*
+printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
+                                                     IP6_V(ip6),ntohs(IP6_TC(ip6)),
+                                                     ntohs(IP6_FL(ip6)),
+                                                     mss_val, ntohs(tcph->t_win));
+*/
+
 
 //   find_match(
 //     /* total */ open_mode ? 0 : ntohs(iph->tot_len),
@@ -226,198 +261,17 @@ borken:
 
 }
 
+
+// deprecate these guys soon
+void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
+             uint8_t ftype, struct in6_addr ip_src)
+{
+    fp_tcp(AF_INET, ip4, tcph, end_ptr, ftype, ip_src);
+}
+
 void fp_tcp6(ip6_header * ip6, tcp_header * tcph, const uint8_t * end_ptr,
              uint8_t ftype, struct in6_addr ip_src)
 {
-//   return;
-    uint8_t *opt_ptr;
-    uint8_t *payload = 0;
-    uint8_t op[MAXOPT];
-    uint8_t ocnt = 0, open_mode = 0;    /* open_mode=stray ack */
-    uint16_t mss_val = 0, wsc_val = 0;
-    int32_t ilen, olen;
-    uint32_t quirks = 0, tstamp = 0;
-
-    /*
-     * If the declared length is shorter than the snapshot (etherleak
-     * or such), truncate the package. 
-     */
-    opt_ptr = (uint8_t *) ip6 + IP6_HEADER_LEN + ntohs(ip6->len);
-    if (end_ptr > opt_ptr)
-        end_ptr = opt_ptr;
-
-    opt_ptr = (uint8_t *) (tcph + 1);
-
-    if (IP6_FL(ip6) > 0) {
-        quirks |= QUIRK_FLOWL;
-    }
-
-    /*
-     * If IP header ends past end_ptr 
-     */
-    if ((uint8_t *) (ip6 + 1) > end_ptr)
-        return;
-
-    if (ftype == TF_ACK)
-        open_mode = 1;
-    if (ftype == TF_RST && (tcph->t_flags & TF_ACK))
-        quirks |= QUIRK_RSTACK;
-    if (ftype == TF_FIN && (tcph->t_flags & TF_ACK))
-        quirks |= QUIRK_FINACK;
-
-    if (tcph->t_seq == tcph->t_ack)
-        quirks |= QUIRK_SEQEQ;
-    if (!tcph->t_seq)
-        quirks |= QUIRK_SEQ0;
-    if (tcph->t_flags & ~(TF_SYN | TF_ACK | TF_RST | TF_ECE | TF_CWR
-                          | (open_mode ? TF_PUSH : 0)))
-        quirks |= QUIRK_FLAGS;
-
-    ilen = (TCP_OFFSET(tcph) << 2) - TCP_HEADER_LEN;
-
-    if ((uint8_t *) opt_ptr + ilen < end_ptr) {
-        if (!open_mode)
-            quirks |= QUIRK_DATA;
-        payload = opt_ptr + ilen;
-    }
-    while (ilen > 0) {
-
-        ilen--;
-
-        /*
-         * let the phun begin... 
-         */
-        switch (*(opt_ptr++)) {
-        case TCPOPT_EOL:
-            /*
-             * EOL 
-             */
-            op[ocnt] = TCPOPT_EOL;
-            ocnt++;
-
-            if (ilen) {
-                quirks |= QUIRK_PAST;
-            }
-        case TCPOPT_NOP:
-            /*
-             * NOP 
-             */
-            op[ocnt] = TCPOPT_NOP;
-            ocnt++;
-            break;
-
-        case TCPOPT_SACKOK:
-            /*
-             * SACKOK LEN 
-             */
-            op[ocnt] = TCPOPT_SACKOK;
-            ocnt++;
-            ilen--;
-            opt_ptr++;
-            break;
-
-        case TCPOPT_MAXSEG:
-            /*
-             * MSS LEN D0 D1 
-             */
-            if (opt_ptr + 3 > end_ptr) {
-borken:
-                quirks |= QUIRK_BROKEN;
-                goto end_parsing;
-            }
-            op[ocnt] = TCPOPT_MAXSEG;
-            mss_val = GET16(opt_ptr + 1);
-            ocnt++;
-            ilen -= 3;
-            opt_ptr += 3;
-            break;
-        case TCPOPT_WSCALE:
-            /*
-             * WSCALE LEN D0 
-             */
-            if (opt_ptr + 2 > end_ptr)
-                goto borken;
-            op[ocnt] = TCPOPT_WSCALE;
-            wsc_val = *(uint8_t *) (opt_ptr + 1);
-            ocnt++;
-            ilen -= 2;
-            opt_ptr += 2;
-            break;
-
-        case TCPOPT_TIMESTAMP:
-            /*
-             * TSTAMP LEN T0 T1 T2 T3 A0 A1 A2 A3 
-             */
-            if (opt_ptr + 9 > end_ptr)
-                goto borken;
-            op[ocnt] = TCPOPT_TIMESTAMP;
-
-            memcpy(&tstamp, opt_ptr + 5, 4);
-            if (tstamp)
-                quirks |= QUIRK_T2;
-
-            memcpy(&tstamp, opt_ptr + 1, 4);
-            tstamp = ntohl(tstamp);
-
-            ocnt++;
-            ilen -= 9;
-            opt_ptr += 9;
-            break;
-
-        default:
-
-            /*
-             * Hrmpf... 
-             */
-            if (opt_ptr + 1 > end_ptr)
-                goto borken;
-
-            op[ocnt] = *(opt_ptr - 1);
-            olen = *(uint8_t *) (opt_ptr) - 1;
-            if (olen > 32 || (olen < 0))
-                goto borken;
-
-            ocnt++;
-            ilen -= olen;
-            opt_ptr += olen;
-            break;
-
-        }
-        if (ocnt >= MAXOPT - 1)
-            goto borken;
-
-        /*
-         * Whoops, we're past end_ptr 
-         */
-        if (ilen > 0)
-            if (opt_ptr >= end_ptr)
-                goto borken;
-
-    }
-
-  end_parsing:
-
-    if (tcph->t_ack)
-        quirks |= QUIRK_ACK;
-    if (tcph->t_urgp)
-        quirks |= QUIRK_URG;
-    if (TCP_X2(tcph))
-        quirks |= QUIRK_X2;
-    if (!IP6_FL(ip6))
-        quirks |= QUIRK_ZEROID;
-
-/*
-printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
-                                                     IP6_V(ip6),ntohs(IP6_TC(ip6)),
-                                                     ntohs(IP6_FL(ip6)),
-                                                     mss_val, ntohs(tcph->t_win));
-*/
-    gen_fp_tcp(ip6->hop_lmt, open_mode ? 0 : ntohs(ip6->len), 1,        // simulate df bit for now
-               op,
-               ocnt,
-               mss_val,
-               ntohs(tcph->t_win),
-               wsc_val,
-               tstamp, quirks, ftype, ip_src, tcph->src_port, AF_INET6);
-
+    fp_tcp(AF_INET6, ip6, tcph, end_ptr, ftype, ip_src);
 }
+
