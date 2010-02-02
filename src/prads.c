@@ -586,11 +586,13 @@ void prepare_tcp (packetinfo *pi)
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - (IP_HL(pi->ip4) * 4) - pi->eth_hlen);
+        pi->payload = (char *)(pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4) + (TCP_OFFSET(pi->tcph) * 4));
 
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
         pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - IP6_HEADER_LEN - pi->eth_hlen);
+        pi->payload = (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi->tcph)*4));
 
     }
     /* plen here might be wrong :/ */
@@ -625,8 +627,6 @@ void parse_tcp6 (packetinfo *pi)
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
             fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_ACK, pi->ip6->ip_src);
         }
-        pi->payload =
-            (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi->tcph)*4));
 
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && pi->sc == SC_SERVER
@@ -645,6 +645,66 @@ void parse_tcp6 (packetinfo *pi)
 }
 
 void parse_tcp4 (packetinfo *pi)
+{
+    if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
+        if (IS_COSET(&config,CO_SYN)
+            && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
+            vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
+            fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
+            update_asset_service(pi->ip_src, pi->tcph->dst_port,
+                                 pi->ip4->ip_p, UNKNOWN,
+                                 UNKNOWN, pi->af, CLIENT);
+            return;
+        }
+        if (IS_CSSET(&config,CS_TCP_CLIENT)
+                && !ISSET_DONT_CHECK_CLIENT(pi)) {
+            client_tcp4(pi);
+        }
+        goto bastard_checks;
+
+    } else if (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi)) {
+        if (IS_COSET(&config,CO_SYNACK)
+               && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+               && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
+            vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",
+                    ntohs(pi->tcph->src_port));
+            fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
+            update_asset_service(pi->ip_src, pi->tcph->src_port,
+                             pi->ip4->ip_p, UNKNOWN,
+                             UNKNOWN, pi->af, SERVICE);
+            return; // or are we loosing service check?
+        }
+        if (IS_CSSET(&config,CS_TCP_SERVER)
+                && !ISSET_DONT_CHECK_SERVICE(pi)) {
+            service_tcp4(pi);
+        }
+        goto bastard_checks;
+    }
+    vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
+    return;
+
+bastard_checks:
+    if (IS_COSET(&config,CO_ACK)
+            && TCP_ISFLAGSET(pi->tcph, (TF_ACK))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
+            && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
+        vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
+        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
+        return;
+    } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
+        vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
+        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
+        return;
+    } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
+        vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
+        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
+        return;
+    }
+}
+
+void parse_tcp8 (packetinfo *pi)
 {
     if (IS_COSET(&config,CO_SYN)
         && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
@@ -684,9 +744,6 @@ void parse_tcp4 (packetinfo *pi)
             vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
             fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
         }
-        pi->payload =
-            (char *)(pi->packet + pi->eth_hlen +
-                     (IP_HL(pi->ip4) * 4) + (TCP_OFFSET(pi->tcph) * 4));
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && pi->sc == SC_SERVER
                 && !ISSET_DONT_CHECK_SERVICE(pi)) {
@@ -710,13 +767,16 @@ void prepare_udp (packetinfo *pi)
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->plen = pi->pheader->caplen - UDP_HEADER_LEN -
                     (IP_HL(pi->ip4) * 4) - pi->eth_hlen;
+        pi->payload = (char *)(pi->packet + pi->eth_hlen +
+                        (IP_HL(pi->ip4) * 4) + UDP_HEADER_LEN);
 
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE UDP:\n");
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + + IP6_HEADER_LEN);
         pi->plen = pi->pheader->caplen - UDP_HEADER_LEN -
                     IP6_HEADER_LEN - pi->eth_hlen;
-
+        pi->payload = (char *)(pi->packet + pi->eth_hlen +
+                        IP6_HEADER_LEN + UDP_HEADER_LEN);
     }
     pi->s_port = pi->udph->src_port;
     pi->d_port = pi->udph->dst_port;
@@ -731,17 +791,11 @@ void parse_udp (packetinfo *pi)
         if (pi->af == AF_INET) {
             
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
-                pi->payload =
-                    (char *)(pi->packet + pi->eth_hlen +
-                     (IP_HL(pi->ip4) * 4) + UDP_HEADER_LEN);
                 service_udp4(pi);
             }
             if (IS_COSET(&config,CO_UDP)) fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
         } else if (pi->af == AF_INET6) {
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
-                pi->payload =
-                    (char *)(pi->packet + pi->eth_hlen +
-                        IP6_HEADER_LEN + UDP_HEADER_LEN);
                 service_udp6(pi);
             }
             /*
