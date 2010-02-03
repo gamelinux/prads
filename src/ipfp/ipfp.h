@@ -21,4 +21,3 @@ void gen_fp_udp(uint16_t totlen, uint16_t udata, uint8_t ttl, uint8_t df,
 void gen_fp_icmp(uint8_t type, uint8_t code, uint8_t ttl, uint8_t df,
                  int32_t olen, uint16_t totlen, uint8_t idata, uint16_t ip_off,
                  uint8_t ip_tos, uint32_t quirks, struct in6_addr ip_src, int af);
-

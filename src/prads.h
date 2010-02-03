@@ -470,6 +470,7 @@ typedef struct _connection {
     time_t   start_time;          /* connection start time */
     time_t   last_pkt_time;       /* last seen packet time */
     uint64_t cxid;                /* connection id */
+    uint8_t  reversed;            /* 1 if the connection is reversed */
     uint32_t af;                  /* IP version (4/6) AF_INET */
     uint8_t  proto;               /* IP protocoll type */
     struct   in6_addr s_ip;       /* source address */
@@ -483,6 +484,8 @@ typedef struct _connection {
     uint8_t  s_tcpFlags;          /* tcpflags sent by source */
     uint8_t  d_tcpFlags;          /* tcpflags sent by destination */
     uint8_t  check;               /* Flags spesifying checking */
+    struct   _asset *s_asset;     /* pointer to src asset */
+    struct   _asset *d_asset;     /* pointer to dst asset */
     struct   _cxtbucket *cb;
 } connection;
 #define CXT_DONT_CHECK_SERVER     0x01  /* Dont check server packets */
@@ -561,8 +564,7 @@ typedef struct _os_asset {
     unsigned short i_attempts;  /* Failed attempts at identifying the os_asset. (hench just unknown) */
     bstring vendor;             /* Vendor (MS,Linux,Sun,HP...) */
     bstring os;                 /* OS (WinXP SP2, 2.4/2.6, 10.2..) */
-    uint8_t dflags;             /* Flag describing detection method (SYN/UDP/ICMP...) */
-    bstring detection;          /* Detection metod ((TCPSYN/SYNACK/STRAYACK)UDP/ICMP/other) */
+    uint8_t detection;          /* Flag describing detection method (SYN/SYNACK/UDP/ICMP...) */
     bstring raw_fp;             /* The raw fingerprint [*:*:*:*:*:*:....] */
     bstring matched_fp;         /* The FP that matched [*:*:*:*.*:*:---] */
     uint16_t port;              /* Asset port detected on */
@@ -653,25 +655,29 @@ typedef struct _fmask {
 } fmask;
 
 typedef struct _prads_stat {
-    uint32_t got_packets;  /* number of packets received by prads */
-    uint32_t eth_recv;     /* number of Ethernet packets received */
-    uint32_t arp_recv;     /* number of ARP packets received */
-    uint32_t otherl_recv;  /* number of other Link layer packets received */
-    uint32_t vlan_recv;    /* number of VLAN packets received */
-    uint32_t ip4_recv;     /* number of IPv4 packets received */
-    uint32_t ip6_recv;     /* number of IPv6 packets received */
-    uint32_t ip4ip_recv;   /* number of IP4/6 packets in IPv4 packets */
-    uint32_t ip6ip_recv;   /* number of IP4/6 packets in IPv6 packets */
-    uint32_t gre_recv;     /* number of GRE packets received */
-    uint32_t tcp_recv;     /* number of tcp packets received */
-    uint32_t udp_recv;     /* number of udp packets received */
-    uint32_t icmp_recv;    /* number of icmp packets received */
-    uint32_t othert_recv;  /* number of other transport layer packets received */
-    uint32_t assets;       /* total number of assets detected */
-    uint32_t tcp_services; /* total number of tcp services detected */
-    uint32_t tcp_clients;  /* total number of tcp clients detected */
-    uint32_t udp_services; /* total number of udp services detected */
-    uint32_t udp_clients;  /* total number of tcp clients detected */
+    uint32_t got_packets;   /* number of packets received by prads */
+    uint32_t eth_recv;      /* number of Ethernet packets received */
+    uint32_t arp_recv;      /* number of ARP packets received */
+    uint32_t otherl_recv;   /* number of other Link layer packets received */
+    uint32_t vlan_recv;     /* number of VLAN packets received */
+    uint32_t ip4_recv;      /* number of IPv4 packets received */
+    uint32_t ip6_recv;      /* number of IPv6 packets received */
+    uint32_t ip4ip_recv;    /* number of IP4/6 packets in IPv4 packets */
+    uint32_t ip6ip_recv;    /* number of IP4/6 packets in IPv6 packets */
+    uint32_t gre_recv;      /* number of GRE packets received */
+    uint32_t tcp_recv;      /* number of tcp packets received */
+    uint32_t udp_recv;      /* number of udp packets received */
+    uint32_t icmp_recv;     /* number of icmp packets received */
+    uint32_t othert_recv;   /* number of other transport layer packets received */
+    uint32_t assets;        /* total number of assets detected */
+    uint32_t tcp_os_assets; /* total number of tcp os assets detected */
+    uint32_t udp_os_assets; /* total number of udp os assets detected */
+    uint32_t icmp_os_assets;/* total number of icmp os assets detected */
+    uint32_t dhcp_os_assets;/* total number of dhcp os assets detected */
+    uint32_t tcp_services;  /* total number of tcp services detected */
+    uint32_t tcp_clients;   /* total number of tcp clients detected */
+    uint32_t udp_services;  /* total number of udp services detected */
+    uint32_t udp_clients;   /* total number of tcp clients detected */
 } prads_stat;
 
 typedef struct _globalconfig {

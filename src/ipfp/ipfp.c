@@ -18,28 +18,6 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* $Id$ */
-
-/* ipfp
- *
- * Purpose:
- *
- * This file eats an IPv4 or an IPv6 packet/fingerprint, and returns a
- * fingerprint match.
- *
- * Arguments:
- *
- * IP-version, args to eat...
- *
- * Effect:
- *
- * Returns a fingerprint match and the fingerprint
- *
- * Comments:
- *
- * Old school...
- */
-
 #include "../common.h"
 #include "../prads.h"
 #include "../assets.h"
@@ -60,23 +38,22 @@ void gen_fp_tcp(uint8_t ttl,
 {
 
     uint32_t j;
-    uint8_t d = 0;
+    uint8_t d, de;
+    d = de = 0;
     //uint8_t q = 0;
-    bstring fp, de;
+    bstring fp;
 
     if (ftype == TF_SYN) {
-        de = bformat("syn");
+        de = CO_SYN;
     } else if (ftype == TF_SYNACK) {
-        de = bformat("synack");
+        de = CO_SYNACK;
     } else if (ftype == TF_ACK) {
-        de = bformat("ack");
+        de = CO_ACK;
         ocnt = 3;
     } else if (ftype == TF_RST) {
-        de = bformat("rst");
+        de = CO_RST;
     } else if (ftype == TF_FIN) {
-        de = bformat("fin");
-    } else {
-        de = bformat("error");
+        de = CO_FIN;
     }
 
     fp = bformat("");
@@ -191,7 +168,6 @@ void gen_fp_tcp(uint8_t ttl,
     update_asset_os(ip_src, port, de, fp, af, tstamp?tstamp:0);
     // cleanup
     bdestroy(fp);
-    bdestroy(de);
 }
 
 void gen_fp_icmp(uint8_t type,
@@ -219,11 +195,8 @@ void gen_fp_icmp(uint8_t type,
             bformata(fp, "I");
     }
 
-    //printf("[%s]\n",(char*)bdata(fp));
-    bstring t = bformat("icmp");
     //icmp might have uptime?
-    update_asset_os(ip_src, htons(type), t, fp, af,0);
-    bdestroy(t);
+    update_asset_os(ip_src, htons(type), CO_ICMP, fp, af,0);
     bdestroy(fp);
     // add mss ? for MTU detection ?
 }
@@ -241,11 +214,13 @@ void gen_fp_udp(uint16_t totlen,
 {
 
     bstring fp;
+    
     //printf("[*] ASSET IP/UDP FINGERPRINT: ");
 
     //fp = bformat("%u:%u:%u:%u:%d:%u:%u:",udata,totlen,ttl,df,olen,ip_off,ip_tos);
-    fp = bformat("%u,%u:%u:%d:%u:%u:", totlen, ttl, df, olen, ip_off,
-                 ip_tos);
+    //fp = bformat("%u,%u:%u:%d:%u:%u:", totlen, ttl, df, olen, ip_off,
+    // add "20" to be prads.pl compatible :)
+    fp = bformat("20:%u:%u:%d:%u:%u:", ttl, df, olen, ip_off,ip_tos);
     if (!quirks)
         bformata(fp, ".");
     else {
@@ -254,10 +229,7 @@ void gen_fp_udp(uint16_t totlen,
         if (quirks & QUIRK_IPOPT)
             bformata(fp, "I");
     }
-    bstring t = bformat("udp");
 
-    //printf("[%s]\n",(char*)bdata(fp));
-    update_asset_os(ip_src, port, t, fp, af,0);
+    update_asset_os(ip_src, port, CO_UDP, fp, af,0);
     bdestroy(fp);
-    bdestroy(t);
 }

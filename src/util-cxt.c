@@ -227,6 +227,8 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->d_port = pi->d_port;
         cxt->proto = (pi->ip4 ? pi->ip4->ip_p : pi->ip6->next);
         cxt->check = 0x00;
+        cxt->s_asset = NULL;
+        cxt->d_asset = NULL;
         pi->sc = SC_CLIENT;
 }
 

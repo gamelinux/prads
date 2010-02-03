@@ -56,6 +56,38 @@ void update_service_stats(int role, uint16_t proto)
     }
 }
 
+void update_os_stats(uint8_t detection)
+{
+    switch (detection) {
+        case CO_SYN:
+            config.pr_s.tcp_os_assets++;
+            break;
+        case CO_SYNACK:
+            config.pr_s.tcp_os_assets++;
+            break;
+        case CO_ACK:
+            config.pr_s.tcp_os_assets++;
+            break;
+        case CO_FIN:
+            config.pr_s.tcp_os_assets++;
+            break;
+        case CO_RST:
+            config.pr_s.tcp_os_assets++;
+            break;
+        case CO_UDP:
+            config.pr_s.udp_os_assets++;
+            break;
+        case CO_ICMP:
+            config.pr_s.icmp_os_assets++;
+            break;
+        case CO_DHCP:
+            config.pr_s.dhcp_os_assets++;
+            break;
+        default:
+            break;
+    }
+}
+
 asset *asset_lookup(struct in6_addr ip, int af)
 {
     extern asset *passet[BUCKET_SIZE];
@@ -134,11 +166,9 @@ short update_asset_shmem(packetinfo *pi)
     }
 }
 
-
-
 short update_asset_os(struct in6_addr ip_addr,
                       u_int16_t port,
-                      bstring detection, bstring raw_fp, int af, int uptime)
+                      uint8_t detection, bstring raw_fp, int af, int uptime)
 {
     extern time_t tstamp;
     asset *rec = NULL;
@@ -164,11 +194,10 @@ os_update:
     head_oa = rec->os;
 
     while (tmp_oa != NULL) {
-        if ((biseq(detection, tmp_oa->detection) == 1)
+        if (detection == tmp_oa->detection
             && (biseq(raw_fp, tmp_oa->raw_fp) == 1)) {
             /* Found! */
-            bdestroy(tmp_oa->detection);
-            tmp_oa->detection = bstrcpy(detection);
+            tmp_oa->detection = detection;
             bdestroy(tmp_oa->raw_fp);
             tmp_oa->raw_fp = bstrcpy(raw_fp);
             //tmp_sa->i_attempts++;
@@ -183,9 +212,10 @@ os_update:
     }
 
     if (tmp_oa == NULL) {
+        update_os_stats(detection);
         os_asset *new_oa = NULL;
         new_oa = (os_asset *) calloc(1, sizeof(os_asset));
-        new_oa->detection = bstrcpy(detection);
+        new_oa->detection = detection;
         new_oa->raw_fp = bstrcpy(raw_fp);
         //new_oa->i_attempts = 1;
         new_oa->first_seen = tstamp;
@@ -242,9 +272,13 @@ service_update:
     tmp_sa = rec->services;
     head_sa = rec->services;
     uint16_t port;
-    if (pi->sc == SC_CLIENT) port = pi->d_port;
-        else port = pi->s_port;
-
+    if (pi->cxt->reversed == 0) {
+        if (pi->sc == SC_CLIENT) port = pi->d_port;
+            else port = pi->s_port;
+    } else {
+        if (pi->sc == SC_CLIENT) port = pi->s_port;
+            else port = pi->d_port;
+    }
     while (tmp_sa != NULL) {
         if (port == tmp_sa->port && pi->proto == tmp_sa->proto) {
             /*
@@ -413,7 +447,6 @@ void del_os_asset(os_asset ** head_oa, os_asset * os)
     tmp_oa = os;
     //bdestroy(tmp_oa->vendor);
     //bdestroy(tmp_oa->os);
-    bdestroy(tmp_oa->detection);
     bdestroy(tmp_oa->raw_fp);
     //bdestroy(tmp_oa->matched_fp);
 

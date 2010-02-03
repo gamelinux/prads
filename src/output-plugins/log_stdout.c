@@ -19,10 +19,18 @@ void stdout_os (asset *main, os_asset *os)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     u_ntop(main->ip_addr, main->af, ip_addr_s);
-    printf("\n%s", ip_addr_s);
+    printf("\n%s,[", ip_addr_s);
+    
+    if (os->detection == CO_SYN) printf("syn");
+    if (os->detection == CO_SYNACK) printf("synack");
+    if (os->detection == CO_ACK) printf("ack");
+    if (os->detection == CO_RST) printf("rst");
+    if (os->detection == CO_FIN) printf("fin");
+    if (os->detection == CO_UDP) printf("udp");
+    if (os->detection == CO_ICMP) printf("icmp");
 
-    printf(",[%s:%s]", (char *)bdata(os->detection),
-                       (char *)bdata(os->raw_fp));
+
+    printf(":%s]", (char *)bdata(os->raw_fp));
     if (os->uptime) printf(",[uptime:%dhrs]",os->uptime/360000);
 }
 

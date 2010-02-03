@@ -120,6 +120,11 @@ void print_prads_stats()
     printf("\n-- Total sessions tracked                 :%12lu",cxtrackerid);
     printf("\n-- Total assets detected                  :%12u",config.pr_s.assets);
     printf("\n-- Total TCP service assets detected      :%12u",config.pr_s.tcp_services);
+    printf("\n-- Total TCP OS fingerprints detected     :%12u",config.pr_s.tcp_os_assets);
+    printf("\n-- Total UDP OS fingerprints detected     :%12u",config.pr_s.udp_os_assets);
+    printf("\n-- Total ICMP OS fingerprints detected    :%12u",config.pr_s.icmp_os_assets);
+    printf("\n-- Total DHCP OS fingerprints detected    :%12u",config.pr_s.dhcp_os_assets);
+    printf("\n-- Total TCP service assets detected      :%12u",config.pr_s.tcp_services);
     printf("\n-- Total TCP client assets detected       :%12u",config.pr_s.tcp_clients);
     printf("\n-- Total UDP service assets detected      :%12u",config.pr_s.udp_services);
     printf("\n-- Total UDP client assets detected       :%12u",config.pr_s.udp_clients);

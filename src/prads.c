@@ -655,12 +655,12 @@ void parse_tcp4 (packetinfo *pi)
             && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
             fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
-            update_asset_service(pi, UNKNOWN, UNKNOWN);
             return;
         }
         if (IS_CSSET(&config,CS_TCP_CLIENT)
                 && !ISSET_DONT_CHECK_CLIENT(pi)) {
-            client_tcp4(pi);
+            if (pi->cxt->reversed) service_tcp4(pi);
+                else client_tcp4(pi);
         }
         goto bastard_checks;
 
@@ -671,12 +671,11 @@ void parse_tcp4 (packetinfo *pi)
             vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",
                     ntohs(pi->tcph->src_port));
             fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
-            update_asset_service(pi, UNKNOWN, UNKNOWN);
-            return; // or are we loosing service check?
         }
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && !ISSET_DONT_CHECK_SERVICE(pi)) {
-            service_tcp4(pi);
+            if (pi->cxt->reversed) client_tcp4(pi);
+                else service_tcp4(pi);
         }
         goto bastard_checks;
     }
@@ -1159,6 +1158,13 @@ int main(int argc, char *argv[])
     add_known_port(17,1194,bfromcstr("@openvpn"));
     add_known_port(17,123,bfromcstr("@ntp"));
     add_known_port(6,631,bfromcstr("@cups"));
+    add_known_port(6,20,bfromcstr("@ftp-data"));
+    add_known_port(6,21,bfromcstr("@ftp"));
+    add_known_port(6,22,bfromcstr("@ssh"));
+    add_known_port(6,119,bfromcstr("@nntp"));
+    add_known_port(6,80,bfromcstr("@http"));
+    add_known_port(6,443,bfromcstr("@https"));
+    add_known_port(6,6667,bfromcstr("@irc"));
 
     config.errbuf[0] = '\0';
     /*
