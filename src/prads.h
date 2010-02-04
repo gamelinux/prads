@@ -621,6 +621,11 @@ typedef struct _vendor {
     struct _vendor *next;       /* Next vendor structure */
 } vendor;
 
+typedef struct _servicelist {
+    bstring     service_name;   /* Service (@http) etc. */
+    uint32_t    stats;          /* stats on how many times it has matched */  
+} servicelist;
+
 typedef struct _port_t {
     uint16_t h_port;            /* High port */
     //uint16_t l_port;            /* Low Port */
@@ -694,6 +699,11 @@ typedef struct _globalconfig {
     connection  *cxtbuffer;             /* Pointer to list of expired connections */
     asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
     port_t      *lports[MAX_IP_PROTO];  /* Pointer to list of known ports */
+    bstring     sig_file_mac;           /* Filename of MAC signature file */
+    bstring     sig_file_serv_tcp;      /* Filename of tcp server sig file */
+    bstring     sig_file_cli_tcp;       /* Filename of tcp client sig file */
+    bstring     sig_file_serv_udp;      /* Filename of udp server sig file */
+    bstring     sig_file_cli_udp;       /* Filename of udp client sig file */
     signature   *sig_serv_tcp;          /* Pointer to list of tcp service signatures */
     signature   *sig_serv_udp;          /* Pointer to list of udp service signatures */
     signature   *sig_client_tcp;        /* Pointer to list of tcp client signatures */

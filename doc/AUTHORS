@@ -1,0 +1,24 @@
+Primary authors:
+    Edward Fjellskål <edward.fjellskaal@redpill-linpro.com>
+    Kacper Wysocki   <kacper.wysocki@redpill-linpro.com>
+
+Contributers:
+    Gurvinder Singh <gurvindersinghdahiya@gmail.com>
+        (Connection tracking - Based on Suricata (OISF))
+    Jan Henning Thorsen <jan.henning.thorsen@redpill-linpro.com>
+        (prads.pl initial skeleton and service detection)
+
+Some initially code borrowed from (Changes has been made):
+    Service detection:
+        Matt Shelton : passive.sourceforge.net
+    TCP fingerprinting:
+        Michal Zalewski : lcamtuf.coredump.cx/p0f
+
+Inspiration :
+    Matt Shelton : passive.sourceforge.net
+    Michal Zalewski : lcamtuf.coredump.cx/p0f
+    John Curry : http://www.metre.net/sancp.html
+
+If you've been left off the list, it's not intentional.  Please let us know!
+
+Thanks!

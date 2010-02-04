@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "prads.h"
+#include "config.h"
 #include "sys_func.h"
 #include "assets.h"
 #include "cxt.h"
@@ -1070,36 +1071,19 @@ int main(int argc, char *argv[])
 {
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
+    set_default_config_options();
+    parse_config_file(bfromcstr("../etc/prads.conf"));
 
-    // Remind me to get this into a config something!
-    config.ctf |= CO_SYN;
-    //config.ctf |= CO_RST;
-    //config.ctf |= CO_FIN;
-    //config.ctf |= CO_ACK;
-    config.ctf |= CO_SYNACK;
-    config.ctf |= CO_ICMP;
-    config.ctf |= CO_UDP;
-    //config.ctf |= CO_OTHER;
-    config.cof |= CS_TCP_SERVER;
-    config.cof |= CS_TCP_CLIENT;
-    config.cof |= CS_UDP_SERVICES;
-    int ch = 0;
-    config.dev = "eth0";
-    config.bpff = "";
-    config.dpath = "/tmp";
-    config.pidfile = "prads.pid";
-    config.pidpath = "/var/run";
     cxtbuffer = NULL;
     cxtrackerid = 0;
     inpacket = gameover = intr_flag = 0;
-    // default source net owns everything
-    config.s_net = "0.0.0.0/0,::/0";
 
     signal(SIGTERM, game_over);
     signal(SIGINT, game_over);
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
 
+    int ch = 0;
     while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:va:")) != -1)
         switch (ch) {
         case 'a':
@@ -1166,7 +1150,6 @@ int main(int argc, char *argv[])
     add_known_port(6,443,bfromcstr("@https"));
     add_known_port(6,6667,bfromcstr("@irc"));
 
-    config.errbuf[0] = '\0';
     /*
      * look up an available device if non specified
      */
