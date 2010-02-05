@@ -122,47 +122,103 @@ void parse_line (bstring line)
             else
                 config.daemon_flag = 0;
         }
-
+    } else if ((biseqcstr(param, "arp")) == 1) {
+        /* ARP CHECK */
+        if (value->data[0] == '1')
+            config.cof |= CS_ARP;
+        else 
+            config.cof ^= CS_ARP;
+    } else if ((biseqcstr(param, "service_tcp")) == 1) {
+        /* TCP Service check */
+        if (value->data[0] == '1')
+            config.cof |= CS_TCP_SERVER;
+        else
+            config.cof ^= CS_TCP_SERVER;
+    } else if ((biseqcstr(param, "client_tcp")) == 1) {
+        /* TCP Client check */
+        if (value->data[0] == '1')
+            config.cof |= CS_TCP_CLIENT;
+        else
+            config.cof ^= CS_TCP_CLIENT;
+    } else if ((biseqcstr(param, "service_udp")) == 1) {
+        /* UPD service and client checks */
+        if (value->data[0] == '1')
+            config.cof |= CS_UDP_SERVICES;
+        else
+            config.cof ^= CS_UDP_SERVICES;
+    } else if ((biseqcstr(param, "os_icmp")) == 1) {
+        /* ICMP OS Fingerprinting */
+        if (value->data[0] == '1')
+            config.cof |= CO_ICMP;
+        else
+            config.cof ^= CO_ICMP;
+    } else if ((biseqcstr(param, "service_udp")) == 1) {
+        /* UPD service and client checks */
+        if (value->data[0] == '1')
+            config.cof |= CS_UDP_SERVICES;
+        else
+            config.cof ^= CS_UDP_SERVICES;
+   } else if ((biseqcstr(param, "os_syn_fingerprint")) == 1) {
+        /* TCP SYN OS Fingerprinting */
+        if (value->data[0] == '1')
+            config.ctf |= CO_SYN;
+        else
+            config.ctf ^= CO_SYN;
+   } else if ((biseqcstr(param, "os_synack_fingerprint")) == 1) {
+        /* TCP SYNACK OS Fingerprinting */
+        if (value->data[0] == '1')
+            config.ctf |= CO_SYNACK;
+        else
+            config.ctf ^= CO_SYNACK;
+   } else if ((biseqcstr(param, "os_ack_fingerprint")) == 1) {
+        /* TCP Stray ACK OS Fingerprinting */
+        if (value->data[0] == '1')
+            config.ctf |= CO_ACK;
+        else
+            config.ctf ^= CO_ACK;
+   } else if ((biseqcstr(param, "os_rst_fingerprint")) == 1) {
+        /* TCP RST OS Fingerprinting */
+        if (value->data[0] == '1')
+            config.ctf |= CO_RST;
+        else
+            config.ctf ^= CO_RST;
+   } else if ((biseqcstr(param, "os_fin_fingerprint")) == 1) {
+        /* TCP FIN OS Fingerprinting */
+        if (value->data[0] == '1')
+            config.ctf |= CO_FIN;
+        else
+            config.ctf ^= CO_FIN;
     } else if ((biseqcstr(param, "pid_file")) == 1) {
-            /* PID FILE */
+        /* PID FILE */
         config.pidfile = bstr2cstr(value, '-');
-
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
         config.sig_file_serv_tcp = bstrcpy(value);
-
     } else if ((biseqcstr(param, "sig_file_cli_tcp")) == 1) {
         /* SIGNATURE FILE */
         config.sig_file_cli_tcp = bstrcpy(value);
-
     } else if ((biseqcstr(param, "sig_file_serv_udp")) == 1) {
         /* SIGNATURE FILE */
         config.sig_file_serv_udp = bstrcpy(value);
-
     } else if ((biseqcstr(param, "sig_file_cli_udp")) == 1) {
         /* SIGNATURE FILE */
         config.sig_file_cli_udp = bstrcpy(value);
-
     } else if ((biseqcstr(param, "mac_file")) == 1) {
         /* MAC / VENDOR RESOLUTION FILE */
         config.sig_file_mac = bstrcpy(value);
-
     } else if ((biseqcstr(param, "output")) == 1) {
         /* OUTPUT */
         //conf_module_plugin(value, &activate_output_plugin);
-
     } else if ((biseqcstr(param, "user")) == 1) {
         /* USER */
         config.user_name = bstr2cstr(value, '-');
-
     } else if ((biseqcstr(param, "group")) == 1) {
         /* GROUP */
         config.group_name = bstr2cstr(value, '-');
-
     } else if ((biseqcstr(param, "interface")) == 1) {
         /* INTERFACE */
         config.dev = bstr2cstr(value, '-');
-    } else if ((biseqcstr(param, "bpf")) == 1) {
+    } else if ((biseqcstr(param, "bpfilter")) == 1) {
         /* FILTER */
         config.bpff = bstr2cstr(value, '-');
 

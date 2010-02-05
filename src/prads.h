@@ -60,7 +60,8 @@
 #define CS_TCP_CLIENT                 0x02
 #define CS_UDP_SERVICES               0x04  /* Currently implying server+client*/
 #define CS_UDP_CLIENT                 0x08
-#define CS_ICMP                       0x10
+#define CS_ICMP                       0x20
+#define CS_ARP                        0x80
 
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806
