@@ -42,6 +42,7 @@ time_t tstamp;
 connection *bucket[BUCKET_SIZE];
 connection *cxtbuffer = NULL;
 asset *passet[BUCKET_SIZE];
+servicelist *services[65535];
 port_t *lports[255];
 signature *sig_serv_tcp = NULL;
 signature *sig_serv_udp = NULL;
@@ -1147,6 +1148,7 @@ int main(int argc, char *argv[])
     load_servicefp_file(2, "../etc/udp-service.sig");
     load_servicefp_file(3, "../etc/tcp-clients.sig");
     //load_servicefp_file(4,"../etc/udp-client.sig");
+    init_services();
     add_known_port(17,1194,bfromcstr("@openvpn"));
     add_known_port(17,123,bfromcstr("@ntp"));
     add_known_port(6,631,bfromcstr("@cups"));

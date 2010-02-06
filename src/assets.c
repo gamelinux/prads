@@ -246,13 +246,30 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
 {
     extern time_t tstamp;
     asset *rec = NULL;
+    uint16_t port;
 
-    rec = asset_lookup(pi->ip_src, pi->af);
+    if (pi->cxt->reversed == 0) {
+        rec = asset_lookup(pi->ip_src, pi->af);
+        if (pi->sc == SC_CLIENT) {
+            port = pi->d_port;
+        } else {
+            port = pi->s_port;
+        }
+    } else {
+        rec = asset_lookup(pi->ip_dst, pi->af);
+        if (pi->sc == SC_CLIENT) {
+            port = pi->s_port;
+        } else {
+            port = pi->d_port;
+        }
+    }
+
     if (rec != NULL) {
         goto service_update;
     } else {
         /* If no asset */
-        update_asset(pi->af, pi->ip_src);
+        if (pi->cxt->reversed == 0) update_asset(pi->af, pi->ip_src);
+            else update_asset(pi->af, pi->ip_dst);
         if (update_asset_service(pi, service, application) == 0) return 0;
         return 1;
     }
@@ -267,14 +284,7 @@ service_update:
     serv_asset *head_sa = NULL;
     tmp_sa = rec->services;
     head_sa = rec->services;
-    uint16_t port;
-    if (pi->cxt->reversed == 0) {
-        if (pi->sc == SC_CLIENT) port = pi->d_port;
-            else port = pi->s_port;
-    } else {
-        if (pi->sc == SC_CLIENT) port = pi->s_port;
-            else port = pi->d_port;
-    }
+
     while (tmp_sa != NULL) {
         if (port == tmp_sa->port && pi->proto == tmp_sa->proto) {
             /*

@@ -200,6 +200,7 @@ void parse_line (bstring line)
             config.ctf |= CO_FIN;
         else
             config.ctf &= ~CO_FIN;
+
     } else if ((biseqcstr(param, "pid_file")) == 1) {
         /* PID FILE */
         config.pidfile = bstr2cstr(value, '-');
