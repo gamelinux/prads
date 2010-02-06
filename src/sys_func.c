@@ -4,6 +4,7 @@
 #include "util-cxt.h"
 #include "assets.h"
 #include "servicefp/servicefp.h"
+#include "config.h"
 
 void free_queue(); // util-cxt.c
 extern globalconfig config;
@@ -348,14 +349,3 @@ int daemonize()
     return SUCCESS;
 }
 
-void display_config()
-{
-    printf("[*] Checks enabled:");
-    if (IS_COSET(&config,CO_SYN))    printf (" SYN");
-    if (IS_COSET(&config,CO_SYNACK)) printf (" SYNACK");
-    if (IS_COSET(&config,CO_RST))    printf (" RST");
-    if (IS_COSET(&config,CO_SYN))    printf (" FIN");
-    if (IS_COSET(&config,CO_ACK))    printf (" ACK");
-    printf("\n");
-    return;
-}

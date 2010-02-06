@@ -1,5 +1,6 @@
 #include "../common.h"
 #include "../prads.h"
+#include "../sig.h"
 #include "ipfp.h"
 
 inline void parse_quirks_flag(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
@@ -228,6 +229,29 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
                e.wsize,
                e.wsc,
                tstamp, e.quirks, ftype, ip_src, tcph->src_port, af);
+    // find_match(pi, e);
+    // return this into asset engine
+    find_match(e.size,
+               e.df,
+               e.ttl,
+               e.wsize,
+               ip_src.s6_addr32[0],
+               0, //ip_dst,
+               ntohs(tcph->src_port),
+               ntohs(tcph->dst_port),
+               e.optcnt,
+               e.opt,
+               e.mss,
+               e.wsc,
+               tstamp,
+               ip4->ip_tos,
+               e.quirks,
+               tcph->t_flags & (TF_ECE|TF_CWR), //ECN
+               (uint8_t*) ip4,
+               end_ptr - (uint8_t *)ip4,
+               payload
+               // pts, // *not used
+               );
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),
@@ -236,13 +260,6 @@ printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lm
 */
 
 
-//   find_match(
-//     /* total */ open_mode ? 0 : ntohs(iph->tot_len),
-//     /* DF */    (ntohs(iph->off) & IP_DF) != 0,
-//     /* TTL */   iph->ttl,
-//     /* WSS */   ntohs(tcph->win),
-//     /* src */   iph->saddr,
-//     /* dst */   iph->daddr,
 //     /* sp */    ntohs(tcph->sport),
 //     /* dp */    ntohs(tcph->dport),
 //     /* ocnt */  ocnt,

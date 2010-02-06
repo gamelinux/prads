@@ -7,6 +7,7 @@
 #include "log_dispatch.h"
 #include "log_stdout.h"
 #include "../sys_func.h"
+#include "../config.h"
 
 extern globalconfig config;
 

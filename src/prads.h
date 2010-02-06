@@ -686,54 +686,6 @@ typedef struct _prads_stat {
     uint32_t udp_clients;   /* total number of tcp clients detected */
 } prads_stat;
 
-typedef struct _globalconfig {
-    pcap_t              *handle;        /* Pointer to libpcap handle */
-    struct pcap_stat    ps;             /* libpcap stats */
-    prads_stat          pr_s;          /* prads stats */
-    struct bpf_program  cfilter;        /**/
-    bpf_u_int32         net_mask;       /**/
-    char        *bpff;                  /**/
-    char        errbuf[PCAP_ERRBUF_SIZE];   /**/
-    char        *user_filter;           /**/
-    char        *net_ip_string;         /**/
-    connection  *bucket[BUCKET_SIZE];   /* Pointer to list of ongoing connections */
-    connection  *cxtbuffer;             /* Pointer to list of expired connections */
-    asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
-    port_t      *lports[MAX_IP_PROTO];  /* Pointer to list of known ports */
-    bstring     sig_file_mac;           /* Filename of MAC signature file */
-    bstring     sig_file_serv_tcp;      /* Filename of tcp server sig file */
-    bstring     sig_file_cli_tcp;       /* Filename of tcp client sig file */
-    bstring     sig_file_serv_udp;      /* Filename of udp server sig file */
-    bstring     sig_file_cli_udp;       /* Filename of udp client sig file */
-    signature   *sig_serv_tcp;          /* Pointer to list of tcp service signatures */
-    signature   *sig_serv_udp;          /* Pointer to list of udp service signatures */
-    signature   *sig_client_tcp;        /* Pointer to list of tcp client signatures */
-    signature   *sig_client_udp;        /* Pointer to list of udp client signatures */
-    fmask       *network[MAX_NETS];     /* Struct for fmask */
-    char        *dev;                   /* Device name to use for sniffing */
-    char        *dpath;                 /* ... */
-    char        *chroot_dir;            /* Directory to chroot to */
-    char        *group_name;            /* Groupe to drop privileges too */
-    char        *user_name;             /* User to drop privileges too */
-    char        *true_pid_name;         /* Pid name */
-    char        *pidfile;               /* pidfile */
-    char        *pidpath;               /* Path to pidfile */
-    char        *s_net;                 /* Nets to collect assets for */
-    uint8_t     cflags;                 /* config flags */
-    uint8_t     verbose;                /* Verbose or not */
-    uint8_t     print_updates;          /* Prints updates */
-    uint8_t     use_syslog;             /* Use syslog or not */
-    uint8_t     setfilter;
-    uint8_t     drop_privs_flag;
-    uint8_t     daemon_flag;
-    uint8_t     ctf;                    /* Flags for TCP checks, SYN,RST,FIN.... */
-    uint8_t     cof;                    /* Flags for other; icmp,udp,other,.... */
-} globalconfig;
-#define ISSET_CONFIG_VERBOSE(config)    (config->cflags & 0x01)
-#define ISSET_CONFIG_UPDATES(config)    (config->cflags & 0x02)
-#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & 0x04)
-//#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & 0x08)
-
 
 // vector types :-)
 typedef int v4si __attribute__((vector_size(16)));

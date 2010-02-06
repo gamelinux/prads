@@ -31,6 +31,18 @@
 /*  G L O B A L E S  *********************************************************/
 extern globalconfig config;
 
+void display_config()
+{
+    printf("[*] Checks enabled:");
+    if (IS_COSET(&config,CO_SYN))    printf (" SYN");
+    if (IS_COSET(&config,CO_SYNACK)) printf (" SYNACK");
+    if (IS_COSET(&config,CO_RST))    printf (" RST");
+    if (IS_COSET(&config,CO_SYN))    printf (" FIN");
+    if (IS_COSET(&config,CO_ACK))    printf (" ACK");
+    printf("\n");
+    return;
+}
+
 /* F U N C T I O N S  ********************************************************/
 void set_default_config_options()
 {
@@ -127,67 +139,67 @@ void parse_line (bstring line)
         if (value->data[0] == '1')
             config.cof |= CS_ARP;
         else 
-            config.cof ^= CS_ARP;
+            config.cof &= ~CS_ARP;
     } else if ((biseqcstr(param, "service_tcp")) == 1) {
         /* TCP Service check */
         if (value->data[0] == '1')
             config.cof |= CS_TCP_SERVER;
         else
-            config.cof ^= CS_TCP_SERVER;
+            config.cof &= ~CS_TCP_SERVER;
     } else if ((biseqcstr(param, "client_tcp")) == 1) {
         /* TCP Client check */
         if (value->data[0] == '1')
             config.cof |= CS_TCP_CLIENT;
         else
-            config.cof ^= CS_TCP_CLIENT;
+            config.cof &= ~CS_TCP_CLIENT;
     } else if ((biseqcstr(param, "service_udp")) == 1) {
         /* UPD service and client checks */
         if (value->data[0] == '1')
             config.cof |= CS_UDP_SERVICES;
         else
-            config.cof ^= CS_UDP_SERVICES;
+            config.cof &= ~CS_UDP_SERVICES;
     } else if ((biseqcstr(param, "os_icmp")) == 1) {
         /* ICMP OS Fingerprinting */
         if (value->data[0] == '1')
             config.cof |= CO_ICMP;
         else
-            config.cof ^= CO_ICMP;
+            config.cof &= ~CO_ICMP;
     } else if ((biseqcstr(param, "service_udp")) == 1) {
         /* UPD service and client checks */
         if (value->data[0] == '1')
             config.cof |= CS_UDP_SERVICES;
         else
-            config.cof ^= CS_UDP_SERVICES;
+            config.cof &= ~CS_UDP_SERVICES;
    } else if ((biseqcstr(param, "os_syn_fingerprint")) == 1) {
         /* TCP SYN OS Fingerprinting */
         if (value->data[0] == '1')
             config.ctf |= CO_SYN;
         else
-            config.ctf ^= CO_SYN;
+            config.ctf &= ~CO_SYN;
    } else if ((biseqcstr(param, "os_synack_fingerprint")) == 1) {
         /* TCP SYNACK OS Fingerprinting */
         if (value->data[0] == '1')
             config.ctf |= CO_SYNACK;
         else
-            config.ctf ^= CO_SYNACK;
+            config.ctf &= ~CO_SYNACK;
    } else if ((biseqcstr(param, "os_ack_fingerprint")) == 1) {
         /* TCP Stray ACK OS Fingerprinting */
         if (value->data[0] == '1')
             config.ctf |= CO_ACK;
         else
-            config.ctf ^= CO_ACK;
+            config.ctf &= ~CO_ACK;
    } else if ((biseqcstr(param, "os_rst_fingerprint")) == 1) {
         /* TCP RST OS Fingerprinting */
         if (value->data[0] == '1')
             config.ctf |= CO_RST;
         else
-            config.ctf ^= CO_RST;
+            config.ctf &= ~CO_RST;
    } else if ((biseqcstr(param, "os_fin_fingerprint")) == 1) {
         /* TCP FIN OS Fingerprinting */
         if (value->data[0] == '1')
             config.ctf |= CO_FIN;
         else
-            config.ctf ^= CO_FIN;
+            config.ctf &= ~CO_FIN;
     } else if ((biseqcstr(param, "pid_file")) == 1) {
         /* PID FILE */
         config.pidfile = bstr2cstr(value, '-');
@@ -235,7 +247,7 @@ void parse_line (bstring line)
 //        }
     }
 
-    vlog(0x3,"config - PARAM:  |%s| / VALUE:  |%s|", bdata(param), bdata(value));
+    vlog(0x3,"config - PARAM:  |%s| / VALUE:  |%s|\n", bdata(param), bdata(value));
 
     /* Clean Up */
     if (param != NULL)

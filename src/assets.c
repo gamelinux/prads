@@ -3,6 +3,7 @@
 #include "assets.h"
 #include "sys_func.h"
 #include "output-plugins/log_dispatch.h"
+#include "config.h"
 
 extern globalconfig config;
 // static strings for comparison
@@ -59,18 +60,11 @@ void update_service_stats(int role, uint16_t proto)
 void update_os_stats(uint8_t detection)
 {
     switch (detection) {
+        // fallthrough
         case CO_SYN:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_SYNACK:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_ACK:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_FIN:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_RST:
             config.pr_s.tcp_os_assets++;
             break;
@@ -214,8 +208,10 @@ os_update:
     if (tmp_oa == NULL) {
         update_os_stats(detection);
         os_asset *new_oa = NULL;
+        // FIXME: allocate resource from shared storage pool
         new_oa = (os_asset *) calloc(1, sizeof(os_asset));
         new_oa->detection = detection;
+        // FIXME: don't copy fp, bincode it
         new_oa->raw_fp = bstrcpy(raw_fp);
         //new_oa->i_attempts = 1;
         new_oa->first_seen = tstamp;
