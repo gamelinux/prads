@@ -291,6 +291,7 @@ service_update:
              * Found! 
              * If we have an id for the service which is != unknown AND the id now is unknown 
              * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
+             * if (application->data[0] == '@')
              */
             if (!(biseq(UNKNOWN, application) == 1)
                 &&

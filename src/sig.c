@@ -1000,6 +1000,7 @@ continue_fuzzy:
 
       a=(uint8_t*)&src;
 
+      printf("\n"); //edward
       printf("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
              sp,p->os);
 
@@ -1051,7 +1052,7 @@ continue_fuzzy:
 
       if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
 
-      putchar('\n');
+      //putchar('\n'); //edward
       if (full_dump) dump_packet(pkt,plen);
 
     }
