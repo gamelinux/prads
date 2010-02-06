@@ -1140,7 +1140,7 @@ int main(int argc, char *argv[])
         if(config.verbose > 1)
             dump_sigs(NULL, 0);
     }
-    printf("[*] Running prads %s\n", VERSION);
+    printf("\n[*] Running prads %s\n", VERSION);
     if (config.verbose) display_config();
 
     // should be config file too

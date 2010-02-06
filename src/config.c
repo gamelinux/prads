@@ -33,13 +33,22 @@ extern globalconfig config;
 
 void display_config()
 {
-    printf("[*] Checks enabled:");
+    printf("[*] OS checks enabled:");
     if (IS_COSET(&config,CO_SYN))    printf (" SYN");
     if (IS_COSET(&config,CO_SYNACK)) printf (" SYNACK");
     if (IS_COSET(&config,CO_RST))    printf (" RST");
     if (IS_COSET(&config,CO_SYN))    printf (" FIN");
     if (IS_COSET(&config,CO_ACK))    printf (" ACK");
     printf("\n");
+    
+    printf("[*] Service checks enabled:");
+    if (IS_CSSET(&config,CS_TCP_SERVER))    printf (" TCP-SERVER");
+    if (IS_CSSET(&config,CS_TCP_CLIENT))    printf (" TCP-CLIENT");
+    if (IS_CSSET(&config,CS_UDP_SERVICES))  printf (" UDP-SERVICES");
+    if (IS_CSSET(&config,CS_ICMP))          printf (" ICMP");
+    if (IS_CSSET(&config,CS_ARP))           printf (" ARP");
+    printf("\n");
+
     return;
 }
 
