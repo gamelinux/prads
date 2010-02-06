@@ -1134,8 +1134,16 @@ int main(int argc, char *argv[])
     }
 
     parse_nets(config.s_net, network);
+    if(config.ctf & CO_SYN){
+        printf("[*] Loading SYN fingerprints");
+        load_sigs("../etc/os.fp");
+        if(config.verbose > 1)
+            dump_sigs(NULL, 0);
+    }
     printf("[*] Running prads %s\n", VERSION);
     if (config.verbose) display_config();
+
+    // should be config file too
     load_servicefp_file(1, "../etc/tcp-service.sig");
     load_servicefp_file(2, "../etc/udp-service.sig");
     load_servicefp_file(3, "../etc/tcp-clients.sig");
