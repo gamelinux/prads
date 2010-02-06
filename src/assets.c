@@ -160,20 +160,21 @@ short update_asset_shmem(packetinfo *pi)
     }
 }
 
-short update_asset_os(struct in6_addr ip_addr,
-                      u_int16_t port,
-                      uint8_t detection, bstring raw_fp, int af, int uptime)
+//short update_asset_os(packetinfo *pi, bstring raw_fp, bstring os, bstring desc)
+short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int uptime)
+//                      struct in6_addr ip_addr, u_int16_t port,
+//                      uint8_t detection, bstring raw_fp, int af, int uptime)
 {
     extern time_t tstamp;
     asset *rec = NULL;
 
-    rec = asset_lookup(ip_addr, af);
+    rec = asset_lookup(pi->ip_src, pi->af);
     if (rec != NULL) {
         goto os_update;
     } else {
         /* If no asset */
-        update_asset(af, ip_addr);
-        if (update_asset_os(ip_addr, port, detection, raw_fp, af, uptime) == 0) return 0;
+        update_asset(pi->af, pi->ip_src);
+        if (update_asset_os(pi, detection, raw_fp, uptime) == 0) return 0;
         return 1;
     }
 
@@ -216,7 +217,7 @@ os_update:
         //new_oa->i_attempts = 1;
         new_oa->first_seen = tstamp;
         new_oa->last_seen = tstamp;
-        new_oa->port = port;
+        new_oa->port = pi->s_port;
         if (uptime) new_oa->uptime = uptime;
         new_oa->next = head_oa;
         if (head_oa != NULL)

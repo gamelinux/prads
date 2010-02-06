@@ -88,6 +88,8 @@ ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
 #mysql,v/MySQL Request Query (SET NAMES)///,^.\x00\x00\x00\x03SET NAMES utf8$
 #mysql,v/MySQL Request Query (SELECT)///,^..\x00\x00\x03\x53\x45\x4c\x45\x43\x54\x20\x60
 
+#ldap,v/LDAP_START_TLS_OID///,^\x30\x1d\x02\x01\x01\x77\x18\x80\x16\x31\x2e\x33\x2e\x36\x2e\x31\x2e\x34\x2e\x31\x34\x36\x36\x2e\x32\x30\x30\x33\x37
+
 
 ############################################################################
 

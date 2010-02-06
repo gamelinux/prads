@@ -34,7 +34,7 @@ void gen_fp_tcp(uint8_t ttl,
                 uint32_t tstamp,
                 uint32_t quirks,
                 uint8_t ftype,
-                struct in6_addr ip_src, uint16_t port, int af)
+                packetinfo *pi)
 {
 
     uint32_t j;
@@ -166,7 +166,7 @@ void gen_fp_tcp(uint8_t ttl,
 
     // This should get into the asset somehow: tstamp
     //if (tstamp) printf("(* uptime: %d hrs)\n",tstamp/360000);
-    update_asset_os(ip_src, port, de, fp, af, tstamp?tstamp:0);
+    update_asset_os(pi, de, fp, tstamp?tstamp:0);
     // cleanup
     bdestroy(fp);
 }
@@ -180,7 +180,8 @@ void gen_fp_icmp(uint8_t type,
                  uint8_t idata,
                  uint16_t ip_off,
                  uint8_t ip_tos,
-                 uint32_t quirks, struct in6_addr ip_src, int af)
+                 uint32_t quirks,
+                packetinfo *pi)
 {
     bstring fp;
     //printf("[*] ASSET IP/ICMP FINGERPRINT: ");
@@ -197,7 +198,7 @@ void gen_fp_icmp(uint8_t type,
     }
 
     //icmp might have uptime?
-    update_asset_os(ip_src, htons(type), CO_ICMP, fp, af,0);
+    update_asset_os(pi, CO_ICMP, fp, 0);
     bdestroy(fp);
     // add mss ? for MTU detection ?
 }
@@ -211,7 +212,7 @@ void gen_fp_udp(uint16_t totlen,
                 uint16_t ip_off,
                 uint8_t ip_tos,
                 uint32_t quirks,
-                struct in6_addr ip_src, uint16_t port, int af)
+                packetinfo *pi)
 {
 
     bstring fp;
@@ -232,7 +233,7 @@ void gen_fp_udp(uint16_t totlen,
             bformata(fp, "I");
     }
 
-    update_asset_os(ip_src, port, CO_UDP, fp, af,0);
+    update_asset_os(pi, CO_UDP, fp, 0);
     bdestroy(fp);
 }
 
