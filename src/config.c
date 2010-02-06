@@ -170,9 +170,9 @@ void parse_line (bstring line)
     } else if ((biseqcstr(param, "os_icmp")) == 1) {
         /* ICMP OS Fingerprinting */
         if (value->data[0] == '1')
-            config.cof |= CO_ICMP;
+            config.ctf |= CO_ICMP;
         else
-            config.cof &= ~CO_ICMP;
+            config.ctf &= ~CO_ICMP;
     } else if ((biseqcstr(param, "service_udp")) == 1) {
         /* UPD service and client checks */
         if (value->data[0] == '1')

@@ -55,6 +55,7 @@
 #smtp,v/Mozilla/$1/$2/,User-Agent: (Mozilla-)?Thunderbird (.*)
 
 ### User-Agent fallbacks
+#misc,v/User-Agent: $1//,User-Agent\x3A (.*)[\0x1F\r\n]
 misc,v/User-Agent: $1//,User-Agent\x3A (.*)\0x1F
 misc,v/User-Agent: $1//,User-Agent\x3a (.*)\r
 misc,v/User-Agent: $1//,User-Agent\x3a (.*)\n
@@ -80,7 +81,7 @@ ssl,v/SSL 2.0 Client Hello///,^..\x01\x03\x01..\0\0
 ############################################################################
 
 ####### SMTP Section START #################################################
-#smtp,v/X-Mailer/$1//,X-Mailer: (.*)
+#smtp,v/X-Mailer/$1//,X-Mailer: (.*)[\r\n]
 ####### SMTP Section END #################################################
 
 #mysql,v/MySQL Login Request(Char:latin1)///,^..\x00\x01\..[\x03\x01]\x00\x00\x00\x00.\x08
