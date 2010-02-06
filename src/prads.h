@@ -624,6 +624,7 @@ typedef struct _vendor {
 
 typedef struct _servicelist {
     bstring     service_name;   /* Service (@http) etc. */
+    uint8_t     proto;          /* Flags: TCP=0x01 UDP=0x02 */
     uint32_t    stats;          /* stats on how many times it has matched */  
 } servicelist;
 
@@ -759,8 +760,8 @@ struct fmask {
 };
 
 
-#define IS_COSET(globalconfig, flags) (((globalconfig)->ctf & (flags)) == (flags))
-#define IS_CSSET(globalconfig, flags) (((globalconfig)->cof & (flags)) == (flags))
+#define IS_COSET(config, flags) (((config)->ctf & (flags)) == (flags))
+#define IS_CSSET(config, flags) (((config)->cof & (flags)) == (flags))
 
 /*  P R O T O T Y P E S  ******************************************************/
 void free_config();

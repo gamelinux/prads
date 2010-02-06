@@ -15,3 +15,7 @@ void del_known_port(uint8_t proto);
 void del_signature_lists();
 void free_signature_list (signature *head);
 int add_service_sig(signature *sig, int storage);
+void add_known_services(uint8_t proto, uint16_t port, bstring service_name);
+void del_known_services();
+bstring check_known_port(uint8_t proto, uint16_t port);
+void init_services();

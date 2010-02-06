@@ -17,6 +17,7 @@
 
 # UNKNOWN
 20:64:0:.:0:0:@Misc:nmap udp scan?
+#20:64:0:0:0:0:I:@Misc:nmap udp scan?
 
 #
 #20:32:1:.:2:0:?

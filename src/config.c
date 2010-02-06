@@ -124,70 +124,100 @@ void parse_line (bstring line)
         }
     } else if ((biseqcstr(param, "arp")) == 1) {
         /* ARP CHECK */
-        if (value->data[0] == '1')
-            config.cof |= CS_ARP;
-        else 
-            config.cof ^= CS_ARP;
+        if (!IS_CSSET(&config, CS_ARP)) {
+            if (value->data[0] == '1')
+                config.cof |= CS_ARP;
+        } else {
+            if (value->data[0] == '0')
+                config.cof ^= CS_ARP;
+        }
     } else if ((biseqcstr(param, "service_tcp")) == 1) {
         /* TCP Service check */
-        if (value->data[0] == '1')
-            config.cof |= CS_TCP_SERVER;
-        else
-            config.cof ^= CS_TCP_SERVER;
+        if (!IS_CSSET(&config, CS_TCP_SERVER)) {
+            if (value->data[0] == '1')
+                config.cof |= CS_TCP_SERVER;
+        } else {
+            if (value->data[0] == '0')
+                config.cof ^= CS_TCP_SERVER;
+        }
     } else if ((biseqcstr(param, "client_tcp")) == 1) {
         /* TCP Client check */
-        if (value->data[0] == '1')
-            config.cof |= CS_TCP_CLIENT;
-        else
-            config.cof ^= CS_TCP_CLIENT;
+        if (!IS_CSSET(&config, CS_TCP_CLIENT)) {
+            if (value->data[0] == '1')
+                config.cof |= CS_TCP_CLIENT;
+        } else {
+            if (value->data[0] == '0')
+                config.cof ^= CS_TCP_CLIENT;
+        }
     } else if ((biseqcstr(param, "service_udp")) == 1) {
         /* UPD service and client checks */
-        if (value->data[0] == '1')
-            config.cof |= CS_UDP_SERVICES;
-        else
-            config.cof ^= CS_UDP_SERVICES;
+        if (!IS_CSSET(&config, CS_UDP_SERVICES)) {
+            if (value->data[0] == '1')
+                config.cof |= CS_UDP_SERVICES;
+        } else {
+            if (value->data[0] == '0')
+                config.cof ^= CS_UDP_SERVICES;
+        }
     } else if ((biseqcstr(param, "os_icmp")) == 1) {
         /* ICMP OS Fingerprinting */
-        if (value->data[0] == '1')
-            config.cof |= CO_ICMP;
-        else
-            config.cof ^= CO_ICMP;
-    } else if ((biseqcstr(param, "service_udp")) == 1) {
-        /* UPD service and client checks */
-        if (value->data[0] == '1')
-            config.cof |= CS_UDP_SERVICES;
-        else
-            config.cof ^= CS_UDP_SERVICES;
+        if (!IS_COSET(&config, CO_ICMP)) {
+            if (value->data[0] == '1')
+                config.cof |= CO_ICMP;
+        } else {
+            if (value->data[0] == '0')
+                config.cof ^= CO_ICMP;
+        }
+//    } else if ((biseqcstr(param, "service_udp")) == 1) {
+//        /* UPD service and client checks */
+//        if (value->data[0] == '1')
+//            config.cof |= CS_UDP_SERVICES;
+//        else
+//            config.cof ^= CS_UDP_SERVICES;
    } else if ((biseqcstr(param, "os_syn_fingerprint")) == 1) {
         /* TCP SYN OS Fingerprinting */
-        if (value->data[0] == '1')
-            config.ctf |= CO_SYN;
-        else
-            config.ctf ^= CO_SYN;
+        if (!IS_COSET(&config, CO_SYN)) {
+            if (value->data[0] == '1')
+                config.ctf |= CO_SYN;
+        } else {
+            if (value->data[0] == '0')
+                config.ctf ^= CO_SYN;
+        }
    } else if ((biseqcstr(param, "os_synack_fingerprint")) == 1) {
         /* TCP SYNACK OS Fingerprinting */
-        if (value->data[0] == '1')
-            config.ctf |= CO_SYNACK;
-        else
-            config.ctf ^= CO_SYNACK;
+        if (!IS_COSET(&config, CO_SYNACK)) {
+            if (value->data[0] == '1')
+                config.ctf |= CO_SYNACK;
+        } else {
+            if (value->data[0] == '0')
+                config.ctf ^= CO_SYNACK;
+        }
    } else if ((biseqcstr(param, "os_ack_fingerprint")) == 1) {
         /* TCP Stray ACK OS Fingerprinting */
-        if (value->data[0] == '1')
-            config.ctf |= CO_ACK;
-        else
-            config.ctf ^= CO_ACK;
+        if (!IS_COSET(&config, CO_ACK)) {
+            if (value->data[0] == '1')
+                config.ctf |= CO_ACK;
+        } else {
+            if (value->data[0] == '0')
+                config.ctf ^= CO_ACK;
+        }
    } else if ((biseqcstr(param, "os_rst_fingerprint")) == 1) {
         /* TCP RST OS Fingerprinting */
-        if (value->data[0] == '1')
-            config.ctf |= CO_RST;
-        else
-            config.ctf ^= CO_RST;
+        if (!IS_COSET(&config, CO_RST)) {
+            if (value->data[0] == '1')
+                config.ctf |= CO_RST;
+        } else {
+            if (value->data[0] == '0')
+               config.ctf ^= CO_RST;
+        }
    } else if ((biseqcstr(param, "os_fin_fingerprint")) == 1) {
         /* TCP FIN OS Fingerprinting */
-        if (value->data[0] == '1')
-            config.ctf |= CO_FIN;
-        else
-            config.ctf ^= CO_FIN;
+        if (!IS_COSET(&config, CO_FIN)) {
+            if (value->data[0] == '1')
+                config.ctf |= CO_FIN;
+        } else {
+            if (value->data[0] == '0')
+                config.ctf ^= CO_FIN;
+        }
     } else if ((biseqcstr(param, "pid_file")) == 1) {
         /* PID FILE */
         config.pidfile = bstr2cstr(value, '-');

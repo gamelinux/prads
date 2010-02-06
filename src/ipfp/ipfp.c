@@ -43,6 +43,7 @@ void gen_fp_tcp(uint8_t ttl,
     //uint8_t q = 0;
     bstring fp;
 
+    ttl = normalize_ttl(ttl);
     if (ftype == TF_SYN) {
         de = CO_SYN;
     } else if (ftype == TF_SYNACK) {
@@ -183,7 +184,7 @@ void gen_fp_icmp(uint8_t type,
 {
     bstring fp;
     //printf("[*] ASSET IP/ICMP FINGERPRINT: ");
-
+    ttl = normalize_ttl(ttl);
     fp = bformat("%u:%u:%u:%u:%u:%d:%u:%u:", idata, type, code, ttl, df,
                  olen, totlen, ip_off, ip_tos);
     if (!quirks)
@@ -220,6 +221,7 @@ void gen_fp_udp(uint16_t totlen,
     //fp = bformat("%u:%u:%u:%u:%d:%u:%u:",udata,totlen,ttl,df,olen,ip_off,ip_tos);
     //fp = bformat("%u,%u:%u:%d:%u:%u:", totlen, ttl, df, olen, ip_off,
     // add "20" to be prads.pl compatible :)
+    ttl = normalize_ttl(ttl);
     fp = bformat("20:%u:%u:%d:%u:%u:", ttl, df, olen, ip_off,ip_tos);
     if (!quirks)
         bformata(fp, ".");
@@ -232,4 +234,12 @@ void gen_fp_udp(uint16_t totlen,
 
     update_asset_os(ip_src, port, CO_UDP, fp, af,0);
     bdestroy(fp);
+}
+
+uint8_t normalize_ttl (uint8_t ttl)
+{
+    if ( ttl > 128 ) return 254;
+    if ( ttl >  64 ) return 128;
+    if ( ttl >  32 ) return  64;
+    else  return  32;
 }

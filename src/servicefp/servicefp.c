@@ -437,6 +437,35 @@ void add_known_port(uint8_t proto, uint16_t port, bstring service_name)
     return;
 }
 
+void add_known_services(uint8_t proto, uint16_t port, bstring service_name)
+{
+    extern servicelist *services[65535];
+
+    if (services[port] == NULL) {
+        services[port] = (servicelist *) calloc(1, sizeof(servicelist));
+        services[port]->service_name = service_name;
+    }
+
+    if (proto == IP_PROTO_TCP) {
+        services[port]->proto |= 0x01; // TCP
+    } else if (proto == IP_PROTO_UDP) {
+        services[port]->proto |= 0x02; // UDP
+    }
+}
+
+void del_known_services()
+{
+    extern servicelist *services[65535];
+    int kport;
+
+    for (kport=0; kport < 65535; kport++) {
+        if (services[kport] != NULL) {
+            bdestroy(services[kport]->service_name);
+            free(services[kport]);
+        }
+    }
+}
+
 void del_known_port(uint8_t proto)
 {
     extern port_t *lports[255];
@@ -454,9 +483,22 @@ void del_known_port(uint8_t proto)
     return;
 }
 
+bstring check_known_port(uint8_t proto, uint16_t port)
+{
+    extern servicelist *services[65535];
+
+    if (services[port] == NULL) return NULL;
+
+    if (proto == IP_PROTO_TCP && services[port]->proto & 0x01) 
+        return bstrcpy(services[port]->service_name);
+    if (proto == IP_PROTO_UDP && services[port]->proto & 0x02) 
+        return bstrcpy(services[port]->service_name);
+
+    return NULL;
+}
+
 bstring check_port(uint8_t proto, uint16_t port)
 {
-
     extern port_t *lports[255];
     port_t *ports_head;
     port_t *tmp_lports;
@@ -474,3 +516,16 @@ bstring check_port(uint8_t proto, uint16_t port)
     return NULL;
 }
 
+void init_services()
+{
+    add_known_services( 6,   20,bfromcstr("@ftp-data"));
+    add_known_services( 6,   21,bfromcstr("@ftp"));
+    add_known_services( 6,   22,bfromcstr("@ssh"));
+    add_known_services( 6,   80,bfromcstr("@http"));
+    add_known_services( 6,  119,bfromcstr("@nntp"));
+    add_known_services(17,  123,bfromcstr("@ntp"));
+    add_known_services( 6,  443,bfromcstr("@https"));
+    add_known_services( 6,  631,bfromcstr("@cups"));
+    add_known_services(17, 1194,bfromcstr("@openvpn"));
+    add_known_services( 6, 6667,bfromcstr("@irc"));
+}
