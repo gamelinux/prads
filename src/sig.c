@@ -2,7 +2,7 @@
  *
  * (c) Kacper Wysocki <kacperw@gmail.com> for PRADS, 2009
  *
- * straight port of p0f load_config and support functions - nothing new here
+ * straight port of p0f load,match_sigs and support functions - nothing new here
  *
  * p0f loads sigs as struct fp_entry into the sig[] array 
  * ... and uses a static hash lookup to jump into this array
@@ -31,10 +31,14 @@
 
 #include "common.h"
 #include "prads.h"
+#include "mtu.h"
+#include "tos.h"
 
 #define MAXLINE 1024
 #define MAXSIGS 1024
 #define MAXDIST 512
+#define PKT_DLEN 16
+#define PKT_MAXPAY 45
 
 // what the dillio? bh is 16 pointers?
 #define SIGHASH(tsize,optcnt,q,df) \
@@ -456,7 +460,7 @@ static void collide(uint32_t id)
 /* load_sigs: fill **sig with fp_entry signatures from *file
  * returns errno
  */
-int load_sigs(const char *file, fp_entry sig[], int max)
+int load_sigs(const char *file, fp_entry dasig[], int max)
 {
     uint32_t ln = 0;
     debug("opening %s\n", file);
@@ -737,14 +741,14 @@ int load_sigs(const char *file, fp_entry sig[], int max)
     }
 
     fclose(f);
-//#ifdef DUMP_HASH
+#ifdef DUMP_HASH
     {
         int i;
         for (i = 0; i < sigcnt; i++) {
             print_sig(&sig[i]);
         }
     }
-//#endif
+#endif
 #ifdef DEBUG_HASH
     {
         int i;
@@ -771,10 +775,126 @@ int load_sigs(const char *file, fp_entry sig[], int max)
 
 }
 
+
+#define MY_MAXDNS 32
+
+#include <netdb.h>
+static inline uint8_t* grab_name(uint8_t* a) {
+  struct hostent* r;
+  static uint8_t rbuf[MY_MAXDNS+6] = "/";
+  uint32_t j;
+  uint8_t *s,*d = rbuf+1;
+
+  if (!do_resolve) return "";
+  r = gethostbyaddr(a,4,AF_INET);
+  if (!r || !(s = r->h_name) || !(j = strlen(s))) return "";
+  if (j > MY_MAXDNS) return "";
+
+  while (j--) {
+    if (isalnum(*s) || *s == '-' || *s == '.') *d = *s;
+      else *d = '?';
+    d++; s++;
+  }
+
+  *d=0;
+
+  return rbuf;
+
+}
+
+
+
+static uint8_t* lookup_link(uint16_t mss,uint8_t txt) {
+  uint32_t i;
+  static uint8_t tmp[32];
+
+  if (!mss) return txt ? "unspecified" : 0;
+  mss += 40;
+  
+  for (i=0;i<MTU_CNT;i++) {
+   if (mss == mtu[i].mtu) return mtu[i].dev;
+   if (mss < mtu[i].mtu)  goto unknown;
+  }
+
+unknown:
+
+  if (!txt) return 0;
+  sprintf(tmp,"unknown-%d",mss);
+  return tmp;
+
+}
+
+
+static uint8_t* lookup_tos(uint8_t t) {
+  uint32_t i;
+
+  if (!t) return 0;
+
+  for (i=0;i<TOS_CNT;i++) {
+   if (t == tos[i].tos) return tos[i].desc;
+   if (t < tos[i].tos) break;
+  }
+
+  return 0;
+
+}
+
+
+static void dump_packet(uint8_t* pkt,uint16_t plen) {
+  uint32_t i;
+  uint8_t  tbuf[PKT_DLEN+1];
+  uint8_t* t = tbuf;
+ 
+  for (i=0;i<plen;i++) {
+    uint8_t c = *(pkt++);
+    if (!(i % PKT_DLEN)) printf("  [%02x] ",i);
+    printf("%02x ",c);
+    *(t++) = isprint(c) ? c : '.';
+    if (!((i+1) % PKT_DLEN)) {
+      *t=0;
+      printf(" | %s\n",(t=tbuf));
+    }
+  }
+  
+  if (plen % PKT_DLEN) {
+    *t=0;
+    while (plen++ % PKT_DLEN) printf("   ");
+    printf(" | %s\n",tbuf);
+  }
+
+}
+
+
+static void dump_payload(uint8_t* data,uint16_t dlen) {
+  uint8_t  tbuf[PKT_MAXPAY+2];
+  uint8_t* t = tbuf;
+  uint8_t  i;
+  uint8_t  max = dlen > PKT_MAXPAY ? PKT_MAXPAY : dlen;
+
+  if (!dlen) return;
+
+  for (i=0;i<max;i++) {
+    if (isprint(*data)) *(t++) = *data; 
+      else if (!*data)  *(t++) = '?';
+      else *(t++) = '.';
+    data++;
+  }
+
+  *t = 0;
+
+  if (!mode_oneline) putchar('\n');
+  printf("  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
+
+}
+
+
+
+
+
 uint32_t matched_packets;
 
 
-static inline void find_match(uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
+void find_match(uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
                        uint32_t dst,uint16_t sp,uint16_t dp,uint8_t ocnt,uint8_t* op,uint16_t mss,
                        uint8_t wsc,uint32_t tstamp,uint8_t tos,uint32_t quirks,uint8_t ecn,
                        uint8_t* pkt,uint8_t plen,uint8_t* pay, struct timeval pts) {
@@ -878,9 +998,9 @@ continue_fuzzy:
 
     if (!no_known) {
 
-      if (add_timestamp) put_date(pts);
       a=(uint8_t*)&src;
 
+      printf("\n"); //edward
       printf("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
              sp,p->os);
 
@@ -932,7 +1052,7 @@ continue_fuzzy:
 
       if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
 
-      putchar('\n');
+      //putchar('\n'); //edward
       if (full_dump) dump_packet(pkt,plen);
 
     }
@@ -944,7 +1064,6 @@ continue_fuzzy:
                             tstamp ? tstamp / 360000 : -1);
      a=(uint8_t*)&src;
      if (sc > masq_thres) {
-       if (add_timestamp) put_date(pts);
        printf(">> Masquerade at %u.%u.%u.%u%s: indicators at %d%%.",
               a[0],a[1],a[2],a[3],grab_name(a),sc);
        if (!mode_oneline) putchar('\n'); else printf(" -- ");
@@ -989,7 +1108,6 @@ continue_search:
   }
 
   if (!no_unknown) { 
-    if (add_timestamp) put_date(pts);
     a=(uint8_t*)&src;
     printf("%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
 
@@ -1076,10 +1194,12 @@ continue_search:
 
 // pass the pointers
 // unresolved: pass the packet?
+/*
 static inline void find_match_e(fp_entry *e, uint32_t tstamp, void *packet)
 {
     return find_match(e->size, e->df, e->ttl, e->wsize, e->optcnt, e->opt, e->mss, e->wsc, tstamp, e->tos, e->quirks, e->ecn, packet, 0, 0, 0);
 }
+*/
 
 
 /* my ideal interface
@@ -1098,7 +1218,7 @@ fp_entry *lookup_sig(fp_entry sig[], packetinfo *pi)
 }
 */
 
-void dump_sigs(fp_entry sig[], int sigcnt)
+void dump_sigs(fp_entry *mysig[], int max)
 {
     int i;
     for (i = 0; i < sigcnt; i++){

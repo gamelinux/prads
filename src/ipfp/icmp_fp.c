@@ -2,7 +2,7 @@
 #include "../prads.h"
 #include "ipfp.h"
 
-void fp_icmp4(ip4_header * ip4, icmp_header * icpmh,
+void fp_icmp4(packetinfo *pi, ip4_header * ip4, icmp_header * icpmh,
               const uint8_t * end_ptr, struct in6_addr ip_src)
 {
 
@@ -61,12 +61,14 @@ void fp_icmp4(ip4_header * ip4, icmp_header * icpmh,
     gen_fp_icmp(icpmh->type, icpmh->code, ip4->ip_ttl,
                 (ntohs(ip4->ip_off) & IP_DF) != 0, olen,
                 ntohs(ip4->ip_len), idata, ip4->ip_off, ip4->ip_tos,
-                quirks, ip_src, AF_INET);
+                quirks,
+                //ip_src, AF_INET);
+                pi);
 
 //icmp_os_find_match($type,$code,$gttl,$df,$ipopts,$len,$ipflags,$foffset,$tos);
 }
 
-void fp_icmp6(ip6_header * ip6, icmp6_header * icpmh,
+void fp_icmp6(packetinfo *pi, ip6_header * ip6, icmp6_header * icpmh,
               const uint8_t * end_ptr, struct in6_addr ip_src)
 {
 

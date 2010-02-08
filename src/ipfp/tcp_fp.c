@@ -1,8 +1,9 @@
 #include "../common.h"
 #include "../prads.h"
+#include "../sig.h"
 #include "ipfp.h"
 
-inline void parse_quirks_flag(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
+inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
 {
     if (ftype == TF_RST && (tcph->t_flags & TF_ACK))
         *quirks |= QUIRK_RSTACK;
@@ -133,10 +134,10 @@ end_parsing:
     return tstamp;
 }
 
-void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
-             uint8_t ftype, struct in6_addr ip_src)
+void fp_tcp(packetinfo *pi, uint8_t ftype)
 {
     uint8_t *opt_ptr;
+    const uint8_t * end_ptr;
     uint8_t *payload = 0;
     uint8_t op[MAXOPT];
     fp_entry e = { 0 };
@@ -144,40 +145,37 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
     int32_t ilen;
     uint32_t tstamp = 0;
 
-    // convenience - wish we didn't have to deal with IP at all here
-    ip4_header *ip4 = (ip4_header *)ip46;
-    ip6_header *ip6 = (ip6_header *)ip46;
-    
     if (ftype == TF_ACK)
         open_mode = 1;
 
     /* * If the declared length is shorter than the snapshot (etherleak
      * or such), truncate the package.
      * These tests are IP-specific and should one day go into into IP preproc*/
-    switch(af){
+    end_ptr = pi->end_ptr;
+    switch(pi->af){
         case AF_INET6:
-            opt_ptr = (uint8_t *) ip6 + IP6_HEADER_LEN + ntohs(ip6->len); //*
+            opt_ptr = (uint8_t *) pi->ip6 + IP6_HEADER_LEN + ntohs(pi->ip6->len); //*
             if (end_ptr > opt_ptr)
                 end_ptr = opt_ptr;
             // If IP header ends past end_ptr
-            if ((uint8_t *) (ip6 + 1) > end_ptr)
+            if ((uint8_t *) (pi->ip6 + 1) > end_ptr)
                 return;
-            if (IP6_FL(ip6) > 0) { //*
+            if (IP6_FL(pi->ip6) > 0) { //*
                 e.quirks |= QUIRK_FLOWL;
             }
-            e.ttl = ip6->hop_lmt;
-            e.size = open_mode ? 0 : ntohs(ip6->len);
+            e.ttl = pi->ip6->hop_lmt;
+            e.size = open_mode ? 0 : ntohs(pi->ip6->len);
             e.df = 1; // for now
-            if (!IP6_FL(ip6)) //*
+            if (!IP6_FL(pi->ip6)) //*
                 e.quirks |= QUIRK_ZEROID;
             break;
         case AF_INET:
-            opt_ptr = (uint8_t *)ip4 + ntohs(ip4->ip_len); // fixed from htons
+            opt_ptr = (uint8_t *) pi->ip4 + ntohs(pi->ip4->ip_len); // fixed from htons
             if (end_ptr > opt_ptr)
                 end_ptr = opt_ptr;
-            if ((uint8_t *) (ip4 + 1) > end_ptr)
+            if ((uint8_t *) (pi->ip4 + 1) > end_ptr)
                 return;
-            ilen = ip4->ip_vhl & 15;
+            ilen = pi->ip4->ip_vhl & 15;
 
             /* * B0rked packet */
             if (ilen < 5)
@@ -186,10 +184,10 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
             if (ilen > 5) {
                 e.quirks |= QUIRK_IPOPT;
             }
-            e.ttl = ip4->ip_ttl;
-            e.size = open_mode ? 0 : ntohs(ip4->ip_len);
-            e.df = (ntohs(ip4->ip_off) & IP_DF) != 0;
-            if (!ip4->ip_id)
+            e.ttl = pi->ip4->ip_ttl;
+            e.size = open_mode ? 0 : ntohs(pi->ip4->ip_len);
+            e.df = (ntohs(pi->ip4->ip_off) & IP_DF) != 0;
+            if (!pi->ip4->ip_id)
                 e.quirks |= QUIRK_ZEROID;
             break;
             // default: there is no default
@@ -199,18 +197,18 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
     }
     //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
 
-    parse_quirks(ftype, tcph ,&e.quirks, open_mode);
-    ilen = (TCP_OFFSET(tcph) << 2) - TCP_HEADER_LEN;
+    parse_quirks(ftype,pi->tcph,&e.quirks, open_mode);
+    ilen = (TCP_OFFSET(pi->tcph) << 2) - TCP_HEADER_LEN;
 
-    opt_ptr = (uint8_t *) (tcph + 1);
+    opt_ptr = (uint8_t *) (pi->tcph + 1);
     if ((uint8_t *) opt_ptr + ilen < end_ptr) {
         if (!open_mode)
             e.quirks |= QUIRK_DATA;
         payload = opt_ptr + ilen;
     }
-    tstamp = parse_tcpopt(opt_ptr, ilen, end_ptr, &e);
+    tstamp = parse_tcpopt(opt_ptr, ilen, pi->end_ptr, &e);
 
-    e.wsize = ntohs(tcph->t_win);
+    e.wsize = ntohs(pi->tcph->t_win);
 
     gen_fp_tcp(e.ttl, 
                e.size,
@@ -220,7 +218,30 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
                e.mss,
                e.wsize,
                e.wsc,
-               tstamp, e.quirks, ftype, ip_src, tcph->src_port, af);
+               tstamp, e.quirks, ftype, pi);
+    // find_match(pi, e);
+    // return this into asset engine
+    find_match(e.size,
+               e.df,
+               e.ttl,
+               e.wsize,
+               pi->ip_src.s6_addr32[0],
+               0, //ip_dst,
+               ntohs(pi->tcph->src_port),
+               ntohs(pi->tcph->dst_port),
+               e.optcnt,
+               e.opt,
+               e.mss,
+               e.wsc,
+               tstamp,
+               pi->ip4->ip_tos,
+               e.quirks,
+               pi->tcph->t_flags & (TF_ECE|TF_CWR), //ECN
+               (uint8_t*) pi->ip4,
+               end_ptr - (uint8_t *) pi->ip4,
+               payload
+               // pts, // *not used
+               );
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),
@@ -229,13 +250,6 @@ printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lm
 */
 
 
-//   find_match(
-//     /* total */ open_mode ? 0 : ntohs(iph->tot_len),
-//     /* DF */    (ntohs(iph->off) & IP_DF) != 0,
-//     /* TTL */   iph->ttl,
-//     /* WSS */   ntohs(tcph->win),
-//     /* src */   iph->saddr,
-//     /* dst */   iph->daddr,
 //     /* sp */    ntohs(tcph->sport),
 //     /* dp */    ntohs(tcph->dport),
 //     /* ocnt */  ocnt,
@@ -256,6 +270,7 @@ printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lm
 
 
 // deprecate these guys soon
+/*
 void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
              uint8_t ftype, struct in6_addr ip_src)
 {
@@ -267,4 +282,4 @@ void fp_tcp6(ip6_header * ip6, tcp_header * tcph, const uint8_t * end_ptr,
 {
     fp_tcp(AF_INET6, ip6, tcph, end_ptr, ftype, ip_src);
 }
-
+*/

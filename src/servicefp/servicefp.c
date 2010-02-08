@@ -437,6 +437,35 @@ void add_known_port(uint8_t proto, uint16_t port, bstring service_name)
     return;
 }
 
+void add_known_services(uint8_t proto, uint16_t port, bstring service_name)
+{
+    extern servicelist *services[65535];
+
+    if (services[port] == NULL) {
+        services[port] = (servicelist *) calloc(1, sizeof(servicelist));
+        services[port]->service_name = service_name;
+    }
+
+    if (proto == IP_PROTO_TCP) {
+        services[port]->proto |= 0x01; // TCP
+    } else if (proto == IP_PROTO_UDP) {
+        services[port]->proto |= 0x02; // UDP
+    }
+}
+
+void del_known_services()
+{
+    extern servicelist *services[65535];
+    int kport;
+
+    for (kport=0; kport < 65535; kport++) {
+        if (services[kport] != NULL) {
+            bdestroy(services[kport]->service_name);
+            free(services[kport]);
+        }
+    }
+}
+
 void del_known_port(uint8_t proto)
 {
     extern port_t *lports[255];
@@ -454,9 +483,22 @@ void del_known_port(uint8_t proto)
     return;
 }
 
+bstring check_known_port(uint8_t proto, uint16_t port)
+{
+    extern servicelist *services[65535];
+
+    if (services[port] == NULL) return NULL;
+
+    if (proto == IP_PROTO_TCP && services[port]->proto & 0x01) 
+        return bstrcpy(services[port]->service_name);
+    if (proto == IP_PROTO_UDP && services[port]->proto & 0x02) 
+        return bstrcpy(services[port]->service_name);
+
+    return NULL;
+}
+
 bstring check_port(uint8_t proto, uint16_t port)
 {
-
     extern port_t *lports[255];
     port_t *ports_head;
     port_t *tmp_lports;
@@ -474,3 +516,40 @@ bstring check_port(uint8_t proto, uint16_t port)
     return NULL;
 }
 
+void init_services()
+{
+    add_known_services( 6,   20,bfromcstr("@ftp-data"));
+    add_known_services( 6,   21,bfromcstr("@ftp"));
+    add_known_services( 6,   22,bfromcstr("@ssh"));
+    add_known_services( 6,   25,bfromcstr("@smtp"));
+    add_known_services(17,   53,bfromcstr("@domain"));
+    add_known_services( 6,   80,bfromcstr("@www"));
+    add_known_services( 6,  110,bfromcstr("@pop3"));
+    add_known_services( 6,  111,bfromcstr("@sunrpc"));
+    add_known_services(17,  111,bfromcstr("@sunrpc"));
+    add_known_services( 6,  113,bfromcstr("@auth"));
+    add_known_services( 6,  115,bfromcstr("@sftp"));
+    add_known_services( 6,  119,bfromcstr("@nntp"));
+    add_known_services(17,  123,bfromcstr("@ntp"));
+    add_known_services( 6,  143,bfromcstr("@imap2"));
+    add_known_services( 6,  161,bfromcstr("@snmp"));
+    add_known_services(17,  161,bfromcstr("@snmp"));
+    add_known_services( 6,  162,bfromcstr("@snmp-trap"));
+    add_known_services(17,  162,bfromcstr("@snmp-trap"));
+    add_known_services( 6,  389,bfromcstr("@ldap"));
+    add_known_services( 6,  443,bfromcstr("@https"));
+    add_known_services( 6,  445,bfromcstr("@microsoft-ds"));
+    add_known_services(17,  514,bfromcstr("@syslog"));
+    add_known_services( 6,  554,bfromcstr("@rtsp"));
+    add_known_services(17,  554,bfromcstr("@rtsp"));
+    add_known_services( 6,  631,bfromcstr("@ipp"));
+    add_known_services( 6,  990,bfromcstr("@ftps"));
+    add_known_services( 6,  992,bfromcstr("@telnets"));
+    add_known_services( 6,  993,bfromcstr("@imaps"));
+    add_known_services( 6,  995,bfromcstr("@pop3s"));
+    add_known_services(17, 1194,bfromcstr("@openvpn"));
+    add_known_services( 6, 2049,bfromcstr("@nfs"));
+    add_known_services(17, 2049,bfromcstr("@nfs"));
+    add_known_services( 6, 3306,bfromcstr("@mysql"));
+    add_known_services( 6, 6667,bfromcstr("@irc"));
+}

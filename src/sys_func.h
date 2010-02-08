@@ -6,9 +6,12 @@
 #define dlog(fmt, ...) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);
 #define vlog(v, fmt, ...) do{ if(DEBUG == v) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__); }while(0)
 #else
-#define dlog(fmt, ...) do { ; } while(0);
-#define vlog(fmt, ...) do { ; } while(0);
+#define dlog(fmt, ...) do { ; } while(0)
+#define vlog(fmt, ...) do { ; } while(0)
 #endif
+
+#define SETFLAG(key,flags) do{ key |= (flags); }while(0)
+#define RESETFLAG(key,flags) do { key &= ~(flags); }while(0)
 size_t strlcpy(char *dst, const char *src, size_t size);
 size_t strlcat(char *dst, const char *src, size_t len);
 const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest);
@@ -23,7 +26,6 @@ void del_assets(int ctime);
 int daemonize();
 void set_end_sessions();
 void end_sessions();
-void display_config();
 void check_interrupt();
 void print_pcap_stats();
 void print_prads_stats();

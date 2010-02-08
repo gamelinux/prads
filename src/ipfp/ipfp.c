@@ -34,7 +34,7 @@ void gen_fp_tcp(uint8_t ttl,
                 uint32_t tstamp,
                 uint32_t quirks,
                 uint8_t ftype,
-                struct in6_addr ip_src, uint16_t port, int af)
+                packetinfo *pi)
 {
 
     uint32_t j;
@@ -43,6 +43,7 @@ void gen_fp_tcp(uint8_t ttl,
     //uint8_t q = 0;
     bstring fp;
 
+    ttl = normalize_ttl(ttl);
     if (ftype == TF_SYN) {
         de = CO_SYN;
     } else if (ftype == TF_SYNACK) {
@@ -165,7 +166,7 @@ void gen_fp_tcp(uint8_t ttl,
 
     // This should get into the asset somehow: tstamp
     //if (tstamp) printf("(* uptime: %d hrs)\n",tstamp/360000);
-    update_asset_os(ip_src, port, de, fp, af, tstamp?tstamp:0);
+    update_asset_os(pi, de, fp, tstamp?tstamp:0);
     // cleanup
     bdestroy(fp);
 }
@@ -179,11 +180,12 @@ void gen_fp_icmp(uint8_t type,
                  uint8_t idata,
                  uint16_t ip_off,
                  uint8_t ip_tos,
-                 uint32_t quirks, struct in6_addr ip_src, int af)
+                 uint32_t quirks,
+                packetinfo *pi)
 {
     bstring fp;
     //printf("[*] ASSET IP/ICMP FINGERPRINT: ");
-
+    ttl = normalize_ttl(ttl);
     fp = bformat("%u:%u:%u:%u:%u:%d:%u:%u:", idata, type, code, ttl, df,
                  olen, totlen, ip_off, ip_tos);
     if (!quirks)
@@ -196,7 +198,7 @@ void gen_fp_icmp(uint8_t type,
     }
 
     //icmp might have uptime?
-    update_asset_os(ip_src, htons(type), CO_ICMP, fp, af,0);
+    update_asset_os(pi, CO_ICMP, fp, 0);
     bdestroy(fp);
     // add mss ? for MTU detection ?
 }
@@ -210,7 +212,7 @@ void gen_fp_udp(uint16_t totlen,
                 uint16_t ip_off,
                 uint8_t ip_tos,
                 uint32_t quirks,
-                struct in6_addr ip_src, uint16_t port, int af)
+                packetinfo *pi)
 {
 
     bstring fp;
@@ -220,6 +222,7 @@ void gen_fp_udp(uint16_t totlen,
     //fp = bformat("%u:%u:%u:%u:%d:%u:%u:",udata,totlen,ttl,df,olen,ip_off,ip_tos);
     //fp = bformat("%u,%u:%u:%d:%u:%u:", totlen, ttl, df, olen, ip_off,
     // add "20" to be prads.pl compatible :)
+    ttl = normalize_ttl(ttl);
     fp = bformat("20:%u:%u:%d:%u:%u:", ttl, df, olen, ip_off,ip_tos);
     if (!quirks)
         bformata(fp, ".");
@@ -230,6 +233,14 @@ void gen_fp_udp(uint16_t totlen,
             bformata(fp, "I");
     }
 
-    update_asset_os(ip_src, port, CO_UDP, fp, af,0);
+    update_asset_os(pi, CO_UDP, fp, 0);
     bdestroy(fp);
+}
+
+uint8_t normalize_ttl (uint8_t ttl)
+{
+    if ( ttl > 128 ) return 254;
+    if ( ttl >  64 ) return 128;
+    if ( ttl >  32 ) return  64;
+    else  return  32;
 }

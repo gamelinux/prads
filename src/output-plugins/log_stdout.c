@@ -29,8 +29,9 @@ void stdout_os (asset *main, os_asset *os)
     if (os->detection == CO_UDP) printf("udp");
     if (os->detection == CO_ICMP) printf("icmp");
 
-
     printf(":%s]", (char *)bdata(os->raw_fp));
+    // if vendor and os is != NULL
+    //printf(",[%s - %s]", (char *)bdata(os->vendor),(char *)bdata(os->os));
     if (os->uptime) printf(",[uptime:%dhrs]",os->uptime/360000);
 }
 

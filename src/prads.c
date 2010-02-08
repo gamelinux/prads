@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "prads.h"
+#include "config.h"
 #include "sys_func.h"
 #include "assets.h"
 #include "cxt.h"
@@ -41,6 +42,7 @@ time_t tstamp;
 connection *bucket[BUCKET_SIZE];
 connection *cxtbuffer = NULL;
 asset *passet[BUCKET_SIZE];
+servicelist *services[65535];
 port_t *lports[255];
 signature *sig_serv_tcp = NULL;
 signature *sig_serv_udp = NULL;
@@ -613,13 +615,15 @@ void parse_tcp6 (packetinfo *pi)
     if (IS_COSET(&config,CO_SYN)
         && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
-        fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYN, pi->ip6->ip_src);
+        //fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYN, pi->ip6->ip_src);
+        fp_tcp(pi, TF_SYN);
         vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
     } else if (IS_COSET(&config,CO_SYNACK)
                && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip6->ip_src);
+        //fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip6->ip_src);
+        fp_tcp(pi, TF_SYNACK);
     }
     if ((pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi))
          || (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi))) {
@@ -628,7 +632,8 @@ void parse_tcp6 (packetinfo *pi)
             && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
-            fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_ACK, pi->ip6->ip_src);
+            //fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_ACK, pi->ip6->ip_src);
+            fp_tcp(pi, TF_ACK);
         }
 
         if (IS_CSSET(&config,CS_TCP_SERVER)
@@ -654,7 +659,8 @@ void parse_tcp4 (packetinfo *pi)
             && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
             && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-            fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
+            fp_tcp(pi, TF_SYN);
+            //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
             return;
         }
         if (IS_CSSET(&config,CS_TCP_CLIENT)
@@ -670,7 +676,8 @@ void parse_tcp4 (packetinfo *pi)
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",
                     ntohs(pi->tcph->src_port));
-            fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
+            fp_tcp(pi, TF_SYNACK);
+            //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
         }
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && !ISSET_DONT_CHECK_SERVICE(pi)) {
@@ -689,15 +696,18 @@ bastard_checks:
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
+        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
+        fp_tcp(pi, TF_ACK);
         return;
     } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
+        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
+        fp_tcp(pi, TF_FIN);
         return;
     } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
         vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
+        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
+        fp_tcp(pi, TF_RST);
         return;
     }
 }
@@ -708,20 +718,20 @@ void parse_tcp8 (packetinfo *pi)
         && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
+        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
         update_asset_service(pi, UNKNOWN, UNKNOWN);
     } else if (IS_COSET(&config,CO_SYNACK)
                && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
                && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
         vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
+        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
         update_asset_service(pi, UNKNOWN, UNKNOWN);
     } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
+        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
     } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
         vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
+        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
     }
 
     if ((pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi))
@@ -732,7 +742,7 @@ void parse_tcp8 (packetinfo *pi)
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
             vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
-            fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
+            //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
         }
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && pi->sc == SC_SERVER
@@ -784,7 +794,7 @@ void parse_udp (packetinfo *pi)
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
                 service_udp4(pi);
             }
-            if (IS_COSET(&config,CO_UDP)) fp_udp4(pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
+            if (IS_COSET(&config,CO_UDP)) fp_udp4(pi, pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
         } else if (pi->af == AF_INET6) {
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
                 service_udp6(pi);
@@ -828,11 +838,11 @@ void parse_icmp (packetinfo *pi)
         if (pi->cxt->check == 0x00) {
             pi->cxt->check = 0x10; //for now - stop icmp fp quick
             if (pi->af==AF_INET) {
-                fp_icmp4(pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
+                fp_icmp4(pi, pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
                 // could look for icmp spesific data in package abcde...
                 // service_icmp(*pi->ip4,*tcph
             } else if (pi->af==AF_INET6) {
-                fp_icmp6(pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
+                fp_icmp6(pi, pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
             }
         } else {
             vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");
@@ -1070,36 +1080,19 @@ int main(int argc, char *argv[])
 {
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
+    set_default_config_options();
+    parse_config_file(bfromcstr("../etc/prads.conf"));
 
-    // Remind me to get this into a config something!
-    config.ctf |= CO_SYN;
-    //config.ctf |= CO_RST;
-    //config.ctf |= CO_FIN;
-    //config.ctf |= CO_ACK;
-    config.ctf |= CO_SYNACK;
-    config.ctf |= CO_ICMP;
-    config.ctf |= CO_UDP;
-    //config.ctf |= CO_OTHER;
-    config.cof |= CS_TCP_SERVER;
-    config.cof |= CS_TCP_CLIENT;
-    config.cof |= CS_UDP_SERVICES;
-    int ch = 0;
-    config.dev = "eth0";
-    config.bpff = "";
-    config.dpath = "/tmp";
-    config.pidfile = "prads.pid";
-    config.pidpath = "/var/run";
     cxtbuffer = NULL;
     cxtrackerid = 0;
     inpacket = gameover = intr_flag = 0;
-    // default source net owns everything
-    config.s_net = "0.0.0.0/0,::/0";
 
     signal(SIGTERM, game_over);
     signal(SIGINT, game_over);
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
 
+    int ch = 0;
     while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:va:")) != -1)
         switch (ch) {
         case 'a':
@@ -1149,12 +1142,22 @@ int main(int argc, char *argv[])
     }
 
     parse_nets(config.s_net, network);
-    printf("[*] Running prads %s\n", VERSION);
-    if (config.verbose) display_config();
+    if(config.ctf & CO_SYN){
+        printf("[*] Loading SYN fingerprints");
+        load_sigs("../etc/os.fp");
+        if(config.verbose > 1)
+            dump_sigs(NULL, 0);
+    }
+    printf("\n[*] Running prads %s\n", VERSION);
+    //if (config.verbose) display_config();
+    display_config();
+
+    // should be config file too
     load_servicefp_file(1, "../etc/tcp-service.sig");
     load_servicefp_file(2, "../etc/udp-service.sig");
     load_servicefp_file(3, "../etc/tcp-clients.sig");
     //load_servicefp_file(4,"../etc/udp-client.sig");
+    init_services();
     add_known_port(17,1194,bfromcstr("@openvpn"));
     add_known_port(17,123,bfromcstr("@ntp"));
     add_known_port(6,631,bfromcstr("@cups"));
@@ -1166,7 +1169,6 @@ int main(int argc, char *argv[])
     add_known_port(6,443,bfromcstr("@https"));
     add_known_port(6,6667,bfromcstr("@irc"));
 
-    config.errbuf[0] = '\0';
     /*
      * look up an available device if non specified
      */

@@ -3,6 +3,7 @@
 #include "assets.h"
 #include "sys_func.h"
 #include "output-plugins/log_dispatch.h"
+#include "config.h"
 
 extern globalconfig config;
 // static strings for comparison
@@ -59,18 +60,11 @@ void update_service_stats(int role, uint16_t proto)
 void update_os_stats(uint8_t detection)
 {
     switch (detection) {
+        // fallthrough
         case CO_SYN:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_SYNACK:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_ACK:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_FIN:
-            config.pr_s.tcp_os_assets++;
-            break;
         case CO_RST:
             config.pr_s.tcp_os_assets++;
             break;
@@ -166,20 +160,27 @@ short update_asset_shmem(packetinfo *pi)
     }
 }
 
-short update_asset_os(struct in6_addr ip_addr,
-                      u_int16_t port,
-                      uint8_t detection, bstring raw_fp, int af, int uptime)
+//short update_asset_os(packetinfo *pi, bstring raw_fp, bstring os, bstring desc)
+short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int uptime)
+//                      struct in6_addr ip_addr, u_int16_t port,
+//                      uint8_t detection, bstring raw_fp, int af, int uptime)
 {
     extern time_t tstamp;
     asset *rec = NULL;
 
-    rec = asset_lookup(ip_addr, af);
+    if (pi->cxt->s_asset == NULL ) {
+        rec = asset_lookup(pi->ip_src, pi->af);
+        pi->cxt->s_asset = rec;
+    } else {
+        rec = pi->cxt->s_asset;
+    }
+
     if (rec != NULL) {
         goto os_update;
     } else {
         /* If no asset */
-        update_asset(af, ip_addr);
-        if (update_asset_os(ip_addr, port, detection, raw_fp, af, uptime) == 0) return 0;
+        update_asset(pi->af, pi->ip_src);
+        if (update_asset_os(pi, detection, raw_fp, uptime) == 0) return 0;
         return 1;
     }
 
@@ -214,13 +215,15 @@ os_update:
     if (tmp_oa == NULL) {
         update_os_stats(detection);
         os_asset *new_oa = NULL;
+        // FIXME: allocate resource from shared storage pool
         new_oa = (os_asset *) calloc(1, sizeof(os_asset));
         new_oa->detection = detection;
+        // FIXME: don't copy fp, bincode it
         new_oa->raw_fp = bstrcpy(raw_fp);
         //new_oa->i_attempts = 1;
         new_oa->first_seen = tstamp;
         new_oa->last_seen = tstamp;
-        new_oa->port = port;
+        new_oa->port = pi->s_port;
         if (uptime) new_oa->uptime = uptime;
         new_oa->next = head_oa;
         if (head_oa != NULL)
@@ -250,13 +253,40 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
 {
     extern time_t tstamp;
     asset *rec = NULL;
+    uint16_t port;
 
-    rec = asset_lookup(pi->ip_src, pi->af);
+    if (pi->cxt->reversed == 0) {
+        if (pi->cxt->s_asset == NULL ) {
+            rec = asset_lookup(pi->ip_src, pi->af);
+            pi->cxt->s_asset = rec;
+        } else {
+            rec = pi->cxt->s_asset;
+        }
+        if (pi->sc == SC_CLIENT) {
+            port = pi->d_port;
+        } else {
+            port = pi->s_port;
+        }
+    } else {
+        if (pi->cxt->d_asset == NULL ) {
+            rec = asset_lookup(pi->ip_dst, pi->af);
+            pi->cxt->d_asset = rec;
+        } else {
+            rec = pi->cxt->d_asset;
+        }
+        if (pi->sc == SC_CLIENT) {
+            port = pi->s_port;
+        } else {
+            port = pi->d_port;
+        }
+    }
+
     if (rec != NULL) {
         goto service_update;
     } else {
         /* If no asset */
-        update_asset(pi->af, pi->ip_src);
+        if (pi->cxt->reversed == 0) update_asset(pi->af, pi->ip_src);
+            else update_asset(pi->af, pi->ip_dst);
         if (update_asset_service(pi, service, application) == 0) return 0;
         return 1;
     }
@@ -271,20 +301,14 @@ service_update:
     serv_asset *head_sa = NULL;
     tmp_sa = rec->services;
     head_sa = rec->services;
-    uint16_t port;
-    if (pi->cxt->reversed == 0) {
-        if (pi->sc == SC_CLIENT) port = pi->d_port;
-            else port = pi->s_port;
-    } else {
-        if (pi->sc == SC_CLIENT) port = pi->s_port;
-            else port = pi->d_port;
-    }
+
     while (tmp_sa != NULL) {
         if (port == tmp_sa->port && pi->proto == tmp_sa->proto) {
             /*
              * Found! 
              * If we have an id for the service which is != unknown AND the id now is unknown 
              * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
+             * if (application->data[0] == '@')
              */
             if (!(biseq(UNKNOWN, application) == 1)
                 &&
