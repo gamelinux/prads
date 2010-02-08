@@ -23,6 +23,8 @@ connection *connection_alloc(void)
     cxt->prev = NULL;
     cxt->hnext = NULL;
     cxt->hprev = NULL;
+    cxt->s_asset = NULL;
+    cxt->d_asset = NULL;
 
     return cxt;
 }
@@ -229,6 +231,7 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->check = 0x00;
         cxt->s_asset = NULL;
         cxt->d_asset = NULL;
+        cxt->reversed = 0;
         pi->sc = SC_CLIENT;
 }
 

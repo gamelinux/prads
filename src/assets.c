@@ -255,38 +255,19 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
     asset *rec = NULL;
     uint16_t port;
 
-    if (pi->cxt->reversed == 0) {
-        if (pi->cxt->s_asset == NULL ) {
-            rec = asset_lookup(pi->ip_src, pi->af);
-            pi->cxt->s_asset = rec;
-        } else {
-            rec = pi->cxt->s_asset;
-        }
-        if (pi->sc == SC_CLIENT) {
-            port = pi->d_port;
-        } else {
-            port = pi->s_port;
-        }
-    } else {
-        if (pi->cxt->d_asset == NULL ) {
-            rec = asset_lookup(pi->ip_dst, pi->af);
-            pi->cxt->d_asset = rec;
-        } else {
-            rec = pi->cxt->d_asset;
-        }
-        if (pi->sc == SC_CLIENT) {
-            port = pi->s_port;
-        } else {
-            port = pi->d_port;
-        }
-    }
+    rec = asset_lookup(pi->ip_src, pi->af);
 
     if (rec != NULL) {
+        pi->cxt->s_asset = rec;
+        if (pi->sc == SC_CLIENT) {
+            port = pi->d_port;
+        } else {
+            port = pi->s_port;
+        }
         goto service_update;
     } else {
         /* If no asset */
-        if (pi->cxt->reversed == 0) update_asset(pi->af, pi->ip_src);
-            else update_asset(pi->af, pi->ip_dst);
+        update_asset(pi->af, pi->ip_src);
         if (update_asset_service(pi, service, application) == 0) return 0;
         return 1;
     }

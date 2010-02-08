@@ -87,7 +87,7 @@ int  parse_netmask (char *f, int type, struct in6_addr *netmask);
 void parse_nets(const char *s_net, struct fmask *network);
 
 void set_pkt_end_ptr (packetinfo *pi);
-static inline int filter_packet(const int af, const struct in6_addr *ip_s);
+//static inline int filter_packet(const int af, const struct in6_addr *ip_s);
 
 /* F U N C T I O N S  ********************************************************/
 
@@ -139,7 +139,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
  * unfortunately pcap sends us packets in host order
  * Return value: boolean
  */
-static inline int filter_packet(const int af, const struct in6_addr *ip_s)
+inline int filter_packet(const int af, const struct in6_addr *ip_s)
 {
     uint32_t ip;
     ip6v ip_vec;

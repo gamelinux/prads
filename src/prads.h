@@ -717,4 +717,5 @@ struct fmask {
 
 /*  P R O T O T Y P E S  ******************************************************/
 void free_config();
+inline int filter_packet(const int af, const struct in6_addr *ip_s);
 #endif                          // PRADS_H
