@@ -136,7 +136,6 @@ end_parsing:
 void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
              uint8_t ftype, struct in6_addr ip_src)
 {
-
     uint8_t *opt_ptr;
     uint8_t *payload = 0;
     uint8_t op[MAXOPT];
@@ -145,33 +144,21 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
     int32_t ilen;
     uint32_t tstamp = 0;
 
-    // convenience
+    // convenience - wish we didn't have to deal with IP at all here
     ip4_header *ip4 = (ip4_header *)ip46;
     ip6_header *ip6 = (ip6_header *)ip46;
     
     if (ftype == TF_ACK)
         open_mode = 1;
 
-    /*
-     * If the declared length is shorter than the snapshot (etherleak
-     * or such), truncate the package. 
-     */
+    /* * If the declared length is shorter than the snapshot (etherleak
+     * or such), truncate the package.
+     * These tests are IP-specific and should one day go into into IP preproc*/
     switch(af){
         case AF_INET6:
             opt_ptr = (uint8_t *) ip6 + IP6_HEADER_LEN + ntohs(ip6->len); //*
-            break;
-        case AF_INET:
-            opt_ptr = (uint8_t *)ip4 + ntohs(ip4->ip_len); // fixed from htons
-            break;
-        default:
-            fprintf(stderr, "tcp_fp: something very unsafe happened!\n");
-            return;
-    }
-    if (end_ptr > opt_ptr)
-        end_ptr = opt_ptr;
-
-    switch(af){
-        case AF_INET6:
+            if (end_ptr > opt_ptr)
+                end_ptr = opt_ptr;
             // If IP header ends past end_ptr
             if ((uint8_t *) (ip6 + 1) > end_ptr)
                 return;
@@ -185,6 +172,9 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
                 e.quirks |= QUIRK_ZEROID;
             break;
         case AF_INET:
+            opt_ptr = (uint8_t *)ip4 + ntohs(ip4->ip_len); // fixed from htons
+            if (end_ptr > opt_ptr)
+                end_ptr = opt_ptr;
             if ((uint8_t *) (ip4 + 1) > end_ptr)
                 return;
             ilen = ip4->ip_vhl & 15;
@@ -203,10 +193,13 @@ void fp_tcp(uint8_t af, void * ip46, tcp_header * tcph, const uint8_t * end_ptr,
                 e.quirks |= QUIRK_ZEROID;
             break;
             // default: there is no default
+        default:
+            fprintf(stderr, "tcp_fp: something very unsafe happened!\n");
+            return;
     }
     //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
 
-    parse_quirks_flag(ftype,tcph,&e.quirks, open_mode);
+    parse_quirks(ftype, tcph ,&e.quirks, open_mode);
     ilen = (TCP_OFFSET(tcph) << 2) - TCP_HEADER_LEN;
 
     opt_ptr = (uint8_t *) (tcph + 1);
