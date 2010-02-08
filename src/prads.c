@@ -1149,7 +1149,8 @@ int main(int argc, char *argv[])
             dump_sigs(NULL, 0);
     }
     printf("\n[*] Running prads %s\n", VERSION);
-    if (config.verbose) display_config();
+    //if (config.verbose) display_config();
+    display_config();
 
     // should be config file too
     load_servicefp_file(1, "../etc/tcp-service.sig");

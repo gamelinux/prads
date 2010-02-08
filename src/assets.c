@@ -168,7 +168,13 @@ short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int upt
     extern time_t tstamp;
     asset *rec = NULL;
 
-    rec = asset_lookup(pi->ip_src, pi->af);
+    if (pi->cxt->s_asset == NULL ) {
+        rec = asset_lookup(pi->ip_src, pi->af);
+        pi->cxt->s_asset = rec;
+    } else {
+        rec = pi->cxt->s_asset;
+    }
+
     if (rec != NULL) {
         goto os_update;
     } else {
@@ -250,14 +256,24 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
     uint16_t port;
 
     if (pi->cxt->reversed == 0) {
-        rec = asset_lookup(pi->ip_src, pi->af);
+        if (pi->cxt->s_asset == NULL ) {
+            rec = asset_lookup(pi->ip_src, pi->af);
+            pi->cxt->s_asset = rec;
+        } else {
+            rec = pi->cxt->s_asset;
+        }
         if (pi->sc == SC_CLIENT) {
             port = pi->d_port;
         } else {
             port = pi->s_port;
         }
     } else {
-        rec = asset_lookup(pi->ip_dst, pi->af);
+        if (pi->cxt->d_asset == NULL ) {
+            rec = asset_lookup(pi->ip_dst, pi->af);
+            pi->cxt->d_asset = rec;
+        } else {
+            rec = pi->cxt->d_asset;
+        }
         if (pi->sc == SC_CLIENT) {
             port = pi->s_port;
         } else {
