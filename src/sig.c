@@ -17,6 +17,8 @@
 
     *** sigs ***
     load_sigs() <- create hashtable from file
+    usage: 
+    sigs* = load_sigs(file)
     load_sigs_{syn,ack,synack,..}()
 
     match_fp(char *fp, struct *fp) <- take a fingerprint string/struct
@@ -27,6 +29,14 @@
     find_match(foo)
 
 
+ TODO:
+  - fp_entry* = find_match(sigs, pi, e)
+  - unload_sigs(sigs);
+  - ipv6 fix
+  - collide
+  - merge gen_fp and display_signature
+
+
  */
 
 #include "common.h"
@@ -35,47 +45,40 @@
 #include "tos.h"
 
 #define MAXLINE 1024
-#define MAXSIGS 1024
+#define SIG_HASHSIZE 1024
 #define MAXDIST 512
 #define PKT_DLEN 16
 #define PKT_MAXPAY 45
 
-// what the dillio? bh is 16 pointers?
-#define SIGHASH(tsize,optcnt,q,df) \
-	(( (uint8_t) (((tsize) << 1) ^ ((optcnt) << 1) ^ (df) ^ (q) )) & 0x0f)
+/* SIGHASH needs some tweaking
+ * the addition of wsize has reduced collisions
+ * but similar signatures still collide.
+ *
+ * best case (and least efficient) would be to hash on
+ * full options and quirks
+ */
+#define SIGHASH(wsize, tsize,optcnt,q,df) \
+	( ((wsize << 3) ^ ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) ))
 #define debug(x...)	fprintf(stderr,x)
 #define fatal(x...)	do { debug("[-] ERROR: " x); exit(1); } while (0)
-
-static fp_entry sig[MAXSIGS];
-static uint32_t sigcnt, gencnt;
-static fp_entry *bh[1024];
 
 uint32_t packet_count;
 uint8_t operating_mode;
 uint32_t st_time;
 static uint8_t no_extra,
-    find_masq,
-    masq_flags,
     no_osdesc,
     no_known,
     no_unknown,
-    no_banner,
-    use_promisc,
-    add_timestamp,
-    header_len,
-    ack_mode,
     rst_mode,
-    go_daemon,
-    use_logfile,
     mode_oneline,
     always_sig,
     do_resolve,
     check_collide,
-    full_dump, use_fuzzy, use_vlan, payload_dump, port0_wild;
+    full_dump, use_fuzzy, payload_dump;
 
 static uint8_t problems;
 
-static inline void display_signature(uint8_t ttl, uint16_t tot, uint8_t df,
+void display_signature(uint8_t ttl, uint16_t tot, uint8_t df,
                                      uint8_t * op, uint8_t ocnt,
                                      uint16_t mss, uint16_t wss,
                                      uint8_t wsc, uint32_t tstamp,
@@ -178,7 +181,7 @@ static inline void display_signature(uint8_t ttl, uint16_t tot, uint8_t df,
 
 }
 
-static void print_sig(fp_entry * e)
+void print_sig(fp_entry * e)
 {
     display_signature(e->ttl,
                       e->size,
@@ -192,6 +195,7 @@ static void print_sig(fp_entry * e)
         print_sig(e->next);
 }
 
+/* collide: check 
 static void collide(uint32_t id)
 {
     uint32_t i, j;
@@ -213,10 +217,8 @@ static void collide(uint32_t id)
                  sig[i].os, sig[i].desc, sig[i].line, sig[id].line);
         }
 
-        /*
-         * If TTLs are sufficiently away from each other, the risk of
-         * a collision is lower. 
-         */
+        //If TTLs are sufficiently away from each other, the risk of
+        // a collision is lower. 
         if (abs((int32_t) sig[id].ttl - (int32_t) sig[i].ttl) > 25)
             continue;
 
@@ -225,9 +227,7 @@ static void collide(uint32_t id)
         if (sig[id].zero_stamp ^ sig[i].zero_stamp)
             continue;
 
-        /*
-         * Zero means >= PACKET_BIG 
-         */
+        // * Zero means >= PACKET_BIG 
         if (sig[id].size) {
             if (sig[id].size ^ sig[i].size)
                 continue;
@@ -241,7 +241,7 @@ static void collide(uint32_t id)
 
         switch (sig[id].wsize_mod) {
 
-        case 0:                /* Current: const */
+        case 0:                // Current: const
 
             cur = sig[id].wsize;
 
@@ -249,25 +249,21 @@ static void collide(uint32_t id)
 
             switch (sig[i].wsize_mod) {
 
-            case 0:            /* Previous is also const */
+            case 0:            // Previous is also const
 
-                /*
-                 * A problem if values match 
-                 */
+                 // * A problem if values match 
                 if (cur ^ sig[i].wsize)
                     continue;
                 break;
 
-            case MOD_CONST:    /* Current: const, prev: modulo (or *) */
+            case MOD_CONST:    // Current: const, prev: modulo (or *) 
 
-                /*
-                 * A problem if current value is a multiple of that modulo 
-                 */
+                 // A problem if current value is a multiple of that modulo 
                 if (cur % sig[i].wsize)
                     continue;
                 break;
 
-            case MOD_MSS:      /* Current: const, prev: mod MSS */
+            case MOD_MSS:      // Current: const, prev: mod MSS 
 
                 if (sig[i].mss_mod || sig[i].wsize *
                     (sig[i].mss ? sig[i].mss : 1460) != cur)
@@ -275,7 +271,7 @@ static void collide(uint32_t id)
 
                 break;
 
-            case MOD_MTU:      /* Current: const, prev: mod MTU */
+            case MOD_MTU:      // Current: const, prev: mod MTU
 
                 if (sig[i].mss_mod
                     || sig[i].wsize * ((sig[i].mss ? sig[i].mss : 1460) +
@@ -288,12 +284,10 @@ static void collide(uint32_t id)
 
             break;
 
-        case 1:                /* Current signature is modulo something */
+        case 1:                // Current signature is modulo something
 
-            /*
-             * A problem only if this modulo is a multiple of the 
-             * previous modulo 
-             */
+             // A problem only if this modulo is a multiple of the 
+             // previous modulo 
 
             if (sig[i].wsize_mod != MOD_CONST)
                 continue;
@@ -302,15 +296,13 @@ static void collide(uint32_t id)
 
             break;
 
-        case MOD_MSS:          /* Current is modulo MSS */
+        case MOD_MSS:          // Current is modulo MSS
 
-            /*
-             * There's likely a problem only if the previous one is close
-             * to '*'; we do not check known MTUs, because this particular
-             * signature can be made with some uncommon MTUs in mind. The
-             * problem would also appear if current signature has a fixed
-             * MSS. 
-             */
+             // There's likely a problem only if the previous one is close
+             // to '*'; we do not check known MTUs, because this particular
+             // signature can be made with some uncommon MTUs in mind. The
+             // problem would also appear if current signature has a fixed
+             // MSS. 
 
             if (sig[i].wsize_mod != MOD_CONST || sig[i].wsize >= 8) {
                 if (!sig[id].mss_mod) {
@@ -323,7 +315,7 @@ static void collide(uint32_t id)
 
             break;
 
-        case MOD_MTU:          /* Current is modulo MTU */
+        case MOD_MTU:          // Current is modulo MTU
 
             if (sig[i].wsize_mod != MOD_CONST || sig[i].wsize <= 8) {
                 if (!sig[id].mss_mod) {
@@ -339,31 +331,25 @@ static void collide(uint32_t id)
 
         }
 
-        /*
-         * Same for wsc 
-         */
+         // Same for wsc 
         switch (sig[id].wsc_mod) {
 
-        case 0:                /* Current: const */
+        case 0:                // Current: const
 
             cur = sig[id].wsc;
 
             switch (sig[i].wsc_mod) {
 
-            case 0:            /* Previous is also const */
+            case 0:            // Previous is also const
 
-                /*
-                 * A problem if values match 
-                 */
+                // A problem if values match 
                 if (cur ^ sig[i].wsc)
                     continue;
                 break;
 
-            case 1:            /* Current: const, prev: modulo (or *) */
+            case 1:            // Current: const, prev: modulo (or *) 
 
-                /*
-                 * A problem if current value is a multiple of that modulo 
-                 */
+                // A problem if current value is a multiple of that modulo 
                 if (cur % sig[i].wsc)
                     continue;
                 break;
@@ -372,12 +358,10 @@ static void collide(uint32_t id)
 
             break;
 
-        case MOD_CONST:        /* Current signature is modulo something */
+        case MOD_CONST:        // Current signature is modulo something
 
-            /*
-             * A problem only if this modulo is a multiple of the 
-             * previous modulo 
-             */
+             // A problem only if this modulo is a multiple of the 
+             // previous modulo 
 
             if (!sig[i].wsc_mod)
                 continue;
@@ -388,31 +372,25 @@ static void collide(uint32_t id)
 
         }
 
-        /*
-         * Same for mss 
-         */
+        // Same for mss 
         switch (sig[id].mss_mod) {
 
-        case 0:                /* Current: const */
+        case 0:                // Current: const 
 
             cur = sig[id].mss;
 
             switch (sig[i].mss_mod) {
 
-            case 0:            /* Previous is also const */
+            case 0:            // Previous is also const
 
-                /*
-                 * A problem if values match 
-                 */
+                // A problem if values match 
                 if (cur ^ sig[i].mss)
                     continue;
                 break;
 
-            case 1:            /* Current: const, prev: modulo (or *) */
+            case 1:            // Current: const, prev: modulo (or *) 
 
-                /*
-                 * A problem if current value is a multiple of that modulo 
-                 */
+                // A problem if current value is a multiple of that modulo 
                 if (cur % sig[i].mss)
                     continue;
                 break;
@@ -421,13 +399,10 @@ static void collide(uint32_t id)
 
             break;
 
-        case MOD_CONST:        /* Current signature is modulo something */
+        case MOD_CONST:        // Current signature is modulo something
 
-            /*
-             * A problem only if this modulo is a multiple of the 
-             * previous modulo 
-             */
-
+            // A problem only if this modulo is a multiple of the 
+            // previous modulo 
             if (!sig[i].mss_mod)
                 continue;
             if ((sig[id].mss ? sig[id].mss : 1460) %
@@ -438,10 +413,7 @@ static void collide(uint32_t id)
 
         }
 
-        /*
-         * Now check option sequence 
-         */
-
+        // Now check option sequence 
         for (j = 0; j < sig[id].optcnt; j++)
             if (sig[id].opt[j] ^ sig[i].opt[j])
                 goto reloop;
@@ -456,53 +428,277 @@ static void collide(uint32_t id)
         ;
     }
 }
+//collide () */
+/* recursively free signatures */
+static void free_sigs(fp_entry *e){
+    if(e->next)
+        free_sigs(e->next);
+    free(e);
+}
+
+/* alloc_sig return a newly allocated copy of *e */
+static fp_entry *alloc_sig(fp_entry *e)
+{
+    fp_entry *n = calloc(1, sizeof(fp_entry));
+    *n = *e; // copy
+    return n;
+}
+
+/* parse the wss field of the signature line */
+static int parse_sig_wsize(fp_entry *sig, char* w)
+{
+    if (w[0] == '*') {
+        sig->wsize = 1;
+        sig->wsize_mod = MOD_CONST;
+    } else if (tolower(w[0]) == 's') {
+        sig->wsize_mod = MOD_MSS;
+        if (!isdigit(*(w + 1)))
+            fatal("Bad Snn value in WSS in line %d.\n", sig->line);
+        sig->wsize = atoi(w + 1);
+    } else if (tolower(w[0]) == 't') {
+        sig->wsize_mod = MOD_MTU;
+        if (!isdigit(*(w + 1)))
+            fatal("Bad Tnn value in WSS in line %d.\n", sig->line);
+        sig->wsize = atoi(w + 1);
+    } else if (w[0] == '%') {
+        if (!(sig->wsize = atoi(w + 1)))
+            fatal("Null modulo for window size in config line %d.\n",
+                  sig->line);
+        sig->wsize_mod = MOD_CONST;
+    } else
+        sig->wsize = atoi(w);
+
+    return 0;
+}
+
+/* parse the option field of the signature line */
+static int parse_sig_options(fp_entry *sig, char* p)
+{
+    sig->zero_stamp = 1;
+
+    if (*p == '.')
+        p++;
+
+    while (*p) {
+        uint8_t optcnt = sig->optcnt;
+        switch (tolower(*p)) {
+
+            case 'n':
+                sig->opt[optcnt] = TCPOPT_NOP;
+                break;
+
+            case 'e':
+                sig->opt[optcnt] = TCPOPT_EOL;
+                if (*(p + 1))
+                    fatal("EOL not the last option (line %d).\n", sig->line);
+                break;
+
+            case 's':
+                sig->opt[optcnt] = TCPOPT_SACKOK;
+                break;
+
+            case 't':
+                sig->opt[optcnt] = TCPOPT_TIMESTAMP;
+                if (*(p + 1) != '0') {
+                    sig->zero_stamp = 0;
+                    if (isdigit(*(p + 1)))
+                        fatal("Bogus Tstamp specification in line %d.\n",
+                              sig->line);
+                }
+                break;
+
+            case 'w':
+                sig->opt[optcnt] = TCPOPT_WSCALE;
+                if (p[1] == '*') {
+                    sig->wsc = 1;
+                    sig->wsc_mod = MOD_CONST;
+                } else if (p[1] == '%') {
+                    if (!(sig->wsc = atoi(p + 2)))
+                        fatal
+                            ("Null modulo for wscale in config line %d.\n",
+                             sig->line);
+                    sig->wsc_mod = MOD_CONST;
+                } else if (!isdigit(*(p + 1)))
+                    fatal("Incorrect W value in line %d.\n", sig->line);
+                else
+                    sig->wsc = atoi(p + 1);
+                break;
+
+            case 'm':
+                sig->opt[optcnt] = TCPOPT_MAXSEG;
+                if (p[1] == '*') {
+                    sig->mss = 1;
+                    sig->mss_mod = MOD_CONST;
+                } else if (p[1] == '%') {
+                    if (!(sig->mss = atoi(p + 2)))
+                        fatal("Null modulo for MSS in config line %d.\n",
+                              sig->line);
+                    sig->mss_mod = MOD_CONST;
+                } else if (!isdigit(*(p + 1)))
+                    fatal("Incorrect M value in line %d.\n", sig->line);
+                else
+                    sig->mss = atoi(p + 1);
+                break;
+
+                /*
+                 * Yuck! 
+                 */
+            case '?':
+                if (!isdigit(*(p + 1)))
+                    fatal("Bogus ?nn value in line %d.\n", sig->line);
+                else
+                    sig->opt[optcnt] = atoi(p + 1);
+                break;
+
+            default:
+                fatal("Unknown TCP option '%c' in config line %d.\n", *p,
+                      sig->line);
+        }
+
+        if (++sig->optcnt >= MAXOPT)
+            fatal
+                ("Too many TCP options specified in config line %d.\n",
+                 sig->line);
+
+        /*
+         * Skip separators 
+         */
+        do {
+            p++;
+        } while (*p && !isalpha(*p) && *p != '?');
+    }
+    return 0;
+}
+
+/* parse the quirks field of the signature line */
+static int parse_sig_quirks(fp_entry *sig, uint8_t *p)
+{
+    while (*p){
+        switch (toupper(*(p++))) {
+            case 'E':
+                fatal
+                    ("Quirk 'E' (line %d) is obsolete. Remove it, append E to the "
+                     "options.\n", sig->line);
+
+            case 'K':
+                if (!rst_mode)
+                    fatal("Quirk 'K' (line %d) is valid only in RST+ (-R)"
+                          " mode (wrong config file?).\n", sig->line);
+                sig->quirks |= QUIRK_RSTACK;
+                break;
+
+            case 'D':
+                sig->quirks |= QUIRK_DATA;
+                break;
+
+            case 'Q':
+                sig->quirks |= QUIRK_SEQEQ;
+                break;
+            case '0':
+                sig->quirks |= QUIRK_SEQ0;
+                break;
+            case 'P':
+                sig->quirks |= QUIRK_PAST;
+                break;
+            case 'Z':
+                sig->quirks |= QUIRK_ZEROID;
+                break;
+            case 'I':
+                sig->quirks |= QUIRK_IPOPT;
+                break;
+            case 'U':
+                sig->quirks |= QUIRK_URG;
+                break;
+            case 'X':
+                sig->quirks |= QUIRK_X2;
+                break;
+            case 'A':
+                sig->quirks |= QUIRK_ACK;
+                break;
+            case 'T':
+                sig->quirks |= QUIRK_T2;
+                break;
+            case 'F':
+                sig->quirks |= QUIRK_FLAGS;
+                break;
+            case '!':
+                sig->quirks |= QUIRK_BROKEN;
+                break;
+            case '.':
+                break;
+            default:
+                fatal("Bad quirk '%c' in line %d.\n", *(p - 1), sig->line);
+        }
+    }
+    return 0;
+}
+
 
 /* load_sigs: fill **sig with fp_entry signatures from *file
+ *
+ * sigp is a pointer to either 
+ ** a pointer to a preallocated buffer of size max_sigs * fp_entry OR
+ ** a NULL pointer indicating that we should allocate max_sigs for you
+ * max_sigs is the maximal size of the buffer, or 0 in which case we decide
+ *
+ * Theory:   snarf sigs in serially, easypeasy
+ * Practice: lookups are a bitch and require a buckethash.
+ ** -> store sigs directly into hash.
+ * 
  * returns errno
  */
-int load_sigs(const char *file, fp_entry dasig[], int max)
+int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
 {
+    fp_entry **sig; // output
     uint32_t ln = 0;
     debug("opening %s\n", file);
     FILE *f = fopen(file, "r");
-    unsigned char buf[MAXLINE];
-    unsigned char *p;
+    char buf[MAXLINE];
+    char *p;
     if (!f) {
         perror("failed to open file");
         return errno;
     }
+    if(!sigp){
+        perror("need a pointer to fill");
+        return -1;
+    }
+    if(!hashsize)
+        hashsize = SIG_HASHSIZE;
+    if(*sigp == NULL){
+        *sigp = calloc(hashsize, sizeof(fp_entry*));
+        sig = *sigp;
+    }
+
     while ((p = fgets(buf, sizeof(buf), f))) {
         uint32_t l;
 
-        uint8_t obuf[MAXLINE], genre[MAXLINE], desc[MAXLINE],
+        char obuf[MAXLINE], genre[MAXLINE], desc[MAXLINE],
             quirks[MAXLINE];
-        uint8_t w[MAXLINE], sb[MAXLINE];
-        uint8_t *gptr = genre;
+        char w[MAXLINE], sb[MAXLINE];
+        char *gptr = genre;
         uint32_t t, d, s;
+        fp_entry asig = {0}; //guarantee it's empty this sig
         fp_entry *e;
 
         ln++;
 
-        /*
-         * Remove leading and trailing blanks 
-         */
+        /* Remove leading and trailing blanks */
         while (isspace(*p))
             p++;
         l = strlen(p);
         while (l && isspace(*(p + l - 1)))
             *(p + (l--) - 1) = 0;
 
-        /*
-         * Skip empty lines and comments 
-         */
+        /* Skip empty lines and comments */
         if (!l)
             continue;
         if (*p == '#')
             continue;
 
         if (sscanf
-            (p, "%[0-9%*()ST]:%d:%d:%[0-9()*]:%[^:]:%[^ :]:%[^:]:%[^:]", w,
-             &t, &d, sb, obuf, quirks, genre, desc) != 8)
+            (p, "%[0-9%*()ST]:%d:%d:%[0-9()*]:%[^:]:%[^ :]:%[^:]:%[^:]", 
+            w, &t, &d, sb, obuf, quirks, genre, desc) != 8)
             fatal("Syntax error in config line %d.\n", ln);
 
         gptr = genre;
@@ -516,227 +712,60 @@ int load_sigs(const char *file, fp_entry dasig[], int max)
 
         switch (*gptr) {
         case '-':
-            sig[sigcnt].userland = 1;
+            asig.userland = 1;
             gptr++;
             goto reparse_ptr;
         case '*':
-            sig[sigcnt].no_detail = 1;
+            asig.no_detail = 1;
             gptr++;
             goto reparse_ptr;
         case '@':
-            sig[sigcnt].generic = 1;
+            asig.generic = 1;
             gptr++;
-            gencnt++;
+            //gencnt++;
             goto reparse_ptr;
         case 0:
             fatal("Empty OS genre in line %d.\n", ln);
         }
 
-        sig[sigcnt].os = strdup(gptr);
-        sig[sigcnt].desc = strdup(desc);
-        sig[sigcnt].ttl = t;
-        sig[sigcnt].size = s;
-        sig[sigcnt].df = d;
+        asig.os = strdup(gptr);
+        asig.desc = strdup(desc);
+        asig.ttl = t;
+        asig.size = s;
+        asig.df = d;
 
-        if (w[0] == '*') {
-            sig[sigcnt].wsize = 1;
-            sig[sigcnt].wsize_mod = MOD_CONST;
-        } else if (tolower(w[0]) == 's') {
-            sig[sigcnt].wsize_mod = MOD_MSS;
-            if (!isdigit(*(w + 1)))
-                fatal("Bad Snn value in WSS in line %d.\n", ln);
-            sig[sigcnt].wsize = atoi(w + 1);
-        } else if (tolower(w[0]) == 't') {
-            sig[sigcnt].wsize_mod = MOD_MTU;
-            if (!isdigit(*(w + 1)))
-                fatal("Bad Tnn value in WSS in line %d.\n", ln);
-            sig[sigcnt].wsize = atoi(w + 1);
-        } else if (w[0] == '%') {
-            if (!(sig[sigcnt].wsize = atoi(w + 1)))
-                fatal("Null modulo for window size in config line %d.\n",
-                      ln);
-            sig[sigcnt].wsize_mod = MOD_CONST;
-        } else
-            sig[sigcnt].wsize = atoi(w);
-
-        /*
-         * Now let's parse options 
-         */
-
-        p = obuf;
-
-        sig[sigcnt].zero_stamp = 1;
-
-        if (*p == '.')
-            p++;
-
-        while (*p) {
-            uint8_t optcnt = sig[sigcnt].optcnt;
-            switch (tolower(*p)) {
-
-            case 'n':
-                sig[sigcnt].opt[optcnt] = TCPOPT_NOP;
-                break;
-
-            case 'e':
-                sig[sigcnt].opt[optcnt] = TCPOPT_EOL;
-                if (*(p + 1))
-                    fatal("EOL not the last option (line %d).\n", ln);
-                break;
-
-            case 's':
-                sig[sigcnt].opt[optcnt] = TCPOPT_SACKOK;
-                break;
-
-            case 't':
-                sig[sigcnt].opt[optcnt] = TCPOPT_TIMESTAMP;
-                if (*(p + 1) != '0') {
-                    sig[sigcnt].zero_stamp = 0;
-                    if (isdigit(*(p + 1)))
-                        fatal("Bogus Tstamp specification in line %d.\n",
-                              ln);
-                }
-                break;
-
-            case 'w':
-                sig[sigcnt].opt[optcnt] = TCPOPT_WSCALE;
-                if (p[1] == '*') {
-                    sig[sigcnt].wsc = 1;
-                    sig[sigcnt].wsc_mod = MOD_CONST;
-                } else if (p[1] == '%') {
-                    if (!(sig[sigcnt].wsc = atoi(p + 2)))
-                        fatal
-                            ("Null modulo for wscale in config line %d.\n",
-                             ln);
-                    sig[sigcnt].wsc_mod = MOD_CONST;
-                } else if (!isdigit(*(p + 1)))
-                    fatal("Incorrect W value in line %d.\n", ln);
-                else
-                    sig[sigcnt].wsc = atoi(p + 1);
-                break;
-
-            case 'm':
-                sig[sigcnt].opt[optcnt] = TCPOPT_MAXSEG;
-                if (p[1] == '*') {
-                    sig[sigcnt].mss = 1;
-                    sig[sigcnt].mss_mod = MOD_CONST;
-                } else if (p[1] == '%') {
-                    if (!(sig[sigcnt].mss = atoi(p + 2)))
-                        fatal("Null modulo for MSS in config line %d.\n",
-                              ln);
-                    sig[sigcnt].mss_mod = MOD_CONST;
-                } else if (!isdigit(*(p + 1)))
-                    fatal("Incorrect M value in line %d.\n", ln);
-                else
-                    sig[sigcnt].mss = atoi(p + 1);
-                break;
-
-                /*
-                 * Yuck! 
-                 */
-            case '?':
-                if (!isdigit(*(p + 1)))
-                    fatal("Bogus ?nn value in line %d.\n", ln);
-                else
-                    sig[sigcnt].opt[optcnt] = atoi(p + 1);
-                break;
-
-            default:
-                fatal("Unknown TCP option '%c' in config line %d.\n", *p,
-                      ln);
-            }
-
-            if (++sig[sigcnt].optcnt >= MAXOPT)
-                fatal
-                    ("Too many TCP options specified in config line %d.\n",
-                     ln);
-
-            /*
-             * Skip separators 
-             */
-            do {
-                p++;
-            } while (*p && !isalpha(*p) && *p != '?');
-
-        }
-
-        sig[sigcnt].line = ln;
-
-        p = quirks;
-
-        while (*p)
-            switch (toupper(*(p++))) {
-            case 'E':
-                fatal
-                    ("Quirk 'E' (line %d) is obsolete. Remove it, append E to the "
-                     "options.\n", ln);
-
-            case 'K':
-                if (!rst_mode)
-                    fatal("Quirk 'K' (line %d) is valid only in RST+ (-R)"
-                          " mode (wrong config file?).\n", ln);
-                sig[sigcnt].quirks |= QUIRK_RSTACK;
-                break;
-
-            case 'D':
-                sig[sigcnt].quirks |= QUIRK_DATA;
-                break;
-
-            case 'Q':
-                sig[sigcnt].quirks |= QUIRK_SEQEQ;
-                break;
-            case '0':
-                sig[sigcnt].quirks |= QUIRK_SEQ0;
-                break;
-            case 'P':
-                sig[sigcnt].quirks |= QUIRK_PAST;
-                break;
-            case 'Z':
-                sig[sigcnt].quirks |= QUIRK_ZEROID;
-                break;
-            case 'I':
-                sig[sigcnt].quirks |= QUIRK_IPOPT;
-                break;
-            case 'U':
-                sig[sigcnt].quirks |= QUIRK_URG;
-                break;
-            case 'X':
-                sig[sigcnt].quirks |= QUIRK_X2;
-                break;
-            case 'A':
-                sig[sigcnt].quirks |= QUIRK_ACK;
-                break;
-            case 'T':
-                sig[sigcnt].quirks |= QUIRK_T2;
-                break;
-            case 'F':
-                sig[sigcnt].quirks |= QUIRK_FLAGS;
-                break;
-            case '!':
-                sig[sigcnt].quirks |= QUIRK_BROKEN;
-                break;
-            case '.':
-                break;
-            default:
-                fatal("Bad quirk '%c' in line %d.\n", *(p - 1), ln);
-            }
-
-        e = bh[SIGHASH(s, sig[sigcnt].optcnt, sig[sigcnt].quirks, d)];
+        parse_sig_wsize(&asig, w);
+        asig.line = ln;
+        parse_sig_options(&asig, obuf);
+        parse_sig_quirks(&asig, quirks);
+        uint32_t index = SIGHASH(asig.wsize, s, asig.optcnt, asig.quirks, d) % hashsize;
+        e = sig[index];
 
         if (!e) {
-            bh[SIGHASH(s, sig[sigcnt].optcnt, sig[sigcnt].quirks, d)] =
-                sig + sigcnt;
+            sig[index] = alloc_sig(&asig);
         } else {
-            while (e->next)
+            int cc = 0;
+            // collision!
+            while (e->next){
                 e = e->next;
-            e->next = sig + sigcnt;
+                cc++;
+            }
+            /*
+            fprintf(stderr, "hash collision %d: \n%d: %s - %s\n%d: %s - %s\n",
+            cc, asig.line, asig.os, asig.desc, e->line, e->os, e->desc);
+            */
+            e->next = alloc_sig(&asig);
         }
 
+        /*
         if (check_collide)
             collide(sigcnt);
+            */
 
-        if (++sigcnt >= MAXSIGS)
+        /* 
+        if (++sigcnt >= hashsize)
             fatal("Maximum signature count exceeded.\n");
+            */
 
     }
 
@@ -754,9 +783,9 @@ int load_sigs(const char *file, fp_entry dasig[], int max)
         int i;
         fp_entry *p;
         printf("Hash table layout: ");
-        for (i = 0; i < 16; i++) {
+        for (i = 0; i < hashsize; i++) {
             int z = 0;
-            p = bh[i];
+            p = sig[i];
             while (p) {
                 p = p->next;
                 z++;
@@ -770,20 +799,39 @@ int load_sigs(const char *file, fp_entry dasig[], int max)
     if (check_collide && !problems)
         debug("[+] Signature collision check successful.\n");
 
+    /*
     if (!sigcnt)
         debug("[!] WARNING: no signatures loaded from config file.\n");
+        */
 
+    return 0;
 }
+
+/* run through the hash, free entries, then free hash */
+void unload_sigs(fp_entry **sigp, int size)
+{
+    int i = size;
+    fp_entry *e;
+    while(i--){
+        e = sigp[i];
+        if (e)
+            free_sigs(e);
+        sigp[i] = NULL; // clear
+    }
+    free(*sigp);
+    *sigp = NULL;
+}
+
 
 
 #define MY_MAXDNS 32
 
 #include <netdb.h>
-static inline uint8_t* grab_name(uint8_t* a) {
+static inline char* grab_name(char* a) {
   struct hostent* r;
-  static uint8_t rbuf[MY_MAXDNS+6] = "/";
+  static char rbuf[MY_MAXDNS+6] = "/";
   uint32_t j;
-  uint8_t *s,*d = rbuf+1;
+  char *s,*d = rbuf+1;
 
   if (!do_resolve) return "";
   r = gethostbyaddr(a,4,AF_INET);
@@ -884,7 +932,6 @@ static void dump_payload(uint8_t* data,uint16_t dlen) {
 
   if (!mode_oneline) putchar('\n');
   printf("  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
-
 }
 
 
@@ -894,7 +941,8 @@ static void dump_payload(uint8_t* data,uint16_t dlen) {
 uint32_t matched_packets;
 
 
-void find_match(uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
+fp_entry *find_match(fp_entry *sig[], uint32_t hashsize, 
+                       uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
                        uint32_t dst,uint16_t sp,uint16_t dp,uint8_t ocnt,uint8_t* op,uint16_t mss,
                        uint8_t wsc,uint32_t tstamp,uint8_t tos,uint32_t quirks,uint8_t ecn,
                        uint8_t* pkt,uint8_t plen,uint8_t* pay, struct timeval pts) {
@@ -911,12 +959,18 @@ void find_match(uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
 
 re_lookup:
 
-  p = bh[SIGHASH(tot,ocnt,quirks,df)];
+  p = sig[SIGHASH(wss,tot,ocnt,quirks,df) % hashsize];
 
   //if (tos) tos_desc = lookup_tos(tos);
 
+  printf("\nmatch:  ");
+  display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+  printf("\n");
   while (p) {
   
+    printf("check:  ");
+    print_sig(p);
+    printf("\n");
     /* Cheap and specific checks first... */
 
       /* psize set to zero means >= PACKET_BIG */
@@ -1084,7 +1138,7 @@ continue_fuzzy:
 
     fflush(0);
 
-    return;
+    return p; // XXX: nothing useful yet!
 
 continue_search:
 
@@ -1189,6 +1243,7 @@ continue_search:
     fflush(0);
 
   }
+  return p; // XXX does not return anything useful yet
 
 }
 
@@ -1221,25 +1276,32 @@ fp_entry *lookup_sig(fp_entry sig[], packetinfo *pi)
 void dump_sigs(fp_entry *mysig[], int max)
 {
     int i;
-    for (i = 0; i < sigcnt; i++){
-        print_sig(&sig[i]);
+    for (i = 0; i < max; i++){
+        if (!mysig[i] || !mysig[i]->os)
+            continue;
+        print_sig(mysig[i]);
     }
 }
 
 
 #ifdef SIG_STANDALONE
+#define HSIZE 241
 int main(int argc, char **argv)
 {
+
+    fp_entry **siga[16] = {0};
+    int i = 0;
     if (argc < 2) {
         fprintf(stderr, "Where are my sigs?\n");
         exit(1);
     }
     while (--argc) {
         argv++;
-        load_sigs(*argv, sig, MAXSIGS);
+        load_sigs(*argv, &siga[i], HSIZE);
+        dump_sigs(siga[i], HSIZE);
+        unload_sigs(siga[i], HSIZE);
     }
 
-    dump_sigs(sig, sigcnt);
 }
 
 #endif

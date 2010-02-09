@@ -14,7 +14,7 @@
 
 struct mtu_def {
   uint16_t mtu;
-  uint8_t* dev;
+  char* dev;
 };
 
 

@@ -19,8 +19,8 @@
  * be used for evaluating if we should do some fingerprinting
  * I suggest:
  * 0 : NEVER CHECK PACKAGE
- * 1 : Check package - (Package commes from Client)
- * 2 : Check package - (Package commes from Server)
+ * 1 : Check package - (Package comes from Client)
+ * 2 : Check package - (Package comes from Server)
  */
 
 /* void cx_track(uint64_t ip_src,uint16_t src_port,uint64_t ip_dst,uint16_t dst_port,

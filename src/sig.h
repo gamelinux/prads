@@ -23,8 +23,20 @@
 
 /* signature interface */
 
+// the print_ and display_ functions need to be refactored
+// and folded into gen_fp - to return a string for printing / storing
+void print_sig(fp_entry * e);
+void display_signature(uint8_t ttl, uint16_t tot, uint8_t df,
+                                     uint8_t * op, uint8_t ocnt,
+                                     uint16_t mss, uint16_t wss,
+                                     uint8_t wsc, uint32_t tstamp,
+                                     uint32_t quirks);
+int load_sigs(const char *file, fp_entry **sigp[], int hashsize);
+void dump_sigs(fp_entry *mysig[], int max);
+void unload_sigs(fp_entry **sigp, int size);
 // a starting point - the p0f find_match()
-void find_match(uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
+fp_entry *find_match(fp_entry *sig[], uint32_t hashsize,
+                       uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
                        uint32_t dst,uint16_t sp,uint16_t dp,uint8_t ocnt,uint8_t* op,uint16_t mss,
                        uint8_t wsc,uint32_t tstamp,uint8_t tos,uint32_t quirks,uint8_t ecn,
                        uint8_t* pkt,uint8_t plen,uint8_t* pay);

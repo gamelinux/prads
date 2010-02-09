@@ -1,9 +1,14 @@
 #include "../common.h"
 #include "../prads.h"
 #include "../sig.h"
+#include "../config.h"
 #include "ipfp.h"
 
-inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
+extern globalconfig config;
+
+/* ipfp.c / tcp_fp.c - not very clean */
+
+static inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
 {
     if (ftype == TF_RST && (tcph->t_flags & TF_ACK))
         *quirks |= QUIRK_RSTACK;
@@ -28,7 +33,7 @@ inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint
 
 /* parse TCP option header field
  * yes, this function returns the timestamp for now */ 
-inline uint32_t parse_tcpopt(const uint8_t *opt_ptr, int32_t ilen, const uint8_t *end_ptr, fp_entry *e)
+static inline uint32_t parse_tcpopt(const uint8_t *opt_ptr, int32_t ilen, const uint8_t *end_ptr, fp_entry *e)
 {
     uint8_t ocnt = 0, olen;
     // mnemonics
@@ -219,9 +224,12 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
                e.wsize,
                e.wsc,
                tstamp, e.quirks, ftype, pi);
-    // find_match(pi, e);
-    // return this into asset engine
-    find_match(e.size,
+    //  match = find_match(sigs, pi, e);
+    //  ---> after match_network but before update_asset
+    fp_entry *match = find_match(
+               config.sig_syn,
+               config.sig_hashsize,
+               e.size,
                e.df,
                e.ttl,
                e.wsize,
@@ -269,17 +277,3 @@ printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lm
 }
 
 
-// deprecate these guys soon
-/*
-void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
-             uint8_t ftype, struct in6_addr ip_src)
-{
-    fp_tcp(AF_INET, ip4, tcph, end_ptr, ftype, ip_src);
-}
-
-void fp_tcp6(ip6_header * ip6, tcp_header * tcph, const uint8_t * end_ptr,
-             uint8_t ftype, struct in6_addr ip_src)
-{
-    fp_tcp(AF_INET6, ip6, tcph, end_ptr, ftype, ip_src);
-}
-*/

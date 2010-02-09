@@ -74,6 +74,13 @@ void set_default_config_options()
     // default source net owns everything
     config.s_net   = "0.0.0.0/0,::/0";
     config.errbuf[0] = '\0';
+    config.configpath = "../etc/";
+    // files should be relative to configpath somehow
+    config.sig_file_syn = "../etc/os.fp";
+    config.sig_file_synack = "../etc/osa.fp";
+    config.sig_syn = NULL;
+    config.sig_synack = NULL;
+    config.sig_hashsize = 241;
 }
 
 void parse_config_file(bstring fname)

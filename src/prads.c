@@ -35,7 +35,7 @@
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
 
-/*  G L O B A L E S  *********************************************************/
+/*  G L O B A L E S  *** (or candidates for refactoring, as we say)***********/
 uint64_t cxtrackerid;
 globalconfig config;
 time_t tstamp;
@@ -56,6 +56,7 @@ int nets = 1;
 struct fmask network[MAX_NETS];
 
 // static strings for comparison
+// - this is lame and should be a flag!
 struct tagbstring tUNKNOWN = bsStatic("unknown");
 bstring UNKNOWN = & tUNKNOWN;
 
@@ -1105,7 +1106,7 @@ int main(int argc, char *argv[])
             config.bpff = strdup(optarg);
             break;
         case 'v':
-            config.verbose = 1;
+            config.verbose++;
             break;
         case 'd':
             config.dpath = strdup(optarg);
@@ -1143,11 +1144,22 @@ int main(int argc, char *argv[])
 
     parse_nets(config.s_net, network);
     if(config.ctf & CO_SYN){
-        printf("[*] Loading SYN fingerprints");
-        load_sigs("../etc/os.fp");
+        int32_t rc;
+        printf("[*] Loading SYN fingerprints\n");
+        rc = load_sigs(config.sig_file_syn, &config.sig_syn, config.sig_hashsize);
+        if(rc) perror("syn loadage failed!");
         if(config.verbose > 1)
-            dump_sigs(NULL, 0);
+            dump_sigs(config.sig_syn, config.sig_hashsize);
     }
+    if(config.ctf & CO_SYNACK){
+        int32_t rc;
+        printf("[*] Loading SYNACK fingerprints\n");
+        rc = load_sigs(config.sig_file_synack, &config.sig_synack, config.sig_hashsize);
+        if(rc) perror("synack loadage failed!");
+        if(config.verbose > 1)
+            dump_sigs(config.sig_synack, config.sig_hashsize);
+    }
+
     printf("\n[*] Running prads %s\n", VERSION);
     //if (config.verbose) display_config();
     display_config();

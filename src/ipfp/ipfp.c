@@ -152,9 +152,7 @@ void gen_fp_tcp(uint8_t ttl,
         if (quirks & QUIRK_DATA)
             bformata(fp, "D");
 
-        /*
-         * edward 
-         */
+        // edward 
         if (quirks & QUIRK_FINACK)
             bformata(fp, "N");
         if (quirks & QUIRK_FLOWL)

@@ -9,8 +9,9 @@ extern globalconfig config;
 // static strings for comparison
 extern bstring UNKNOWN;
 
-/* looks to see if asset exists and update timestamp. If not, create the asset */
-void update_asset(int af, struct in6_addr ip_addr)
+/* looks to see if asset exists and update timestamp. If not, create the asset
+ * returns a pointer to the asset */
+asset *update_asset(int af, struct in6_addr ip_addr)
 {
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
@@ -22,7 +23,7 @@ void update_asset(int af, struct in6_addr ip_addr)
             if (rec->af == AF_INET
                 && rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]) {
                 rec->last_seen = tstamp;
-                return;
+                return rec;
             }
             rec = rec->next;
         }
@@ -36,14 +37,13 @@ void update_asset(int af, struct in6_addr ip_addr)
                 && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
                 && rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]) {
                 rec->last_seen = tstamp;
-                return;
+                return rec;
             }
             rec = rec->next;
         }
     }
     /* If no match, create the asset */
-    add_asset(af, ip_addr);
-    return;
+    return add_asset(af, ip_addr);
 }
 
 void update_service_stats(int role, uint16_t proto)
@@ -137,9 +137,9 @@ short update_asset_shmem(packetinfo *pi)
     // flip it upside down: caller packs it?
     // now how would that eat the program from the inside?
     // pass the struct around but store it in a shared mem buffer
-    pi->ip_src; // src has the fingerprint
-    pi->ip_dst; // we r doing for both, now? - packet payload may be spooft
-    pi->s_port;
+    (void)pi->ip_src; // src has the fingerprint
+    (void)pi->ip_dst; // we r doing for both, now? - packet payload may be spooft
+    (void)pi->s_port;
     // what is detection?
     //detection;
     // must include this
@@ -179,7 +179,8 @@ short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int upt
         goto os_update;
     } else {
         /* If no asset */
-        update_asset(pi->af, pi->ip_src);
+        asset *a = update_asset(pi->af, pi->ip_src);
+        // XXX: pass *a so it's not looked up again - kwy
         if (update_asset_os(pi, detection, raw_fp, uptime) == 0) return 0;
         return 1;
     }
@@ -381,7 +382,7 @@ service_update:
  *              : 2 - Discovered
  * RETURN       : None!
  * ---------------------------------------------------------- */
-void add_asset(int af, struct in6_addr ip_addr)
+asset *add_asset(int af, struct in6_addr ip_addr)
 {
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
@@ -420,7 +421,7 @@ void add_asset(int af, struct in6_addr ip_addr)
     u_ntop(ip_addr, af, ip_addr_s);
     dlog("[*] asset added: %s\n",ip_addr_s);
     
-    return;
+    return rec;
 }
 
 short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
