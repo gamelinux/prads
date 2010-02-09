@@ -1109,7 +1109,7 @@ continue_search:
 
   if (!no_unknown) { 
     a=(uint8_t*)&src;
-    printf("%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
+    printf("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
 
     display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
 
