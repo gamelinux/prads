@@ -842,6 +842,7 @@ void parse_icmp (packetinfo *pi)
                 // could look for icmp spesific data in package abcde...
                 // service_icmp(*pi->ip4,*tcph
             } else if (pi->af==AF_INET6) {
+                add_asset(pi->af, pi->ip_src);
                 fp_icmp6(pi, pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
             }
         } else {
@@ -1081,7 +1082,9 @@ int main(int argc, char *argv[])
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
     set_default_config_options();
-    parse_config_file(bfromcstr("../etc/prads.conf"));
+    bstring pconfile = bfromcstr("../etc/prads.conf");
+    parse_config_file(pconfile);
+    bdestroy (pconfile);
 
     cxtbuffer = NULL;
     cxtrackerid = 0;
@@ -1158,16 +1161,6 @@ int main(int argc, char *argv[])
     load_servicefp_file(3, "../etc/tcp-clients.sig");
     //load_servicefp_file(4,"../etc/udp-client.sig");
     init_services();
-    add_known_port(17,1194,bfromcstr("@openvpn"));
-    add_known_port(17,123,bfromcstr("@ntp"));
-    add_known_port(6,631,bfromcstr("@cups"));
-    add_known_port(6,20,bfromcstr("@ftp-data"));
-    add_known_port(6,21,bfromcstr("@ftp"));
-    add_known_port(6,22,bfromcstr("@ssh"));
-    add_known_port(6,119,bfromcstr("@nntp"));
-    add_known_port(6,80,bfromcstr("@http"));
-    add_known_port(6,443,bfromcstr("@https"));
-    add_known_port(6,6667,bfromcstr("@irc"));
 
     /*
      * look up an available device if non specified
@@ -1220,8 +1213,8 @@ int main(int argc, char *argv[])
     return (0);
 }
 
-void free_config()
-{
-    if (config.dev != NULL) free (config.dev);
-    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
-}
+//void free_config()
+//{
+//    if (config.dev != NULL) free (config.dev);
+//    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
+//}

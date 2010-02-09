@@ -31,6 +31,7 @@
 /*  G L O B A L E S  *********************************************************/
 extern globalconfig config;
 
+/* F U N C T I O N S  ********************************************************/
 void display_config()
 {
     printf("[*] OS checks enabled:");
@@ -52,7 +53,17 @@ void display_config()
     return;
 }
 
-/* F U N C T I O N S  ********************************************************/
+void free_config()
+{
+    if (config.dev != NULL) free (config.dev);
+    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
+    if (config.pidfile != NULL) bcstrfree(config.pidfile);
+    if (config.user_name != NULL) bcstrfree(config.user_name);
+    if (config.group_name != NULL) bcstrfree(config.group_name);
+    if (config.dev != NULL) bcstrfree(config.dev);
+    if (config.bpff != NULL) bcstrfree(config.bpff);
+}
+
 void set_default_config_options()
 {
     config.ctf    |= CO_SYN;
