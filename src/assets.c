@@ -168,12 +168,12 @@ short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int upt
     extern time_t tstamp;
     asset *rec = NULL;
 
-    if (pi->cxt->s_asset == NULL ) {
+    //if (pi->cxt->s_asset == NULL ) {
         rec = asset_lookup(pi->ip_src, pi->af);
-        pi->cxt->s_asset = rec;
-    } else {
-        rec = pi->cxt->s_asset;
-    }
+        //pi->cxt->s_asset = rec;
+    //} else {
+    //    rec = pi->cxt->s_asset;
+    //}
 
     if (rec != NULL) {
         goto os_update;
