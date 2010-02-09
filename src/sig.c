@@ -1184,7 +1184,7 @@ continue_search:
       */
 
     if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
-    putchar('\n');
+    //putchar('\n'); //edward
     if (full_dump) dump_packet(pkt,plen);
     fflush(0);
 
