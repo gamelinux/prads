@@ -232,6 +232,7 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
                tstamp, e.quirks, ftype, pi);
     // find_match(pi, e);
     // return this into asset engine
+    if (pi->ip6 != NULL) return; // Fix this when find_match() is IPv6 aware
     find_match(e.size,
                e.df,
                e.ttl,
