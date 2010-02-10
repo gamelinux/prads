@@ -80,7 +80,7 @@ void game_over()
         print_prads_stats();
         print_pcap_stats();
         if (config.handle != NULL) pcap_close(config.handle);
-        free_config();
+        free_config(); // segfault here !
         printf("\nprads ended\n");
         exit(0);
     }

@@ -23,8 +23,8 @@ connection *connection_alloc(void)
     cxt->prev = NULL;
     cxt->hnext = NULL;
     cxt->hprev = NULL;
+    cxt->c_asset = NULL;
     cxt->s_asset = NULL;
-    cxt->d_asset = NULL;
 
     return cxt;
 }
@@ -60,8 +60,8 @@ void cxt_update_src (connection *cxt, packetinfo *pi)
     cxt->last_pkt_time = pi->pheader->ts.tv_sec;
     pi->sc = SC_CLIENT;
     if (!(cxt->check & CXT_DONT_CHECK_CLIENT)
-            && (cxt->d_total_bytes > MAX_BYTE_CHECK
-            || cxt->d_total_pkts > MAX_PKT_CHECK)) {
+            && (cxt->s_total_bytes > MAX_BYTE_CHECK
+            || cxt->s_total_pkts > MAX_PKT_CHECK)) {
         cxt->check |= CXT_DONT_CHECK_CLIENT; // Don't check
     }
     return;
@@ -229,8 +229,8 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->d_port = pi->d_port;
         cxt->proto = (pi->ip4 ? pi->ip4->ip_p : pi->ip6->next);
         cxt->check = 0x00;
+        cxt->c_asset = NULL;
         cxt->s_asset = NULL;
-        cxt->d_asset = NULL;
         cxt->reversed = 0;
         pi->sc = SC_CLIENT;
 }

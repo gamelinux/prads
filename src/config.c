@@ -57,11 +57,12 @@ void free_config()
 {
     if (config.dev != NULL) free (config.dev);
     if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
-    if (config.pidfile != NULL) bcstrfree(config.pidfile);
-    if (config.user_name != NULL) bcstrfree(config.user_name);
-    if (config.group_name != NULL) bcstrfree(config.group_name);
-    if (config.dev != NULL) bcstrfree(config.dev);
-    if (config.bpff != NULL) bcstrfree(config.bpff);
+// Grr - no nice way to tell if the settings comes from configfile or not :/
+//    if (config.pidfile != NULL) bcstrfree(config.pidfile);
+//    if (config.user_name != NULL) bcstrfree(config.user_name);
+//    if (config.group_name != NULL) bcstrfree(config.group_name);
+//    if (config.dev != NULL) bcstrfree(config.dev);
+//    if (config.bpff != NULL) bcstrfree(config.bpff);
 }
 
 void set_default_config_options()
