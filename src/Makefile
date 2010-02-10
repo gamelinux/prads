@@ -5,7 +5,7 @@ CFLAGS=-O3
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
-CFLAGS = -g -DDEBUG -Wall
+CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign
 endif
 
 SERVICE_OBJ = servicefp/servicefp.o servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o 

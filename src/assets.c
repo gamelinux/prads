@@ -153,14 +153,14 @@ short update_asset_shmem(packetinfo *pi)
     // flip it upside down: caller packs it?
     // now how would that eat the program from the inside?
     // pass the struct around but store it in a shared mem buffer
-    pi->ip_src; // src has the fingerprint
-    pi->ip_dst; // we r doing for both, now? - packet payload may be spooft
-    pi->s_port;
+    (void)pi->ip_src; // src has the fingerprint
+    (void)pi->ip_dst; // we r doing for both, now? - packet payload may be spooft
+    (void)pi->s_port;
     // what is detection?
     //detection;
     // must include this
     //pi->raw_fp;
-    pi->af;
+    (void)pi->af;
     //pi->uptime;
     // what more do we need in the *pi?
     switch(pi->type){

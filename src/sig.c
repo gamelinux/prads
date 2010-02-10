@@ -764,6 +764,7 @@ int load_sigs(const char *file, fp_entry dasig[], int max)
     if (!sigcnt)
         debug("[!] WARNING: no signatures loaded from config file.\n");
 
+    return 0;
 }
 
 
