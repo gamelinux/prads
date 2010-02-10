@@ -403,7 +403,7 @@ asset *add_asset(int af, struct in6_addr ip_addr)
     u_ntop(ip_addr, af, ip_addr_s);
     dlog("[*] asset added: %s\n",ip_addr_s);
     
-    return rec;
+    return masset;
 }
 
 short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],

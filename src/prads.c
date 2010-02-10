@@ -34,6 +34,7 @@
 #include "servicefp/servicefp.h"
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
+#include "sig.h"
 
 /*  G L O B A L E S  *** (or candidates for refactoring, as we say)***********/
 uint64_t cxtrackerid;

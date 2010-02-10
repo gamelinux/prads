@@ -144,7 +144,6 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
     uint8_t *opt_ptr;
     const uint8_t * end_ptr;
     uint8_t *payload = 0;
-    uint8_t op[MAXOPT];
     fp_entry e = { 0 };
     uint8_t open_mode = 0;    /* open_mode=stray ack */
     int32_t ilen;
@@ -255,6 +254,7 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
                payload
                // pts, // *not used
                );
+    (void)match; // use!
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),
