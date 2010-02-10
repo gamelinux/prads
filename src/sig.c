@@ -28,14 +28,17 @@
 
     find_match(foo)
 
-
  TODO:
   - fp_entry* = find_match(sigs, pi, e)
-  - unload_sigs(sigs);
   - ipv6 fix
   - collide
   - merge gen_fp and display_signature
-
+  - frob ipfp* stuff for sanity
+  - walk through find_match() and return the match properly
+  - merge diplay_signature() and gen_fp()
+  - run find_match on update_asset(_os)
+  - run update_asset_os() with a looked-up asset
+  - sanity check asset lookups
 
  */
 
@@ -57,8 +60,9 @@
  * best case (and least efficient) would be to hash on
  * full options and quirks
  */
-#define SIGHASH(wsize, tsize,optcnt,q,df) \
-	( ((wsize << 3) ^ ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) ))
+#define SIGHASH(tsize,optcnt,q,df) \
+	( ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) )
+	//( ((wsize) << 3) ^ ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) )
 #define debug(x...)	fprintf(stderr,x)
 #define fatal(x...)	do { debug("[-] ERROR: " x); exit(1); } while (0)
 
@@ -738,7 +742,7 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
         asig.line = ln;
         parse_sig_options(&asig, obuf);
         parse_sig_quirks(&asig, quirks);
-        uint32_t index = SIGHASH(asig.wsize, s, asig.optcnt, asig.quirks, d) % hashsize;
+        uint32_t index = SIGHASH(s, asig.optcnt, asig.quirks, d) % hashsize;
         e = sig[index];
 
         if (!e) {
@@ -959,7 +963,7 @@ fp_entry *find_match(fp_entry *sig[], uint32_t hashsize,
 
 re_lookup:
 
-  p = sig[SIGHASH(wss,tot,ocnt,quirks,df) % hashsize];
+  p = sig[SIGHASH(tot,ocnt,quirks,df) % hashsize];
 
   if (tos) tos_desc = lookup_tos(tos);
 
