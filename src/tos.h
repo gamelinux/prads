@@ -27,7 +27,7 @@
 
 struct tos_def {
   uint8_t tos;
-  uint8_t* desc;
+  char* desc;
 };
 
 

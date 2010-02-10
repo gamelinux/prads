@@ -54,24 +54,15 @@ uint32_t packet_count;
 uint8_t operating_mode;
 uint32_t st_time;
 static uint8_t no_extra,
-    find_masq,
-    masq_flags,
     no_osdesc,
     no_known,
     no_unknown,
-    no_banner,
-    use_promisc,
-    add_timestamp,
-    header_len,
-    ack_mode,
     rst_mode,
-    go_daemon,
-    use_logfile,
     mode_oneline,
     always_sig,
     do_resolve,
     check_collide,
-    full_dump, use_fuzzy, use_vlan, payload_dump, port0_wild;
+    full_dump, use_fuzzy, payload_dump;
 
 static uint8_t problems;
 
@@ -806,7 +797,7 @@ static inline uint8_t* grab_name(uint8_t* a) {
 
 static uint8_t* lookup_link(uint16_t mss,uint8_t txt) {
   uint32_t i;
-  static uint8_t tmp[32];
+  static char tmp[32];
 
   if (!mss) return txt ? "unspecified" : 0;
   mss += 40;
@@ -913,7 +904,7 @@ re_lookup:
 
   p = bh[SIGHASH(tot,ocnt,quirks,df)];
 
-  //if (tos) tos_desc = lookup_tos(tos);
+  if (tos) tos_desc = lookup_tos(tos);
 
   while (p) {
   
