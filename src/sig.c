@@ -854,7 +854,7 @@ static inline char* grab_name(char* a) {
 
 static uint8_t* lookup_link(uint16_t mss,uint8_t txt) {
   uint32_t i;
-  static uint8_t tmp[32];
+  static char tmp[32];
 
   if (!mss) return txt ? "unspecified" : 0;
   mss += 40;
@@ -961,7 +961,7 @@ re_lookup:
 
   p = sig[SIGHASH(wss,tot,ocnt,quirks,df) % hashsize];
 
-  //if (tos) tos_desc = lookup_tos(tos);
+  if (tos) tos_desc = lookup_tos(tos);
 
   printf("\nmatch:  ");
   display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
@@ -1163,7 +1163,7 @@ continue_search:
 
   if (!no_unknown) { 
     a=(uint8_t*)&src;
-    printf("%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
+    printf("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
 
     display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
 
@@ -1238,7 +1238,7 @@ continue_search:
       */
 
     if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
-    putchar('\n');
+    //putchar('\n'); //edward
     if (full_dump) dump_packet(pkt,plen);
     fflush(0);
 

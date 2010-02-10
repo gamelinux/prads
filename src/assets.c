@@ -9,41 +9,18 @@ extern globalconfig config;
 // static strings for comparison
 extern bstring UNKNOWN;
 
-/* looks to see if asset exists and update timestamp. If not, create the asset
- * returns a pointer to the asset */
-asset *update_asset(int af, struct in6_addr ip_addr)
+void update_asset(packetinfo *pi)
 {
-    extern asset *passet[BUCKET_SIZE];
-    extern time_t tstamp;
-    extern uint64_t hash;
-    if (af == AF_INET) {
-        hash = ((ip_addr.s6_addr32[0])) % BUCKET_SIZE;
-        asset *rec = passet[hash];
-        while (rec != NULL) {
-            if (rec->af == AF_INET
-                && rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]) {
-                rec->last_seen = tstamp;
-                return rec;
-            }
-            rec = rec->next;
+    if (asset_lookup(pi) == SUCCESS) {
+        if (pi->asset != NULL) {
+            pi->asset->last_seen = pi->pheader->ts.tv_sec;
+        } else {
+            printf("\nBAD ERROR in update_asset\n");
         }
-    } else if (af == AF_INET6) {
-        hash = ((ip_addr.s6_addr32[3])) % BUCKET_SIZE;
-        asset *rec = passet[hash];
-        while (rec != NULL) {
-            if (rec->af == AF_INET6 
-                && rec->ip_addr.s6_addr32[3] == ip_addr.s6_addr32[3]
-                && rec->ip_addr.s6_addr32[2] == ip_addr.s6_addr32[2]
-                && rec->ip_addr.s6_addr32[1] == ip_addr.s6_addr32[1]
-                && rec->ip_addr.s6_addr32[0] == ip_addr.s6_addr32[0]) {
-                rec->last_seen = tstamp;
-                return rec;
-            }
-            rec = rec->next;
-        }
+    } else {
+        add_asset(pi->af, pi->ip_src);
     }
-    /* If no match, create the asset */
-    return add_asset(af, ip_addr);
+    return;
 }
 
 void update_service_stats(int role, uint16_t proto)
@@ -82,40 +59,78 @@ void update_os_stats(uint8_t detection)
     }
 }
 
-asset *asset_lookup(struct in6_addr ip, int af)
+// asset_lookup should return 0 on success, 1 on failure
+//asset *asset_lookup(struct in6_addr ip, int af)
+uint8_t asset_lookup(packetinfo *pi)
 {
     extern asset *passet[BUCKET_SIZE];
     uint64_t hash;
     asset *masset = NULL;
 
-    if (af == AF_INET) {
-        hash = ((ip.s6_addr32[0])) % BUCKET_SIZE;
-        masset = passet[hash];
-        while (masset != NULL) {
-            //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
-            if (masset->af == AF_INET
-                && masset->ip_addr.s6_addr32[0] == ip.s6_addr32[0]) {
-                return masset;
+    if (pi->asset != NULL) {
+        return SUCCESS;
+    } else if (pi->sc == SC_CLIENT && pi->cxt->reversed == 0 && pi->cxt->c_asset != NULL) {
+        pi->asset = pi->cxt->c_asset;
+        return SUCCESS;
+    } else if (pi->sc == SC_CLIENT && pi->cxt->reversed == 1 && pi->cxt->s_asset != NULL) {
+        pi->asset = pi->cxt->s_asset;
+        return SUCCESS;
+    } else if (pi->sc == SC_SERVER && pi->cxt->reversed == 0 && pi->cxt->s_asset != NULL) {
+        pi->asset = pi->cxt->s_asset;
+        return SUCCESS;
+    } else if (pi->sc == SC_SERVER && pi->cxt->reversed == 1 && pi->cxt->c_asset != NULL) {
+        pi->asset = pi->cxt->c_asset;
+        return SUCCESS;
+    } else {
+        if (pi->af == AF_INET) {
+            hash = ((pi->ip_src.s6_addr32[0])) % BUCKET_SIZE;
+            masset = passet[hash];
+            while (masset != NULL) {
+                //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
+                if (masset->af == AF_INET
+                    && masset->ip_addr.s6_addr32[0] == pi->ip_src.s6_addr32[0]) {
+                    pi->asset = masset;
+                    if (pi->cxt != NULL) {
+                        if (pi->sc == SC_CLIENT) {
+                            if (pi->cxt->reversed == 0) pi->cxt->c_asset = masset;
+                                else pi->cxt->s_asset = masset;
+                        } else {
+                            if (pi->cxt->reversed == 0) pi->cxt->s_asset = masset;
+                                else pi->cxt->c_asset = masset;
+                        }
+                    }
+                    return SUCCESS;
+                }
+                masset = masset->next;
             }
-            masset = masset->next;
-        }
-        return NULL;
-    } else if (af == AF_INET6) {
-        hash = ((ip.s6_addr32[3])) % BUCKET_SIZE;
-        masset = passet[hash];
-        while (masset != NULL) {
-            if (masset->af == AF_INET6
-                && masset->ip_addr.s6_addr32[3] == ip.s6_addr32[3]
-                && masset->ip_addr.s6_addr32[2] == ip.s6_addr32[2]
-                && masset->ip_addr.s6_addr32[1] == ip.s6_addr32[1]
-                && masset->ip_addr.s6_addr32[0] == ip.s6_addr32[0]) {
-                return masset;
+            return ERROR;
+        } else if (pi->af == AF_INET6) {
+            hash = ((pi->ip_src.s6_addr32[3])) % BUCKET_SIZE;
+            masset = passet[hash];
+            while (masset != NULL) {
+                if (masset->af == AF_INET6
+                    && masset->ip_addr.s6_addr32[3] == pi->ip_src.s6_addr32[3]
+                    && masset->ip_addr.s6_addr32[2] == pi->ip_src.s6_addr32[2]
+                    && masset->ip_addr.s6_addr32[1] == pi->ip_src.s6_addr32[1]
+                    && masset->ip_addr.s6_addr32[0] == pi->ip_src.s6_addr32[0]) {
+                    pi->asset = masset;
+                    if (pi->cxt != NULL) {
+                       if (pi->sc == SC_CLIENT) {
+                            if (pi->cxt->reversed == 0) pi->cxt->c_asset = masset;
+                                else pi->cxt->s_asset = masset;
+                        } else {
+                            if (pi->cxt->reversed == 0) pi->cxt->s_asset = masset;
+                                else pi->cxt->c_asset = masset;
+                        }
+                    }
+                    return SUCCESS;
+                }
+                masset = masset->next;
             }
-            masset = masset->next;
+            return ERROR;
         }
-        return NULL;
+        return ERROR;
     }
-    return NULL;
 }
 
 /* ----------------------------------------------------------
@@ -144,7 +159,7 @@ short update_asset_shmem(packetinfo *pi)
     //detection;
     // must include this
     //pi->raw_fp;
-    pi->af;
+    (void)pi->af;
     //pi->uptime;
     // what more do we need in the *pi?
     switch(pi->type){
@@ -160,40 +175,32 @@ short update_asset_shmem(packetinfo *pi)
     }
 }
 
-//short update_asset_os(packetinfo *pi, bstring raw_fp, bstring os, bstring desc)
 short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int uptime)
-//                      struct in6_addr ip_addr, u_int16_t port,
-//                      uint8_t detection, bstring raw_fp, int af, int uptime)
 {
-    extern time_t tstamp;
-    asset *rec = NULL;
+    os_asset *tmp_oa = NULL;
+    os_asset *head_oa = NULL;
 
-    if (pi->cxt->s_asset == NULL ) {
-        rec = asset_lookup(pi->ip_src, pi->af);
-        pi->cxt->s_asset = rec;
+    if (asset_lookup(pi) == SUCCESS) {
+        if (pi->asset != NULL) {
+            goto os_update;
+        } else {
+            printf("\nBAD ERROR in update_asset_os\n");
+            return ERROR;
+        }
     } else {
-        rec = pi->cxt->s_asset;
-    }
-
-    if (rec != NULL) {
-        goto os_update;
-    } else {
-        /* If no asset */
-        asset *a = update_asset(pi->af, pi->ip_src);
-        // XXX: pass *a so it's not looked up again - kwy
-        if (update_asset_os(pi, detection, raw_fp, uptime) == 0) return 0;
-        return 1;
+        update_asset(pi);
+        if (update_asset_os(pi, detection, raw_fp, uptime) == SUCCESS) return SUCCESS;
+            else return ERROR;
     }
 
 os_update:
+    tmp_oa = pi->asset->os;
+    head_oa = pi->asset->os;
     //printf("[*] FOUND ASSET\n");
     //dlog("[%lu] Incoming asset, %s: %u:%u [%s]\n",
     //     tstamp, (char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
-    rec->last_seen = tstamp;
-    os_asset *tmp_oa = NULL;
-    os_asset *head_oa = NULL;
-    tmp_oa = rec->os;
-    head_oa = rec->os;
+
+    pi->asset->last_seen = pi->pheader->ts.tv_sec;    
 
     while (tmp_oa != NULL) {
         if (detection == tmp_oa->detection
@@ -203,12 +210,12 @@ os_update:
             bdestroy(tmp_oa->raw_fp);
             tmp_oa->raw_fp = bstrcpy(raw_fp);
             //tmp_sa->i_attempts++;
-            tmp_oa->last_seen = tstamp;
+            tmp_oa->last_seen = pi->pheader->ts.tv_sec;
             if (uptime) tmp_oa->uptime = uptime;
             //static char ip_addr_s[INET6_ADDRSTRLEN];
             //u_ntop(ip_addr, af, ip_addr_s);
             //dlog("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
-            return 0;
+            return SUCCESS;
         }
         tmp_oa = tmp_oa->next;
     }
@@ -222,20 +229,20 @@ os_update:
         // FIXME: don't copy fp, bincode it
         new_oa->raw_fp = bstrcpy(raw_fp);
         //new_oa->i_attempts = 1;
-        new_oa->first_seen = tstamp;
-        new_oa->last_seen = tstamp;
+        new_oa->first_seen = pi->pheader->ts.tv_sec;
+        new_oa->last_seen = pi->pheader->ts.tv_sec;
         new_oa->port = pi->s_port;
         if (uptime) new_oa->uptime = uptime;
         new_oa->next = head_oa;
         if (head_oa != NULL)
             head_oa->prev = new_oa;
         new_oa->prev = NULL;
-        rec->os = new_oa;
+        pi->asset->os = new_oa;
 
-        log_asset_os(rec,new_oa);
-        return 0;
+        log_asset_os(pi->asset,new_oa);
+        return SUCCESS;
     }
-    return 1;
+    return ERROR;
 }
 
 /* ----------------------------------------------------------
@@ -252,44 +259,27 @@ os_update:
  * ---------------------------------------------------------- */
 short update_asset_service(packetinfo *pi, bstring service, bstring application)
 {
-    extern time_t tstamp;
-    asset *rec = NULL;
+    serv_asset *tmp_sa = NULL;
+    serv_asset *head_sa = NULL;
     uint16_t port;
 
-    if (pi->cxt->reversed == 0) {
-        if (pi->cxt->s_asset == NULL ) {
-            rec = asset_lookup(pi->ip_src, pi->af);
-            pi->cxt->s_asset = rec;
+    if (asset_lookup(pi) == SUCCESS) {
+        if (pi->asset != NULL) {
+            if (pi->sc == SC_CLIENT) {
+                port = pi->d_port;
+            } else {
+                port = pi->s_port;
+            }
+            goto service_update;
         } else {
-            rec = pi->cxt->s_asset;
+            printf("\nBAD ERROR in update_asset_os\n");
+            return ERROR;
         }
-        if (pi->sc == SC_CLIENT) {
-            port = pi->d_port;
-        } else {
-            port = pi->s_port;
-        }
-    } else {
-        if (pi->cxt->d_asset == NULL ) {
-            rec = asset_lookup(pi->ip_dst, pi->af);
-            pi->cxt->d_asset = rec;
-        } else {
-            rec = pi->cxt->d_asset;
-        }
-        if (pi->sc == SC_CLIENT) {
-            port = pi->s_port;
-        } else {
-            port = pi->d_port;
-        }
-    }
-
-    if (rec != NULL) {
-        goto service_update;
     } else {
         /* If no asset */
-        if (pi->cxt->reversed == 0) update_asset(pi->af, pi->ip_src);
-            else update_asset(pi->af, pi->ip_dst);
-        if (update_asset_service(pi, service, application) == 0) return 0;
-        return 1;
+        update_asset(pi);
+        if (update_asset_service(pi, service, application) == SUCCESS) return SUCCESS;
+        return ERROR;
     }
 
 service_update:
@@ -297,11 +287,8 @@ service_update:
     //dlog("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
     /* Find asset within linked list */
     //printf("[*] FOUND ASSET\n");
-    rec->last_seen = tstamp;
-    serv_asset *tmp_sa = NULL;
-    serv_asset *head_sa = NULL;
-    tmp_sa = rec->services;
-    head_sa = rec->services;
+    tmp_sa = head_sa = pi->asset->services;
+    pi->asset->last_seen = pi->pheader->ts.tv_sec;    
 
     while (tmp_sa != NULL) {
         if (port == tmp_sa->port && pi->proto == tmp_sa->proto) {
@@ -320,10 +307,10 @@ service_update:
                 bdestroy(tmp_sa->application);
                 tmp_sa->service = bstrcpy(service);
                 tmp_sa->application = bstrcpy(application);
-                tmp_sa->last_seen = tstamp;
+                tmp_sa->last_seen = pi->pheader->ts.tv_sec;
 
-                log_asset_service(rec,tmp_sa);
-                return 0;
+                log_asset_service(pi->asset,tmp_sa);
+                return SUCCESS;
 
             } else if (!(biseq(application, tmp_sa->application) == 1)) {
                 if (tmp_sa->i_attempts > MAX_PKT_CHECK*2) {
@@ -332,20 +319,20 @@ service_update:
                     bdestroy(tmp_sa->application);
                     tmp_sa->service = bstrcpy(service);
                     tmp_sa->application = bstrcpy(application);
-                    tmp_sa->last_seen = tstamp;
+                    tmp_sa->last_seen = pi->pheader->ts.tv_sec;
 
-                    log_asset_service(rec,tmp_sa);
-                    return 0;
+                    log_asset_service(pi->asset,tmp_sa);
+                    return SUCCESS;
 
                 } else {
                     tmp_sa->i_attempts++;
-                    tmp_sa->last_seen = tstamp;
-                    return 0;
+                    tmp_sa->last_seen = pi->pheader->ts.tv_sec;
+                    return SUCCESS;
                 }
             } else {
                 tmp_sa->i_attempts = 0;
-                tmp_sa->last_seen = tstamp;
-                return 0;
+                tmp_sa->last_seen = pi->pheader->ts.tv_sec;
+                return SUCCESS;
             }
         }
         tmp_sa = tmp_sa->next;
@@ -361,16 +348,16 @@ service_update:
         new_sa->application = bstrcpy(application);
         new_sa->role = pi->sc;
         new_sa->i_attempts = 0;
-        new_sa->first_seen = tstamp;
-        new_sa->last_seen = tstamp;
-        new_sa->next = rec->services;
+        new_sa->first_seen = pi->pheader->ts.tv_sec;
+        new_sa->last_seen = pi->pheader->ts.tv_sec;
+        new_sa->next = pi->asset->services;
         new_sa->prev = NULL;
-        rec->services = new_sa;
+        pi->asset->services = new_sa;
 
-        log_asset_service(rec, new_sa);
-        return 0;
+        log_asset_service(pi->asset, new_sa);
+        return SUCCESS;
     }
-    return 1;
+    return ERROR;
 }
 
 /* ----------------------------------------------------------
@@ -387,6 +374,8 @@ asset *add_asset(int af, struct in6_addr ip_addr)
     extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
     extern uint64_t hash;
+    asset *masset = NULL;
+
     config.pr_s.assets++;
 
     if (af == AF_INET) {
@@ -395,26 +384,19 @@ asset *add_asset(int af, struct in6_addr ip_addr)
         hash = ((ip_addr.s6_addr32[3])) % BUCKET_SIZE;
     }
 
-    /* Assign list to temp structure */
-    asset *rec = NULL;
-    rec = (asset *) calloc(1, sizeof(asset));
-    rec->ip_addr = ip_addr;
-    rec->af = af;
-    rec->i_attempts = 0;
-    rec->first_seen = rec->last_seen = tstamp;
+    masset = (asset *) calloc(1, sizeof(asset));
+    masset->ip_addr = ip_addr;
+    masset->af = af;
+    masset->i_attempts = 0;
+    masset->first_seen = masset->last_seen = tstamp;
+    masset->next = passet[hash];
 
-    /*
-     * Insert record at the head of the data structure.  The logic behind
-     * this is to insert it at the head for quick access since it is going 
-     * through the identification process.
-     */
-    rec->next = passet[hash];
     if (passet[hash] != NULL)
-        passet[hash]->prev = rec;
-    rec->prev = NULL;
-    rec->os = NULL;
-    rec->services = NULL;
-    passet[hash] = rec;
+        passet[hash]->prev = masset;
+    masset->prev = NULL;
+    masset->os = NULL;
+    masset->services = NULL;
+    passet[hash] = masset;
 
     /* verbose info for sanity checking */
     static char ip_addr_s[INET6_ADDRSTRLEN];
@@ -425,39 +407,38 @@ asset *add_asset(int af, struct in6_addr ip_addr)
 }
 
 short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
-                         struct in6_addr ip_addr)
+                         struct in6_addr ip_addr, packetinfo *pi)
 {
-    extern time_t tstamp;
-    asset *rec = NULL;
-
-    rec = asset_lookup(ip_addr, AF_INET);
-    if (rec != NULL) {
-        goto arp_update;
+    if (asset_lookup(pi) == SUCCESS) {
+        if (pi->asset != NULL) {
+            goto arp_update;
+        } else {
+            printf("\nBAD ERROR in update_asset_arp\n");
+            return ERROR;
+        }
     } else {
-        /* If no asset */
-        update_asset(AF_INET, ip_addr);
-        if (update_asset_arp(arp_sha, ip_addr) == 0) return 0;
-        return 1;
+        update_asset(pi);
+        if (update_asset_arp(arp_sha, ip_addr, pi) == SUCCESS) return SUCCESS;
+            else return ERROR;
     }
 
 arp_update:
     /* Check the ARP data structure for an existing entry */
-    if (memcmp(rec->mac_addr, arp_sha, MAC_ADDR_LEN) == 0) {
+    if (memcmp(pi->asset->mac_addr, arp_sha, MAC_ADDR_LEN) == 0) {
         /* UPDATE TIME STAMP */
-        rec->last_seen = tstamp;
-        return 0;
+        pi->asset->last_seen = pi->pheader->ts.tv_sec;
+        return SUCCESS;
     } else {
         /* UPDATE MAC AND TIME STAMP */
-        memcpy(&rec->mac_addr, arp_sha, MAC_ADDR_LEN);
-        rec->last_seen = tstamp;
-        log_asset_arp(rec);
+        memcpy(&pi->asset->mac_addr, arp_sha, MAC_ADDR_LEN);
+        pi->asset->last_seen = pi->pheader->ts.tv_sec;
+        log_asset_arp(pi->asset);
         /* For verbos sanity checking */
         //static char ip_addr_s[INET6_ADDRSTRLEN];
         //inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
         //dlog("[*] added mac address to asset: %s\n",ip_addr_s);
-        return 0;
+        return SUCCESS;
     }
-    return 1;
 }
 
 void del_os_asset(os_asset ** head_oa, os_asset * os)

@@ -224,12 +224,17 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
                e.wsize,
                e.wsc,
                tstamp, e.quirks, ftype, pi);
+
+    if (pi->ip6 != NULL) return; // Fix this when find_match() is IPv6 aware
+
     //  match = find_match(sigs, pi, e);
     //  ---> after match_network but before update_asset
     fp_entry *match = find_match(
                config.sig_syn,
                config.sig_hashsize,
                e.size,
+    // find_match(pi, e);
+    // return this into asset engine
                e.df,
                e.ttl,
                e.wsize,
