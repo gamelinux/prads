@@ -75,13 +75,12 @@ void game_over()
         clear_asset_list();
         end_all_sessions();
         free_queue();
-        del_known_port(6);
-        del_known_port(17);
+        del_known_services();
         del_signature_lists();
         print_prads_stats();
         print_pcap_stats();
-        pcap_close(config.handle);
-        free_config();
+        if (config.handle != NULL) pcap_close(config.handle);
+        free_config(); // segfault here !
         printf("\nprads ended\n");
         exit(0);
     }
@@ -90,6 +89,7 @@ void game_over()
 
 void print_pcap_stats()
 {
+    if (config.handle == NULL) return;
     if (pcap_stats(config.handle, &config.ps) == -1) {
         pcap_perror(config.handle, "pcap_stats");
     }

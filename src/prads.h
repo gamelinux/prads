@@ -485,8 +485,8 @@ typedef struct _connection {
     uint8_t  s_tcpFlags;          /* tcpflags sent by source */
     uint8_t  d_tcpFlags;          /* tcpflags sent by destination */
     uint8_t  check;               /* Flags spesifying checking */
-    struct   _asset *s_asset;     /* pointer to src asset */
-    struct   _asset *d_asset;     /* pointer to dst asset */
+    struct   _asset *c_asset;     /* pointer to src asset */
+    struct   _asset *s_asset;     /* pointer to server asset */
     struct   _cxtbucket *cb;
 } connection;
 #define CXT_DONT_CHECK_SERVER     0x01  /* Dont check server packets */
@@ -537,7 +537,8 @@ typedef struct _packetinfo {
     uint32_t        plen;           /* transport payload length */
     uint32_t        our;            /* Is the asset in our defined network */
     uint8_t         up;             /* Set if the asset has been updated */
-    connection      *cxt;
+    connection      *cxt;           /* pointer to the cxt for this packet */
+    struct _asset    *asset;         /* pointer to the asset for this (src) packet */
     enum { SIGNATURE, FINGERPRINT } type;
 } packetinfo;
 #define SC_SERVER                 0x01  /* pi for this session is client */
@@ -717,4 +718,5 @@ struct fmask {
 
 /*  P R O T O T Y P E S  ******************************************************/
 void free_config();
+inline int filter_packet(const int af, const struct in6_addr *ip_s);
 #endif                          // PRADS_H

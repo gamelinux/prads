@@ -87,7 +87,7 @@ int  parse_netmask (char *f, int type, struct in6_addr *netmask);
 void parse_nets(const char *s_net, struct fmask *network);
 
 void set_pkt_end_ptr (packetinfo *pi);
-static inline int filter_packet(const int af, const struct in6_addr *ip_s);
+//static inline int filter_packet(const int af, const struct in6_addr *ip_s);
 
 /* F U N C T I O N S  ********************************************************/
 
@@ -139,7 +139,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
  * unfortunately pcap sends us packets in host order
  * Return value: boolean
  */
-static inline int filter_packet(const int af, const struct in6_addr *ip_s)
+inline int filter_packet(const int af, const struct in6_addr *ip_s)
 {
     uint32_t ip;
     ip6v ip_vec;
@@ -356,6 +356,8 @@ void parse_gre (packetinfo *pi)
     gre_sre_header *gsre = NULL;
     uint16_t len = (pi->pheader->caplen - pi->eth_hlen);
 
+    update_asset(pi);
+
     switch (GRE_GET_VERSION(pi->greh))
     {
         case GRE_VERSION_0:
@@ -564,7 +566,7 @@ void parse_arp (packetinfo *pi)
         memcpy(&pi->ip_src.s6_addr32[0], pi->arph->arp_spa,
                sizeof(u_int8_t) * 4);
         if (filter_packet(pi->af, &pi->ip_src)) {
-            update_asset_arp(pi->arph->arp_sha, pi->ip_src);
+            update_asset_arp(pi->arph->arp_sha, pi->ip_src,pi);
         }
         /* arp_check(eth_hdr,pi->pheader->ts.tv_sec); */
     } else {
@@ -591,16 +593,12 @@ void prepare_tcp (packetinfo *pi)
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - (IP_HL(pi->ip4) * 4) - pi->eth_hlen);
         pi->payload = (char *)(pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4) + (TCP_OFFSET(pi->tcph) * 4));
-
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
         pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - IP6_HEADER_LEN - pi->eth_hlen);
         pi->payload = (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi->tcph)*4));
-
     }
-    /* plen here might be wrong :/ */
-    //pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - pi->eth_hlen);
     pi->proto  = IP_PROTO_TCP;
     pi->s_port = pi->tcph->src_port;
     pi->d_port = pi->tcph->dst_port;
@@ -611,7 +609,8 @@ void prepare_tcp (packetinfo *pi)
 
 void parse_tcp6 (packetinfo *pi)
 {
-    config.pr_s.tcp_recv++;
+    update_asset(pi);
+
     if (IS_COSET(&config,CO_SYN)
         && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
         && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
@@ -654,6 +653,8 @@ void parse_tcp6 (packetinfo *pi)
 
 void parse_tcp4 (packetinfo *pi)
 {
+    update_asset(pi);
+
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
         if (IS_COSET(&config,CO_SYN)
             && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
@@ -788,6 +789,8 @@ void prepare_udp (packetinfo *pi)
 
 void parse_udp (packetinfo *pi)
 {
+    update_asset(pi);
+
     if (IS_CSSET(&config,CS_UDP_SERVICES)) {
         if (pi->af == AF_INET) {
             
@@ -799,9 +802,7 @@ void parse_udp (packetinfo *pi)
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
                 service_udp6(pi);
             }
-            /*
-             * fp_udp(ip6, ttl, ipopts, len, id, ipflags, df);
-             */
+            /* fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); */
         }
         return;
     } else {
@@ -834,6 +835,8 @@ void prepare_icmp (packetinfo *pi)
 
 void parse_icmp (packetinfo *pi)
 {
+    update_asset(pi);
+
     if (IS_COSET(&config,CO_ICMP)) {
         if (pi->cxt->check == 0x00) {
             pi->cxt->check = 0x10; //for now - stop icmp fp quick
@@ -842,6 +845,7 @@ void parse_icmp (packetinfo *pi)
                 // could look for icmp spesific data in package abcde...
                 // service_icmp(*pi->ip4,*tcph
             } else if (pi->af==AF_INET6) {
+                add_asset(pi->af, pi->ip_src);
                 fp_icmp6(pi, pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
             }
         } else {
@@ -868,10 +872,11 @@ void prepare_other (packetinfo *pi)
 
 void parse_other (packetinfo *pi)
 {
+    update_asset(pi);
+
     if (pi->cxt->check == 0x00) {
         if (IS_COSET(&config,CO_OTHER)) {
-            update_asset(pi->af, pi->ip_src);
-            pi->cxt->check = 0x00; // no more checks
+            pi->cxt->check = 0x01; // no more checks
             // service_other(*pi->ip4,*transporth);
             // fp_other(pi->ipX, ttl, ipopts, len, id, ipflags, df);
         } else {
@@ -1081,7 +1086,9 @@ int main(int argc, char *argv[])
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
     set_default_config_options();
-    parse_config_file(bfromcstr("../etc/prads.conf"));
+    bstring pconfile = bfromcstr("../etc/prads.conf");
+    parse_config_file(pconfile);
+    bdestroy (pconfile);
 
     cxtbuffer = NULL;
     cxtrackerid = 0;
@@ -1158,16 +1165,6 @@ int main(int argc, char *argv[])
     load_servicefp_file(3, "../etc/tcp-clients.sig");
     //load_servicefp_file(4,"../etc/udp-client.sig");
     init_services();
-    add_known_port(17,1194,bfromcstr("@openvpn"));
-    add_known_port(17,123,bfromcstr("@ntp"));
-    add_known_port(6,631,bfromcstr("@cups"));
-    add_known_port(6,20,bfromcstr("@ftp-data"));
-    add_known_port(6,21,bfromcstr("@ftp"));
-    add_known_port(6,22,bfromcstr("@ssh"));
-    add_known_port(6,119,bfromcstr("@nntp"));
-    add_known_port(6,80,bfromcstr("@http"));
-    add_known_port(6,443,bfromcstr("@https"));
-    add_known_port(6,6667,bfromcstr("@irc"));
 
     /*
      * look up an available device if non specified
@@ -1220,8 +1217,8 @@ int main(int argc, char *argv[])
     return (0);
 }
 
-void free_config()
-{
-    if (config.dev != NULL) free (config.dev);
-    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
-}
+//void free_config()
+//{
+//    if (config.dev != NULL) free (config.dev);
+//    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
+//}

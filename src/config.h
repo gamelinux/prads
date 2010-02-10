@@ -54,3 +54,4 @@ void parse_line (bstring line);
 void parse_config_file(bstring fname);
 int brtrim (bstring string);
 int bltrim (bstring string);
+void free_config();
