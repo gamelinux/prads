@@ -49,9 +49,17 @@ dns,v/DNS SQR No Error///,\x81\x80\x00\x01\x00
 #1194,v/OpenVPN///,REGEXP
 
 # SSL Signatures
-ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01
-ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
+#ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01
+#ssl,v/OpenSSL///,^\x16\x03\0\0J\x02\0\0F\x03\0
 
 # SMB Sigantures
 #smb,v/Windows SMB///,\xffSMBr
-smb,v/Windows SMB///,\xffSMBr
+#smb,v/Windows SMB///,\xffSMBr
+
+
+# syslog port 514 udp
+syslog,v/Syslog: DAEMON.ERR///,^\x3c\x32\x37\x3e
+syslog,v/Syslog: DAEMON.ERR///,^\x3c\x32\x37\x3e
+
+
+

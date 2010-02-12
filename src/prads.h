@@ -37,7 +37,7 @@
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                500000
 #define MAX_PKT_CHECK                 10
-#define MAX_SERVICE_CHECK             5         /* How many new services*/
+#define MAX_SERVICE_CHECK             200       /* How many new services we see befor we register */
 
 /* Flags to identify ASSET TYPE */
 #define ASSET_ARP                     0x01
@@ -96,6 +96,7 @@
 #define IP6_PROTO_ICMP                58
 #define IP6_PROTO_NONXT               59
 #define MAX_IP_PROTO                  255
+#define MAX_PORTS                     65536
 
 #define GRE_VERSION_0                 0x0000
 #define GRE_VERSION_1                 0x0001

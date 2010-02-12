@@ -21,6 +21,7 @@
 #include "../prads.h"
 #include "../assets.h"
 #include "servicefp.h"
+#include "../util-cxt.h"
 
 extern bstring UNKNOWN;
 
@@ -65,14 +66,11 @@ void service_udp4(packetinfo *pi)
             pi->cxt->check |= CXT_CLIENT_UNKNOWN_SET;
             bdestroy(service_name);
         } else if ((service_name = (bstring) check_known_port(IP_PROTO_UDP,ntohs(pi->s_port))) !=NULL ) {
-            pi->cxt->reversed = 1;
-            pi->sc = SC_SERVER;
+            reverse_pi_cxt(pi);
             pi->d_port = pi->udph->src_port;
             update_asset_service(pi, UNKNOWN, service_name);
             pi->d_port = pi->udph->dst_port;
-            pi->sc = SC_CLIENT;
             pi->cxt->check |= CXT_CLIENT_UNKNOWN_SET;
-            pi->cxt->reversed = 0;
             bdestroy(service_name);
         }
     } else if (pi->sc == SC_SERVER && !ISSET_SERVICE_UNKNOWN(pi)) {
@@ -81,14 +79,9 @@ void service_udp4(packetinfo *pi)
             pi->cxt->check |= CXT_SERVICE_UNKNOWN_SET;
             bdestroy(service_name);
         } else if ((service_name = (bstring) check_known_port(IP_PROTO_UDP,ntohs(pi->d_port))) !=NULL ) {
-            pi->cxt->reversed = 1;
-            pi->sc = SC_CLIENT;
-            //pi->d_port = pi->udph->dst_port;
+            reverse_pi_cxt(pi);
             update_asset_service(pi, UNKNOWN, service_name);
-            //pi->s_port = pi->udph->src_port;
-            pi->sc = SC_SERVER;
             pi->cxt->check |= CXT_SERVICE_UNKNOWN_SET;
-            pi->cxt->reversed = 0;
             bdestroy(service_name);
         }
     }
@@ -130,8 +123,7 @@ void service_udp6(packetinfo *pi)
             pi->cxt->check |= CXT_CLIENT_UNKNOWN_SET;
             bdestroy(service_name);
         } else if ((service_name = (bstring) check_known_port(IP_PROTO_UDP,ntohs(pi->s_port))) !=NULL ) {
-            pi->cxt->reversed = 1;
-            pi->sc = SC_SERVER;
+            reverse_pi_cxt(pi);
             pi->d_port = pi->udph->src_port;
             update_asset_service(pi, UNKNOWN, service_name);
             pi->d_port = pi->udph->dst_port;
@@ -144,11 +136,8 @@ void service_udp6(packetinfo *pi)
             pi->cxt->check |= CXT_SERVICE_UNKNOWN_SET;
             bdestroy(service_name);
         } else if ((service_name = (bstring) check_known_port(IP_PROTO_UDP,ntohs(pi->d_port))) !=NULL ) {
-            pi->cxt->reversed = 1;
-            pi->sc = SC_CLIENT;
-            pi->s_port = pi->udph->dst_port;
+            reverse_pi_cxt(pi);
             update_asset_service(pi, UNKNOWN, service_name);
-            pi->s_port = pi->udph->src_port;
             pi->cxt->check |= CXT_SERVICE_UNKNOWN_SET;
             bdestroy(service_name);
         }

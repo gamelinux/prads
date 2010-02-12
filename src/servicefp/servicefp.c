@@ -417,7 +417,7 @@ void load_known_ports_file(char *filename, port_t *lports)
 
 void add_known_services(uint8_t proto, uint16_t port, bstring service_name)
 {
-    extern servicelist *services[65535];
+    extern servicelist *services[MAX_PORTS];
 
     if (services[port] == NULL) {
         services[port] = (servicelist *) calloc(1, sizeof(servicelist));
@@ -433,10 +433,10 @@ void add_known_services(uint8_t proto, uint16_t port, bstring service_name)
 
 void del_known_services()
 {
-    extern servicelist *services[65535];
+    extern servicelist *services[MAX_PORTS];
     int kport;
 
-    for (kport=0; kport < 65535; kport++) {
+    for (kport=0; kport < MAX_PORTS; kport++) {
         if (services[kport] != NULL) {
             bdestroy(services[kport]->service_name);
             free(services[kport]);
@@ -448,7 +448,7 @@ void del_known_services()
 
 bstring check_known_port(uint8_t proto, uint16_t port)
 {
-    extern servicelist *services[65535];
+    extern servicelist *services[MAX_PORTS];
 
     if (services[port] == NULL) return NULL;
 
