@@ -34,7 +34,6 @@
   - collide
   - frob ipfp* stuff for sanity
   - walk through find_match() and return the match properly
-  - merge diplay_signature() and gen_fp()
   - run find_match on update_asset(_os)
   - run update_asset_os() with a looked-up asset
   - sanity check asset lookups
@@ -251,8 +250,6 @@ void print_sig(fp_entry * e)
     bcstrfree(c);
 
     printf(" :  %s : %s \n", e->os, e->desc);
-    if (e->next)
-        print_sig(e->next);
 }
 void print_sigs(fp_entry * e)
 {
