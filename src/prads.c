@@ -658,13 +658,13 @@ void parse_tcp6 (packetinfo *pi)
 
 void parse_tcp4 (packetinfo *pi)
 {
+    fp_entry *fp;
     update_asset(pi);
 
     if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))) {
         if (!TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             if (IS_COSET(&config,CO_SYN)) {
                 vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-                fp_entry *fp;
                 fp = fp_tcp(pi, TF_SYN);
                 update_asset_os(pi, CO_SYN, NULL, fp, 0);
                 return;
@@ -672,7 +672,8 @@ void parse_tcp4 (packetinfo *pi)
         } else {
             if (IS_COSET(&config,CO_SYNACK)) {
                 vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n", ntohs(pi->tcph->src_port));
-                fp_tcp(pi, TF_SYNACK);
+                fp = fp_tcp(pi, TF_SYNACK);
+                update_asset_os(pi, CO_SYNACK, NULL, fp, 0); 
                 if (pi->sc != SC_SERVER) reverse_pi_cxt(pi);
                 return;
             }
@@ -703,18 +704,18 @@ bastard_checks:
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
-        fp_tcp(pi, TF_ACK);
+        //fp = fp_tcp(pi, TF_ACK);
+        //update_asset_os(pi, CO_ACK, NULL, fp, 0);
         return;
     } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
-        fp_tcp(pi, TF_FIN);
+        //fp = fp_tcp(pi, TF_FIN);
+        //update_asset_os(pi, CO_FIN, NULL, fp, 0);
         return;
     } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
         vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
-        fp_tcp(pi, TF_RST);
+        //fp = fp_tcp(pi, TF_RST);
+        //update_asset_os(pi, CO_RST, NULL, fp, 0);
         return;
     }
 }
