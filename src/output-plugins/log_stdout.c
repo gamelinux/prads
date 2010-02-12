@@ -14,6 +14,7 @@ void stdout_arp (asset *main)
         printf(",[arp:%s]",
         hex2mac((const char *)main->mac_addr));
     }
+    fflush(0);
 }
 
 void stdout_os (asset *main, os_asset *os)
@@ -31,14 +32,18 @@ void stdout_os (asset *main, os_asset *os)
     if (os->detection == CO_ICMP) printf("icmp");
 
     printf(":");
-    if (os->raw_fp != NULL) printf("%s", (char *)bdata(os->raw_fp));
-    if (os->match != NULL) {
+    if (os->raw_fp != NULL) {
+        printf("%s", (char *)bdata(os->raw_fp));
+    } else if (os->match != NULL) {
         print_sig(os->match);
+    } else {
+        printf("NO MATCH!");
     }
     printf("]");
     // if vendor and os is != NULL
     //printf(",[%s - %s]", (char *)bdata(os->vendor),(char *)bdata(os->os));
     if (os->uptime) printf(",[uptime:%dhrs]",os->uptime/360000);
+    fflush(0);
 }
 
 void stdout_service (asset *main, serv_asset *service)
@@ -56,6 +61,7 @@ void stdout_service (asset *main, serv_asset *service)
         (char*)bdata(service->application),
         ntohs(service->port),service->proto);
     }
+    fflush(0);
 }
 
 char *hex2mac(const char *mac)

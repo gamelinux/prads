@@ -50,11 +50,11 @@
 #define CO_SYN                        0x02      /* Check SYN packets */
 #define CO_RST                        0x04      /* Check RST packets */
 // push                               0x08
+#define CO_SYNACK                     0x08      /* Check SYNACK packets */
 #define CO_ACK                        0x10      /* Check Stray-ACK packets */
 // urg                                0x20
 // ece                                0x40
 // cwr                                0x80
-#define CO_SYNACK                     0x12      /* Check SYNACK packets */
 #define CO_ICMP                       0x20      /* Check ICMP Packets */
 #define CO_UDP                        0x40      /* Check UDP Packets */
 #define CO_DHCP                       0x80      /* Check DHCP Packets */

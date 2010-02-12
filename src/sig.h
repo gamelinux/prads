@@ -40,3 +40,6 @@ fp_entry *find_match(fp_entry *sig[], uint32_t hashsize,
                        uint32_t dst,uint16_t sp,uint16_t dp,uint8_t ocnt,uint8_t* op,uint16_t mss,
                        uint8_t wsc,uint32_t tstamp,uint8_t tos,uint32_t quirks,uint8_t ecn,
                        uint8_t* pkt,uint8_t plen,uint8_t* pay);
+
+bstring gen_fp_tcp(fp_entry *e, uint32_t tstamp, uint8_t tf);
+
