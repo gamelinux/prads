@@ -32,7 +32,6 @@
   - fp_entry* = find_match(sigs, pi, e)
   - ipv6 fix
   - collide
-  - merge gen_fp and display_signature
   - frob ipfp* stuff for sanity
   - walk through find_match() and return the match properly
   - merge diplay_signature() and gen_fp()
@@ -40,18 +39,26 @@
   - run update_asset_os() with a looked-up asset
   - sanity check asset lookups
 
+    update_asset_os(pi, de, fp, tstamp?tstamp:0);
+
  */
 
 #include "common.h"
 #include "prads.h"
 #include "mtu.h"
 #include "tos.h"
+#include "config.h"
+
+extern globalconfig config;
 
 #define MAXLINE 1024
 #define SIG_HASHSIZE 1024
 #define MAXDIST 512
 #define PKT_DLEN 16
 #define PKT_MAXPAY 45
+
+// in open mode, how many options to parse
+#define TCPOPT_LIMIT 3
 
 /* SIGHASH needs some tweaking
  * the addition of wsize has reduced collisions
@@ -80,123 +87,178 @@ static uint8_t no_extra,
     check_collide,
     full_dump, use_fuzzy, payload_dump;
 
-static uint8_t problems;
 
-void display_signature(uint8_t ttl, uint16_t tot, uint8_t df,
-                                     uint8_t * op, uint8_t ocnt,
-                                     uint16_t mss, uint16_t wss,
-                                     uint8_t wsc, uint32_t tstamp,
-                                     uint32_t quirks)
+bstring gen_fp_tcpopt(uint32_t ocnt, uint8_t op[], uint16_t mss, uint16_t wss, uint16_t wsc, uint32_t tstamp)
 {
-
     uint32_t j;
-    uint8_t d = 0;
-
-    if (mss && wss && !(wss % mss))
-        printf("S%d", wss / mss);
-    else if (wss && !(wss % 1460))
-        printf("S%d", wss / 1460);
-    else if (mss && wss && !(wss % (mss + 40)))
-        printf("T%d", wss / (mss + 40));
-    else if (wss && !(wss % 1500))
-        printf("T%d", wss / 1500);
-    else if (wss == 12345)
-        printf("*(12345)");
-    else
-        printf("%d", wss);
-
-    if (tot < PACKET_BIG)
-        printf(":%d:%d:%d:", ttl, df, tot);
-    else
-        printf(":%d:%d:*(%d):", ttl, df, tot);
-
+    bstring fp = bformat("");
     for (j = 0; j < ocnt; j++) {
         switch (op[j]) {
         case TCPOPT_NOP:
-            putchar('N');
-            d = 1;
+            bformata(fp, "N");
             break;
         case TCPOPT_WSCALE:
-            printf("W%d", wsc);
-            d = 1;
+            bformata(fp, "W%d", wsc);
             break;
         case TCPOPT_MAXSEG:
-            printf("M%d", mss);
-            d = 1;
+            bformata(fp, "M%d", mss);
             break;
         case TCPOPT_TIMESTAMP:
-            putchar('T');
+            bformata(fp, "T");
             if (!tstamp)
-                putchar('0');
-            d = 1;
+                bformata(fp, "0");
             break;
         case TCPOPT_SACKOK:
-            putchar('S');
-            d = 1;
+            bformata(fp, "S");
             break;
         case TCPOPT_EOL:
-            putchar('E');
-            d = 1;
+            bformata(fp, "E");
             break;
         default:
-            printf("?%d", op[j]);
-            d = 1;
+            bformata(fp, "?%d", op[j]);
             break;
         }
         if (j != ocnt - 1)
-            putchar(',');
+            bformata(fp, ",");
     }
 
-    if (!d)
-        putchar('.');
+    if (blength(fp) < 2)
+        bformata(fp, ".");
 
-    putchar(':');
+    return fp;
+}
 
+bstring gen_fp_tcpquirks(uint32_t quirks)
+{
+    bstring fp = bformat("");
     if (!quirks)
-        putchar('.');
+        bformata(fp, ".");
     else {
         if (quirks & QUIRK_RSTACK)
-            putchar('K');
+            bformata(fp, "K");
         if (quirks & QUIRK_SEQEQ)
-            putchar('Q');
+            bformata(fp, "Q");
         if (quirks & QUIRK_SEQ0)
-            putchar('0');
+            bformata(fp, "0");
         if (quirks & QUIRK_PAST)
-            putchar('P');
+            bformata(fp, "P");
         if (quirks & QUIRK_ZEROID)
-            putchar('Z');
+            bformata(fp, "Z");
         if (quirks & QUIRK_IPOPT)
-            putchar('I');
+            bformata(fp, "I");
         if (quirks & QUIRK_URG)
-            putchar('U');
+            bformata(fp, "U");
         if (quirks & QUIRK_X2)
-            putchar('X');
+            bformata(fp, "X");
         if (quirks & QUIRK_ACK)
-            putchar('A');
+            bformata(fp, "A");
         if (quirks & QUIRK_T2)
-            putchar('T');
+            bformata(fp, "T");
         if (quirks & QUIRK_FLAGS)
-            putchar('F');
+            bformata(fp, "F");
         if (quirks & QUIRK_DATA)
-            putchar('D');
+            bformata(fp, "D");
+
+        // edward 
+        if (quirks & QUIRK_FINACK)
+            bformata(fp, "N");
+        if (quirks & QUIRK_FLOWL)
+            bformata(fp, "L");
+
         if (quirks & QUIRK_BROKEN)
-            putchar('!');
+            bformata(fp, "!");
+    }
+    return fp;
+}
+
+
+/* generate a bstring fingerprint based on packet
+ * allocates memory */
+bstring gen_fp_tcp(fp_entry *e, uint32_t tstamp, uint8_t tf)
+    /*
+                uint8_t ttl,
+                uint16_t tot,
+                uint8_t df,
+                uint8_t * op,
+                uint8_t ocnt,
+                uint16_t mss,
+                uint16_t wss,
+                uint8_t wsc,
+                uint32_t tstamp,
+                uint32_t quirks,
+                uint8_t ftype,
+                packetinfo *pi)
+     */
+{
+
+    uint16_t mss, wss, tot;
+    uint8_t ttl;
+    bstring fp, fpopt, fpquirks;
+    //uint8_t q = 0;
+
+    mss = e->mss;
+    wss = e->wsize;
+    tot = e->size;
+    ttl = e->ttl; //normalize_ttl(e->ttl);
+    fp = bformat("");
+
+    // mss/wss code might make the fpstring look different from the file sig
+    if (mss && wss && !(wss % mss))
+        bformata(fp, "S%d", (wss / mss));
+    else if (wss && !(wss % 1460))
+        bformata(fp, "S%d", (wss / 1460));
+    else if (mss && wss && !(wss % (mss + 40)))
+        bformata(fp, "T%d", (wss / (mss + 40)));
+    else if (wss && !(wss % 1500))
+        bformata(fp, "T%d", (wss / 1500));
+    else if (wss == 12345)
+        bformata(fp, "*(12345)");
+    else {
+        bformata(fp, "%d", wss);
     }
 
+    if ( tf == TF_ACK || tf == TF_RST ) {
+        bformata(fp, ":%d:%d:*:",ttl, e->df);
+    } else {
+        if (e->size < PACKET_BIG)
+            bformata(fp, ":%d:%d:%d:", ttl, e->df, e->size);
+        else
+            bformata(fp, ":%d:%d:*(%d):", ttl, e->df, e->size);
+    }
+
+    // TCP Options
+    fpopt = gen_fp_tcpopt(( tf == TF_ACK? TCPOPT_LIMIT : e->optcnt), e->opt, mss, wss, e->wsc, tstamp);
+    bconcat(fp, fpopt);
+    bdestroy(fpopt);
+
+    bformata(fp, ":");
+
+    // Quirks
+    fpquirks = gen_fp_tcpquirks(e->quirks);
+    bconcat(fp, fpquirks);
+    bdestroy(fpquirks);
+
+    //if (tstamp) printf("(* uptime: %d hrs)\n",tstamp/360000);
+    //update_asset_os(pi, tf, fp, tstamp?tstamp:0);
+    return fp;
 }
 
 void print_sig(fp_entry * e)
 {
-    display_signature(e->ttl,
-                      e->size,
-                      e->df,
-                      e->opt,
-                      e->optcnt,
-                      e->mss, e->wsize, e->wsc, e->zero_stamp, e->quirks);
+    bstring b = gen_fp_tcp(e, e->zero_stamp, 0);
+    char *c = bstr2cstr(b, '-');
+    printf("%s", c);
+    bcstrfree(c);
 
     printf(" :  %s : %s \n", e->os, e->desc);
     if (e->next)
         print_sig(e->next);
+}
+void print_sigs(fp_entry * e)
+{
+    print_sig(e);
+    if (e->next)
+        print_sigs(e->next);
 }
 
 /* collide: check 
@@ -638,6 +700,7 @@ static int parse_sig_quirks(fp_entry *sig, uint8_t *p)
 }
 
 
+
 /* load_sigs: fill **sig with fp_entry signatures from *file
  *
  * sigp is a pointer to either 
@@ -800,7 +863,7 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
     }
 #endif                          /* DEBUG_HASH */
 
-    if (check_collide && !problems)
+    if (check_collide)
         debug("[+] Signature collision check successful.\n");
 
     /*
@@ -940,16 +1003,161 @@ static void dump_payload(uint8_t* data,uint16_t dlen) {
 
 
 
+/* parse TCP packet quirks */
+static inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
+{
+    if (ftype == TF_RST && (tcph->t_flags & TF_ACK))
+        *quirks |= QUIRK_RSTACK;
+    if (ftype == TF_FIN && (tcph->t_flags & TF_ACK))
+        *quirks |= QUIRK_FINACK;
+
+    if (tcph->t_seq == tcph->t_ack)
+        *quirks |= QUIRK_SEQEQ;
+    if (!tcph->t_seq)
+        *quirks |= QUIRK_SEQ0;
+    if (tcph->t_flags & ~(TF_SYN | TF_ACK | TF_RST | TF_ECE | TF_CWR
+                          | (open_mode ? TF_PUSH : 0)))
+        *quirks |= QUIRK_FLAGS;
+    if (tcph->t_ack)
+        *quirks |= QUIRK_ACK;
+    if (tcph->t_urgp)
+        *quirks |= QUIRK_URG;
+    if (TCP_X2(tcph))
+        *quirks |= QUIRK_X2;
+}
+/* parse TCP option header field
+ * yes, this function returns the timestamp for now */ 
+static inline uint32_t parse_tcpopt(const uint8_t *opt_ptr, int32_t ilen, const uint8_t *end_ptr, fp_entry *e)
+{
+    uint8_t ocnt = 0, olen;
+    // mnemonics
+    uint32_t *quirks = &e->quirks;
+    uint8_t *op = e->opt;
+    // timestamp is 64bit, but see if I care
+    uint32_t tstamp = 0;
+
+    while (ilen > 0) {
+        ilen--;
+
+        // * let the phun begin... 
+        switch (*(opt_ptr++)) {
+        case TCPOPT_EOL:
+            // * EOL 
+            op[ocnt] = TCPOPT_EOL;
+
+            if (ilen) {
+                *quirks |= QUIRK_PAST;
+            }
+            break;
+
+        case TCPOPT_NOP:
+            // * NOP 
+            op[ocnt] = TCPOPT_NOP;
+            break;
+
+        case TCPOPT_SACKOK:
+            // * SACKOK LEN 
+            op[ocnt] = TCPOPT_SACKOK;
+            ilen--;
+            opt_ptr++;
+            break;
+
+        case TCPOPT_MAXSEG:
+            // * MSS LEN D0 D1 
+            if (opt_ptr + 3 > end_ptr) {
+borken:
+                *quirks |= QUIRK_BROKEN;
+                goto end_parsing;
+            }
+            op[ocnt] = TCPOPT_MAXSEG;
+            e->mss = GET16(opt_ptr + 1);
+            ilen -= 3;
+            opt_ptr += 3;
+            break;
+
+        case TCPOPT_WSCALE:
+            // * WSCALE LEN D0 
+            if (opt_ptr + 2 > end_ptr)
+                goto borken;
+            op[ocnt] = TCPOPT_WSCALE;
+            e->wsc = *(uint8_t *) (opt_ptr + 1);
+            ilen -= 2;
+            opt_ptr += 2;
+            break;
+
+        case TCPOPT_TIMESTAMP:
+            // * TSTAMP LEN T0 T1 T2 T3 A0 A1 A2 A3 
+            // ugly handling of a beautiful 64bit field
+            if (opt_ptr + 9 > end_ptr)
+                goto borken;
+            op[ocnt] = TCPOPT_TIMESTAMP;
+
+            memcpy(&tstamp, opt_ptr + 5, 4);
+            if (tstamp)
+                *quirks |= QUIRK_T2;
+
+            memcpy(&tstamp, opt_ptr + 1, 4);
+            tstamp = ntohl(tstamp);
+
+            ilen -= 9;
+            opt_ptr += 9;
+            break;
+
+        default:
+            // * Hrmpf... 
+            if (opt_ptr + 1 > end_ptr)
+                goto borken;
+
+            op[ocnt] = *(opt_ptr - 1);
+            olen = *(uint8_t *) (opt_ptr) - 1;
+            if (olen > 32 || (olen < 0))
+                goto borken;
+
+            ilen -= olen;
+            opt_ptr += olen;
+            break;
+
+        }
+        ocnt++;
+        if (ocnt >= MAXOPT - 1)
+            goto borken;
+
+        // * Whoops, we're past end_ptr 
+        if (ilen > 0)
+            if (opt_ptr >= end_ptr)
+                goto borken;
+    }
+
+end_parsing:
+    e->optcnt = ocnt;
+    return tstamp;
+}
 
 
-uint32_t matched_packets;
-
-
-fp_entry *find_match(fp_entry *sig[], uint32_t hashsize, 
-                       uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
-                       uint32_t dst,uint16_t sp,uint16_t dp,uint8_t ocnt,uint8_t* op,uint16_t mss,
-                       uint8_t wsc,uint32_t tstamp,uint8_t tos,uint32_t quirks,uint8_t ecn,
-                       uint8_t* pkt,uint8_t plen,uint8_t* pay, struct timeval pts) {
+fp_entry *find_match(
+    fp_entry *sig[],
+    uint32_t hashsize, 
+    uint16_t tot,
+    uint8_t df,
+    uint8_t ttl,
+    uint16_t wss,
+    uint32_t src,
+    uint32_t dst,
+    uint16_t sp,
+    uint16_t dp,
+    uint8_t ocnt,
+    uint8_t* op,
+    uint16_t mss,
+    uint8_t wsc,
+    uint32_t tstamp,
+    uint8_t tos,
+    uint32_t quirks,
+    uint8_t ecn,
+    uint8_t* pkt,
+    uint8_t plen,
+    uint8_t* pay
+    )
+{
 
   uint32_t j;
   uint8_t* a;
@@ -967,9 +1175,8 @@ re_lookup:
 
   if (tos) tos_desc = lookup_tos(tos);
 
-  printf("\nmatch:  ");
-  display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
-  printf("\n");
+
+  //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
   while (p) {
   
     printf("check:  ");
@@ -1044,8 +1251,6 @@ continue_fuzzy:
     
     /* Match! */
     
-    matched_packets++;
-
     if (mss & wss) {
       if (p->wsize_mod == MOD_MSS) {
         if ((wss % mss) && !(wss % 1460)) nat=1;
@@ -1085,7 +1290,7 @@ continue_fuzzy:
         if (!mode_oneline) printf("\n  ");
         printf("Signature: [");
 
-        display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+        //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
 
         if (p->generic)
           printf(":%s:?] ",p->os);
@@ -1169,7 +1374,7 @@ continue_search:
     a=(uint8_t*)&src;
     printf("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
 
-    display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+    //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
 
     printf(":?:?] ");
 
@@ -1276,6 +1481,139 @@ fp_entry *lookup_sig(fp_entry sig[], packetinfo *pi)
         }
 }
 */
+void fp_tcp(packetinfo *pi, uint8_t ftype)
+{
+    uint8_t *opt_ptr;
+    const uint8_t * end_ptr;
+    uint8_t *payload = 0;
+    fp_entry e = { 0 };
+    uint8_t open_mode = 0;    /* open_mode=stray ack */
+    int32_t ilen;
+    uint32_t tstamp = 0;
+
+    if (ftype == TF_ACK)
+        open_mode = 1;
+
+    /* * If the declared length is shorter than the snapshot (etherleak
+     * or such), truncate the package.
+     * These tests are IP-specific and should one day go into into IP preproc*/
+    end_ptr = pi->end_ptr;
+    switch(pi->af){
+        case AF_INET6:
+            opt_ptr = (uint8_t *) pi->ip6 + IP6_HEADER_LEN + ntohs(pi->ip6->len); //*
+            if (end_ptr > opt_ptr)
+                end_ptr = opt_ptr;
+            // If IP header ends past end_ptr
+            if ((uint8_t *) (pi->ip6 + 1) > end_ptr)
+                return;
+            if (IP6_FL(pi->ip6) > 0) { //*
+                e.quirks |= QUIRK_FLOWL;
+            }
+            e.ttl = pi->ip6->hop_lmt;
+            e.size = open_mode ? 0 : ntohs(pi->ip6->len);
+            e.df = 1; // for now
+            if (!IP6_FL(pi->ip6)) //*
+                e.quirks |= QUIRK_ZEROID;
+            break;
+        case AF_INET:
+            opt_ptr = (uint8_t *) pi->ip4 + ntohs(pi->ip4->ip_len); // fixed from htons
+            if (end_ptr > opt_ptr)
+                end_ptr = opt_ptr;
+            if ((uint8_t *) (pi->ip4 + 1) > end_ptr)
+                return;
+            ilen = pi->ip4->ip_vhl & 15;
+
+            /* * B0rked packet */
+            if (ilen < 5)
+                return;
+
+            if (ilen > 5) {
+                e.quirks |= QUIRK_IPOPT;
+            }
+            e.ttl = pi->ip4->ip_ttl;
+            e.size = open_mode ? 0 : ntohs(pi->ip4->ip_len);
+            e.df = (ntohs(pi->ip4->ip_off) & IP_DF) != 0;
+            if (!pi->ip4->ip_id)
+                e.quirks |= QUIRK_ZEROID;
+            break;
+            // default: there is no default
+        default:
+            fprintf(stderr, "tcp_fp: something very unsafe happened!\n");
+            return;
+    }
+    //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
+
+    parse_quirks(ftype,pi->tcph,&e.quirks, open_mode);
+    ilen = (TCP_OFFSET(pi->tcph) << 2) - TCP_HEADER_LEN;
+
+    opt_ptr = (uint8_t *) (pi->tcph + 1);
+    if ((uint8_t *) opt_ptr + ilen < end_ptr) {
+        if (!open_mode)
+            e.quirks |= QUIRK_DATA;
+        payload = opt_ptr + ilen;
+    }
+    tstamp = parse_tcpopt(opt_ptr, ilen, pi->end_ptr, &e);
+
+    e.wsize = ntohs(pi->tcph->t_win);
+
+    if (pi->ip6 != NULL) return; // Fix this when find_match() is IPv6 aware
+
+    //  match = find_match(sigs, pi, e);
+    //  ---> after match_network but before update_asset
+    // find_match(pi, e);
+    // return this into asset engine
+    fp_entry *match = find_match(
+               config.sig_syn,
+               config.sig_hashsize,
+               e.size,
+               e.df,
+               e.ttl,
+               e.wsize,
+               pi->ip_src.s6_addr32[0],
+               0, //ip_dst,
+               ntohs(pi->tcph->src_port),
+               ntohs(pi->tcph->dst_port),
+               e.optcnt,
+               e.opt,
+               e.mss,
+               e.wsc,
+               tstamp,
+               pi->ip4->ip_tos,
+               e.quirks,
+               pi->tcph->t_flags & (TF_ECE|TF_CWR), //ECN
+               (uint8_t*) pi->ip4,
+               end_ptr - (uint8_t *) pi->ip4,
+               payload
+               // pts, // *not used
+               );
+    (void)match; // use!
+/*
+printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
+                                                     IP6_V(ip6),ntohs(IP6_TC(ip6)),
+                                                     ntohs(IP6_FL(ip6)),
+                                                     mss_val, ntohs(tcph->t_win));
+*/
+
+
+//     /* sp */    ntohs(tcph->sport),
+//     /* dp */    ntohs(tcph->dport),
+//     /* ocnt */  ocnt,
+//     /* op */    op,
+//     /* mss */   mss_val,
+//     /* wsc */   wsc_val,
+//     /* tst */   tstamp,
+//     /* TOS */   iph->tos,
+//     /* Q? */    quirks,
+//     /* ECN */   tcph->flags & (TH_ECE|TH_CWR),
+//     /* pkt */   (_u8*)iph,
+//     /* len */   end_ptr - (_u8*)iph,
+//     /* pay */   pay,
+//     /* ts */    pts
+//  );
+
+}
+
+
 
 void dump_sigs(fp_entry *mysig[], int max)
 {

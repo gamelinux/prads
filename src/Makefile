@@ -10,10 +10,12 @@ endif
 
 SERVICE_OBJ = servicefp/servicefp.o servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o 
 
-IPFP_OBJ = ipfp/ipfp.o ipfp/tcp_fp.o ipfp/udp_fp.o ipfp/icmp_fp.o
+IPFP_OBJ = ipfp/ipfp.o ipfp/udp_fp.o ipfp/icmp_fp.o
 LOG_OBJ = output-plugins/log_dispatch.o output-plugins/log_stdout.o
 CXT_OBJ = util-cxt-queue.o util-cxt.o cxt.o
-OBJECTS = bstrlib.o sig.o config.o sys_func.o ${CXT_OBJ} ${LOG_OBJ} assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
+OBJECTS = bstrlib.o sig_tcp.o config.o sys_func.o ${CXT_OBJ} ${LOG_OBJ} assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
+# deprecated things. want to clean these out from under other devs noses
+OLD_OBJECTS = sig.o ipfp/tcp_fp.o
 
 all: prads
 
@@ -27,7 +29,7 @@ profile:
 	${MAKE} CFLAGS+='${PCFLAGS}'
 
 clean:
-	-rm -v $(OBJECTS)
+	-rm -v $(OBJECTS) $(OLD_OBJECTS)
 	-rm prads 
 
 indent:
