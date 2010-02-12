@@ -175,7 +175,13 @@ short update_asset_shmem(packetinfo *pi)
     }
 }
 
-short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int uptime)
+short update_asset_os (
+    packetinfo *pi,
+    uint8_t detection,
+    bstring raw_fp,
+    fp_entry *match,
+    int uptime
+    )
 {
     os_asset *tmp_oa = NULL;
     os_asset *head_oa = NULL;
@@ -189,7 +195,7 @@ short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, int upt
         }
     } else {
         update_asset(pi);
-        if (update_asset_os(pi, detection, raw_fp, uptime) == SUCCESS) return SUCCESS;
+        if (update_asset_os(pi, detection, raw_fp, match, uptime) == SUCCESS) return SUCCESS;
             else return ERROR;
     }
 
@@ -203,19 +209,35 @@ os_update:
     pi->asset->last_seen = pi->pheader->ts.tv_sec;    
 
     while (tmp_oa != NULL) {
-        if (detection == tmp_oa->detection
-            && (biseq(raw_fp, tmp_oa->raw_fp) == 1)) {
-            /* Found! */
-            tmp_oa->detection = detection;
-            bdestroy(tmp_oa->raw_fp);
-            tmp_oa->raw_fp = bstrcpy(raw_fp);
-            //tmp_sa->i_attempts++;
-            tmp_oa->last_seen = pi->pheader->ts.tv_sec;
-            if (uptime) tmp_oa->uptime = uptime;
-            //static char ip_addr_s[INET6_ADDRSTRLEN];
-            //u_ntop(ip_addr, af, ip_addr_s);
-            //dlog("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
-            return SUCCESS;
+        if (detection == tmp_oa->detection) {
+            if (raw_fp) {
+                // old style save-the-fp-string OS detection
+                if (biseq(raw_fp, tmp_oa->raw_fp) == 1) {
+                    /* Found! */
+                    // tmp_oa->detection = detection; // ok we just checked
+
+                    // FIXME: inefficient string copies
+                    bdestroy(tmp_oa->raw_fp);
+                    tmp_oa->raw_fp = bstrcpy(raw_fp);
+
+                    //tmp_sa->i_attempts++;
+                    tmp_oa->last_seen = pi->pheader->ts.tv_sec;
+                    if (uptime) tmp_oa->uptime = uptime;
+                    //static char ip_addr_s[INET6_ADDRSTRLEN];
+                    //u_ntop(ip_addr, af, ip_addr_s);
+                    //dlog("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
+                    return SUCCESS;
+                }
+            }else if (match){
+                // pointer equality - does this OS asset point
+                // to the same match?
+                if (match == tmp_oa->match) {
+                    tmp_oa->last_seen = pi->pheader->ts.tv_sec;
+                    if (uptime)
+                        tmp_oa->uptime = uptime;
+                    return SUCCESS;
+                }
+            }
         }
         tmp_oa = tmp_oa->next;
     }
@@ -223,11 +245,17 @@ os_update:
     if (tmp_oa == NULL) {
         update_os_stats(detection);
         os_asset *new_oa = NULL;
+
         // FIXME: allocate resource from shared storage pool
         new_oa = (os_asset *) calloc(1, sizeof(os_asset));
         new_oa->detection = detection;
-        // FIXME: don't copy fp, bincode it
-        new_oa->raw_fp = bstrcpy(raw_fp);
+
+        if (raw_fp) {
+            // FIXME: don't copy fp, bincode it
+            new_oa->raw_fp = bstrcpy(raw_fp);
+        } else if(match) {
+            new_oa->match = match;
+        }
         //new_oa->i_attempts = 1;
         new_oa->first_seen = pi->pheader->ts.tv_sec;
         new_oa->last_seen = pi->pheader->ts.tv_sec;

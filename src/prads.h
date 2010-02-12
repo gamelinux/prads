@@ -44,16 +44,21 @@
 #define ASSET_TYPE_OS                 0x02
 #define ASSET_TYPE_SERVICE            0x04
 
-/* Flags to set for enabling different OS Fingerprinting checks */
-#define CO_SYN                        0x01      /* Check SYN packets */
-#define CO_SYNACK                     0x02      /* Check SYNACK packets */
-#define CO_ACK                        0x04      /* Check Stray-ACK packets */
-#define CO_FIN                        0x08      /* Check FIN packets */
-#define CO_RST                        0x10      /* Check RST packets */
+/* Flags to set for enabling different OS Fingerprinting checks.
+ * Make these compatible with TCP flags!*/
+#define CO_FIN                        0x01      /* Check FIN packets */
+#define CO_SYN                        0x02      /* Check SYN packets */
+#define CO_RST                        0x04      /* Check RST packets */
+// push                               0x08
+#define CO_ACK                        0x10      /* Check Stray-ACK packets */
+// urg                                0x20
+// ece                                0x40
+// cwr                                0x80
+#define CO_SYNACK                     0x12      /* Check SYNACK packets */
 #define CO_ICMP                       0x20      /* Check ICMP Packets */
 #define CO_UDP                        0x40      /* Check UDP Packets */
 #define CO_DHCP                       0x80      /* Check DHCP Packets */
-#define CO_OTHER                      0x80      /* Check Other Packets - need a flag! */
+#define CO_OTHER                      0x7f      /* Check Other Packets - need a flag! */
 
 /* Flags to set for enabling different service/client checks */
 #define CS_TCP_SERVER                 0x01
@@ -459,6 +464,27 @@ typedef struct _gre_sre_header
     uint8_t     *routing;
 } gre_sre_header;
 
+/* Fingerprint / Signature entry */
+typedef struct _fp_entry {
+    uint8_t *os;                /* OS genre */
+    uint8_t *desc;              /* OS description */
+    uint8_t no_detail;          /* Disable guesstimates */
+    uint8_t generic;            /* Generic hit */
+    uint8_t userland;           /* Userland stack */
+    uint16_t wsize;             /* window size */
+    uint8_t wsize_mod;          /* MOD_* for wsize */
+    uint8_t ttl, df;            /* TTL and don't fragment bit */
+    uint8_t zero_stamp;         /* timestamp option but zero value? */
+    uint16_t size;              /* packet size */
+    uint8_t optcnt;             /* option count */
+    uint8_t opt[MAXOPT];        /* TCPOPT_* */
+    uint16_t wsc, mss;          /* value for WSCALE and MSS options */
+    uint8_t wsc_mod, mss_mod;   /* modulo for WSCALE and MSS (NONE or CONST) */
+    uint32_t quirks;            /* packet quirks and bugs */
+    uint32_t line;              /* config file line */
+    struct _fp_entry *next;
+} fp_entry;
+
 /*
  * Structure for connections
  */
@@ -569,6 +595,7 @@ typedef struct _os_asset {
     uint8_t detection;          /* Flag describing detection method (SYN/SYNACK/UDP/ICMP...) */
     bstring raw_fp;             /* The raw fingerprint [*:*:*:*:*:*:....] */
     bstring matched_fp;         /* The FP that matched [*:*:*:*.*:*:---] */
+    fp_entry *match;            /* Pointer to matching signature */
     uint16_t port;              /* Asset port detected on */
     uint16_t mtu;               /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
     uint32_t uptime;            /* Asset uptime */
@@ -635,26 +662,6 @@ typedef struct _port_t {
     bstring service_name;       /* Service */
     struct _port_t *next;       /* Next port_t structure */
 } port_t;
-
-typedef struct _fp_entry {
-    uint8_t *os;                /* OS genre */
-    uint8_t *desc;              /* OS description */
-    uint8_t no_detail;          /* Disable guesstimates */
-    uint8_t generic;            /* Generic hit */
-    uint8_t userland;           /* Userland stack */
-    uint16_t wsize;             /* window size */
-    uint8_t wsize_mod;          /* MOD_* for wsize */
-    uint8_t ttl, df;            /* TTL and don't fragment bit */
-    uint8_t zero_stamp;         /* timestamp option but zero value? */
-    uint16_t size;              /* packet size */
-    uint8_t optcnt;             /* option count */
-    uint8_t opt[MAXOPT];        /* TCPOPT_* */
-    uint16_t wsc, mss;          /* value for WSCALE and MSS options */
-    uint8_t wsc_mod, mss_mod;   /* modulo for WSCALE and MSS (NONE or CONST) */
-    uint32_t quirks;            /* packet quirks and bugs */
-    uint32_t line;              /* config file line */
-    struct _fp_entry *next;
-} fp_entry;
 
 typedef struct _fmask {
     int type;

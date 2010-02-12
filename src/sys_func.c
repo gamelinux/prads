@@ -118,7 +118,7 @@ void print_prads_stats()
     printf("\n-- Total ICMP packets received            :%12u",config.pr_s.icmp_recv);
     printf("\n-- Total Other transport packets received :%12u",config.pr_s.othert_recv);
     printf("\n--");
-    printf("\n-- Total sessions tracked                 :%12llu", cxtrackerid);
+    printf("\n-- Total sessions tracked                 :%12lu", cxtrackerid);
     printf("\n-- Total assets detected                  :%12u",config.pr_s.assets);
     printf("\n-- Total TCP OS fingerprints detected     :%12u",config.pr_s.tcp_os_assets);
     printf("\n-- Total UDP OS fingerprints detected     :%12u",config.pr_s.udp_os_assets);

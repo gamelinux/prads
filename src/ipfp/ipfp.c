@@ -51,7 +51,7 @@ void gen_fp_icmp(uint8_t type,
     }
 
     //icmp might have uptime?
-    update_asset_os(pi, CO_ICMP, fp, 0);
+    update_asset_os(pi, CO_ICMP, fp, NULL, 0);
     bdestroy(fp);
     // add mss ? for MTU detection ?
 }
@@ -86,7 +86,7 @@ void gen_fp_udp(uint16_t totlen,
             bformata(fp, "I");
     }
 
-    update_asset_os(pi, CO_UDP, fp, 0);
+    update_asset_os(pi, CO_UDP, fp, NULL, 0);
     bdestroy(fp);
 }
 

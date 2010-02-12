@@ -44,6 +44,7 @@
 
 #include "common.h"
 #include "prads.h"
+#include "sys_func.h"
 #include "mtu.h"
 #include "tos.h"
 #include "config.h"
@@ -959,19 +960,19 @@ static void dump_packet(uint8_t* pkt,uint16_t plen) {
  
   for (i=0;i<plen;i++) {
     uint8_t c = *(pkt++);
-    if (!(i % PKT_DLEN)) printf("  [%02x] ",i);
-    printf("%02x ",c);
+    if (!(i % PKT_DLEN)) dlog("  [%02x] ",i);
+    dlog("%02x ",c);
     *(t++) = isprint(c) ? c : '.';
     if (!((i+1) % PKT_DLEN)) {
       *t=0;
-      printf(" | %s\n",(t=tbuf));
+      dlog(" | %s\n",(t=tbuf));
     }
   }
   
   if (plen % PKT_DLEN) {
     *t=0;
     while (plen++ % PKT_DLEN) printf("   ");
-    printf(" | %s\n",tbuf);
+    dlog(" | %s\n",tbuf);
   }
 
 }
@@ -995,7 +996,7 @@ static void dump_payload(uint8_t* data,uint16_t dlen) {
   *t = 0;
 
   if (!mode_oneline) putchar('\n');
-  printf("  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
+  dlog("  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
 }
 
 
@@ -1176,9 +1177,6 @@ re_lookup:
   //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
   while (p) {
   
-    printf("check:  ");
-    print_sig(p);
-    printf("\n");
     /* Cheap and specific checks first... */
 
       /* psize set to zero means >= PACKET_BIG */
@@ -1260,52 +1258,55 @@ continue_fuzzy:
 
       a=(uint8_t*)&src;
 
-      printf("\n"); //edward
-      printf("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
+      dlog("\n"); //edward
+      dlog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
              sp,p->os);
 
-      if (!no_osdesc) printf("%s ",p->desc);
+      if (!no_osdesc) dlog("%s ",p->desc);
 
-      if (nat == 1) printf("(NAT!) "); else
-        if (nat == 2) printf("(NAT2!) ");
+      if (nat == 1){
+          dlog("(NAT!) ");
+       } else {
+        if (nat == 2) dlog("(NAT2!) ");
+       }
 
-      if (ecn) printf("(ECN) ");
-      if (orig_df ^ df) printf("(firewall!) ");
+      if (ecn) dlog("(ECN) ");
+      if (orig_df ^ df) dlog("(firewall!) ");
 
       if (tos) {
         if (tos_desc) printf("[%s] ",tos_desc); else printf("[tos %d] ",tos);
       }
 
-      if (p->generic) printf("[GENERIC] ");
-      if (fuzzy_now) printf("[FUZZY] ");
+      if (p->generic) dlog("[GENERIC] ");
+      if (fuzzy_now) dlog("[FUZZY] ");
 
-      if (p->no_detail) printf("* "); else
-        if (tstamp) printf("(up: %d hrs) ",tstamp/360000);
+      if (p->no_detail) dlog("* "); else
+        if (tstamp) dlog("(up: %d hrs) ",tstamp/360000);
 
       if (always_sig || (p->generic && !no_unknown)) {
 
-        if (!mode_oneline) printf("\n  ");
-        printf("Signature: [");
+        if (!mode_oneline) dlog("\n  ");
+        dlog("Signature: [");
 
         //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
 
         if (p->generic)
-          printf(":%s:?] ",p->os);
+          dlog(":%s:?] ",p->os);
         else
-          printf("] ");
+          dlog("] ");
 
       }
 
       if (!no_extra && !p->no_detail) {
-	a=(uint8_t*)&dst;
-        if (!mode_oneline) printf("\n  ");
+          a=(uint8_t*)&dst;
+        if (!mode_oneline) dlog("\n  ");
 
         if (fuzzy_now) 
-          printf("-> %d.%d.%d.%d%s:%d (link: %s)",
+          dlog("-> %d.%d.%d.%d%s:%d (link: %s)",
                a[0],a[1],a[2],a[3],grab_name(a),dp,
                lookup_link(mss,1));
         else
-          printf("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
+          dlog("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
                  a[0],a[1],a[2],a[3],grab_name(a),dp,p->ttl - ttl,
                  lookup_link(mss,1));
       }
@@ -1369,11 +1370,11 @@ continue_search:
 
   if (!no_unknown) { 
     a=(uint8_t*)&src;
-    printf("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
+    dlog("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
 
     //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
 
-    printf(":?:?] ");
+    dlog(":?:?] ");
 
     if (rst_mode) {
 
@@ -1383,55 +1384,55 @@ continue_search:
 
         /* RST+ACK, SEQ=0, ACK=0 */
         case QUIRK_RSTACK | QUIRK_SEQ0:
-          printf("(invalid-K0) "); break;
+          dlog("(invalid-K0) "); break;
 
         /* RST+ACK, SEQ=0, ACK=n */
         case QUIRK_RSTACK | QUIRK_ACK | QUIRK_SEQ0: 
-          printf("(refused) "); break;
+          dlog("(refused) "); break;
  
         /* RST+ACK, SEQ=n, ACK=0 */
         case QUIRK_RSTACK: 
-          printf("(invalid-K) "); break;
+          dlog("(invalid-K) "); break;
 
         /* RST+ACK, SEQ=n, ACK=n */
         case QUIRK_RSTACK | QUIRK_ACK: 
-          printf("(invalid-KA) "); break; 
+          dlog("(invalid-KA) "); break; 
 
         /* RST, SEQ=n, ACK=0 */
         case 0:
-          printf("(dropped) "); break;
+          dlog("(dropped) "); break;
 
         /* RST, SEQ=m, ACK=n */
         case QUIRK_ACK: 
-          printf("(dropped 2) "); break;
+          dlog("(dropped 2) "); break;
  
         /* RST, SEQ=0, ACK=0 */
         case QUIRK_SEQ0: 
-          printf("(invalid-0) "); break;
+          dlog("(invalid-0) "); break;
 
         /* RST, SEQ=0, ACK=n */
         case QUIRK_ACK | QUIRK_SEQ0: 
-          printf("(invalid-0A) "); break; 
+          dlog("(invalid-0A) "); break; 
 
       }
 
     }
 
-    if (nat == 1) printf("(NAT!) ");
-      else if (nat == 2) printf("(NAT2!) ");
+    if (nat == 1) dlog("(NAT!) ");
+      else if (nat == 2) dlog("(NAT2!) ");
 
-    if (ecn) printf("(ECN) ");
+    if (ecn) dlog("(ECN) ");
 
     if (tos) {
-      if (tos_desc) printf("[%s] ",tos_desc); else printf("[tos %d] ",tos);
+      if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",tos);
     }
 
-    if (tstamp) printf("(up: %d hrs) ",tstamp/360000);
+    if (tstamp) dlog("(up: %d hrs) ",tstamp/360000);
 
     if (!no_extra) {
       a=(uint8_t*)&dst;
-      if (!mode_oneline) printf("\n  ");
-      printf("-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
+      if (!mode_oneline) dlog("\n  ");
+      dlog("-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
 	       grab_name(a),dp,lookup_link(mss,1));
     }
 
@@ -1478,7 +1479,7 @@ fp_entry *lookup_sig(fp_entry sig[], packetinfo *pi)
         }
 }
 */
-void fp_tcp(packetinfo *pi, uint8_t ftype)
+fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
 {
     uint8_t *opt_ptr;
     const uint8_t * end_ptr;
@@ -1502,7 +1503,7 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
                 end_ptr = opt_ptr;
             // If IP header ends past end_ptr
             if ((uint8_t *) (pi->ip6 + 1) > end_ptr)
-                return;
+                return NULL;
             if (IP6_FL(pi->ip6) > 0) { //*
                 e.quirks |= QUIRK_FLOWL;
             }
@@ -1517,12 +1518,12 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
             if (end_ptr > opt_ptr)
                 end_ptr = opt_ptr;
             if ((uint8_t *) (pi->ip4 + 1) > end_ptr)
-                return;
+                return NULL;
             ilen = pi->ip4->ip_vhl & 15;
 
             /* * B0rked packet */
             if (ilen < 5)
-                return;
+                return NULL;
 
             if (ilen > 5) {
                 e.quirks |= QUIRK_IPOPT;
@@ -1536,7 +1537,7 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
             // default: there is no default
         default:
             fprintf(stderr, "tcp_fp: something very unsafe happened!\n");
-            return;
+            return NULL;
     }
     //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
 
@@ -1553,7 +1554,7 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
 
     e.wsize = ntohs(pi->tcph->t_win);
 
-    if (pi->ip6 != NULL) return; // Fix this when find_match() is IPv6 aware
+    if (pi->ip6 != NULL) return NULL; // Fix this when find_match() is IPv6 aware
 
     //  match = find_match(sigs, pi, e);
     //  ---> after match_network but before update_asset
@@ -1567,7 +1568,7 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
                e.ttl,
                e.wsize,
                pi->ip_src.s6_addr32[0],
-               0, //ip_dst,
+               pi->ip_dst.s6_addr32[0], //ip_dst,
                ntohs(pi->tcph->src_port),
                ntohs(pi->tcph->dst_port),
                e.optcnt,
@@ -1583,7 +1584,7 @@ void fp_tcp(packetinfo *pi, uint8_t ftype)
                payload
                // pts, // *not used
                );
-    (void)match; // use!
+    return match; // use!
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),
