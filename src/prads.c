@@ -91,6 +91,9 @@ void udp_guess_direction(packetinfo *pi);
 void set_pkt_end_ptr (packetinfo *pi);
 //static inline int filter_packet(const int af, const struct in6_addr *ip_s);
 
+// fix me
+fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype);
+
 /* F U N C T I O N S  ********************************************************/
 
 void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
@@ -661,7 +664,9 @@ void parse_tcp4 (packetinfo *pi)
         if (!TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             if (IS_COSET(&config,CO_SYN)) {
                 vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-                fp_tcp(pi, TF_SYN);
+                fp_entry *fp;
+                fp = fp_tcp(pi, TF_SYN);
+                update_asset_os(pi, CO_SYN, NULL, fp, 0);
                 return;
             }
         } else {

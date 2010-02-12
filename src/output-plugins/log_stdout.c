@@ -2,6 +2,7 @@
 #include "../prads.h"
 #include "log_stdout.h"
 #include "../sys_func.h"
+#include "../sig.h"
 
 void stdout_arp (asset *main)
 {
@@ -29,7 +30,12 @@ void stdout_os (asset *main, os_asset *os)
     if (os->detection == CO_UDP) printf("udp");
     if (os->detection == CO_ICMP) printf("icmp");
 
-    printf(":%s]", (char *)bdata(os->raw_fp));
+    printf(":");
+    if (os->raw_fp != NULL) printf("%s", (char *)bdata(os->raw_fp));
+    if (os->match != NULL) {
+        print_sig(os->match);
+    }
+    printf("]");
     // if vendor and os is != NULL
     //printf(",[%s - %s]", (char *)bdata(os->vendor),(char *)bdata(os->os));
     if (os->uptime) printf(",[uptime:%dhrs]",os->uptime/360000);

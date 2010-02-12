@@ -6,7 +6,7 @@ void fp_udp4(packetinfo *pi, ip4_header * ip4, udp_header * udph, const uint8_t 
              struct in6_addr ip_src);
 
 /* going once, going twice  ... */
-void fp_tcp(packetinfo *pi, uint8_t ftype);
+//void fp_tcp(packetinfo *pi, uint8_t ftype);
 
 void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
              uint8_t ftype, struct in6_addr ip_src);

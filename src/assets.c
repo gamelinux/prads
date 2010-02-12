@@ -253,8 +253,10 @@ os_update:
         if (raw_fp) {
             // FIXME: don't copy fp, bincode it
             new_oa->raw_fp = bstrcpy(raw_fp);
+printf("aaa\n");
         } else if(match) {
             new_oa->match = match;
+printf("bbb\n");
         }
         //new_oa->i_attempts = 1;
         new_oa->first_seen = pi->pheader->ts.tv_sec;
