@@ -250,7 +250,7 @@ void print_sig(fp_entry * e)
     printf("%s", c);
     bcstrfree(c);
 
-    printf(" :  %s : %s \n", e->os, e->desc);
+    printf(":%s:%s", e->os, e->desc);
 }
 void print_sigs(fp_entry * e)
 {
