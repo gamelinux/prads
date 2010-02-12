@@ -34,11 +34,11 @@
   - collide
   - frob ipfp* stuff for sanity
   - walk through find_match() and return the match properly
-  - run find_match on update_asset(_os)
   - run update_asset_os() with a looked-up asset
   - sanity check asset lookups
 
     update_asset_os(pi, de, fp, tstamp?tstamp:0);
+
 
  */
 
@@ -971,7 +971,7 @@ static void dump_packet(uint8_t* pkt,uint16_t plen) {
   
   if (plen % PKT_DLEN) {
     *t=0;
-    while (plen++ % PKT_DLEN) printf("   ");
+    while (plen++ % PKT_DLEN) dlog("   ");
     dlog(" | %s\n",tbuf);
   }
 
@@ -1274,7 +1274,7 @@ continue_fuzzy:
       if (orig_df ^ df) dlog("(firewall!) ");
 
       if (tos) {
-        if (tos_desc) printf("[%s] ",tos_desc); else printf("[tos %d] ",tos);
+        if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",tos);
       }
 
       if (p->generic) dlog("[GENERIC] ");
