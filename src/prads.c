@@ -42,8 +42,7 @@ time_t tstamp;
 connection *bucket[BUCKET_SIZE];
 connection *cxtbuffer = NULL;
 asset *passet[BUCKET_SIZE];
-servicelist *services[65535];
-port_t *lports[255];
+servicelist *services[MAX_PORTS];
 signature *sig_serv_tcp = NULL;
 signature *sig_serv_udp = NULL;
 signature *sig_client_tcp = NULL;
@@ -86,6 +85,7 @@ int  parse_network (char *net_s, struct in6_addr *network);
 int  parse_netmask (char *f, int type, struct in6_addr *netmask);
 void parse_nets(const char *s_net, struct fmask *network);
 
+void udp_guess_direction(packetinfo *pi);
 void set_pkt_end_ptr (packetinfo *pi);
 //static inline int filter_packet(const int af, const struct in6_addr *ip_s);
 
@@ -655,35 +655,34 @@ void parse_tcp4 (packetinfo *pi)
 {
     update_asset(pi);
 
+    if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))) {
+        if (!TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
+            if (IS_COSET(&config,CO_SYN)) {
+                vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
+                fp_tcp(pi, TF_SYN);
+                return;
+            }
+        } else {
+            if (IS_COSET(&config,CO_SYNACK)) {
+                vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n", ntohs(pi->tcph->src_port));
+                fp_tcp(pi, TF_SYNACK);
+                if (pi->sc != SC_SERVER) reverse_pi_cxt(pi);
+                return;
+            }
+        } 
+    }
+
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
-        if (IS_COSET(&config,CO_SYN)
-            && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
-            vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-            fp_tcp(pi, TF_SYN);
-            //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
-            return;
-        }
         if (IS_CSSET(&config,CS_TCP_CLIENT)
                 && !ISSET_DONT_CHECK_CLIENT(pi)) {
-            if (pi->cxt->reversed) service_tcp4(pi);
-                else client_tcp4(pi);
+            client_tcp4(pi);
         }
         goto bastard_checks;
 
     } else if (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi)) {
-        if (IS_COSET(&config,CO_SYNACK)
-               && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-               && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
-            vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",
-                    ntohs(pi->tcph->src_port));
-            fp_tcp(pi, TF_SYNACK);
-            //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
-        }
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && !ISSET_DONT_CHECK_SERVICE(pi)) {
-            if (pi->cxt->reversed) client_tcp4(pi);
-                else service_tcp4(pi);
+            service_tcp4(pi);
         }
         goto bastard_checks;
     }
@@ -711,53 +710,6 @@ bastard_checks:
         fp_tcp(pi, TF_RST);
         return;
     }
-}
-
-void parse_tcp8 (packetinfo *pi)
-{
-    if (IS_COSET(&config,CO_SYN)
-        && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-        && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
-        vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYN, pi->ip_src);
-        update_asset_service(pi, UNKNOWN, UNKNOWN);
-    } else if (IS_COSET(&config,CO_SYNACK)
-               && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-               && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
-        vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip_src);
-        update_asset_service(pi, UNKNOWN, UNKNOWN);
-    } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
-        vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_FIN, pi->ip_src);
-    } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
-        vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_RST, pi->ip_src);
-    }
-
-    if ((pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi))
-         || (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi))) {
-        if (IS_COSET(&config,CO_ACK)
-            && TCP_ISFLAGSET(pi->tcph, (TF_ACK))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
-            vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
-            //fp_tcp4(pi->ip4, pi->tcph, pi->end_ptr, TF_ACK, pi->ip_src);
-        }
-        if (IS_CSSET(&config,CS_TCP_SERVER)
-                && pi->sc == SC_SERVER
-                && !ISSET_DONT_CHECK_SERVICE(pi)) {
-            service_tcp4(pi);
-        } else if (IS_CSSET(&config,CS_TCP_CLIENT)
-                && pi->sc == SC_CLIENT
-                && !ISSET_DONT_CHECK_CLIENT(pi)) {
-            client_tcp4(pi);
-        }
-    } else {
-        vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
-    }
-    return;
 }
 
 void prepare_udp (packetinfo *pi)
@@ -790,6 +742,8 @@ void prepare_udp (packetinfo *pi)
 void parse_udp (packetinfo *pi)
 {
     update_asset(pi);
+    //if (is_set_guess_upd_direction(config)) {
+    udp_guess_direction(pi); // fix DNS server transfers?
 
     if (IS_CSSET(&config,CS_UDP_SERVICES)) {
         if (pi->af == AF_INET) {
@@ -882,6 +836,19 @@ void parse_other (packetinfo *pi)
         } else {
             vlog(0x3, "[*] - NOT CHECKING *OTHER* PACKAGE\n");
         }
+    }
+}
+
+void udp_guess_direction(packetinfo *pi)
+{
+    /* Stupid hack :( for DNS/port 53 */
+    if (ntohs(pi->d_port) == 53) { 
+        if (pi->sc == SC_CLIENT) return;
+            else pi->sc = SC_CLIENT;
+
+    } else if (ntohs(pi->s_port) == 53) {
+        if (pi->sc == SC_SERVER) return;
+            else pi->sc = SC_SERVER;
     }
 }
 

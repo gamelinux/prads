@@ -235,3 +235,46 @@ void cxt_new (connection *cxt, packetinfo *pi)
         pi->sc = SC_CLIENT;
 }
 
+void reverse_pi_cxt(packetinfo *pi)
+{
+    uint8_t tmpFlags;
+    uint64_t tmp_pkts;
+    uint64_t tmp_bytes;
+    struct in6_addr tmp_ip;
+    uint16_t tmp_port;
+    connection *cxt;
+
+    cxt = pi->cxt;
+
+    /* First we chang the cxt */
+    /* cp src to tmp */
+    tmpFlags = cxt->s_tcpFlags;
+    tmp_pkts = cxt->s_total_pkts;
+    tmp_bytes = cxt->s_total_bytes;
+    tmp_ip = cxt->s_ip;
+    tmp_port = cxt->s_port;
+
+    /* cp dst to src */
+    cxt->s_tcpFlags = cxt->d_tcpFlags;
+    cxt->s_total_pkts = cxt->d_total_pkts;
+    cxt->s_total_bytes = cxt->d_total_bytes;
+    cxt->s_ip = cxt->d_ip;
+    cxt->s_port = cxt->d_port;
+
+    /* cp tmp to dst */
+    cxt->d_tcpFlags = tmpFlags; 
+    cxt->d_total_pkts = tmp_pkts;
+    cxt->d_total_bytes = tmp_bytes;
+    cxt->d_ip = tmp_ip;
+    cxt->d_port = tmp_port;
+
+    /* Not taking any chances :P */
+    cxt->c_asset = cxt->s_asset = NULL;
+    cxt->check = 0x00;
+
+    /* Then we change pi */
+    if (pi->sc == SC_CLIENT) pi->sc = SC_SERVER;
+        else pi->sc = SC_CLIENT;
+}
+
+

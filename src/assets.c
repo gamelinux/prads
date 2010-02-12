@@ -297,12 +297,19 @@ service_update:
              * Found! 
              * If we have an id for the service which is != unknown AND the id now is unknown 
              * - just increment i_attempts untill MAX_PKT_CHECK before replacing with unknown 
-             * if (application->data[0] == '@')
+             *
+             * NEW: No more unknown :)
+             * But now we have generic service for the port, example: @https
+             * So now we just check the first char of the string for '@'.
+             * if (application->data[0] != '@') (If the service matched dont starts with a '@')
+             *  and the service registered in the service_asset starts with '@', discard it and
+             *  register the new asset!
              */
-            if (!(biseq(UNKNOWN, application) == 1)
-                &&
-                (biseq(UNKNOWN, tmp_sa->application))
-                == 1) {
+//            if (!(biseq(UNKNOWN, application) == 1)
+//                &&
+//                (biseq(UNKNOWN, tmp_sa->application))
+//                == 1) {
+            if ((application->data[0] != '@') && (tmp_sa->application->data[0] == '@')) {
                 tmp_sa->i_attempts = 0;
                 bdestroy(tmp_sa->service);
                 bdestroy(tmp_sa->application);
@@ -314,7 +321,7 @@ service_update:
                 return SUCCESS;
 
             } else if (!(biseq(application, tmp_sa->application) == 1)) {
-                if (tmp_sa->i_attempts > MAX_PKT_CHECK*2) {
+                if (tmp_sa->i_attempts > MAX_SERVICE_CHECK) {
                     tmp_sa->i_attempts = 0;
                     bdestroy(tmp_sa->service);
                     bdestroy(tmp_sa->application);

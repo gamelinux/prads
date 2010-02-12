@@ -80,4 +80,5 @@ void cxt_update_dst (connection *cxt, packetinfo *pi);
 void cxt_update_src (connection *cxt, packetinfo *pi);
 inline void cxt_new (connection *cxt, packetinfo *pi);
 void free_queue();
+void reverse_pi_cxt(packetinfo *pi);
 #endif /* _UTIL_CXT_H */
