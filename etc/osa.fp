@@ -289,7 +289,7 @@ S16:64:0:60:M512,N,W0,N,N,T:A:VxWorks:VxWorks 5.4.2
 16384:128:0:48:M1460,N,N,S:A:unknown:something
 16384:128:0:64:M1460,N,W0,N,N,T0,N,N,S:A:Akamai?:UNKNOWN
 16384:128:0:64:M1380,N,W0,N,N,T0,N,N,S:A:Win?:Apache/2.2.10 (Win32) mod_ssl/2.2.10 OpenSSL/0.9.8i PHP/5.2.6
-16384:128:0:48:M1460,N,N,S:A:Win?:Server: Microsoft-IIS/6.0
+#16384:128:0:48:M1460,N,N,S:A:Win?:Server: Microsoft-IIS/6.0
 16384:64:1:64:M1460,N,N,S,N,W0,N,N,T:A:OpenBSD:4.6
 16384:128:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W0:A:UNKNOWN:some firewall???
 

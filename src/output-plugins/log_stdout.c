@@ -33,7 +33,7 @@ void stdout_os (asset *main, os_asset *os)
 
     printf(":");
     if (os->raw_fp != NULL) {
-        printf("%s", (char *)bdata(os->raw_fp));
+        printf("%s]", (char *)bdata(os->raw_fp));
     } else if (os->match != NULL) {
         bstring b = gen_fp_tcp(os->match, os->match->zero_stamp, 0);
         char *c = bstr2cstr(b, '-');
@@ -46,7 +46,7 @@ void stdout_os (asset *main, os_asset *os)
             //else printf(":UNKNOWN");
 
     } else {
-        printf("NO MATCH!");
+        printf("NO MATCH]");
     }
     // if vendor and os is != NULL
     //printf(",[%s - %s]", (char *)bdata(os->vendor),(char *)bdata(os->os));
