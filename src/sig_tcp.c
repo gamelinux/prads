@@ -48,6 +48,7 @@
 #include "mtu.h"
 #include "tos.h"
 #include "config.h"
+#include "assets.h"
 
 extern globalconfig config;
 
@@ -250,7 +251,7 @@ void print_sig(fp_entry * e)
     printf("%s", c);
     bcstrfree(c);
 
-    printf(":%s:%s", e->os, e->desc);
+    printf("],[%s:%s", e->os, e->desc);
 }
 void print_sigs(fp_entry * e)
 {
@@ -1173,7 +1174,6 @@ re_lookup:
 
   if (tos) tos_desc = lookup_tos(tos);
 
-
   //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
   while (p) {
   
@@ -1450,6 +1450,7 @@ continue_search:
     fflush(0);
 
   }
+
   return p; // XXX does not return anything useful yet
 
 }
@@ -1584,6 +1585,9 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                payload
                // pts, // *not used
                );
+    e.next = match;
+    update_asset_os(pi, ftype, NULL, &e, tstamp);
+    update_asset_os(pi, ftype, NULL, match, tstamp);
     return match; // use!
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),

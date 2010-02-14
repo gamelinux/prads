@@ -665,15 +665,15 @@ void parse_tcp4 (packetinfo *pi)
         if (!TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             if (IS_COSET(&config,CO_SYN)) {
                 vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-                fp = fp_tcp(pi, TF_SYN);
-                update_asset_os(pi, CO_SYN, NULL, fp, 0);
+                fp = fp_tcp(pi, CO_SYN);
+                //update_asset_os(pi, CO_SYN, NULL, fp, 0);
                 return;
             }
         } else {
             if (IS_COSET(&config,CO_SYNACK)) {
                 vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n", ntohs(pi->tcph->src_port));
-                fp = fp_tcp(pi, TF_SYNACK);
-                update_asset_os(pi, CO_SYNACK, NULL, fp, 0); 
+                fp = fp_tcp(pi, CO_SYNACK);
+                //update_asset_os(pi, CO_SYNACK, NULL, fp, 0); 
                 if (pi->sc != SC_SERVER) reverse_pi_cxt(pi);
                 return;
             }

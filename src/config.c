@@ -38,7 +38,7 @@ void display_config()
     if (IS_COSET(&config,CO_SYN))    printf (" SYN");
     if (IS_COSET(&config,CO_SYNACK)) printf (" SYNACK");
     if (IS_COSET(&config,CO_RST))    printf (" RST");
-    if (IS_COSET(&config,CO_SYN))    printf (" FIN");
+    if (IS_COSET(&config,CO_FIN))    printf (" FIN");
     if (IS_COSET(&config,CO_ACK))    printf (" ACK");
     printf("\n");
     

@@ -35,7 +35,16 @@ void stdout_os (asset *main, os_asset *os)
     if (os->raw_fp != NULL) {
         printf("%s", (char *)bdata(os->raw_fp));
     } else if (os->match != NULL) {
-        print_sig(os->match);
+        bstring b = gen_fp_tcp(os->match, os->match->zero_stamp, 0);
+        char *c = bstr2cstr(b, '-');
+        printf("%s],[", c);
+        bcstrfree(c);
+
+        if (os->match->os != NULL) printf("%s", os->match->os);
+            else printf("UNKNOWN");
+        if (os->match->desc != NULL) printf(":%s", os->match->desc);
+            else printf(":UNKNOWN");
+
     } else {
         printf("NO MATCH!");
     }

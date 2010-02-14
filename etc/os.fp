@@ -892,11 +892,13 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 #65535:64:1:64:M1460,N,W1,N,N,T,S:.:UNKNOWN:UNKNOWN (Closest: NetCache' => '5.3)
 #16384:64:1:64:M1460,N,N,S,N,W0,N:.:NetCache:5.3
 #65535:64:1:64:M1460,N,W1,N,N,T,S:.:UNKNOWN:UNKNOWN (Closest: NetCache' => '5.3)
-65535:64:1:64:M1460,N,W*,N,N,T,S:.:NetCache:5.3 (Generic?)
+#65535:64:1:64:M1400,N,W3,N,N,T,S:.:UNKNOWN:UNKNOWN (Closest: NetCache' => '5.3)
+65535:64:1:64:M*,N,W*,N,N,T,S:.:NetCache:5.3 (Generic?)
 
 # WinNT
 #65535:128:1:48:M1432,N,N,S:.:Windows: NT 5.1
 #53760:64:1:64:M1440,N,W3,N,N,T0,N,N,S:.:@Windows:XP/2000 (RFC1323+, w+, tstamp+)  (closest match)
+#S4:64:1:52:M1460,N,N,S,N,W6:.:@Windows:Closest matches:'@Windows' => 'XP/2000 (RFC1323+, w+, tstamp-)'
 #S48:128:0:48:M1360,N,N,S:.:Windows:XP w/Winroute? (closest match)
 #65535:128:1:48:M1460,N,N,S:.:Windows:2003 Server/msnbot
 #53760:64:1:64:M1440,N,W3,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN @Windows' => 'XP/2000 (RFC1323+, w+, tstamp+)
@@ -906,6 +908,8 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 #65535:128:0:44:M1360:.:UNKNOWN:UNKNOWN
 #S4:64:1:48:M1460,N,W8:.:UNKNOWN:UNKNOWN
 65535:128:0:48:M1460,N,N,S:A:Redline:T|X 2200
+#65535:128:0:48:M1380,N,N,S:A:UNKNOWN:64.73.76.59
+#65535:128:0:48:M1380,N,N,N,N:.:UNKNOWN:189.216.37.97
 #65535:64:0:48:M1360,N,N,S:.:UNKNOWN:UNKNOWN
 #65535:32:0:48:M1420,N,N,S:.:UNKNOWN:UNKNOWN
 #Packet has no match for zero timestamp:0
@@ -917,5 +921,5 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 #Packet has no match for option count:17
 #65535:64:0:60:M1460,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N:.:UNKNOWN:UNKNOWN
 
-
+#S43:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN (ip:79.175.198.172)
 

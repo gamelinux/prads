@@ -19,6 +19,7 @@
 #### Linux
 # Echo request (8)
 8:0:64:1:.:84:2:0:0:@Linux:2.6
+8:0:64:1:.:28:2:0:0:@Linux:2.6 fedora
 #8:0:64:1:.:48:2:0:*:?:?
 # PWS - Panter Web Server? panthercdn.com
 8:0:32:0:.:28:0:0:0:@Linux:PWS 1.4.20/21
@@ -31,6 +32,8 @@
 0:0:64:0:.:28:0:0:0:@Linux:2.6 (Pinged by nmap)
 0:0:64:0:.:64:0:0:0:@Linux:2.6 (Pinged by Superscan?)
 # Destination Unreachable (3)
+#3:10:64:0:.:88:0:0:0:@Linux:2.6 fedora
+3:10:64:0:.:*:0:0:0:@Linux:2.6 fedora
 3:3:64:0:.:*:0:0:192:@Linux:2.6 (3)
 3:1:64:0:.:*:0:0:192:@Linux:2.6 (1)
 3:0:64:0:.:*:0:0:192:@Linux:2.6 (0)
