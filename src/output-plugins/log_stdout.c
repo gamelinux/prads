@@ -37,18 +37,17 @@ void stdout_os (asset *main, os_asset *os)
     } else if (os->match != NULL) {
         bstring b = gen_fp_tcp(os->match, os->match->zero_stamp, 0);
         char *c = bstr2cstr(b, '-');
-        printf("%s],[", c);
+        printf("%s]", c);
         bcstrfree(c);
 
-        if (os->match->os != NULL) printf("%s", os->match->os);
-            else printf("UNKNOWN");
-        if (os->match->desc != NULL) printf(":%s", os->match->desc);
-            else printf(":UNKNOWN");
+        if (os->match->os != NULL) printf(",[%s", os->match->os);
+            //else printf("UNKNOWN");
+        if (os->match->desc != NULL) printf(":%s]", os->match->desc);
+            //else printf(":UNKNOWN");
 
     } else {
         printf("NO MATCH!");
     }
-    printf("]");
     // if vendor and os is != NULL
     //printf(",[%s - %s]", (char *)bdata(os->vendor),(char *)bdata(os->os));
     if (os->uptime) printf(",[uptime:%dhrs]",os->uptime/360000);
