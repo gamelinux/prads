@@ -1040,15 +1040,17 @@ sub check_tcp_options{
    my ($kind, $rest, $size, $data, $count) = (0,0,0,0,0);
    my $optstr = '';
    my @quirks;
-   while ($opts){
+   while (length $opts){
       ($kind, $rest) = unpack("C a*", $opts);
-      last if not $kind;
+      #$kind = vec $opts, 0, 8;
+      #$rest = substr $opts, 8;
+      last if not length $kind;
       $count++;
       if($kind == 0){
          print "EOL\n" if $DEBUG & 8;
          $optstr .= "E,";
          # quirk if opts past EOL
-         push @quirks, 'P' if $rest ne '';
+         push @quirks, 'P' if length $rest;
          #last;
       }elsif($kind == 1){
          # NOP
