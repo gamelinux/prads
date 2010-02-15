@@ -285,6 +285,10 @@ S3:255:1:64:M1460,N,W5,N,N,T,S:A:NetCache: UC (Generic 2?)
 S16:64:0:60:M512,N,W0,N,N,T:A:VxWorks:VxWorks 5.4.2
 5840:64:0:44:M1380:A:HP:iLO card
 5792:64:0:60:M1460,S,T,N,W5:A:MacOS:Intel Mac OS X 10.6
+5792:64:0:60:M1460,S,T,N,W4:A:MacOS:Intel Mac OS X 10.X?
+#65535:64:0:48:M1460,S:A:?:? <-- from prads.pl        \
+#65535:50:0:48:M1460,S,E:PA:?:? <-- from p0f           } 220.255.7.13 : 22
+#65535:50:0:48:M1460,S,E,E:PA:?:? <-- from prads.c    /
 8192:128:1:44:M1460:A:UNKNOWN:UNKNOWN 208.83.20.102
 16384:128:0:48:M1460,N,N,S:A:unknown:something
 16384:128:0:64:M1460,N,W0,N,N,T0,N,N,S:A:Akamai?:UNKNOWN
