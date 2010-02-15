@@ -1017,6 +1017,9 @@ sub check_quirks {
         if($_ =~ /T/) {
             push @quirks, 'T'
         }
+        if($_ =~ /!/) {
+            push @quirks, '!';
+        }
     }
 
     return @quirks;
