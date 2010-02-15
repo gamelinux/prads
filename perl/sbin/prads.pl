@@ -718,8 +718,13 @@ sub packet_tcp {
         my $t0 = (not defined $ts or $ts != 0)? 0:1;
 
         # parse rest of quirks
-        push @quirks, check_quirks($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data);
-        my $quirkstring = quirks_tostring(@quirks);
+        my @new_quirks;
+        push @new_quirks, check_quirks($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data,@quirks);
+        # Some notes here - cording to p0f sigs, we are not displaying the quirks
+        # in the right order.. 'P', 'T' and 'Z' would come before other quirks.
+        # Etc, a normal Linux today would be: "ZAT"
+        # While we will print "TZA"
+        my $quirkstring = quirks_tostring(@new_quirks);
 
         my $src_ip = $ip->{'src_ip'};
 
@@ -990,9 +995,16 @@ sub tcp_os_find_match{
 =cut
 
 sub check_quirks {
-    my ($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data) = @_;
+    my ($id,$ipopts,$urg,$reserved,$ack,$tcpflags,$data,@old_quirks) = @_;
     my @quirks;
+    # Etc, a normal Linux today would be: "ZAT"
+    # While we will print "TZA"
 
+    for(@old_quirks){
+        if($_ =~ /P/) {
+            push @quirks, 'P'
+        }
+    }
     push @quirks, 'Z' if not $id;
     push @quirks, 'I' if $ipopts;
     push @quirks, 'U' if $urg;
@@ -1000,6 +1012,13 @@ sub check_quirks {
     push @quirks, 'A' if $ack;
     push @quirks, 'F' if $tcpflags & ~(SYN|ACK);
     push @quirks, 'D' if $data;
+
+    for(@old_quirks){
+        if($_ =~ /T/) {
+            push @quirks, 'T'
+        }
+    }
+
     return @quirks;
 }
 
@@ -1080,27 +1099,50 @@ sub check_tcp_options{
             $sackok++;
          }elsif($kind == 8){
             # Timestamp.
-            my ($c, $t, $tsize) = (0,0,$size);
-            while($tsize > 0){
-               ($c, $rest) = unpack("C a*", $rest);
-               # hack HACK: ts is 64bit and wraps our 32bit perl ints.
-               # it's ok tho: we don't care what the value is, as long as it's not 0
-               $t <<= 1;
-               $t |= $c;
-               $tsize--;
-            }
+            # Fields: TSTAMP LEN T0 T1 T2 T3 A0 A1 A2 A3
+            # T(0-3) = our timestamp...
+            # A(0-3) = Acked timestamp (the ts of the recieved package)
+            # See http://tools.ietf.org/html/rfc1323 :
+            # Kind: 8
+            # Length: 10 bytes
+            #  +-------+-------+---------------------+---------------------+
+            #  |Kind=8 |  10   |   TS Value (TSval)  |TS Echo Reply (TSecr)|
+            #  +-------+-------+---------------------+---------------------+
+            #      1       1              4                     4
+            # The Timestamp Echo Reply field (TSecr) is only valid if the ACK
+            # bit is set in the TCP header; if it is valid, it echos a times-
+            # tamp value that was sent by the remote TCP in the TSval field
+            # of a Timestamps option.  When TSecr is not valid, its value
+            # must be zero.
+            my ($c, $t, $ter, $tsize) = (0,0,0,$size);
+            ($c, $t, $ter, $rest) = unpack("CNN a*", $rest);
+            ## while($tsize > 0){
+               ## ($c, $rest) = unpack("C a*", $rest);
+               ## # hack HACK: ts is 64bit and wraps our 32bit perl ints.
+               ## # it's ok tho: we don't care what the value is, as long as it's not 0
+               ## $t <<= 1;
+               ## $t |= $c;
+               ## $tsize--;
+            ##}
+            print "TSLen: $c\n" if $DEBUG & 8;
+            print "TSval: $t\n" if $DEBUG & 8;
+            print "TSecr: $ter\n" if $DEBUG & 8;
             print "TS$size: $t\n" if $DEBUG & 8;
-            if($t){
+            if($t != 0){
                $optstr .= "T,";
+               $ts = $t;
             }else{
                $optstr .= "T0,";
             }
-            if(defined $ts and $t){
+            #if(defined $ts and $t){ 
+            if(defined $ter and $ter > 1){ # "> 1" is a hack! should be "!= 0" but its not p0f compatible :/
                # non-zero second timestamp
+               # This is only cool on a syn packet.. 
+               # as a syn+ack it depends on the syn, see rfc1323 
                push @quirks, 'T';
-            }else{
-               $ts = $t;
-            }
+            } #else{
+              # $ts = $t;
+            #}
          }else{
             # unrecognized
             # option 76: (weird router shit)
