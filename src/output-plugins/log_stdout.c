@@ -3,6 +3,7 @@
 #include "log_stdout.h"
 #include "../sys_func.h"
 #include "../sig.h"
+#include "../ipfp/ipfp.h"
 
 void stdout_arp (asset *main)
 {
@@ -46,6 +47,8 @@ void stdout_os (asset *main, os_asset *os)
             //else printf("UNKNOWN");
         if (os->match->desc != NULL) printf(":%s]", os->match->desc);
             //else printf(":UNKNOWN");
+        
+        if (os->match->mss) printf(",[link:%s]",lookup_link(os->match->mss,1));
 
     } else {
         printf("NO MATCH]");

@@ -918,7 +918,7 @@ static inline char* grab_name(char* a) {
 
 
 
-static uint8_t* lookup_link(uint16_t mss,uint8_t txt) {
+uint8_t* lookup_link(uint16_t mss,uint8_t txt) {
   uint32_t i;
   static char tmp[32];
 

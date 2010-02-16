@@ -42,4 +42,4 @@ fp_entry *find_match(fp_entry *sig[], uint32_t hashsize,
                        uint8_t* pkt,uint8_t plen,uint8_t* pay);
 
 bstring gen_fp_tcp(fp_entry *e, uint32_t tstamp, uint8_t tf);
-
+uint8_t* lookup_link(uint16_t mss,uint8_t txt);
