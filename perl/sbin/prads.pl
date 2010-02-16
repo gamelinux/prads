@@ -754,7 +754,7 @@ sub packet_tcp {
         }
         if(defined($sigs)){
             ($os, $details, @more) = tcp_os_find_match($sigs,
-                                $tot, $optcnt, $t0, $df,\@quirks, $mss, $scale,
+                                $tot, $optcnt, $t0, $df,\@new_quirks, $mss, $scale,
                                 $winsize, $gttl, $optstr, $src_ip, $fpstring);
             # Get link type
             $link = get_mtu_link($mss);
@@ -869,6 +869,7 @@ sub tcp_os_find_match{
                 if(grep /^$_$/,@qq){
                     $i++;
                 }else{
+                    #next;
                     last;
                 }
             }
@@ -1120,7 +1121,7 @@ sub check_tcp_options{
             # of a Timestamps option.  When TSecr is not valid, its value
             # must be zero.
             my ($c, $t, $ter, $tsize) = (0,0,0,$size);
-            ($c, $t, $ter, $rest) = unpack("CNN a*", $rest);
+            ($t, $ter, $rest) = unpack("NN a*", $rest);
             ## while($tsize > 0){
                ## ($c, $rest) = unpack("C a*", $rest);
                ## # hack HACK: ts is 64bit and wraps our 32bit perl ints.
@@ -1140,7 +1141,7 @@ sub check_tcp_options{
                $optstr .= "T0,";
             }
             #if(defined $ts and $t){ 
-            if(defined $ter and $ter > 1){ # "> 1" is a hack! should be "!= 0" but its not p0f compatible :/
+            if(defined $ter and $ter > 0){
                # non-zero second timestamp
                # This is only cool on a syn packet.. 
                # as a syn+ack it depends on the syn, see rfc1323 
