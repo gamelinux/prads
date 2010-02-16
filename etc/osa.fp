@@ -109,7 +109,7 @@ S4:64:1:52:M*,N,N,S,N,W9:ZA:Linux:2.6 (newer, 9)
 # Different response when *Unknown* connects:
 S4:64:1:48:M1460,N,N,S:ZA:Linux:2.6 (Generic 2, SYN from Windows) 
 S4:64:1:48:M1460,N,W6:ZA:Linux:2.6 (newer, 6, SYN from HP-UX/11.11)
-5672:64:0:60:M1430,S,T,N,W6:A:Linux:2.6 (Google)
+5672:64:0:60:M1430,S,T,N,W6:AT:Linux:2.6 (Google)
 # --------------- Windows ------------------
 
 65535:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 SP4
@@ -129,6 +129,7 @@ S16:128:1:44:M*:A:Windows:2000 (3)
 # ------------------- OpenBSD --------------
 
 17376:64:1:64:M*,N,N,S,N,W0,N,N,T:AT:OpenBSD:3.3
+16384:64:1:64:M*,N,N,S,N,W0,N,N,T:AT:OpenBSD:4.6 (UC)
 
 # ------------------- NetBSD ----------------
 
@@ -173,7 +174,7 @@ S1:255:1:60:N,N,T,N,W0,M*:AT:Solaris:7
 57344:64:1:48:M1460,N,W0:A:FreeBSD:4.6-4.8 (wscale)
 57344:64:1:60:M1460,N,W0,N,N,T:AT:FreeBSD:4.6-4.8 (RFC1323)
 65535:64:1:48:M1460,S:A:FreeBSD:7.0
-65535:64:1:60:M1460,N,W3,S,T:A:FreeBSD:7.2
+65535:64:1:60:M1460,N,W3,S,T:AT:FreeBSD:7.2
 S4:64:1:60:M1460,S,T,N,W4:A:FreeBSD:6-8 (UC 4)
 S4:64:1:60:M1460,S,T,N,W6:A:FreeBSD:6-8 (UC 6)
 
@@ -199,6 +200,10 @@ S6:64:1:60:M1460,N,W0,N,N,T:AT:BSD/OS:4.0.x
 # ------------------ MacOS -----------------
 
 33304:64:1:60:M*,N,W0,N,N,T:AT:MacOS:X 10.2.6
+
+# ------------------ Commodore 64 ----------
+# We just needed to have this one!
+#1460:64:0:44:M1412:A:C64:Commodore 64 Web V2 (c64web.com)
 
 #################################################################
 # Contributed by Ryan Kruse <rkruse@alterpoint.com> - trial run #
@@ -276,6 +281,10 @@ S3:255:1:64:M1460,N,W0,N,N,T,N,N,S:A:Omniture:DC/1.2
 # BeOS UC
 16384:128:0:60:M1380,N,W0,N,N,T0:A:BeOS:X.X.X UC
 
+# Bing.com
+#S3:255:1:64:M1460,N,W0,N,N,T,S,E,E:PAT:Microsoft:Bing.com
+S3:255:1:64:M1460,N,W0,N,N,T,S,E:PAT:Microsoft:Bing.com
+
 ###################
 # PRADS TEST SIGS #
 ###################
@@ -291,10 +300,11 @@ S16:64:0:60:M512,N,W0,N,N,T:A:VxWorks:VxWorks 5.4.2
 #65535:50:0:48:M1460,S,E,E:PA:?:? <-- from prads.c    /
 8192:128:1:44:M1460:A:UNKNOWN:UNKNOWN 208.83.20.102
 16384:128:0:48:M1460,N,N,S:A:unknown:something
-16384:128:0:64:M1460,N,W0,N,N,T0,N,N,S:A:Akamai?:UNKNOWN
-16384:128:0:64:M1380,N,W0,N,N,T0,N,N,S:A:Win?:Apache/2.2.10 (Win32) mod_ssl/2.2.10 OpenSSL/0.9.8i PHP/5.2.6
+16384:128:0:64:M1460,N,W0,N,N,T0,N,N,S:A:Windows?:Akamai (UC)
+#16384:128:0:64:M1380,N,W0,N,N,T0,N,N,S:A:Win?:Apache/2.2.10 (Win32) mod_ssl/2.2.10 OpenSSL/0.9.8i PHP/5.2.6
+16384:128:0:64:M*,N,W0,N,N,T0,N,N,S:A:Linux:SUSE SLES10 (UC)
 #16384:128:0:48:M1460,N,N,S:A:Win?:Server: Microsoft-IIS/6.0
-16384:64:1:64:M1460,N,N,S,N,W0,N,N,T:A:OpenBSD:4.6
 16384:128:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W0:A:UNKNOWN:some firewall???
-
+5792:64:1:60:M1460,S,T,N,W8:T:Linux:Yahoo! (*.crawl.yahoo.net)
+6144:64:0:60:M1460,N,W0,N,N,T:AT:OpenVMS:X.Y (MultiNet V5.2(16) stack) (UC)
 

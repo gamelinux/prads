@@ -20,6 +20,8 @@ void stdout_arp (asset *main)
 void stdout_os (asset *main, os_asset *os)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
+    uint8_t tmp_ttl;
+
     u_ntop(main->ip_addr, main->af, ip_addr_s);
     printf("\n%s,[", ip_addr_s);
     
@@ -51,12 +53,18 @@ void stdout_os (asset *main, os_asset *os)
     // if vendor and os is != NULL
     //printf(",[%s - %s]", (char *)bdata(os->vendor),(char *)bdata(os->os));
     if (os->uptime) printf(",[uptime:%dhrs]",os->uptime/360000);
+    if (os->ttl) {
+        tmp_ttl = normalize_ttl(os->ttl);
+        printf(",[distance:%d]",tmp_ttl - os->ttl);
+    }
     fflush(0);
 }
 
 void stdout_service (asset *main, serv_asset *service)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
+    uint8_t tmp_ttl;
+
     u_ntop(main->ip_addr, main->af, ip_addr_s);
     printf("\n%s", ip_addr_s);
 
@@ -68,6 +76,10 @@ void stdout_service (asset *main, serv_asset *service)
         printf(",[client:%s:%u:%u]",
         (char*)bdata(service->application),
         ntohs(service->port),service->proto);
+    }
+    if (service->ttl) {
+        tmp_ttl = normalize_ttl(service->ttl);
+        printf(",[distance:%d]",tmp_ttl - service->ttl);
     }
     fflush(0);
 }

@@ -579,6 +579,7 @@ typedef struct _serv_asset {
     unsigned short i_attempts;  /* Attempts at identifying the service_asset. */
     unsigned short proto;       /* Asset protocol */
     uint16_t port;              /* Asset port */
+    uint8_t ttl;                /* Asset TTL */
     bstring service;            /* Asset service (i.e. SSH, WWW, ICMP etc.) */
     bstring application;        /* Asset application (i.e. Apache, ICMP_TYPE etc.) */
     int role;                   /* server or client */
@@ -599,6 +600,7 @@ typedef struct _os_asset {
     fp_entry *match;            /* Pointer to matching signature */
     uint16_t port;              /* Asset port detected on */
     uint16_t mtu;               /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
+    uint8_t ttl;                /* Asset ttl */
     uint32_t uptime;            /* Asset uptime */
 } os_asset;
 

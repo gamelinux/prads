@@ -423,9 +423,9 @@ T4:64:1:60:M1412,S,T,N,W0:.:Linux:2.4 (rare!)
 
 S4:64:1:60:S,T,M1460,N,W1:.:Linux:2.6.27 (Android 1.5)
 
-# Generic *nix sigs
-65535:64:0:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag-)
-65535:64:1:60:M*,N,W*,S,T:.:@nix:2.6 (Generic dfrag+)
+# Generic *Linux* sigs
+65535:64:0:60:M*,N,W*,S,T:.:@Linux:2.6 (Generic dfrag-)
+65535:64:1:60:M*,N,W*,S,T:.:@Linux:2.6 (Generic dfrag+)
 
 # ----------------- OSX -----------------
 65535:64:1:64:M1452,N,W1,N,N,T,S:.:OSX:10.5.7
@@ -448,8 +448,11 @@ S4:64:1:60:S,T,M1460,N,W1:.:Linux:2.6.27 (Android 1.5)
 65535:64:1:60:M*,N,W1,N,N,T:Z:FreeBSD:5.1 (2)
 65535:64:1:60:M*,N,W2,N,N,T:Z:FreeBSD:5.1 (3)
 65535:64:1:64:M*,N,N,S,N,W1,N,N,T:.:FreeBSD:5.3-5.4
+65535:64:1:64:M*,N,W0,N,N,T,S,E:P:FreeBSD:6.x
 65535:64:1:64:M*,N,W1,N,N,T,S,E:P:FreeBSD:6.x (1)
-65535:64:1:64:M*,N,W0,N,N,T,S,E:P:FreeBSD:6.x (2)
+#65535:64:1:64:M*,N,W3,N,N,T,S,E,E:P:FreeBSD:X.X (3)
+65535:64:1:64:M*,N,W3,N,N,T,S,E:P:FreeBSD:X.X (3)
+
 65535:64:1:48:M1460,S:.:FreeBSD:7.0
 
 65535:64:1:44:M*:Z:FreeBSD:5.2 (RFC1323-)
@@ -793,6 +796,7 @@ S14:255:0:44:M1350:.:PalmOS:5.2.1 (Treo)
 
 S23:64:1:64:N,W1,N,N,T,N,N,S,M1460:.:SymbianOS:7
 8192:255:0:44:M1460:.:SymbianOS:6048 (Nokia 7650?)
+8192:255:1:44:M1460:.:SymbianOS:unknown (uc)
 8192:255:0:44:M536:.:SymbianOS:(Nokia 9210?)
 S22:64:1:56:M1460,T,S:.:SymbianOS:? (SE P800?)
 S36:64:1:56:M1360,T,S:.:SymbianOS:60xx (Nokia 6600?)
@@ -903,6 +907,7 @@ S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 #S48:128:0:48:M1360,N,N,S:.:Windows:XP w/Winroute? (closest match)
 #65535:128:1:48:M1460,N,N,S:.:Windows:2003 Server/msnbot
 #53760:64:1:64:M1440,N,W3,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN @Windows' => 'XP/2000 (RFC1323+, w+, tstamp+)
+#53760:32:1:64:M1360,N,W3,N,N,T0,N,N,S:.: --^
 
 # UNKNOWN:UNKNOWN - We would like to know what this is and if it is a valid fingerprint.
 # Since they can be b0rked packets - hench not interresting to match on.

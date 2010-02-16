@@ -260,6 +260,8 @@ os_update:
         new_oa->first_seen = pi->pheader->ts.tv_sec;
         new_oa->last_seen = pi->pheader->ts.tv_sec;
         new_oa->port = pi->s_port;
+        if (pi->ip4 != NULL) new_oa->ttl = pi->ip4->ip_ttl;
+            else if (pi->ip6 != NULL) new_oa->ttl = pi->ip6->hop_lmt;
         if (uptime) new_oa->uptime = uptime;
         new_oa->next = head_oa;
         if (head_oa != NULL)
@@ -378,6 +380,8 @@ service_update:
         serv_asset *new_sa = NULL;
         new_sa = (serv_asset *) calloc(1, sizeof(serv_asset));
         new_sa->port = port;
+        if (pi->ip4 != NULL) new_sa->ttl = pi->ip4->ip_ttl;
+            else if (pi->ip6 != NULL) new_sa->ttl = pi->ip6->hop_lmt;
         new_sa->proto = pi->proto;
         new_sa->service = bstrcpy(service);
         new_sa->application = bstrcpy(application);
