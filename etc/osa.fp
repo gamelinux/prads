@@ -66,23 +66,19 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.6 or 2.4 w/o timestamps
 
 # SYNACK response when Linux talk to Linux
 #5792:64:1:60:M*,S,T,N,W*:ZA:Linux:2.6 (Generic:SYN from Linux)
-5792:64:1:60:M*,S,T,N,W0:ZA:Linux:2.6 (newer, 0)
-5792:64:1:60:M*,S,T,N,W1:ZA:Linux:2.6 (newer, 1)
-5792:64:1:60:M*,S,T,N,W2:ZA:Linux:2.6 (newer, 2)
+5792:64:1:60:M*,S,T,N,W0:ZAT:Linux:2.6 (newer, 0)
+5792:64:1:60:M*,S,T,N,W1:ZAT:Linux:2.6 (newer, 1)
+5792:64:1:60:M*,S,T,N,W2:ZAT:Linux:2.6 (newer, 2)
 5792:64:1:60:M*,S,T,N,W2:ZAT!:Linux:2.6 (arm, newer2)
-5792:64:1:60:M*,S,T,N,W3:ZA:Linux:2.6 (newer, 3)
-5792:64:1:60:M*,S,T,N,W4:ZA:Linux:2.6 (newer, 4)
+5792:64:1:60:M*,S,T,N,W3:ZAT:Linux:2.6 (newer, 3)
+5792:64:1:60:M*,S,T,N,W4:ZAT:Linux:2.6 (newer, 4)
 5792:64:1:60:M*,S,T,N,W5:ZAT:Linux:2.6 (newer, 5)
-#5792:128:1:60:M1460,S,T,W7:AT
-#5792:64:1:60:M*,S,T,N,W5:ZAT:?:?
-5792:64:1:60:M*,S,T,N,W6:ZA:Linux:2.6 (newer, 6)
-5792:64:1:60:M*,S,T,N,W7:ZA:Linux:2.6 (newer, 7)
-#5792:128:1:60:M1460,S,T,N,W7:A      prads.pl
-#5792:115:1:60:M1460,S,T,N,W7:AT:?:? p0f
-5792:64:0:60:M*,S,T,N,W7:ZA:Linux:2.6 (newer, 7)
-5792:64:1:60:M*,S,T,N,W8:ZA:Linux:2.6 (newer, 8)
-5792:64:1:60:M*,S,T,N,W9:ZA:Linux:2.6 (newer, 9)
-5792:128:1:60:M*,S,T,N,W9:ZA:Linux:2.6 (newer, 10)
+5792:64:1:60:M*,S,T,N,W6:ZAT:Linux:2.6 (newer, 6)
+5792:64:1:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
+5792:64:0:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
+5792:64:1:60:M*,S,T,N,W8:ZAT:Linux:2.6 (newer, 8)
+5792:64:1:60:M*,S,T,N,W9:ZAT:Linux:2.6 (newer, 9)
+5792:128:1:60:M*,S,T,N,W9:ZAT:Linux:2.6 (newer, 10)
 
 # Different response when Windows talk to Linux:
 #S4:64:1:52:M*,N,N,S,N,W*:ZA:Linux:2.6 (Generic:SYN from Windows)
