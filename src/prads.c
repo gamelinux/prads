@@ -564,6 +564,7 @@ void parse_arp (packetinfo *pi)
 {
     vlog(0x3, "[*] Got ARP packet...\n");
     config.pr_s.arp_recv++;
+    if (!IS_CSSET(&config,CS_ARP)) return;
     pi->af = AF_INET;
     pi->arph = (ether_arp *) (pi->packet + pi->eth_hlen);
 
