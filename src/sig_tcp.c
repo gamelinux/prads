@@ -554,8 +554,8 @@ static int parse_sig_options(fp_entry *sig, char* p)
 
             case 'e':
                 sig->opt[optcnt] = TCPOPT_EOL;
-                if (*(p + 1))
-                    fatal("EOL not the last option (line %d).\n", sig->line);
+                //if (*(p + 1))  // Old! Improved fingerprints with also collecting options after EOL
+                //    fatal("EOL not the last option (line %d).\n", sig->line);
                 break;
 
             case 's':
