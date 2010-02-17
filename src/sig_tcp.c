@@ -1561,8 +1561,16 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
     //  ---> after match_network but before update_asset
     // find_match(pi, e);
     // return this into asset engine
+    fp_entry **sig;
+    if (ftype == CO_SYN) {
+        sig=config.sig_syn;
+    } else if (ftype == CO_SYNACK) {
+        sig=config.sig_synack;
+    }
+
     fp_entry *match = find_match(
-               config.sig_syn,
+                sig,
+               //config.sig_syn,
                config.sig_hashsize,
                e.size,
                e.df,
@@ -1585,6 +1593,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                payload
                // pts, // *not used
                );
+
     e.next = match;
     update_asset_os(pi, ftype, NULL, &e, tstamp);
     update_asset_os(pi, ftype, NULL, match, tstamp);
