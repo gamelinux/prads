@@ -95,21 +95,22 @@ S4:64:1:52:M*,N,N,S,N,W9:ZA:Linux:2.6 (newer, 9)
 
 # Different response when FreeBSD talk to Linux 
 #5792:64:1:60:M*,N,N,T,N,W*:ZA:Linux:2.6 (Generic:SYN from FreeBSD)
-5792:64:1:60:M*,N,N,T,N,W0:ZA:Linux:2.6 (newer, 0)
-5792:64:1:60:M*,N,N,T,N,W1:ZA:Linux:2.6 (newer, 1)
-5792:64:1:60:M*,N,N,T,N,W2:ZA:Linux:2.6 (newer, 2)
-5792:64:1:60:M*,N,N,T,N,W3:ZA:Linux:2.6 (newer, 3)
-5792:64:1:60:M*,N,N,T,N,W4:ZA:Linux:2.6 (newer, 4)
-5792:64:1:60:M*,N,N,T,N,W5:ZA:Linux:2.6 (newer, 5)
-5792:64:1:60:M*,N,N,T,N,W6:ZA:Linux:2.6 (newer, 6)
-5792:64:1:60:M*,N,N,T,N,W7:ZA:Linux:2.6 (newer, 7)
-5792:64:1:60:M*,N,N,T,N,W8:ZA:Linux:2.6 (newer, 8)
-5792:64:1:60:M*,N,N,T,N,W9:ZA:Linux:2.6 (newer, 9)
+5792:64:1:60:M*,N,N,T,N,W0:ZAT:Linux:2.6 (newer, 0)
+5792:64:1:60:M*,N,N,T,N,W1:ZAT:Linux:2.6 (newer, 1)
+5792:64:1:60:M*,N,N,T,N,W2:ZAT:Linux:2.6 (newer, 2)
+5792:64:1:60:M*,N,N,T,N,W3:ZAT:Linux:2.6 (newer, 3)
+5792:64:1:60:M*,N,N,T,N,W4:ZAT:Linux:2.6 (newer, 4)
+5792:64:1:60:M*,N,N,T,N,W5:ZAT:Linux:2.6 (newer, 5)
+5792:64:1:60:M*,N,N,T,N,W6:ZAT:Linux:2.6 (newer, 6)
+5792:64:1:60:M*,N,N,T,N,W7:ZAT:Linux:2.6 (newer, 7)
+5792:64:1:60:M*,N,N,T,N,W8:ZAT:Linux:2.6 (newer, 8)
+5792:64:1:60:M*,N,N,T,N,W9:ZAT:Linux:2.6 (newer, 9)
 
 # Different response when *Unknown* connects:
 S4:64:1:48:M1460,N,N,S:ZA:Linux:2.6 (Generic 2, SYN from Windows) 
 S4:64:1:48:M1460,N,W6:ZA:Linux:2.6 (newer, 6, SYN from HP-UX/11.11)
 5672:64:0:60:M1430,S,T,N,W6:AT:Linux:2.6 (Google)
+
 # --------------- Windows ------------------
 
 65535:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 SP4
