@@ -524,7 +524,7 @@ S34:64:1:52:M*,N,W0,N,N,S:.:Solaris:10 (beta)
 
 6144:64:1:60:M*,N,W0,N,N,T:.:OpenVMS:7.2 (Multinet 4.3-4.4 stack)
 
-# ----------------- MacOS -------------------
+# ----------------- MacOS/OSX -------------------
 
 S2:255:1:48:M*,W0,E:.:MacOS:8.6 classic
 
@@ -534,6 +534,14 @@ S2:255:1:48:M*,W0,E:.:MacOS:8.6 classic
 
 32768:255:1:48:M1380,N,N,N,N:.:MacOS:9.1 (OT 2.7.4) (1)
 65535:255:1:48:M*,N,N,N,N:.:MacOS:9.1 (OT 2.7.4) (2)
+
+#65535:53:1:64:M1300,N,W3,N,N,T0,S,E,E:P (extra E)
+#65535:53:1:64:M1380,N,W1,N,N,T0,S,E,E:P (extra E)
+#65535:64:1:64:M1380,N,W1,N,N,T,S,E,E:P  (extra E)
+65535:64:1:64:M1452,N,W1,N,N,T,S:.:OSX:10.5.7
+65535:53:1:64:M1380,N,W1,N,N,T0,S,E:P:MacOS:Intel Mac OS X 10.X (UC)
+65535:64:1:64:M1380,N,W1,N,N,T,S,E:P:MacOS:Intel Mac OS X 10.6.2 (RFC1323+) (UC)
+65535:53:1:64:M1300,N,W3,N,N,T0,S,E:P:MacOS:Intel Mac OS X 10.6 (UC)
 
 # ----------------- Windows -----------------
 
