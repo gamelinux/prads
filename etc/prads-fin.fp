@@ -3,32 +3,28 @@
 # --------------------------
 #
 # .-------------------------------------------------------------------------.
-# | The purpose of this file is to cover signatures for stray ACK packets   |
-# | (established session data). This mode of operation is enabled with -XXX |
-# | option and is HIGHLY EXPERIMENTAL. Please refer to p0f.fp for more      |
-# | information on the metrics used and for a guide on adding new entries   |
-# | to this file. This database is looking for a caring maintainer.         |
+# | The purpose of this file is to cover signatures for FIN packets         |
+# | This database is looking for a caring maintainer.                       |
 # `-------------------------------------------------------------------------'
 #
-# (C) Copyright 1996-2010 by Edward Fjellskål <edward@redpill-linpro.com>
+# (C) Copyright 2009-2010 by Edward Fjellskål <edward@redpill-linpro.com>
 #
-# Submit all additions to the authors. Read p0f.fp before adding any
-# signatures. Run p0f -O -C after making any modifications. This file is
-# NOT compatible with SYN, SYN+ACK or RST+ modes. Use only with -O option.
+# Submit all additions to the authors.
 #
-# IMPORTANT INFORMATION ABOUT THE INTERDEPENDENCY OF SYNs AND ACKs
+# IMPORTANT INFORMATION ABOUT THE INTERDEPENDENCY OF FIN
 # ----------------------------------------------------------------
 #
 # Bla bla... :)
 #
-# IMPORTANT INFORMATION ABOUT DIFFERENCES IN COMPARISON TO p0f.fp:
+# IMPORTANT INFORMATION ABOUT DIFFERENCES IN COMPARISON TO SYN:
 # ----------------------------------------------------------------
 #
 # Bla bla... :)
 
 ## Linux
-46:64:1:52:N,N,T:ATFN!:Linux:2.6
-54:64:1:52:N,N,T:ATFN!:Linux:2.6
+#46:64:1:52:N,N,T:ATFN!:Linux:2.6
+#54:64:1:52:N,N,T:ATFN!:Linux:2.6
+54:64:1:52:N,N,T0:ATFN:Linux:2.6
 
 ## Freebsd
 8326:64:1:52:N,N,T:ATFN!:Freebsd:freebsd.org

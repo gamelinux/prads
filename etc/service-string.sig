@@ -7,7 +7,10 @@ Ubuntu 9.10 Karmic Koala||90||server||Server: Apache/2.2.12 (Ubuntu) PHP/5.2.10-
 ### Ubuntu 9.04 Jaunty
 Ubuntu 9.04 Jaunty||20||client||User Agent: CUPS/1.3.9
 Ubuntu 9.04 Jaunty||30||client||OpenSSH 5.1p1 (Protocol 2.0)
+Ubuntu 9.04 Jaunty||30||client||SSH-2.0-OpenSSH_5.1p1 Debian-5ubuntu1
 Ubuntu 9.04 Jaunty||30||client||User Agent: lwp-request/5.818 libwww-perl/5.820
+Ubuntu 9.04 Jaunty||60||server||Server: Apache/2.2.11 (Ubuntu) DAV/2 SVN/1.5.4 mod_jk/1.2.26 PHP/5.2.6-3ubuntu4.5 with Suhosin-Patch mod_python/3.3.1 Python/2.6.2
+
 ### Ubuntu 8.04 Hardy (LTS)
 Ubuntu 8.04 Hardy (LTS)||20||server||OpenSSH 4.7p1 (Protocol 2.0)
 ### Ubuntu 6.06 Dapper Drake (LTS)

@@ -705,17 +705,17 @@ bastard_checks:
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp = fp_tcp(pi, TF_ACK);
+        fp = fp_tcp(pi, CO_ACK);
         //update_asset_os(pi, CO_ACK, NULL, fp, 0);
         return;
     } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp = fp_tcp(pi, TF_FIN);
+        fp = fp_tcp(pi, CO_FIN);
         //update_asset_os(pi, CO_FIN, NULL, fp, 0);
         return;
     } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
         vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp = fp_tcp(pi, TF_RST);
+        fp = fp_tcp(pi, CO_RST);
         //update_asset_os(pi, CO_RST, NULL, fp, 0);
         return;
     }
@@ -1140,6 +1140,14 @@ int main(int argc, char *argv[])
         if(rc) perror("synack loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_synack, config.sig_hashsize);
+    }
+    if(config.ctf & CO_RST){
+        int32_t rc;
+        printf("[*] Loading RST fingerprints\n");
+        rc = load_sigs(config.sig_file_rst, &config.sig_rst, config.sig_hashsize);
+        if(rc) perror("rst loadage failed!");
+        if(config.verbose > 1)
+            dump_sigs(config.sig_rst, config.sig_hashsize);
     }
 
     printf("\n[*] Running prads %s\n", VERSION);

@@ -646,7 +646,8 @@ static int parse_sig_quirks(fp_entry *sig, uint8_t *p)
                      "options.\n", sig->line);
 
             case 'K':
-                if (!rst_mode)
+                //if (!rst_mode)
+                if (!IS_COSET(&config,CO_RST))
                     fatal("Quirk 'K' (line %d) is valid only in RST+ (-R)"
                           " mode (wrong config file?).\n", sig->line);
                 sig->quirks |= QUIRK_RSTACK;
@@ -1561,14 +1562,18 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
     //  ---> after match_network but before update_asset
     // find_match(pi, e);
     // return this into asset engine
-    fp_entry **sig;
+    fp_entry **sig = NULL;
     if (ftype == CO_SYN) {
         sig=config.sig_syn;
     } else if (ftype == CO_SYNACK) {
         sig=config.sig_synack;
+    } else if (ftype == CO_RST) {
+        sig=config.sig_rst;
     }
 
-    fp_entry *match = find_match(
+    fp_entry *match = NULL;
+    if (sig != NULL) {
+        match = find_match(
                 sig,
                //config.sig_syn,
                config.sig_hashsize,
@@ -1593,10 +1598,12 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                payload
                // pts, // *not used
                );
+    }
 
-    e.next = match;
+    //if (match->os != NULL) memcpy(&e.next->os, match->os, MAXLINE);
+    //if (match->desc != NULL) memcpy(&e.next->desc, match->desc, MAXLINE);
     update_asset_os(pi, ftype, NULL, &e, tstamp);
-    update_asset_os(pi, ftype, NULL, match, tstamp);
+    if (match != NULL) update_asset_os(pi, ftype, NULL, match, tstamp);
     return match; // use!
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),

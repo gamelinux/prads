@@ -30,6 +30,7 @@ typedef struct _globalconfig {
     bstring     sig_file_cli_udp;       /* Filename of udp client sig file */
     char       *sig_file_syn;           /* Filename of TCP SYN sig file */
     char       *sig_file_synack;        /* Filename of TCP SYNACK sig file */
+    char       *sig_file_rst;           /* Filename of TCP RST sig file */
     signature   *sig_serv_tcp;          /* Pointer to list of tcp service signatures */
     signature   *sig_serv_udp;          /* Pointer to list of udp service signatures */
     signature   *sig_client_tcp;        /* Pointer to list of tcp client signatures */
@@ -48,6 +49,7 @@ typedef struct _globalconfig {
     uint32_t     sig_hashsize;          /* size of signature hash */
     fp_entry   **sig_syn;               /* SYN signature hash */
     fp_entry   **sig_synack;            /* SYNACK signature hash */
+    fp_entry   **sig_rst;               /* RST signature hash */
 } globalconfig;
 #define ISSET_CONFIG_VERBOSE(config)    (config->cflags & 0x01)
 #define ISSET_CONFIG_UPDATES(config)    (config->cflags & 0x02)
