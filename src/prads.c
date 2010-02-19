@@ -1141,6 +1141,22 @@ int main(int argc, char *argv[])
         if(config.verbose > 1)
             dump_sigs(config.sig_synack, config.sig_hashsize);
     }
+    if(config.ctf & CO_ACK){
+        int32_t rc;
+        printf("[*] Loading STRAY-ACK fingerprints\n");
+        rc = load_sigs(config.sig_file_ack, &config.sig_ack, config.sig_hashsize);
+        if(rc) perror("stray-ack loadage failed!");
+        if(config.verbose > 1)
+            dump_sigs(config.sig_ack, config.sig_hashsize);
+    }
+    if(config.ctf & CO_FIN){
+        int32_t rc;
+        printf("[*] Loading FIN fingerprints\n");
+        rc = load_sigs(config.sig_file_fin, &config.sig_fin, config.sig_hashsize);
+        if(rc) perror("fin loadage failed!");
+        if(config.verbose > 1)
+            dump_sigs(config.sig_fin, config.sig_hashsize);
+    }
     if(config.ctf & CO_RST){
         int32_t rc;
         printf("[*] Loading RST fingerprints\n");

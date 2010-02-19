@@ -687,6 +687,9 @@ static int parse_sig_quirks(fp_entry *sig, uint8_t *p)
             case 'F':
                 sig->quirks |= QUIRK_FLAGS;
                 break;
+            case 'N':
+                sig->quirks |= QUIRK_FINACK;
+                break;
             case '!':
                 sig->quirks |= QUIRK_BROKEN;
                 break;
@@ -1169,6 +1172,8 @@ fp_entry *find_match(
   fp_entry* fuzzy = 0;
   uint8_t fuzzy_now = 0;
 
+  //if ( sig == config.sig_ack ) ocnt = 3;
+
 re_lookup:
 
   p = sig[SIGHASH(tot,ocnt,quirks,df) % hashsize];
@@ -1569,7 +1574,12 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
         sig=config.sig_synack;
     } else if (ftype == CO_RST) {
         sig=config.sig_rst;
+    } else if (ftype == CO_FIN) {
+        sig=config.sig_fin;
+    } else if (ftype == CO_ACK) {
+        sig=config.sig_ack;
     }
+
 
     fp_entry *match = NULL;
     if (sig != NULL) {

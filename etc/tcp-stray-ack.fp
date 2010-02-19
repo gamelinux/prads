@@ -59,7 +59,7 @@
 
 ## Freebsd
 8326:64:1:*:N,N,T:AT!:Freebsd:freebsd.org
-8325:64:1:*:N,N,T:AT!:
+#8325:64:1:*:N,N,T:AT!:
 
 ## Windows
 *(65535):128:1:*:N,N,T:AT!:Windows:support.windows.com

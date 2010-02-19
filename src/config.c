@@ -90,9 +90,13 @@ void set_default_config_options()
     // files should be relative to configpath somehow
     config.sig_file_syn = "../etc/os.fp";
     config.sig_file_synack = "../etc/osa.fp";
-    config.sig_file_rst = "../etc/prads-rst.fp";
+    config.sig_file_ack = "../etc/tcp-stray-ack.fp";
+    config.sig_file_fin = "../etc/tcp-fin.fp";
+    config.sig_file_rst = "../etc/tcp-rst.fp";
     config.sig_syn = NULL;
     config.sig_synack = NULL;
+    config.sig_ack = NULL;
+    config.sig_fin = NULL;
     config.sig_rst = NULL;
     config.sig_hashsize = 241;
 }
