@@ -13,12 +13,13 @@ void update_asset(packetinfo *pi)
 {
     if (asset_lookup(pi) == SUCCESS) {
         if (pi->asset != NULL) {
+            pi->asset->vlan = pi->vlan;
             pi->asset->last_seen = pi->pheader->ts.tv_sec;
         } else {
             printf("\nBAD ERROR in update_asset\n");
         }
     } else {
-        add_asset(pi->af, pi->ip_src);
+        add_asset(pi);
     }
     return;
 }
@@ -403,31 +404,29 @@ service_update:
  * FUNCTION     : add_asset
  * DESCRIPTION  : This function will add an asset to the
  *              : specified asset data structure.
- * INPUT        : 0 - AF_INET
- *              : 1 - IP Address
- *              : 2 - Discovered
+ * INPUT        : 0 - packetinfo (af, ip_src, vlan)
  * RETURN       : None!
  * ---------------------------------------------------------- */
-asset *add_asset(int af, struct in6_addr ip_addr)
+void add_asset(packetinfo *pi)
 {
     extern asset *passet[BUCKET_SIZE];
-    extern time_t tstamp;
     extern uint64_t hash;
     asset *masset = NULL;
 
     config.pr_s.assets++;
 
-    if (af == AF_INET) {
-        hash = ((ip_addr.s6_addr32[0])) % BUCKET_SIZE;
-    } else if (af == AF_INET6) {
-        hash = ((ip_addr.s6_addr32[3])) % BUCKET_SIZE;
+    if (pi->af == AF_INET) {
+        hash = ((pi->ip_src.s6_addr32[0])) % BUCKET_SIZE;
+    } else if (pi->af == AF_INET6) {
+        hash = ((pi->ip_src.s6_addr32[3])) % BUCKET_SIZE;
     }
 
     masset = (asset *) calloc(1, sizeof(asset));
-    masset->ip_addr = ip_addr;
-    masset->af = af;
+    masset->ip_addr = pi->ip_src;
+    masset->af = pi->af;
+    masset->vlan = pi->vlan;
     masset->i_attempts = 0;
-    masset->first_seen = masset->last_seen = tstamp;
+    masset->first_seen = masset->last_seen = pi->pheader->ts.tv_sec;
     masset->next = passet[hash];
 
     if (passet[hash] != NULL)
@@ -439,10 +438,10 @@ asset *add_asset(int af, struct in6_addr ip_addr)
 
     /* verbose info for sanity checking */
     static char ip_addr_s[INET6_ADDRSTRLEN];
-    u_ntop(ip_addr, af, ip_addr_s);
+    u_ntop(pi->ip_src, pi->af, ip_addr_s);
     dlog("[*] asset added: %s\n",ip_addr_s);
     
-    return masset;
+    //return masset;
 }
 
 short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],

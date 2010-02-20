@@ -808,7 +808,7 @@ void parse_icmp (packetinfo *pi)
                 // could look for icmp spesific data in package abcde...
                 // service_icmp(*pi->ip4,*tcph
             } else if (pi->af==AF_INET6) {
-                add_asset(pi->af, pi->ip_src);
+                add_asset(pi);
                 fp_icmp6(pi, pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
             }
         } else {
