@@ -609,7 +609,11 @@ typedef struct _os_asset {
     uint8_t detection;          /* Flag describing detection method (SYN/SYNACK/UDP/ICMP...) */
     bstring raw_fp;             /* The raw fingerprint [*:*:*:*:*:*:....] */
     bstring matched_fp;         /* The FP that matched [*:*:*:*.*:*:---] */
-    fp_entry *match;            /* Pointer to matching signature */
+    fp_entry fp; 
+    //fp_entry *match;            /* Pointer to matching signature */
+    char *match_os;
+    char *match_desc;
+    
     uint16_t port;              /* Asset port detected on */
     uint16_t mtu;               /* IPv4:MTU = MSS + 40 | IPv6:MTU = MSS + 60 */
     uint8_t ttl;                /* Asset ttl */

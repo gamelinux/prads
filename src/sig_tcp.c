@@ -1634,8 +1634,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
     //if (match->os != NULL) memcpy(&e.next->os, match->os, MAXLINE);
     //if (match->desc != NULL) memcpy(&e.next->desc, match->desc, MAXLINE);
     update_asset_os(pi, ftype, NULL, &e, tstamp);
-    if (match != NULL) update_asset_os(pi, ftype, NULL, match, tstamp);
-    return match; // use!
+    return NULL; // can't return stack-allocated * fp_entry e; 
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),

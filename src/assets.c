@@ -232,7 +232,9 @@ os_update:
             }else if (match){
                 // pointer equality - does this OS asset point
                 // to the same match?
-                if (match == tmp_oa->match) {
+                if (match->os == tmp_oa->fp.os &&
+                    match->desc == tmp_oa->fp.desc){
+                //if (match == tmp_oa->match) {
                     tmp_oa->last_seen = pi->pheader->ts.tv_sec;
                     if (uptime)
                         tmp_oa->uptime = uptime;
@@ -255,7 +257,9 @@ os_update:
             // FIXME: don't copy fp, bincode it
             new_oa->raw_fp = bstrcpy(raw_fp);
         } else if(match) {
-            new_oa->match = match;
+            // copy the match
+            new_oa->fp = *match;
+            new_oa->fp = *match;
         }
         //new_oa->i_attempts = 1;
         new_oa->first_seen = pi->pheader->ts.tv_sec;

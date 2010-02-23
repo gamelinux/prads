@@ -40,18 +40,18 @@ void stdout_os (asset *main, os_asset *os)
     printf(":");
     if (os->raw_fp != NULL) {
         printf("%s]", (char *)bdata(os->raw_fp));
-    } else if (os->match != NULL) {
-        bstring b = gen_fp_tcp(os->match, os->match->zero_stamp, 0);
+    } else if (os->fp.os != NULL) {
+        bstring b = gen_fp_tcp(&os->fp, os->fp.zero_stamp, 0);
         char *c = bstr2cstr(b, '-');
         printf("%s]", c);
         bcstrfree(c);
 
-        if (os->match->os != NULL) printf(",[%s", os->match->os);
+        if (os->fp.os != NULL) printf(",[%s", os->fp.os);
             //else printf("UNKNOWN");
-        if (os->match->desc != NULL) printf(":%s]", os->match->desc);
+        if (os->fp.desc != NULL) printf(":%s]", os->fp.desc);
             //else printf(":UNKNOWN");
         
-        if (os->match->mss) printf(",[link:%s]",lookup_link(os->match->mss,1));
+        if (os->fp.mss) printf(",[link:%s]",lookup_link(os->fp.mss,1));
 
     } else {
         printf("NO MATCH]");
