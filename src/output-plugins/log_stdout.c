@@ -40,24 +40,19 @@ void stdout_os (asset *main, os_asset *os)
     printf(":");
     if (os->raw_fp != NULL) {
         printf("%s]", (char *)bdata(os->raw_fp));
-    } else if (os->fp.os != NULL) {
+    } else {
         bstring b = gen_fp_tcp(&os->fp, os->fp.zero_stamp, 0);
-        char *c = bstr2cstr(b, '-');
-        printf("%s]", c);
-        bcstrfree(c);
+        os->raw_fp = b;
+        printf("%s]", (char *)bdata(os->raw_fp));
 
         if (os->fp.os != NULL) printf(",[%s", os->fp.os);
-            //else printf("UNKNOWN");
+            else printf(",[unknown");
         if (os->fp.desc != NULL) printf(":%s]", os->fp.desc);
-            //else printf(":UNKNOWN");
+            else printf(":unknown]");
         
         if (os->fp.mss) printf(",[link:%s]",lookup_link(os->fp.mss,1));
-
-    } else {
-        printf("NO MATCH]");
     }
-    // if vendor and os is != NULL
-    //printf(",[%s - %s]", (char *)bdata(os->vendor),(char *)bdata(os->os));
+
     if (os->uptime) printf(",[uptime:%dhrs]",os->uptime/360000);
     if (os->ttl) {
         tmp_ttl = normalize_ttl(os->ttl);

@@ -28,14 +28,17 @@
 108:64:1:52:N,N,T:ATFN:Linux:2.6
 216:64:1:52:N,N,T:ATFN:Linux:2.6
 
-
-
+S4:64:1:*:.:AFDN:Linux:2.6 arm
 
 
 ## Freebsd
 8326:64:1:52:N,N,T:ATFN!:Freebsd:freebsd.org
 
 ## Windows
+*:128:1:*:.:AFDN:Windows:2008 Server (UC)
+#64053:128:1:*(437):.:AFDN
+#*:128:1:*:.:AFDN:Windows: 2008 Server (UC)
+#62993:110:1:*(579):.:AFDN
 
 # 87.238.43.133,[fin:17089:126:1:*(454):.:AFDN],[distance:2]
 # 87.238.50.235,[fin:260:128:1:52:N,N,T0:ATFN],[uptime:379hrs],[distance:0]

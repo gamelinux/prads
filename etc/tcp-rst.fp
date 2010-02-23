@@ -186,6 +186,7 @@ S12:255:1:58:.:KAD:Solaris:2.x "tcp_disconnect" (dropped, lame)
 S43:64:1:40:.:KA:AOL:proxy (dropped, lame)
 1:64:1:40:.:KA:Linux:2.4/2.6 (dropped, lame)
 1:64:1:52:N,N,T:KAT:Linux:2.6 (dropped, lame)
+63:64:1:40:.:KA:Linux:2.4 (newer) mips
 #*:64:1:40:.:KA:FreeBSD:4.8 (dropped, lame)
 #*:64:1:52:N,N,T:KAT:Linux:2.4 (dropped, lame)
 0:255:0:40:.:KAF:3Com:SuperStack II (dropped, lame)

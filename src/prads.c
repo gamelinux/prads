@@ -256,6 +256,7 @@ inline int filter_packet(const int af, const struct in6_addr *ip_s)
 
 void prepare_eth (packetinfo *pi)
 {
+    if (pi->packet + ETHERNET_HEADER_LEN > pi->end_ptr) return;
     config.pr_s.eth_recv++;
     pi->eth_hdr  = (ether_header *) (pi->packet);
     pi->eth_type = ntohs(pi->eth_hdr->eth_ip_type);
