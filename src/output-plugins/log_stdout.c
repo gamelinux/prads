@@ -12,6 +12,7 @@ void stdout_arp (asset *main)
     if (memcmp(main->mac_addr, "\0\0\0\0\0\0", 6)) {
         u_ntop(main->ip_addr, main->af, ip_addr_s);
         printf("\n%s", ip_addr_s);
+        if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
         printf(",[arp:%s]",
         hex2mac((const char *)main->mac_addr));
     }
@@ -24,8 +25,10 @@ void stdout_os (asset *main, os_asset *os)
     uint8_t tmp_ttl;
 
     u_ntop(main->ip_addr, main->af, ip_addr_s);
-    printf("\n%s,[", ip_addr_s);
+    printf("\n%s", ip_addr_s);
+    if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
     
+    printf(",[");
     if (os->detection == CO_SYN) printf("syn");
     if (os->detection == CO_SYNACK) printf("synack");
     if (os->detection == CO_ACK) printf("ack");
@@ -70,6 +73,7 @@ void stdout_service (asset *main, serv_asset *service)
 
     u_ntop(main->ip_addr, main->af, ip_addr_s);
     printf("\n%s", ip_addr_s);
+    if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
 
     if (service->role == 1) {
         printf(",[service:%s:%u:%u]",
