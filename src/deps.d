@@ -1,5 +1,6 @@
 bstrlib.o: bstrlib.c bstrlib.h
-sig.o: sig.c common.h prads.h bstrlib.h mtu.h tos.h
+sig_tcp.o: sig_tcp.c common.h prads.h bstrlib.h sys_func.h mtu.h tos.h \
+  config.h assets.h
 config.o: config.c common.h prads.h bstrlib.h sys_func.h config.h
 sys_func.o: sys_func.c common.h prads.h bstrlib.h sys_func.h util-cxt.h \
   assets.h servicefp/servicefp.h config.h
@@ -15,15 +16,15 @@ log_dispatch.o: output-plugins/log_dispatch.c output-plugins/../prads.h \
   output-plugins/../sys_func.h output-plugins/../config.h
 log_stdout.o: output-plugins/log_stdout.c output-plugins/../prads.h \
   output-plugins/../common.h output-plugins/../bstrlib.h \
-  output-plugins/log_stdout.h output-plugins/../sys_func.h
+  output-plugins/log_stdout.h output-plugins/../sys_func.h \
+  output-plugins/../sig.h output-plugins/../ipfp/ipfp.h
 assets.o: assets.c common.h prads.h bstrlib.h assets.h sys_func.h \
   output-plugins/log_dispatch.h config.h
 prads.o: prads.c common.h prads.h bstrlib.h config.h sys_func.h assets.h \
-  cxt.h ipfp/ipfp.h servicefp/servicefp.h util-cxt.h util-cxt-queue.h
+  cxt.h ipfp/ipfp.h servicefp/servicefp.h util-cxt.h util-cxt-queue.h \
+  sig.h
 ipfp.o: ipfp/ipfp.c ipfp/../common.h ipfp/../prads.h ipfp/../common.h \
   ipfp/../bstrlib.h ipfp/../assets.h ipfp/ipfp.h
-tcp_fp.o: ipfp/tcp_fp.c ipfp/../common.h ipfp/../prads.h ipfp/../common.h \
-  ipfp/../bstrlib.h ipfp/../sig.h ipfp/ipfp.h
 udp_fp.o: ipfp/udp_fp.c ipfp/../common.h ipfp/../prads.h ipfp/../common.h \
   ipfp/../bstrlib.h ipfp/ipfp.h
 icmp_fp.o: ipfp/icmp_fp.c ipfp/../common.h ipfp/../prads.h \
@@ -39,4 +40,5 @@ tcps.o: servicefp/tcps.c servicefp/../prads.h servicefp/../common.h \
   servicefp/../bstrlib.h servicefp/../sys_func.h servicefp/../assets.h \
   servicefp/servicefp.h
 udps.o: servicefp/udps.c servicefp/../prads.h servicefp/../common.h \
-  servicefp/../bstrlib.h servicefp/../assets.h servicefp/servicefp.h
+  servicefp/../bstrlib.h servicefp/../assets.h servicefp/servicefp.h \
+  servicefp/../util-cxt.h servicefp/../prads.h
