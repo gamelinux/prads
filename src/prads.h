@@ -568,6 +568,18 @@ typedef struct _packetinfo {
     struct _asset    *asset;         /* pointer to the asset for this (src) packet */
     enum { SIGNATURE, FINGERPRINT } type;
 } packetinfo;
+
+// packetinfo accessor macros
+
+#define PI_TOS(pi) ( (pi)->ip4->ip_tos )
+#define PI_ECN(pi) ( (pi)->tcph->t_flags & (TF_ECE|TF_CWR) )
+#define PI_IP4SRC(pi) ( (pi)->ip_src.s6_addr32[0] )
+#define PI_IP4DST(pi) ( (pi)->ip_dst.s6_addr32[0] )
+#define PI_TCP_SP(pi) ( ntohs((pi)->tcph->src_port))
+#define PI_TCP_DP(pi) ( ntohs((pi)->tcph->dst_port))
+#define PI_IP4(pi) ((pi)->ip4)
+// and more to come
+
 #define SC_SERVER                 0x01  /* pi for this session is client */
 #define SC_CLIENT                 0x02  /* pi for this session is server */
 

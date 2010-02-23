@@ -1137,28 +1137,36 @@ end_parsing:
 }
 
 
+/* find_match(): lookup packet with fingerprint e and info pi in sighash sig[]
+ *
+ * match is returned as e->os and e->desc in e
+ * NB NOTE XXX: the os and desc fields are statically allocated, do not free()!
+ */
 fp_entry *find_match(
-    fp_entry *sig[],
-    uint32_t hashsize, 
-    uint16_t tot,
-    uint8_t df,
-    uint8_t ttl,
-    uint16_t wss,
-    uint32_t src,
-    uint32_t dst,
-    uint16_t sp,
-    uint16_t dp,
-    uint8_t ocnt,
-    uint8_t* op,
-    uint16_t mss,
-    uint8_t wsc,
+    fp_entry *sig[], uint32_t hashsize,
+    fp_entry *e, packetinfo *pi,
     uint32_t tstamp,
-    uint8_t tos,
-    uint32_t quirks,
-    uint8_t ecn,
-    uint8_t* pkt,
     uint8_t plen,
-    uint8_t* pay
+    uint8_t *pay
+    /*
+   // uint16_t tot  // e->size
+   // uint8_t df,   // e->
+   // uint8_t ttl,
+   // uint16_t wss, // wsize
+   // uint32_t src, // pi->ip_src
+   // uint32_t dst, // pi
+   // uint16_t sp,  // ntohs(pi->tcph->src_port)
+   // uint16_t dp, 
+   // uint8_t ocnt, // optcnt
+   // uint8_t* op,  // opt
+   // uint16_t mss, 
+   // uint8_t wsc,
+   // uint32_t tstamp, ****
+   // uint8_t tos,    // pi->ip4->ip_tos
+   // uint32_t quirks, // e
+   // uint8_t ecn,    // pi->tcph->t_flags & (TF_ECE|TF|CWR) // oh really?
+   // uint8_t* pkt,   // pi->ip4
+    */
     )
 {
 
@@ -1166,75 +1174,75 @@ fp_entry *find_match(
   uint8_t* a;
   uint8_t  nat=0;
   fp_entry* p;
-  uint8_t  orig_df  = df;
+  uint8_t  orig_df  = e->df;
   uint8_t* tos_desc = 0;
 
   fp_entry* fuzzy = 0;
   uint8_t fuzzy_now = 0;
 
-  //if ( sig == config.sig_ack ) ocnt = 3;
+  //if ( sig == config.sig_ack ) e->optcnt = 3;
 
 re_lookup:
 
-  p = sig[SIGHASH(tot,ocnt,quirks,df) % hashsize];
+  p = sig[SIGHASH(e->size,e->optcnt,e->quirks,e->df) % hashsize];
 
-  if (tos) tos_desc = lookup_tos(tos);
+  if (PI_TOS(pi)) tos_desc = lookup_tos(PI_TOS(pi));
 
-  //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+  //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
   while (p) {
   
     /* Cheap and specific checks first... */
 
       /* psize set to zero means >= PACKET_BIG */
-    if (p->size) { if (tot ^ p->size) { p = p->next; continue; } }
-    else if (tot < PACKET_BIG) { p = p->next; continue; }
+    if (p->size) { if (e->size ^ p->size) { p = p->next; continue; } }
+    else if (e->size < PACKET_BIG) { p = p->next; continue; }
 
-    if (ocnt ^ p->optcnt) { p = p->next; continue; }
+    if (e->optcnt ^ p->optcnt) { p = p->next; continue; }
 
     if (p->zero_stamp ^ (!tstamp)) { p = p->next; continue; }
-    if (p->df ^ df) { p = p->next; continue; }
-    if (p->quirks ^ quirks) { p = p->next; continue; }
+    if (p->df ^ e->df) { p = p->next; continue; }
+    if (p->quirks ^ e->quirks) { p = p->next; continue; }
 
-    /* Check MSS and WSCALE... */
+    /* Check e->mss and WSCALE... */
     if (!p->mss_mod) {
-      if (mss ^ p->mss) { p = p->next; continue; }
-    } else if (mss % p->mss) { p = p->next; continue; }
+      if (e->mss ^ p->mss) { p = p->next; continue; }
+    } else if (e->mss % p->mss) { p = p->next; continue; }
 
     if (!p->wsc_mod) {
-      if (wsc ^ p->wsc) { p = p->next; continue; }
-    } else if (wsc % p->wsc) { p = p->next; continue; }
+      if (e->wsc ^ p->wsc) { p = p->next; continue; }
+    } else if (e->wsc % p->wsc) { p = p->next; continue; }
 
-    /* Then proceed with the most complex WSS check... */
+    /* Then proceed with the most complex e->wsize check... */
     switch (p->wsize_mod) {
       case 0:
-        if (wss ^ p->wsize) { p = p->next; continue; }
+        if (e->wsize ^ p->wsize) { p = p->next; continue; }
         break;
       case MOD_CONST:
-        if (wss % p->wsize) { p = p->next; continue; }
+        if (e->wsize % p->wsize) { p = p->next; continue; }
         break;
       case MOD_MSS:
-        if (mss && !(wss % mss)) {
-          if ((wss / mss) ^ p->wsize) { p = p->next; continue; }
-        } else if (!(wss % 1460)) {
-          if ((wss / 1460) ^ p->wsize) { p = p->next; continue; }
+        if (e->mss && !(e->wsize % e->mss)) {
+          if ((e->wsize / e->mss) ^ p->wsize) { p = p->next; continue; }
+        } else if (!(e->wsize % 1460)) {
+          if ((e->wsize / 1460) ^ p->wsize) { p = p->next; continue; }
         } else { p = p->next; continue; }
         break;
       case MOD_MTU:
-        if (mss && !(wss % (mss+40))) {
-          if ((wss / (mss+40)) ^ p->wsize) { p = p->next; continue; }
-        } else if (!(wss % 1500)) {
-          if ((wss / 1500) ^ p->wsize) { p = p->next; continue; }
+        if (e->mss && !(e->wsize % (e->mss+40))) {
+          if ((e->wsize / (e->mss+40)) ^ p->wsize) { p = p->next; continue; }
+        } else if (!(e->wsize % 1500)) {
+          if ((e->wsize / 1500) ^ p->wsize) { p = p->next; continue; }
         } else { p = p->next; continue; }
         break;
      }
 
     /* Numbers agree. Let's check options */
 
-    for (j=0;j<ocnt;j++)
-      if (p->opt[j] ^ op[j]) goto continue_search;
+    for (j=0;j<e->optcnt;j++)
+      if (p->opt[j] ^ e->opt[j]) goto continue_search;
 
     /* Check TTLs last because we might want to go fuzzy. */
-    if (p->ttl < ttl) {
+    if (p->ttl < e->ttl) {
       if (use_fuzzy) fuzzy = p;
       p = p->next;
       continue;
@@ -1242,7 +1250,7 @@ re_lookup:
 
     /* Naah... can't happen ;-) */
     if (!p->no_detail)
-      if (p->ttl - ttl > MAXDIST) { 
+      if (p->ttl - e->ttl > MAXDIST) { 
         if (use_fuzzy) fuzzy = p;
         p = p->next; 
         continue; 
@@ -1252,23 +1260,27 @@ continue_fuzzy:
     
     /* Match! */
     
-    if (mss & wss) {
+    if (e->mss & e->wsize) {
       if (p->wsize_mod == MOD_MSS) {
-        if ((wss % mss) && !(wss % 1460)) nat=1;
+        if ((e->wsize % e->mss) && !(e->wsize % 1460)) nat=1;
       } else if (p->wsize_mod == MOD_MTU) {
-        if ((wss % (mss+40)) && !(wss % 1500)) nat=2;
+        if ((e->wsize % (e->mss+40)) && !(e->wsize % 1500)) nat=2;
       }
     }
 
     if (!no_known) {
 
-      a=(uint8_t*)&src;
+      a=(uint8_t*)& PI_IP4SRC(pi);
 
       dlog("\n"); //edward
       dlog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
-             sp,p->os);
+             PI_TCP_SP(pi),p->os);
 
       if (!no_osdesc) dlog("%s ",p->desc);
+
+      // copy in the os/desc pointers. These are not to be free()d!
+      e->os = p->os;
+      e->desc = p->desc;
 
       if (nat == 1){
           dlog("(NAT!) ");
@@ -1276,11 +1288,11 @@ continue_fuzzy:
         if (nat == 2) dlog("(NAT2!) ");
        }
 
-      if (ecn) dlog("(ECN) ");
-      if (orig_df ^ df) dlog("(firewall!) ");
+      if (PI_ECN(pi)) dlog("(ECN) ");
+      if (orig_df ^ e->df) dlog("(firewall!) ");
 
-      if (tos) {
-        if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",tos);
+      if (PI_TOS(pi)) {
+        if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",PI_TOS(pi));
       }
 
       if (p->generic) dlog("[GENERIC] ");
@@ -1294,7 +1306,7 @@ continue_fuzzy:
         if (!mode_oneline) dlog("\n  ");
         dlog("Signature: [");
 
-        //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+        //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
         if (p->generic)
           dlog(":%s:?] ",p->os);
@@ -1304,32 +1316,32 @@ continue_fuzzy:
       }
 
       if (!no_extra && !p->no_detail) {
-          a=(uint8_t*)&dst;
+          a=(uint8_t*)& PI_IP4DST(pi);
         if (!mode_oneline) dlog("\n  ");
 
         if (fuzzy_now) 
           dlog("-> %d.%d.%d.%d%s:%d (link: %s)",
                a[0],a[1],a[2],a[3],grab_name(a),dp,
-               lookup_link(mss,1));
+               lookup_link(e->mss,1));
         else
           dlog("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
-                 a[0],a[1],a[2],a[3],grab_name(a),dp,p->ttl - ttl,
-                 lookup_link(mss,1));
+                 a[0],a[1],a[2],a[3],grab_name(a),dp,p->ttl - e->ttl,
+                 lookup_link(e->mss,1));
       }
 
-      if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
+      if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
 
       //putchar('\n'); //edward
-      if (full_dump) dump_packet(pkt,plen);
+      if (full_dump) dump_packet((uint8_t*)PI_IP4(pi),plen);
 
     }
 
 /*
    if (find_masq && !p->userland) {
      int16_t sc = p0f_findmasq(src,p->os,(p->no_detail || fuzzy_now) ? -1 : 
-                            (p->ttl - ttl), mss, nat, orig_df ^ df,p-sig,
+                            (p->ttl - e->ttl), e->mss, nat, orig_df ^ e->df,p-sig,
                             tstamp ? tstamp / 360000 : -1);
-     a=(uint8_t*)&src;
+      a=(uint8_t*)& PI_IP4SRC(pi);
      if (sc > masq_thres) {
        printf(">> Masquerade at %u.%u.%u.%u%s: indicators at %d%%.",
               a[0],a[1],a[2],a[3],grab_name(a),sc);
@@ -1344,14 +1356,14 @@ continue_fuzzy:
 
    if (use_cache || find_masq)
      p0f_addcache(src,dst,sp,dp,p->os,p->desc,(p->no_detail || fuzzy_now) ? 
-                  -1 : (p->ttl - ttl),p->no_detail ? 0 : lookup_link(mss,0),
-                  tos_desc, orig_df ^ df, nat, !p->userland, mss, p-sig,
+                  -1 : (p->ttl - e->ttl),p->no_detail ? 0 : lookup_link(e->mss,0),
+                  tos_desc, orig_df ^ e->df, nat, !p->userland, e->mss, p-sig,
                   tstamp ? tstamp / 360000 : -1);
    */
 
     fflush(0);
 
-    return p; // XXX: nothing useful yet!
+    return e;
 
 continue_search:
 
@@ -1359,26 +1371,26 @@ continue_search:
 
   }
 
-  if (!df) { df = 1; goto re_lookup; }
+  if (!e->df) { e->df = 1; goto re_lookup; }
 
   if (use_fuzzy && fuzzy) {
-    df = orig_df;
+    e->df = orig_df;
     fuzzy_now = 1;
     p = fuzzy;
     fuzzy = 0;
     goto continue_fuzzy;
   }
 
-  if (mss & wss) {
-    if ((wss % mss) && !(wss % 1460)) nat=1;
-    else if ((wss % (mss+40)) && !(wss % 1500)) nat=2;
+  if (e->mss & e->wsize) {
+    if ((e->wsize % e->mss) && !(e->wsize % 1460)) nat=1;
+    else if ((e->wsize % (e->mss+40)) && !(e->wsize % 1500)) nat=2;
   }
 
   if (!no_unknown) { 
-    a=(uint8_t*)&src;
+    a=(uint8_t*)& PI_IP4SRC(pi);
     dlog("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
 
-    //display_signature(ttl,tot,orig_df,op,ocnt,mss,wss,wsc,tstamp,quirks);
+    //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
     dlog(":?:?] ");
 
@@ -1386,7 +1398,7 @@ continue_search:
 
       /* Display a reasonable diagnosis of the RST+ACK madness! */
  
-      switch (quirks & (QUIRK_RSTACK | QUIRK_SEQ0 | QUIRK_ACK)) {
+      switch (e->quirks & (QUIRK_RSTACK | QUIRK_SEQ0 | QUIRK_ACK)) {
 
         /* RST+ACK, SEQ=0, ACK=0 */
         case QUIRK_RSTACK | QUIRK_SEQ0:
@@ -1427,37 +1439,37 @@ continue_search:
     if (nat == 1) dlog("(NAT!) ");
       else if (nat == 2) dlog("(NAT2!) ");
 
-    if (ecn) dlog("(ECN) ");
+    if (PI_ECN(pi)) dlog("(ECN) ");
 
-    if (tos) {
-      if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",tos);
+    if (PI_TOS(pi)) {
+      if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",PI_TOS(pi));
     }
 
     if (tstamp) dlog("(up: %d hrs) ",tstamp/360000);
 
     if (!no_extra) {
-      a=(uint8_t*)&dst;
+      a=(uint8_t*)& PI_IP4DST(pi);
       if (!mode_oneline) dlog("\n  ");
       dlog("-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
-	       grab_name(a),dp,lookup_link(mss,1));
+	       grab_name(a),dp,lookup_link(e->mss,1));
     }
 
     /*
     if (use_cache)
-      p0f_addcache(src,dst,sp,dp,0,0,-1,lookup_link(mss,0),tos_desc,
+      p0f_addcache(src,dst,PI_TCP_SP(pi),PI_TCP_DP(pi),0,0,-1,lookup_link(e->mss,0),tos_desc,
                    0,nat,0 // not real, we're not sure
-                   ,mss,(uint32_t)-1,
+                   ,e->mss,(uint32_t)-1,
                    tstamp ? tstamp / 360000 : -1);
       */
 
-    if (pay && payload_dump) dump_payload(pay,plen - (pay - pkt));
+    if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
     //putchar('\n'); //edward
-    if (full_dump) dump_packet(pkt,plen);
+    if (full_dump) dump_packet((uint8_t*)PI_IP4(pi),plen);
     fflush(0);
 
   }
 
-  return p; // XXX does not return anything useful yet
+  return e;
 
 }
 
@@ -1583,9 +1595,17 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
 
     fp_entry *match = NULL;
     if (sig != NULL) {
+        match = find_match(sig,
+                           config.sig_hashsize,
+                           &e,
+                           pi,
+                           tstamp,
+                           end_ptr - (uint8_t *) pi->ip4,
+                           payload
+                          );
+        /*
         match = find_match(
                 sig,
-               //config.sig_syn,
                config.sig_hashsize,
                e.size,
                e.df,
@@ -1608,6 +1628,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                payload
                // pts, // *not used
                );
+        */
     }
 
     //if (match->os != NULL) memcpy(&e.next->os, match->os, MAXLINE);

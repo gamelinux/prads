@@ -35,7 +35,12 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize);
 void dump_sigs(fp_entry *mysig[], int max);
 void unload_sigs(fp_entry **sigp, int size);
 // a starting point - the p0f find_match()
-fp_entry *find_match(fp_entry *sig[], uint32_t hashsize,
+fp_entry *find_match(fp_entry *sig[],uint32_t hashsize,
+                      fp_entry *fingerprint, packetinfo *pi,
+                      uint32_t tstamp,
+                      uint8_t plen,
+                      uint8_t *pay);
+fp_entry *find_matche(fp_entry *sig[], uint32_t hashsize,
                        uint16_t tot,uint8_t df,uint8_t ttl,uint16_t wss,uint32_t src,
                        uint32_t dst,uint16_t sp,uint16_t dp,uint8_t ocnt,uint8_t* op,uint16_t mss,
                        uint8_t wsc,uint32_t tstamp,uint8_t tos,uint32_t quirks,uint8_t ecn,
