@@ -11,10 +11,11 @@ void stdout_arp (asset *main)
 
     if (memcmp(main->mac_addr, "\0\0\0\0\0\0", 6)) {
         u_ntop(main->ip_addr, main->af, ip_addr_s);
-        printf("\n%s", ip_addr_s);
+        printf("%s", ip_addr_s);
         if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
         printf(",[arp:%s]",
         hex2mac((const char *)main->mac_addr));
+        printf("\n");
     }
     fflush(0);
 }
@@ -25,7 +26,7 @@ void stdout_os (asset *main, os_asset *os)
     uint8_t tmp_ttl;
 
     u_ntop(main->ip_addr, main->af, ip_addr_s);
-    printf("\n%s", ip_addr_s);
+    printf("%s", ip_addr_s);
     if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
     
     printf(",[");
@@ -58,6 +59,7 @@ void stdout_os (asset *main, os_asset *os)
         tmp_ttl = normalize_ttl(os->ttl);
         printf(",[distance:%d]",tmp_ttl - os->ttl);
     }
+    printf("\n");
     fflush(0);
 }
 
@@ -67,7 +69,7 @@ void stdout_service (asset *main, serv_asset *service)
     uint8_t tmp_ttl;
 
     u_ntop(main->ip_addr, main->af, ip_addr_s);
-    printf("\n%s", ip_addr_s);
+    printf("%s", ip_addr_s);
     if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
 
     if (service->role == 1) {
@@ -83,6 +85,7 @@ void stdout_service (asset *main, serv_asset *service)
         tmp_ttl = normalize_ttl(service->ttl);
         printf(",[distance:%d]",tmp_ttl - service->ttl);
     }
+    printf("\n");
     fflush(0);
 }
 
