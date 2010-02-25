@@ -1321,11 +1321,11 @@ continue_fuzzy:
 
         if (fuzzy_now) 
           dlog("-> %d.%d.%d.%d%s:%d (link: %s)",
-               a[0],a[1],a[2],a[3],grab_name(a),dp,
+               a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),
                lookup_link(e->mss,1));
         else
           dlog("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
-                 a[0],a[1],a[2],a[3],grab_name(a),dp,p->ttl - e->ttl,
+                 a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),p->ttl - e->ttl,
                  lookup_link(e->mss,1));
       }
 
@@ -1388,7 +1388,7 @@ continue_search:
 
   if (!no_unknown) { 
     a=(uint8_t*)& PI_IP4SRC(pi);
-    dlog("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),sp);
+    dlog("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_SP(pi));
 
     //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
@@ -1451,7 +1451,7 @@ continue_search:
       a=(uint8_t*)& PI_IP4DST(pi);
       if (!mode_oneline) dlog("\n  ");
       dlog("-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
-	       grab_name(a),dp,lookup_link(e->mss,1));
+	       grab_name(a),PI_TCP_DP(pi),lookup_link(e->mss,1));
     }
 
     /*
