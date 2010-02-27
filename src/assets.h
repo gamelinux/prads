@@ -5,7 +5,7 @@ void del_serv_asset(serv_asset ** prev_service, serv_asset * passet);
 void update_asset(packetinfo *pi);
 short update_asset_os(packetinfo *pi, uint8_t detection, bstring raw_fp, fp_entry *match, int uptime);
 short update_asset_service(packetinfo *pi, bstring service, bstring application);
-short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], struct in6_addr ip_addr, packetinfo *pi);
+short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi);
 void clear_asset_list();
 void update_asset_list();
 void update_service_stats(int role, uint16_t proto);

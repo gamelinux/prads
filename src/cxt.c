@@ -235,13 +235,13 @@ inline
 uint32_t make_hash(packetinfo *pi)
 {
     if (pi->ip4 != NULL) {
-        return ((pi->ip_src.s6_addr32[0] + pi->ip_dst.s6_addr32[0])) % BUCKET_SIZE;
+        return (PI_IP4SRC(pi) + PI_IP4DST(pi)) % BUCKET_SIZE;
     } else {
-        return ((pi->ip_src.s6_addr32[0] + pi->ip_src.s6_addr32[1] +
-                 pi->ip_src.s6_addr32[2] + pi->ip_src.s6_addr32[3] +
-                 pi->ip_dst.s6_addr32[0] + pi->ip_dst.s6_addr32[1] +
-                 pi->ip_dst.s6_addr32[2] + pi->ip_dst.s6_addr32[3]
-                 )) % BUCKET_SIZE;
+        return (PI_IP6SRC(pi).s6_addr32[0] + PI_IP6SRC(pi).s6_addr32[1] +
+                PI_IP6SRC(pi).s6_addr32[2] + PI_IP6SRC(pi).s6_addr32[3] +
+                PI_IP6DST(pi).s6_addr32[0] + PI_IP6DST(pi).s6_addr32[1] +
+                PI_IP6DST(pi).s6_addr32[2] + PI_IP6DST(pi).s6_addr32[3]
+                 ) % BUCKET_SIZE;
     }
 }
 

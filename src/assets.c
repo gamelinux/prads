@@ -84,12 +84,18 @@ uint8_t asset_lookup(packetinfo *pi)
         return SUCCESS;
     } else {
         if (pi->af == AF_INET) {
-            hash = ((pi->ip_src.s6_addr32[0])) % BUCKET_SIZE;
+            uint32_t ip;
+
+            if(pi->arph) // arp check
+                ip = (* ( (uint32_t*) pi->arph->arp_sha));
+            else
+                ip = PI_IP4SRC(pi);
+            hash = ip % BUCKET_SIZE;
             masset = passet[hash];
             while (masset != NULL) {
                 //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
-                if (masset->af == AF_INET
-                    && masset->ip_addr.s6_addr32[0] == pi->ip_src.s6_addr32[0]) {
+                if (masset->af == AF_INET 
+                    && masset->ip_addr.s6_addr32[0] == ip){
                     pi->asset = masset;
                     if (pi->cxt != NULL) {
                         if (pi->sc == SC_CLIENT) {
@@ -106,14 +112,11 @@ uint8_t asset_lookup(packetinfo *pi)
             }
             return ERROR;
         } else if (pi->af == AF_INET6) {
-            hash = ((pi->ip_src.s6_addr32[3])) % BUCKET_SIZE;
+            hash = ((PI_IP6SRC(pi).s6_addr32[3])) % BUCKET_SIZE;
             masset = passet[hash];
             while (masset != NULL) {
-                if (masset->af == AF_INET6
-                    && masset->ip_addr.s6_addr32[3] == pi->ip_src.s6_addr32[3]
-                    && masset->ip_addr.s6_addr32[2] == pi->ip_src.s6_addr32[2]
-                    && masset->ip_addr.s6_addr32[1] == pi->ip_src.s6_addr32[1]
-                    && masset->ip_addr.s6_addr32[0] == pi->ip_src.s6_addr32[0]) {
+                if (masset->af == AF_INET6 &&
+                    CMP_ADDR6(&masset->ip_addr, &PI_IP6SRC(pi))){
                     pi->asset = masset;
                     if (pi->cxt != NULL) {
                        if (pi->sc == SC_CLIENT) {
@@ -153,8 +156,6 @@ short update_asset_shmem(packetinfo *pi)
     // flip it upside down: caller packs it?
     // now how would that eat the program from the inside?
     // pass the struct around but store it in a shared mem buffer
-    (void)pi->ip_src; // src has the fingerprint
-    (void)pi->ip_dst; // we r doing for both, now? - packet payload may be spooft
     (void)pi->s_port;
     // what is detection?
     //detection;
@@ -419,18 +420,23 @@ void add_asset(packetinfo *pi)
 
     config.pr_s.assets++;
 
-    if (pi->af == AF_INET) {
-        hash = ((pi->ip_src.s6_addr32[0])) % BUCKET_SIZE;
-    } else if (pi->af == AF_INET6) {
-        hash = ((pi->ip_src.s6_addr32[3])) % BUCKET_SIZE;
-    }
-
     masset = (asset *) calloc(1, sizeof(asset));
-    masset->ip_addr = pi->ip_src;
     masset->af = pi->af;
     masset->vlan = pi->vlan;
     masset->i_attempts = 0;
     masset->first_seen = masset->last_seen = pi->pheader->ts.tv_sec;
+
+    if (pi->af == AF_INET) {
+        if(pi->arph) // mongo arp check
+            masset->ip_addr.s6_addr32[0] = *(uint32_t*) pi->arph->arp_sha;
+        else
+            masset->ip_addr.s6_addr32[0] = PI_IP4SRC(pi);
+        hash = masset->ip_addr.s6_addr32[0] % BUCKET_SIZE;
+    } else if (pi->af == AF_INET6) {
+        masset->ip_addr = PI_IP6SRC(pi);
+        hash = ((PI_IP6SRC(pi).s6_addr32[3])) % BUCKET_SIZE;
+    }
+
     masset->next = passet[hash];
 
     if (passet[hash] != NULL)
@@ -442,14 +448,15 @@ void add_asset(packetinfo *pi)
 
     /* verbose info for sanity checking */
     static char ip_addr_s[INET6_ADDRSTRLEN];
+#ifdef DEBUGG
     u_ntop(pi->ip_src, pi->af, ip_addr_s);
     dlog("[*] asset added: %s\n",ip_addr_s);
+#endif
     
     //return masset;
 }
 
-short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
-                         struct in6_addr ip_addr, packetinfo *pi)
+short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi)
 {
     if (asset_lookup(pi) == SUCCESS) {
         if (pi->asset != NULL) {
@@ -460,7 +467,7 @@ short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN],
         }
     } else {
         update_asset(pi);
-        if (update_asset_arp(arp_sha, ip_addr, pi) == SUCCESS) return SUCCESS;
+        if (update_asset_arp(arp_sha, pi) == SUCCESS) return SUCCESS;
             else return ERROR;
     }
 

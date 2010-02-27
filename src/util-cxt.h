@@ -20,59 +20,6 @@ typedef struct _cxtbucket {
 cxtbucket *cxt_hash;
 
 
-#define CMP_ADDR6(a1,a2) \
-    (((a1)->s6_addr32[3] == (a2)->s6_addr32[3] && \
-      (a1)->s6_addr32[2] == (a2)->s6_addr32[2] && \
-      (a1)->s6_addr32[1] == (a2)->s6_addr32[1] && \
-      (a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
-
-#define CMP_ADDR4(a1,a2) \
-    (((a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
-#define CMP_PORT(p1,p2) \
-    ((p1 == p2))
-
-/* Since two or more connections can have the same hash key, we need to
- * compare the connections with the current hash key. */
-#define CMP_CXT4(cxt1,src, sp, dst, dp) \
-    ((CMP_ADDR4(&(cxt1)->s_ip, src) && \
-       CMP_ADDR4(&(cxt1)->d_ip, dst) && \
-       CMP_PORT((cxt1)->s_port, sp) && CMP_PORT((cxt1)->d_port, dp)))
-
-#define CMP_CXT6(cxt1,src, sp, dst, dp) \
-    ((CMP_ADDR6(&(cxt1)->s_ip, src) && \
-       CMP_ADDR6(&(cxt1)->d_ip, dst) && \
-       CMP_PORT((cxt1)->s_port, sp) && CMP_PORT((cxt1)->d_port, dp)))
-
-/* clear the address structure by setting all fields to 0 */
-#define CLEAR_ADDR(a) { \
-    (a)->s6_addr32[0] = 0; \
-    (a)->s6_addr32[1] = 0; \
-    (a)->s6_addr32[2] = 0; \
-    (a)->s6_addr32[3] = 0; \
-}
-
-/* clears the cxt parts */
-#define CLEAR_CXT(cxt) { \
-    (cxt)->s_port = 0; \
-    (cxt)->d_port = 0; \
-    CLEAR_ADDR(&(cxt)->s_ip); \
-    CLEAR_ADDR(&(cxt)->d_ip); \
-    (cxt)->s_total_pkts = 0; \
-    (cxt)->s_total_bytes = 0; \
-    (cxt)->d_total_pkts = 0; \
-    (cxt)->d_total_bytes = 0; \
-    (cxt)->s_tcpFlags = 0; \
-    (cxt)->d_tcpFlags = 0; \
-    (cxt)->start_time = 0; \
-    (cxt)->last_pkt_time = 0; \
-    (cxt)->af = 0; \
-    (cxt)->proto = 0; \
-    (cxt)->cxid = 0; \
-    (cxt)->hnext = NULL; \
-    (cxt)->hprev = NULL; \
-    (cxt)->cb = NULL; \
-}
-
 /* prototypes */
 inline void cxt_update (packetinfo *, uint32_t);
 connection *connection_alloc(void);

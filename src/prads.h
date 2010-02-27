@@ -529,6 +529,62 @@ typedef struct _connection {
 #define ISSET_DONT_CHECK_CLIENT(pi)      (pi->cxt->check & CXT_CLIENT_DONT_CHECK)
 #define ISSET_SERVICE_UNKNOWN(pi)        (pi->cxt->check & CXT_SERVICE_UNKNOWN_SET)
 #define ISSET_CLIENT_UNKNOWN(pi)         (pi->cxt->check & CXT_CLIENT_UNKNOWN_SET)
+// good comparison to optimize
+#define CMP_ADDR6(a1,a2) \
+    (((a1)->s6_addr32[3] == (a2)->s6_addr32[3] && \
+      (a1)->s6_addr32[2] == (a2)->s6_addr32[2] && \
+      (a1)->s6_addr32[1] == (a2)->s6_addr32[1] && \
+      (a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
+
+// the reason why we can't get rid of pi->s6_addr32
+#define CMP_ADDR4(a1,a2) \
+    (((a1)->s6_addr32[0] ==  (a2)))
+    //(((a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
+#define CMP_PORT(p1,p2) \
+    ((p1 == p2))
+
+/* Since two or more connections can have the same hash key, we need to
+ * compare the connections with the current hash key. */
+#define CMP_CXT4(cxt1, src, sp, dst, dp) \
+    ((CMP_ADDR4(&((cxt1)->s_ip), (src)) && \
+       CMP_ADDR4(&((cxt1)->d_ip),(dst)) && \
+       CMP_PORT((cxt1)->s_port, (sp)) && CMP_PORT((cxt1)->d_port, (dp))))
+
+#define CMP_CXT6(cxt1, src, sp, dst, dp) \
+    ((CMP_ADDR6(&(cxt1)->s_ip, (src)) && \
+       CMP_ADDR6(&(cxt1)->d_ip, (dst)) && \
+       CMP_PORT((cxt1)->s_port, (sp)) && CMP_PORT((cxt1)->d_port, (dp))))
+
+/* clear the address structure by setting all fields to 0 */
+#define CLEAR_ADDR(a) { \
+    (a)->s6_addr32[0] = 0; \
+    (a)->s6_addr32[1] = 0; \
+    (a)->s6_addr32[2] = 0; \
+    (a)->s6_addr32[3] = 0; \
+}
+
+/* clears the cxt parts */
+#define CLEAR_CXT(cxt) { \
+    (cxt)->s_port = 0; \
+    (cxt)->d_port = 0; \
+    CLEAR_ADDR(&(cxt)->s_ip); \
+    CLEAR_ADDR(&(cxt)->d_ip); \
+    (cxt)->s_total_pkts = 0; \
+    (cxt)->s_total_bytes = 0; \
+    (cxt)->d_total_pkts = 0; \
+    (cxt)->d_total_bytes = 0; \
+    (cxt)->s_tcpFlags = 0; \
+    (cxt)->d_tcpFlags = 0; \
+    (cxt)->start_time = 0; \
+    (cxt)->last_pkt_time = 0; \
+    (cxt)->af = 0; \
+    (cxt)->proto = 0; \
+    (cxt)->cxid = 0; \
+    (cxt)->hnext = NULL; \
+    (cxt)->hprev = NULL; \
+    (cxt)->cb = NULL; \
+}
+
 
 typedef struct _packetinfo {
     // macro out the need for some of these
@@ -547,8 +603,8 @@ typedef struct _packetinfo {
     ip4_header      *ip4;           /* IPv4 header struct pointer */
     ip6_header      *ip6;           /* IPv6 header struct pointer */
     uint16_t        packet_bytes;   /* Lenght of IP payload in packet */
-    struct in6_addr ip_src;         /* source address */
-    struct in6_addr ip_dst;         /* destination address */
+    //struct in6_addr ip_src;         /* source address */
+    //struct in6_addr ip_dst;         /* destination address */
     uint16_t        s_port;         /* source port */
     uint16_t        d_port;         /* destination port */
     uint8_t         proto;          /* IP protocoll type */    
@@ -573,11 +629,17 @@ typedef struct _packetinfo {
 
 #define PI_TOS(pi) ( (pi)->ip4->ip_tos )
 #define PI_ECN(pi) ( (pi)->tcph->t_flags & (TF_ECE|TF_CWR) )
-#define PI_IP4SRC(pi) ( (pi)->ip_src.s6_addr32[0] )
-#define PI_IP4DST(pi) ( (pi)->ip_dst.s6_addr32[0] )
+
+#define PI_IP4(pi) ((pi)->ip4)
+#define PI_IP4SRC(pi) ( PI_IP4(pi)->ip_src )
+#define PI_IP4DST(pi) ( PI_IP4(pi)->ip_dst )
+
+#define PI_IP6(pi) ((pi)->ip6)
+#define PI_IP6SRC(pi)  (PI_IP6(pi)->ip_src)
+#define PI_IP6DST(pi)  (PI_IP6(pi)->ip_dst)
+
 #define PI_TCP_SP(pi) ( ntohs((pi)->tcph->src_port))
 #define PI_TCP_DP(pi) ( ntohs((pi)->tcph->dst_port))
-#define PI_IP4(pi) ((pi)->ip4)
 // and more to come
 
 #define SC_SERVER                 0x01  /* pi for this session is client */
@@ -744,5 +806,4 @@ struct fmask {
 
 /*  P R O T O T Y P E S  ******************************************************/
 void free_config();
-inline int filter_packet(const int af, const struct in6_addr *ip_s);
 #endif                          // PRADS_H

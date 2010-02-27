@@ -1,17 +1,16 @@
 void fp_icmp4(packetinfo *pi, ip4_header * ip4, icmp_header * icpmh,
-              const uint8_t * end_ptr, struct in6_addr ip_src);
+              const uint8_t * end_ptr);
 void fp_icmp6(packetinfo *pi, ip6_header * ip6, icmp6_header * icpmh,
-              const uint8_t * end_ptr, struct in6_addr ip_src);
-void fp_udp4(packetinfo *pi, ip4_header * ip4, udp_header * udph, const uint8_t * end_ptr,
-             struct in6_addr ip_src);
+              const uint8_t * end_ptr);
+void fp_udp4(packetinfo *pi, ip4_header * ip4, udp_header * udph, const uint8_t * end_ptr);
+             //struct in6_addr ip_src);
 
 /* going once, going twice  ... */
 //void fp_tcp(packetinfo *pi, uint8_t ftype);
 
-void fp_tcp4(ip4_header * ip4, tcp_header * tcph, const uint8_t * end_ptr,
-             uint8_t ftype, struct in6_addr ip_src);
-void fp_tcp6(ip6_header * ip6, tcp_header * tcph, const uint8_t * end_ptr,
-             uint8_t ftype, struct in6_addr ip_src);
+// fix me
+fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype);
+
 
 //void gen_fp_tcp(uint8_t ttl, uint16_t tot, uint8_t df, uint8_t * op,
 //                uint8_t ocnt, uint16_t mss, uint16_t wss, uint8_t wsc,

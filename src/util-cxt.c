@@ -102,18 +102,18 @@ inline void cxt_update (packetinfo *pi, uint32_t hash)
 
     /* see if this is the flow we are looking for */
     if (pi->af == AF_INET) {
-        if (CMP_CXT4(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+        if (CMP_CXT4(cxt, PI_IP4SRC(pi), pi->s_port, PI_IP4DST(pi), pi->d_port)) {
             cxt_update_src(cxt, pi);
             ret = 1;
-        } else if (CMP_CXT4(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+        } else if (CMP_CXT4(cxt, PI_IP4DST(pi), pi->d_port, PI_IP4SRC(pi), pi->s_port)) {
             cxt_update_dst(cxt, pi);
             ret = 1;
         }
     } else if (pi->af == AF_INET6){
-        if (CMP_CXT6(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+        if (CMP_CXT6(cxt, &PI_IP6SRC(pi), pi->s_port, &PI_IP6DST(pi), pi->d_port)) {
             cxt_update_src(cxt, pi);
             ret = 1;
-        } else if (CMP_CXT6(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+        } else if (CMP_CXT6(cxt, &PI_IP6DST(pi), pi->d_port, &PI_IP6SRC(pi), pi->s_port)) {
             cxt_update_dst(cxt, pi);
             ret = 1;
         }
@@ -151,18 +151,18 @@ inline void cxt_update (packetinfo *pi, uint32_t hash)
             }
 
             if (pi->af == AF_INET) {
-                if (CMP_CXT4(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                if (CMP_CXT4(cxt, PI_IP4SRC(pi), pi->s_port, PI_IP4DST(pi), pi->d_port)) {
                     cxt_update_src(cxt, pi);
                     ret = 1;
-                } else if (CMP_CXT4(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+                } else if (CMP_CXT4(cxt, PI_IP4DST(pi), pi->d_port, PI_IP4SRC(pi), pi->s_port)) {
                     cxt_update_dst(cxt, pi);
                     ret = 1;
                 }
             } else if (pi->af == AF_INET6) {
-                if (CMP_CXT6(cxt, &pi->ip_src, pi->s_port, &pi->ip_dst, pi->d_port)) {
+                if (CMP_CXT6(cxt, &PI_IP6SRC(pi), pi->s_port, &PI_IP6DST(pi), pi->d_port)) {
                     cxt_update_src(cxt, pi);
                     ret = 1;
-                } else if (CMP_CXT6(cxt, &pi->ip_dst, pi->d_port, &pi->ip_src, pi->s_port)) {
+                } else if (CMP_CXT6(cxt, &PI_IP6DST(pi), pi->d_port, &PI_IP6SRC(pi), pi->s_port)) {
                     cxt_update_dst(cxt, pi);
                     ret = 1;
                 }
@@ -223,8 +223,8 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->s_total_pkts = 1;
         cxt->start_time = pi->pheader->ts.tv_sec;
         cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-        cxt->s_ip = pi->ip_src;
-        cxt->d_ip = pi->ip_dst;
+        cxt->s_ip.s6_addr32[0] = PI_IP4SRC(pi);
+        cxt->d_ip.s6_addr32[0] = PI_IP4DST(pi);
         cxt->s_port = pi->s_port;
         cxt->d_port = pi->d_port;
         cxt->proto = (pi->ip4 ? pi->ip4->ip_p : pi->ip6->next);

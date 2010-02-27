@@ -89,10 +89,7 @@ void parse_nets(const char *s_net, struct fmask *network);
 
 void udp_guess_direction(packetinfo *pi);
 void set_pkt_end_ptr (packetinfo *pi);
-//static inline int filter_packet(const int af, const struct in6_addr *ip_s);
-
-// fix me
-fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype);
+inline int filter_packet(const int af, void *ip);
 
 /* F U N C T I O N S  ********************************************************/
 
@@ -144,10 +141,10 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
  * unfortunately pcap sends us packets in host order
  * Return value: boolean
  */
-inline int filter_packet(const int af, const struct in6_addr *ip_s)
+inline int filter_packet(const int af, void *ipptr)
+//const struct in6_addr *ip_s)
 {
-    uint32_t ip;
-    ip6v ip_vec;
+    ip6v *ip_vec;
     ip6v t;
 
     int i, our = 0;
@@ -155,7 +152,7 @@ inline int filter_packet(const int af, const struct in6_addr *ip_s)
     switch (af) {
         case AF_INET:
         {
-            ip = ip_s->s6_addr32[0];
+            uint32_t *ip = (uint32_t *) ipptr;
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if (network[i].type != AF_INET)
                     continue;
@@ -164,10 +161,10 @@ inline int filter_packet(const int af, const struct in6_addr *ip_s)
                 vlog(0x2, "Filter: %s\n", output);
                 inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "mask: %s\n", output);
-                inet_ntop(af, &ip, output, MAX_NETS);
+                inet_ntop(af, ip, output, MAX_NETS);
                 vlog(0x2, "ip: %s\n", output);
 #endif
-                if((ip & network[i].mask.s6_addr32[0])
+                if((*ip & network[i].mask.s6_addr32[0])
                     == network[i].addr.s6_addr32[0]) {
                     our = 1;
                     break;
@@ -183,7 +180,7 @@ inline int filter_packet(const int af, const struct in6_addr *ip_s)
              *
              * PS: use same code for ipv4 - 0 bytes and SIMD doesnt care*/
 
-            ip_vec.ip6 = *ip_s;
+            ip_vec = (ip6v *) ipptr;
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
@@ -192,7 +189,7 @@ inline int filter_packet(const int af, const struct in6_addr *ip_s)
                 dlog("net:  %s\n", output);
                 inet_ntop(af, &network[i].mask, output, MAX_NETS);
                 dlog("mask: %s\n", output);
-                inet_ntop(af, &ip_s, output, MAX_NETS);
+                inet_ntop(af, &PI_IP6SRC(pi), output, MAX_NETS);
                 dlog("ip: %s\n", output);
 #endif
                 if (network[i].type == AF_INET6) {
@@ -202,12 +199,12 @@ inline int filter_packet(const int af, const struct in6_addr *ip_s)
 #define compare128(x,y) __builtin_ia32_pcmpeqd128((x), (y))
                     // the builtin is only available on sse2! 
                     t.v = __builtin_ia32_pcmpeqd128(
-                      ip_vec.v & network[i].mask_v,
+                      ip_vec->v & network[i].mask_v,
                       network[i].addr_v);
                     if (t.i[0] & t.i[1])
 #else
 #define compare128(x,y) memcmp(&(x),&(y),16)
-                    t.v = ip_vec.v & network[i].mask_v;
+                    t.v = ip_vec->v & network[i].mask_v;
                     // xor(a,b) == 0 iff a==b
                     if (!( (t.i[0] ^ network[i].addr64[0]) & 
                            (t.i[1] ^ network[i].addr64[1]) ))
@@ -241,9 +238,9 @@ inline int filter_packet(const int af, const struct in6_addr *ip_s)
     }
 #ifdef DEBUG
     if (af == AF_INET6){
-        inet_ntop(af, &ip_s, output, MAX_NETS);
+        inet_ntop(af, (struct in6addr*) ipptr, output, MAX_NETS);
     }else{
-        inet_ntop(af, &ip, output, MAX_NETS);
+        inet_ntop(af, (uint32_t*)ipptr, output, MAX_NETS);
     }
     if (our){
         vlog(0x2, "Address %s is in our network.\n", output);
@@ -291,9 +288,11 @@ void prepare_ip4 (packetinfo *pi)
     pi->af = AF_INET;
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
     pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
-    pi->ip_src.s6_addr32[0] = pi->ip4->ip_src;
-    pi->ip_dst.s6_addr32[0] = pi->ip4->ip_dst;
-    pi->our = filter_packet(pi->af, &pi->ip_src);
+    // can be removed if references are replaced by macro
+    //pi->ip_src.s6_addr32[0] = PI_IP4SRC(pi);
+    //pi->ip_dst.s6_addr32[0] = PI_IP4DST(pi);
+    
+    pi->our = filter_packet(pi->af, &PI_IP4SRC(pi));
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
     return;
 }
@@ -509,9 +508,10 @@ void prepare_ip6 (packetinfo *pi)
     pi->af = AF_INET6;
     pi->ip6 = (ip6_header *) (pi->packet + pi->eth_hlen);
     pi->packet_bytes = pi->ip6->len;
-    pi->ip_src = pi->ip6->ip_src;
-    pi->ip_dst = pi->ip6->ip_dst;
-    pi->our = filter_packet(pi->af, &pi->ip_src);
+    // may be dropped due to macros plus
+    //pi->ip_src = PI_IP6SRC(pi);
+    //pi->ip_dst = PI_IP6DST(pi);
+    pi->our = filter_packet(pi->af, &PI_IP6SRC(pi));
     vlog(0x3, "Got %s IPv6 Packet...\n", (pi->our?"our":"foregin"));
     return;
 }
@@ -570,10 +570,8 @@ void parse_arp (packetinfo *pi)
     pi->arph = (ether_arp *) (pi->packet + pi->eth_hlen);
 
     if (ntohs(pi->arph->ea_hdr.ar_op) == ARPOP_REPLY) {
-        memcpy(&pi->ip_src.s6_addr32[0], pi->arph->arp_spa,
-               sizeof(u_int8_t) * 4);
-        if (filter_packet(pi->af, &pi->ip_src)) {
-            update_asset_arp(pi->arph->arp_sha, pi->ip_src,pi);
+        if (filter_packet(pi->af, &pi->arph->arp_spa)) {
+            update_asset_arp(pi->arph->arp_sha, pi);
         }
         /* arp_check(eth_hdr,pi->pheader->ts.tv_sec); */
     } else {
@@ -761,7 +759,7 @@ void parse_udp (packetinfo *pi)
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
                 service_udp4(pi);
             }
-            if (IS_COSET(&config,CO_UDP)) fp_udp4(pi, pi->ip4, pi->udph, pi->end_ptr, pi->ip_src);
+            if (IS_COSET(&config,CO_UDP)) fp_udp4(pi, pi->ip4, pi->udph, pi->end_ptr);
         } else if (pi->af == AF_INET6) {
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
                 service_udp6(pi);
@@ -805,12 +803,12 @@ void parse_icmp (packetinfo *pi)
         if (pi->cxt->check == 0x00) {
             pi->cxt->check = 0x10; //for now - stop icmp fp quick
             if (pi->af==AF_INET) {
-                fp_icmp4(pi, pi->ip4, pi->icmph, pi->end_ptr, pi->ip_src);
+                fp_icmp4(pi, pi->ip4, pi->icmph, pi->end_ptr);
                 // could look for icmp spesific data in package abcde...
                 // service_icmp(*pi->ip4,*tcph
             } else if (pi->af==AF_INET6) {
                 add_asset(pi);
-                fp_icmp6(pi, pi->ip6, pi->icmp6h, pi->end_ptr, pi->ip6->ip_src);
+                fp_icmp6(pi, pi->ip6, pi->icmp6h, pi->end_ptr);
             }
         } else {
             vlog(0x3, "[*] - NOT CHECKING ICMP PACKAGE\n");

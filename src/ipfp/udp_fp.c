@@ -2,8 +2,7 @@
 #include "../prads.h"
 #include "ipfp.h"
 
-void fp_udp4(packetinfo *pi, ip4_header * ip4, udp_header * udph, const uint8_t * end_ptr,
-             struct in6_addr ip_src)
+void fp_udp4(packetinfo *pi, ip4_header * ip4, udp_header * udph, const uint8_t * end_ptr)
 {
 
     uint8_t *opt_ptr;

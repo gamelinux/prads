@@ -3,7 +3,7 @@
 #include "ipfp.h"
 
 void fp_icmp4(packetinfo *pi, ip4_header * ip4, icmp_header * icpmh,
-              const uint8_t * end_ptr, struct in6_addr ip_src)
+              const uint8_t * end_ptr)
 {
 
     uint8_t *opt_ptr;
@@ -69,7 +69,7 @@ void fp_icmp4(packetinfo *pi, ip4_header * ip4, icmp_header * icpmh,
 }
 
 void fp_icmp6(packetinfo *pi, ip6_header * ip6, icmp6_header * icpmh,
-              const uint8_t * end_ptr, struct in6_addr ip_src)
+              const uint8_t * end_ptr)
 {
 
     uint8_t *opt_ptr;
