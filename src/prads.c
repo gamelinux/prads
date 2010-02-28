@@ -35,6 +35,7 @@
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
 #include "sig.h"
+#include "output-plugins/log_init.h"
 
 /*  G L O B A L E S  *** (or candidates for refactoring, as we say)***********/
 uint64_t cxtrackerid;
@@ -1062,6 +1063,7 @@ int main(int argc, char *argv[])
     memset(&config, 0, sizeof(globalconfig));
     set_default_config_options();
     bstring pconfile = bfromcstr("../etc/prads.conf");
+    init_logging();
     parse_config_file(pconfile);
     bdestroy (pconfile);
 

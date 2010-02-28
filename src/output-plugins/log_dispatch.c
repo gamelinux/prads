@@ -3,10 +3,7 @@
  * \author Edward FjellskÃ¥l <edward.fjellskaal@redpill-linpro.com>
  */
 
-#include "../prads.h"
 #include "log_dispatch.h"
-#include "log_stdout.h"
-#include "../sys_func.h"
 #include "../config.h"
 
 extern globalconfig config;
@@ -19,8 +16,11 @@ void log_asset_arp (asset *masset)
     //dlog("[*] added mac address to asset: %s\n",ip_addr_s);
 #endif
     if (config.verbose) {
-        stdout_arp (masset);
+        stdout_arp(masset);
     }
+    //if (config.log_file) {
+        file_arp(masset);
+    //}
 }
 
 void log_asset_os (asset *main, os_asset *os)
@@ -32,8 +32,9 @@ void log_asset_os (asset *main, os_asset *os)
     //os->last_seen, (char*)bdata(os->detection),ip_addr_s,ntohs(os->port),(char*)bdata(os->raw_fp));
 #endif
     if (config.verbose) {
-        stdout_os (main,os);
+        stdout_os(main,os);
     }
+    file_os(main,os);
 }
 
 void log_asset_service (asset *main, serv_asset *service)
@@ -48,7 +49,8 @@ void log_asset_service (asset *main, serv_asset *service)
     }
 #endif
     if (config.verbose) {
-        stdout_service (main,service);
+        stdout_service(main,service);
     }
+    file_service(main,service);
 }
 
