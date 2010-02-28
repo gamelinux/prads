@@ -48,7 +48,7 @@ int init_output_log_file (bstring filename)
     if ((fp = fopen(bdata(output_log_file_conf.filename), "r")) == NULL) {
         /* File does not exist, create new.. */
         if ((output_log_file_conf.file = fopen(bdata(output_log_file_conf.filename), "w")) != NULL) {
-            fprintf(output_log_file_conf.file, "asset,port,proto,service,application,discovered\n");
+            fprintf(output_log_file_conf.file, "asset,vlan,port,proto,service,[application-info],discovered\n");
 
         } else {
             printf("Cannot open file %s!", bdata(output_log_file_conf.filename));
