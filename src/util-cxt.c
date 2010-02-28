@@ -223,8 +223,13 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->s_total_pkts = 1;
         cxt->start_time = pi->pheader->ts.tv_sec;
         cxt->last_pkt_time = pi->pheader->ts.tv_sec;
-        cxt->s_ip.s6_addr32[0] = PI_IP4SRC(pi);
-        cxt->d_ip.s6_addr32[0] = PI_IP4DST(pi);
+        if(pi->af == AF_INET){
+            cxt->s_ip.s6_addr32[0] = PI_IP4SRC(pi);
+            cxt->d_ip.s6_addr32[0] = PI_IP4DST(pi);
+        }else{
+            cxt->s_ip = PI_IP6SRC(pi);
+            cxt->d_ip = PI_IP6DST(pi);
+        }
         cxt->s_port = pi->s_port;
         cxt->d_port = pi->d_port;
         cxt->proto = (pi->ip4 ? pi->ip4->ip_p : pi->ip6->next);
