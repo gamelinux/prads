@@ -86,10 +86,13 @@ uint8_t asset_lookup(packetinfo *pi)
         if (pi->af == AF_INET) {
             uint32_t ip;
 
-            if(pi->arph) // arp check
+            if(pi->arph) {// arp check
+                //memcpy(&ip, pi->arph->arp_spa,
+                //        sizeof(uint32_t));
                 ip = (* ( (uint32_t*) pi->arph->arp_sha));
-            else
+            } else {
                 ip = PI_IP4SRC(pi);
+            }
             hash = ip % BUCKET_SIZE;
             masset = passet[hash];
             while (masset != NULL) {
@@ -446,9 +449,9 @@ void add_asset(packetinfo *pi)
     masset->services = NULL;
     passet[hash] = masset;
 
+#ifdef DEBUGG
     /* verbose info for sanity checking */
     static char ip_addr_s[INET6_ADDRSTRLEN];
-#ifdef DEBUGG
     u_ntop(pi->ip_src, pi->af, ip_addr_s);
     dlog("[*] asset added: %s\n",ip_addr_s);
 #endif
@@ -467,8 +470,11 @@ short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi)
         }
     } else {
         update_asset(pi);
-        if (update_asset_arp(arp_sha, pi) == SUCCESS) return SUCCESS;
-            else return ERROR;
+        if (update_asset_arp(arp_sha, pi) == SUCCESS) {
+            return SUCCESS;
+        } else {
+            return ERROR;
+        }
     }
 
 arp_update:
