@@ -58,11 +58,10 @@ void free_config()
     if (config.dev != NULL) free (config.dev);
     if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
 // Grr - no nice way to tell if the settings comes from configfile or not :/
-//    if (config.pidfile != NULL) bcstrfree(config.pidfile);
-//    if (config.user_name != NULL) bcstrfree(config.user_name);
-//    if (config.group_name != NULL) bcstrfree(config.group_name);
-//    if (config.dev != NULL) bcstrfree(config.dev);
-//    if (config.bpff != NULL) bcstrfree(config.bpff);
+    if (config.pidfile != NULL) free(config.pidfile);
+    if (config.user_name != NULL) free(config.user_name);
+    if (config.group_name != NULL) free(config.group_name);
+    if (config.bpff != NULL) free(config.bpff);
 }
 
 void set_default_config_options()
@@ -78,11 +77,11 @@ void set_default_config_options()
     config.cof    |= CS_TCP_SERVER;
     config.cof    |= CS_TCP_CLIENT;
     config.cof    |= CS_UDP_SERVICES;
-    config.dev     = "eth0";
-    config.bpff    = "";
+    config.dev     = strdup("eth0");
+    config.bpff    = strdup("");
     config.dpath   = "/tmp";
-    config.pidfile = "prads.pid";
-    config.pidpath = "/var/run";
+    config.pidfile = strdup("prads.pid");
+    config.pidpath = strdup("/var/run");
     // default source net owns everything
     config.s_net   = "0.0.0.0/0,::/0";
     config.errbuf[0] = '\0';
@@ -237,6 +236,7 @@ void parse_line (bstring line)
 
     } else if ((biseqcstr(param, "pid_file")) == 1) {
         /* PID FILE */
+        free(config.pidfile);
         config.pidfile = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
@@ -264,9 +264,11 @@ void parse_line (bstring line)
         config.group_name = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "interface")) == 1) {
         /* INTERFACE */
+        free(config.dev);
         config.dev = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "bpfilter")) == 1) {
         /* FILTER */
+        free(config.bpff);
         config.bpff = bstr2cstr(value, '-');
 
 //    } else if ((biseqcstr(param, "network")) == 1) {

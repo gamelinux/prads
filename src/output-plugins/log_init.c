@@ -7,7 +7,9 @@
 void init_logging()
 {
     //if (you want to log to file)
-        init_output_log_file(bfromcstr("/tmp/prads-asset.log"));
+        bstring file = bfromcstr("/tmp/prads-asset.log");
+        init_output_log_file(file);
+        bdestroy(file);
 }
 
 char *hex2mac(const char *mac)
