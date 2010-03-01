@@ -102,7 +102,7 @@ read_report_file (void)
     /* Clean Up */
     bdestroy(filedata);
     bstrListDestroy(lines);
-    close(fp);
+    fclose(fp);
 }
 
 /* ----------------------------------------------------------
