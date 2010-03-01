@@ -26,10 +26,7 @@
 
     match_fp(packetinfo) - guess OS based on packet info
 
-    find_match(foo)
-
  TODO:
-  - fp_entry* = find_match(sigs, pi, e)
   - ipv6 fix
   - collide
   - frob ipfp* stuff for sanity
@@ -1007,7 +1004,7 @@ static void dump_payload(uint8_t* data,uint16_t dlen) {
 
 
 /* parse TCP packet quirks */
-static inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirks, uint8_t open_mode)
+static inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirks)
 {
     if (ftype == TF_RST && (tcph->t_flags & TF_ACK))
         *quirks |= QUIRK_RSTACK;
@@ -1018,8 +1015,9 @@ static inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirk
         *quirks |= QUIRK_SEQEQ;
     if (!tcph->t_seq)
         *quirks |= QUIRK_SEQ0;
+        // ftype makes little sense here
     if (tcph->t_flags & ~(TF_SYN | TF_ACK | TF_RST | TF_ECE | TF_CWR
-                          | (open_mode ? TF_PUSH : 0)))
+                          | ((ftype == TF_ACK)? TF_PUSH : 0)))
         *quirks |= QUIRK_FLAGS;
     if (tcph->t_ack)
         *quirks |= QUIRK_ACK;
@@ -1148,7 +1146,7 @@ fp_entry *find_match(
     uint32_t tstamp,
     uint8_t plen,
     uint8_t *pay
-    /*
+    /* uses the following values 
    // uint16_t tot  // e->size
    // uint8_t df,   // e->
    // uint8_t ttl,
@@ -1192,10 +1190,12 @@ re_lookup:
   while (p) {
   
     /* Cheap and specific checks first... */
-
+    // esize == 0 => open_mode
+    if(e->size){
       /* psize set to zero means >= PACKET_BIG */
-    if (p->size) { if (e->size ^ p->size) { p = p->next; continue; } }
-    else if (e->size < PACKET_BIG) { p = p->next; continue; }
+      if (p->size) { if (e->size ^ p->size) { p = p->next; continue; } }
+      else if (e->size < PACKET_BIG) { p = p->next; continue; }
+    }
 
     if (e->optcnt ^ p->optcnt) { p = p->next; continue; }
 
@@ -1504,12 +1504,8 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
     const uint8_t * end_ptr;
     uint8_t *payload = 0;
     fp_entry e = { 0 };
-    uint8_t open_mode = 0;    /* open_mode=stray ack */
     int32_t ilen;
     uint32_t tstamp = 0;
-
-    if (ftype == TF_ACK)
-        open_mode = 1;
 
     /* * If the declared length is shorter than the snapshot (etherleak
      * or such), truncate the package.
@@ -1527,7 +1523,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                 e.quirks |= QUIRK_FLOWL;
             }
             e.ttl = pi->ip6->hop_lmt;
-            e.size = open_mode ? 0 : ntohs(pi->ip6->len);
+            e.size = (ftype == TF_ACK) ? 0 : ntohs(pi->ip6->len);
             e.df = 1; // for now
             if (!IP6_FL(pi->ip6)) //*
                 e.quirks |= QUIRK_ZEROID;
@@ -1548,7 +1544,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                 e.quirks |= QUIRK_IPOPT;
             }
             e.ttl = pi->ip4->ip_ttl;
-            e.size = open_mode ? 0 : ntohs(pi->ip4->ip_len);
+            e.size = (ftype == TF_ACK) ? 0 : ntohs(pi->ip4->ip_len);
             e.df = (ntohs(pi->ip4->ip_off) & IP_DF) != 0;
             if (!pi->ip4->ip_id)
                 e.quirks |= QUIRK_ZEROID;
@@ -1560,12 +1556,12 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
     }
     //printf("\nend_ptr:%u  opt_ptr:%u",end_ptr,opt_ptr);
 
-    parse_quirks(ftype,pi->tcph,&e.quirks, open_mode);
+    parse_quirks(ftype,pi->tcph,&e.quirks);
     ilen = (TCP_OFFSET(pi->tcph) << 2) - TCP_HEADER_LEN;
 
     opt_ptr = (uint8_t *) (pi->tcph + 1);
     if ((uint8_t *) opt_ptr + ilen < end_ptr) {
-        if (!open_mode)
+        if (ftype != TF_ACK)
             e.quirks |= QUIRK_DATA;
         payload = opt_ptr + ilen;
     }
