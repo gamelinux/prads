@@ -110,7 +110,7 @@ our %ASSET;
 our $DATABASE      = q(dbi:SQLite:dbname=prads.db);
 our $DB_USERNAME;
 our $DB_PASSWORD;
-our $AUTOCOMMIT = 0;
+our $AUTOCOMMIT = 1;
 our $TIMEOUT = 10;
 our $DB_LAST_UPDATE = 0;
 our $SQL_IP = 'ipaddress';

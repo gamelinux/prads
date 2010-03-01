@@ -145,7 +145,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
 inline int filter_packet(const int af, void *ipptr)
 //const struct in6_addr *ip_s)
 {
-    ip6v *ip_vec;
+    ip6v ip_vec;
     ip6v t;
 
     int i, our = 0;
@@ -181,7 +181,7 @@ inline int filter_packet(const int af, void *ipptr)
              *
              * PS: use same code for ipv4 - 0 bytes and SIMD doesnt care*/
 
-            ip_vec = (ip6v *) ipptr;
+            ip_vec.ip6 = *((struct in6_addr *)ipptr);
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
@@ -200,12 +200,12 @@ inline int filter_packet(const int af, void *ipptr)
 #define compare128(x,y) __builtin_ia32_pcmpeqd128((x), (y))
                     // the builtin is only available on sse2! 
                     t.v = __builtin_ia32_pcmpeqd128(
-                      ip_vec->v & network[i].mask_v,
+                      ip_vec.v & network[i].mask_v,
                       network[i].addr_v);
                     if (t.i[0] & t.i[1])
 #else
 #define compare128(x,y) memcmp(&(x),&(y),16)
-                    t.v = ip_vec->v & network[i].mask_v;
+                    t.v = ip_vec.v & network[i].mask_v;
                     // xor(a,b) == 0 iff a==b
                     if (!( (t.i[0] ^ network[i].addr64[0]) & 
                            (t.i[1] ^ network[i].addr64[1]) ))
