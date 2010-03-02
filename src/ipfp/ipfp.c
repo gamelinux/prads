@@ -89,6 +89,7 @@ void gen_fp_udp(uint16_t totlen,
     bdestroy(fp);
 }
 
+/*
 uint8_t normalize_ttl (uint8_t ttl)
 {
     if ( ttl > 128 ) return 255;
@@ -96,4 +97,4 @@ uint8_t normalize_ttl (uint8_t ttl)
     if ( ttl >  32 ) return  64;
     else  return  32;
 }
-
+*/

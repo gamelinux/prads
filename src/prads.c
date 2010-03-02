@@ -1075,6 +1075,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, game_over);
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
+    //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
     int ch = 0;
     while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:va:")) != -1)
@@ -1126,6 +1127,7 @@ int main(int argc, char *argv[])
     }
 
     parse_nets(config.s_net, network);
+
     if(config.ctf & CO_SYN){
         int32_t rc;
         printf("[*] Loading SYN fingerprints\n");

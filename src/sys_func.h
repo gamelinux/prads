@@ -29,5 +29,7 @@ void end_sessions();
 void check_interrupt();
 void print_pcap_stats();
 void print_prads_stats();
+void unload_tcp_sigs();
+uint8_t normalize_ttl (uint8_t ttl);
 
 #endif

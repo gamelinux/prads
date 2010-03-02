@@ -255,7 +255,7 @@ void
 file_os (asset *main, os_asset *os)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
-    //uint8_t tmp_ttl;
+    uint8_t tmp_ttl;
 
     if (output_log_file_conf.file == NULL) {
         fprintf(stderr, "[!] ERROR:  File handle not open!\n");
@@ -265,31 +265,32 @@ file_os (asset *main, os_asset *os)
     u_ntop(main->ip_addr, main->af, ip_addr_s);
 
     /* ip,vlan,port,proto,OS-FP,FP,timstamp*/
-    fprintf(output_log_file_conf.file, "%s,%u,0,0,",
+    fprintf(output_log_file_conf.file, "%s,%u,0,",
             ip_addr_s, main->vlan ? ntohs(main->vlan) : 0);
             //ntohs(main->port),service->proto);
 
     switch (os->detection) {
         case CO_SYN:
-            fprintf(output_log_file_conf.file, "SYN");
+            fprintf(output_log_file_conf.file, "6,SYN");
             break;
         case CO_SYNACK:
-            fprintf(output_log_file_conf.file, "SYNACK");
+            fprintf(output_log_file_conf.file, "6,SYNACK");
             break;
         case CO_ACK:
-            fprintf(output_log_file_conf.file, "ACK");
+            fprintf(output_log_file_conf.file, "6,ACK");
             break;
         case CO_RST:
-            fprintf(output_log_file_conf.file, "RST");
+            fprintf(output_log_file_conf.file, "6,RST");
             break;
         case CO_FIN:
-            fprintf(output_log_file_conf.file, "FIN");
+            fprintf(output_log_file_conf.file, "6,FIN");
             break;
         case CO_UDP:
-            fprintf(output_log_file_conf.file, "UDP");
+            fprintf(output_log_file_conf.file, "17,UDP");
             break;
         case CO_ICMP:
-            fprintf(output_log_file_conf.file, "ICMP");
+            // 58 is ICMPv6
+            fprintf(output_log_file_conf.file, "1,ICMP");
             break;
 
         default:
@@ -309,12 +310,13 @@ file_os (asset *main, os_asset *os)
     if (os->fp.desc != NULL) fprintf(output_log_file_conf.file, ":%s", os->fp.desc);
         else fprintf(output_log_file_conf.file, ":unknown");
 
-    //if (os->fp.mss) fprintf(output_log_file_conf.file, ",[link:%s]",lookup_link(os->fp.mss,1));
-    //if (os->uptime) fprintf(output_log_file_conf.file, ",[uptime:%dhrs]",os->uptime/360000);
-    //if (os->ttl) {
-    //    tmp_ttl = normalize_ttl(os->ttl);
-    //    fprintf(output_log_file_conf.file, ",[distance:%d]",tmp_ttl - os->ttl);
-    //}
+    if (os->fp.mss) fprintf(output_log_file_conf.file, ":link:%s",lookup_link(os->fp.mss,1));
+    if (os->uptime) fprintf(output_log_file_conf.file, ":uptime:%dhrs",os->uptime/360000);
+    if (os->ttl) {
+        tmp_ttl = normalize_ttl(os->ttl);
+        // distance should be a part of all assets!
+        fprintf(output_log_file_conf.file, ":distance:%d",tmp_ttl - os->ttl);
+    }
 
     fprintf(output_log_file_conf.file, "],%lu\n",os->last_seen);   
     fflush(output_log_file_conf.file);

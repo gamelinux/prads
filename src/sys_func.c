@@ -5,6 +5,7 @@
 #include "assets.h"
 #include "servicefp/servicefp.h"
 #include "config.h"
+#include "sig.h"
 
 void free_queue(); // util-cxt.c
 extern globalconfig config;
@@ -24,6 +25,14 @@ const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
         }
     }
     return dest;
+}
+
+uint8_t normalize_ttl (uint8_t ttl)
+{
+    if (ttl > 128) return 255;
+    if (ttl >  64) return 128;
+    if (ttl >  32) return  64;
+    else  return  32;
 }
 
 void bucket_keys_NULL()
@@ -66,6 +75,25 @@ void set_end_sessions()
     }
 }
 
+void unload_tcp_sigs()
+{
+    if(config.ctf & CO_SYN){
+        unload_sigs(config.sig_syn, config.sig_hashsize);
+    }
+    if(config.ctf & CO_SYNACK){
+        unload_sigs(config.sig_synack, config.sig_hashsize);
+    }
+    if(config.ctf & CO_ACK){
+        unload_sigs(config.sig_ack, config.sig_hashsize);
+    }
+    if(config.ctf & CO_RST){
+        unload_sigs(config.sig_rst, config.sig_hashsize);
+    }    
+    if(config.ctf & CO_FIN){
+        unload_sigs(config.sig_fin, config.sig_hashsize);
+    }
+}
+
 void game_over()
 {
     extern int inpacket, intr_flag;
@@ -80,6 +108,7 @@ void game_over()
         print_prads_stats();
         print_pcap_stats();
         if (config.handle != NULL) pcap_close(config.handle);
+        unload_tcp_sigs();
         free_config(); // segfault here !
         printf("\nprads ended\n");
         exit(0);

@@ -10,6 +10,13 @@ void init_logging()
         bstring file = bfromcstr("/tmp/prads-asset.log");
         init_output_log_file(file);
         bdestroy(file);
+    //
+
+    //if (you want to log to sguil - FIFO)
+//        bstring sguil = bfromcstr("/tmp/prads-asset.fifo");
+//        init_output_sguil(sguil);
+//        bdestroy(sguil);
+    //
 }
 
 char *hex2mac(const char *mac)
