@@ -19,6 +19,12 @@ void init_logging()
     //
 }
 
+
+void end_logging()
+{
+    end_output_log_file ();
+}
+
 char *hex2mac(const char *mac)
 {
 

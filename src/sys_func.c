@@ -6,6 +6,7 @@
 #include "servicefp/servicefp.h"
 #include "config.h"
 #include "sig.h"
+#include "output-plugins/log_init.h"
 
 void free_queue(); // util-cxt.c
 extern globalconfig config;
@@ -108,6 +109,7 @@ void game_over()
         print_prads_stats();
         print_pcap_stats();
         if (config.handle != NULL) pcap_close(config.handle);
+        end_logging();
         unload_tcp_sigs();
         free_config(); // segfault here !
         printf("\nprads ended\n");
