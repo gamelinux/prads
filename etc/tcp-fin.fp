@@ -22,11 +22,13 @@
 # Bla bla... :)
 
 ## Linux
+#smallvalue(500>):54:1:52:N,N,T0:ATFN
 #*:64:1:52:N,N,T:ATFN:Linux:2.6
 46:64:1:52:N,N,T:ATFN:Linux:2.6
 54:64:1:52:N,N,T:ATFN:Linux:2.6
 108:64:1:52:N,N,T:ATFN:Linux:2.6
 216:64:1:52:N,N,T:ATFN:Linux:2.6
+14:64:1:52:N,N,T:ATFN:Linux:2.6 (newer)
 
 S4:64:1:*:.:AFDN:Linux:2.6 arm
 
