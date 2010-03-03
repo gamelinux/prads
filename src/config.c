@@ -67,13 +67,13 @@ void free_config()
 void set_default_config_options()
 {
     config.ctf    |= CO_SYN;
-    //config.ctf  |= CO_RST;
-    //config.ctf  |= CO_FIN;
-    //config.ctf  |= CO_ACK;
+    config.ctf    |= CO_RST;
+    config.ctf    |= CO_FIN;
+    config.ctf    |= CO_ACK;
     config.ctf    |= CO_SYNACK;
-    config.ctf    |= CO_ICMP;
-    config.ctf    |= CO_UDP;
-    //config.ctf  |= CO_OTHER;
+    //config.ctf    |= CO_ICMP;
+    //config.ctf    |= CO_UDP;
+    //config.ctf    |= CO_OTHER;
     config.cof    |= CS_TCP_SERVER;
     config.cof    |= CS_TCP_CLIENT;
     config.cof    |= CS_UDP_SERVICES;
@@ -197,6 +197,12 @@ void parse_line (bstring line)
             config.ctf |= CO_ICMP;
         else
             config.ctf &= ~CO_ICMP;
+   } else if ((biseqcstr(param, "os_udp")) == 1) {
+        /* UDP OS Fingerprinting */
+        if (value->data[0] == '1')
+            config.ctf |= CO_UDP;
+        else
+            config.ctf &= ~CO_UDP;
     } else if ((biseqcstr(param, "service_udp")) == 1) {
         /* UPD service and client checks */
         if (value->data[0] == '1')
