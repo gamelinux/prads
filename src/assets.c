@@ -87,9 +87,8 @@ uint8_t asset_lookup(packetinfo *pi)
             uint32_t ip;
 
             if(pi->arph) {// arp check
-                //memcpy(&ip, pi->arph->arp_spa,
-                //        sizeof(uint32_t));
-                ip = (* ( (uint32_t*) pi->arph->arp_sha));
+                //memcpy(&ip, pi->arph->arp_spa, sizeof(uint8_t)*4);
+                ip  = *(uint32_t*) pi->arph->arp_spa;
             } else {
                 ip = PI_IP4SRC(pi);
             }
@@ -431,7 +430,8 @@ void add_asset(packetinfo *pi)
 
     if (pi->af == AF_INET) {
         if(pi->arph) // mongo arp check
-            masset->ip_addr.s6_addr32[0] = *(uint32_t*) pi->arph->arp_sha;
+            //memcpy(&masset->ip_addr.s6_addr32[0], pi->arph->arp_spa, sizeof(uint32_t));
+            masset->ip_addr.s6_addr32[0] = *(uint32_t*) pi->arph->arp_spa;
         else
             masset->ip_addr.s6_addr32[0] = PI_IP4SRC(pi);
         hash = masset->ip_addr.s6_addr32[0] % BUCKET_SIZE;
