@@ -106,11 +106,11 @@ void game_over()
         free_queue();
         del_known_services();
         del_signature_lists();
+        unload_tcp_sigs();
+        end_logging();
         print_prads_stats();
         print_pcap_stats();
         if (config.handle != NULL) pcap_close(config.handle);
-        end_logging();
-        unload_tcp_sigs();
         free_config(); // segfault here !
         printf("\nprads ended\n");
         exit(0);

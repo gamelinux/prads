@@ -331,7 +331,7 @@ file_os (asset *main, os_asset *os)
  * ---------------------------------------------------------- */
 int end_output_log_file ()
 {
-    printf("[*] Closing log file.");
+    printf("\n[*] Closing log file.");
 
     if (output_log_file_conf.file != NULL)
     fclose(output_log_file_conf.file);

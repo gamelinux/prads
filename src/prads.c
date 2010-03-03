@@ -77,8 +77,7 @@ void prepare_greip (packetinfo *pi);
 void prepare_other (packetinfo *pi);
 void parse_ip4 (packetinfo *pi);
 void parse_ip6 (packetinfo *pi);
-void parse_tcp4 (packetinfo *pi);
-void parse_tcp6 (packetinfo *pi);
+void parse_tcp (packetinfo *pi);
 void parse_udp (packetinfo *pi);
 void parse_icmp (packetinfo *pi);
 void parse_gre (packetinfo *pi);
@@ -305,7 +304,7 @@ void parse_ip4 (packetinfo *pi)
             prepare_tcp(pi);
             if (!pi->our)
                 break;
-            parse_tcp4(pi);
+            parse_tcp(pi);
             break;
         case IP_PROTO_UDP:
             prepare_udp(pi);
@@ -524,7 +523,7 @@ void parse_ip6 (packetinfo *pi)
             prepare_tcp(pi);
             if (!pi->our) 
                 break;
-            parse_tcp6(pi);
+            parse_tcp(pi);
             break;
         case IP_PROTO_UDP:
             prepare_udp(pi);
@@ -613,68 +612,21 @@ void prepare_tcp (packetinfo *pi)
     return; 
 }
 
-void parse_tcp6 (packetinfo *pi)
+void parse_tcp (packetinfo *pi)
 {
-    update_asset(pi);
-
-    if (IS_COSET(&config,CO_SYN)
-        && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-        && !TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
-        //fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYN, pi->ip6->ip_src);
-        fp_tcp(pi, TF_SYN);
-        vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-    } else if (IS_COSET(&config,CO_SYNACK)
-               && TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-               && TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
-        vlog(0x3, "[*] - Got a SYNACK from a SERVER: src_port:%d\n",ntohs(pi->tcph->src_port));
-        //fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_SYNACK, pi->ip6->ip_src);
-        fp_tcp(pi, TF_SYNACK);
-    }
-    if ((pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi))
-         || (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi))) {
-        if (IS_COSET(&config,CO_ACK)
-            && TCP_ISFLAGSET(pi->tcph, (TF_ACK))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_SYN))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
-            && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
-            //fp_tcp6(pi->ip6, pi->tcph, pi->end_ptr, TF_ACK, pi->ip6->ip_src);
-            fp_tcp(pi, TF_ACK);
-        }
-
-        if (IS_CSSET(&config,CS_TCP_SERVER)
-                && pi->sc == SC_SERVER
-                && !ISSET_DONT_CHECK_SERVICE(pi)) {
-            vlog(0x3, "[*] - checking tcp server package\n");
-            service_tcp6(pi);
-        } else if (IS_CSSET(&config,CS_TCP_CLIENT)
-                && pi->sc == SC_CLIENT
-                && !ISSET_DONT_CHECK_CLIENT(pi)) {
-            vlog(0x3, "[*] - checking tcp client package\n");
-            client_tcp6(pi);
-        }
-    } else {
-        vlog(0x3, "[*] - NOT CHECKING TCP PACKAGE\n");
-    }
-}
-
-void parse_tcp4 (packetinfo *pi)
-{
-    fp_entry *fp;
     update_asset(pi);
 
     if (TCP_ISFLAGSET(pi->tcph, (TF_SYN))) {
         if (!TCP_ISFLAGSET(pi->tcph, (TF_ACK))) {
             if (IS_COSET(&config,CO_SYN)) {
                 vlog(0x3, "[*] - Got a SYN from a CLIENT: dst_port:%d\n",ntohs(pi->tcph->dst_port));
-                fp = fp_tcp(pi, CO_SYN);
-                //update_asset_os(pi, CO_SYN, NULL, fp, 0);
+                fp_tcp(pi, CO_SYN);
                 return;
             }
         } else {
             if (IS_COSET(&config,CO_SYNACK)) {
                 vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n", ntohs(pi->tcph->src_port));
-                fp = fp_tcp(pi, CO_SYNACK);
-                //update_asset_os(pi, CO_SYNACK, NULL, fp, 0); 
+                fp_tcp(pi, CO_SYNACK);
                 if (pi->sc != SC_SERVER) reverse_pi_cxt(pi);
                 return;
             }
@@ -684,14 +636,16 @@ void parse_tcp4 (packetinfo *pi)
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
         if (IS_CSSET(&config,CS_TCP_CLIENT)
                 && !ISSET_DONT_CHECK_CLIENT(pi)) {
-            client_tcp4(pi);
+            if (pi->af == AF_INET) client_tcp4(pi);
+                else client_tcp6(pi);
         }
         goto bastard_checks;
 
     } else if (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi)) {
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && !ISSET_DONT_CHECK_SERVICE(pi)) {
-            service_tcp4(pi);
+            if (pi->af == AF_INET) service_tcp4(pi);
+                else service_tcp6(pi);
         }
         goto bastard_checks;
     }
@@ -705,18 +659,15 @@ bastard_checks:
             && !TCP_ISFLAGSET(pi->tcph, (TF_RST))
             && !TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a STRAY-ACK: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp = fp_tcp(pi, CO_ACK);
-        //update_asset_os(pi, CO_ACK, NULL, fp, 0);
+        fp_tcp(pi, CO_ACK);
         return;
     } else if (IS_COSET(&config,CO_FIN) && TCP_ISFLAGSET(pi->tcph, (TF_FIN))) {
         vlog(0x3, "[*] Got a FIN: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp = fp_tcp(pi, CO_FIN);
-        //update_asset_os(pi, CO_FIN, NULL, fp, 0);
+        fp_tcp(pi, CO_FIN);
         return;
     } else if (IS_COSET(&config,CO_RST) && TCP_ISFLAGSET(pi->tcph, (TF_RST))) {
         vlog(0x3, "[*] Got a RST: src_port:%d\n",ntohs(pi->tcph->src_port));
-        fp = fp_tcp(pi, CO_RST);
-        //update_asset_os(pi, CO_RST, NULL, fp, 0);
+        fp_tcp(pi, CO_RST);
         return;
     }
 }
