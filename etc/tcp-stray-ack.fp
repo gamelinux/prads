@@ -58,6 +58,7 @@
 #46:64:1:*:N,N,T:AT!:Linux:2.6
 S4:64:1:0:.:A:Linux:2.6
 *:64:1:*:N,N,T:AT:Linux:2.4(newer)/2.6
+*:64:1:0:N,N,T:ZAT:Linux:2.6 IPv6
 
 ## Freebsd
 #8326:64:1:*:N,N,T:AT!:Freebsd:freebsd.org
@@ -66,6 +67,7 @@ S4:64:1:0:.:A:Linux:2.6
 ## Windows
 #*(65535):128:1:*:N,N,T:AT!:Windows:support.windows.com
 *:64:1:0:.:A:Windows:www.microsoft.com
+*:128:1:0:.:A:Windows:XP
 
 
 

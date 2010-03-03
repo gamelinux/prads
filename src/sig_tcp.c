@@ -1569,7 +1569,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
 
     e.wsize = ntohs(pi->tcph->t_win);
 
-    if (pi->ip6 != NULL) return NULL; // Fix this when find_match() is IPv6 aware
+    //if (pi->ip6 != NULL) return NULL; // Fix this when find_match() is IPv6 aware
 
     //  match = find_match(sigs, pi, e);
     //  ---> after match_network but before update_asset

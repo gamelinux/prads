@@ -75,6 +75,7 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.6 or 2.4 w/o timestamps
 5792:64:1:60:M*,S,T,N,W5:ZAT:Linux:2.6 (newer, 5)
 5792:64:1:60:M*,S,T,N,W6:ZAT:Linux:2.6 (newer, 6)
 5792:64:1:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
+5712:64:1:40:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7) IPv6
 5792:64:0:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
 5792:64:1:60:M*,S,T,N,W8:ZAT:Linux:2.6 (newer, 8)
 5792:64:1:60:M*,S,T,N,W9:ZAT:Linux:2.6 (newer, 9)
@@ -261,7 +262,7 @@ S1:30:0:44:M1730:A:Cyclades:PR3000
 8192:64:1:44:M1460:A:NetApp:Data OnTap 6.x
 5792:64:1:60:W0,N,N,N,T,M1460:ZAT:FortiNet:FortiGate 50
 S1:64:1:44:M1460:A:NetCache:5.3.1
-8192:64:0:44:M1380:A:Juniper:NetScreen UC
+8192:64:0:44:M1380:A:Juniper:NetScreen 6 (Firewall+VPN)
 65535:64:1:64:M1460,N,W1,N,N,T0,S,E,E:PAT:Juniper:JUNOS 9.3S7.2
 #4096:26:0:44:M1460:A JunOS ?
 
