@@ -56,9 +56,17 @@
 
 ### User-Agent fallbacks
 #misc,v/User-Agent: $1//,User-Agent\x3A (.*)[\0x1F\r\n]
-misc,v/User-Agent: $1//,User-Agent\x3A (.*)\0x1F
-misc,v/User-Agent: $1//,User-Agent\x3a (.*)\r
-misc,v/User-Agent: $1//,User-Agent\x3a (.*)\n
+#misc,v/User-Agent: $1//,User-Agent\x3A (.*)\0x1F
+#misc,v/User-Agent: $1//,User-Agent\x3a (.*)\r
+#misc,v/User-Agent: $1//,User-Agent\x3a (.*)\n
+
+# After some testing today, I propose new sigs:
+misc,v/User-Agent1:/$1//,User-Agent\x3A ([.+-]+)\0x1F
+misc,v/User-Agent2:/$1/$2/,User-Agent\x3A (.*)[+-](.*)\r
+misc,v/User-Agent3:/$1/$2/,User-Agent\x3A (.*)[+-](.*)\n
+misc,v/User-Agent4:/$1//,User-Agent\x3a (.*)\r
+misc,v/User-Agent5:/$1//,User-Agent\x3a (.*)\n
+
 ####### User-Agent Section END #############################################
 
 ####### MODERATE USED CLIENTS ##############################################
