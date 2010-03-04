@@ -30,6 +30,7 @@ static struct mtu_def mtu[] = {
   {  1362, "sometimes DSL (1)" },
   {  1372, "cable modem" },
   {  1400, "(Google/AOL)" }, 	/* To be investigated */
+  {  1408, "virtualization" }, /* Unconfirmed vmware/Virtual box??  */
   {  1415, "sometimes wireless" },
   {  1420, "GPRS, T1, FreeS/WAN" },
   {  1423, "sometimes cable" },

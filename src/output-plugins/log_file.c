@@ -48,7 +48,7 @@ int init_output_log_file (bstring filename)
     if ((fp = fopen(bdata(output_log_file_conf.filename), "r")) == NULL) {
         /* File does not exist, create new.. */
         if ((output_log_file_conf.file = fopen(bdata(output_log_file_conf.filename), "w")) != NULL) {
-            fprintf(output_log_file_conf.file, "asset,vlan,port,proto,service,[application-info],discovered\n");
+            fprintf(output_log_file_conf.file, "asset,vlan,port,proto,service,[service-info],distance,discovered\n");
 
         } else {
             printf("Cannot open file %s!", bdata(output_log_file_conf.filename));
@@ -200,12 +200,12 @@ void file_arp (asset *main)
         u_ntop(main->ip_addr, main->af, ip_addr_s);
         if (main->mac_resolved != NULL) {
             /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
-            fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP (%s),%s,%lu\n", ip_addr_s,
+            fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
                 main->vlan ? ntohs(main->vlan) : 0,bdata(main->mac_resolved),
                 hex2mac((const char *)main->mac_addr), main->last_seen);
         } else {
             /* ip,0,0,ARP,mac-address,timstamp */
-            fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP,[%s],%lu\n", ip_addr_s,
+            fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP,[%s],0,%lu\n", ip_addr_s,
                 main->vlan ? ntohs(main->vlan) : 0,hex2mac((const char *)main->mac_addr), main->last_seen);
         }
         fflush(output_log_file_conf.file);
@@ -224,6 +224,7 @@ void
 file_service (asset *main, serv_asset *service)
 {
     if (output_log_file_conf.file != NULL) {
+        uint8_t tmp_ttl;
         static char ip_addr_s[INET6_ADDRSTRLEN];
         u_ntop(main->ip_addr, main->af, ip_addr_s);
         /* ip,vlan,port,proto,SERVICE,application,timstamp*/
@@ -237,7 +238,9 @@ file_service (asset *main, serv_asset *service)
             fprintf(output_log_file_conf.file, "CLIENT,[%s]",
                 (char*)bdata(service->application));
         }
-        fprintf(output_log_file_conf.file, ",%lu\n",service->last_seen);
+
+        tmp_ttl = normalize_ttl(service->ttl);
+        fprintf(output_log_file_conf.file, ",%d,%lu\n",tmp_ttl - service->ttl,service->last_seen);
         fflush(output_log_file_conf.file);
     } else {
         fprintf(stderr, "[!] ERROR:  File handle not open!\n");
@@ -312,13 +315,9 @@ file_os (asset *main, os_asset *os)
 
     if (os->fp.mss) fprintf(output_log_file_conf.file, ":link:%s",lookup_link(os->fp.mss,1));
     if (os->uptime) fprintf(output_log_file_conf.file, ":uptime:%dhrs",os->uptime/360000);
-    if (os->ttl) {
-        tmp_ttl = normalize_ttl(os->ttl);
-        // distance should be a part of all assets!
-        fprintf(output_log_file_conf.file, ":distance:%d",tmp_ttl - os->ttl);
-    }
 
-    fprintf(output_log_file_conf.file, "],%lu\n",os->last_seen);   
+    tmp_ttl = normalize_ttl(os->ttl);
+    fprintf(output_log_file_conf.file, "],%d,%lu\n",tmp_ttl - os->ttl, os->last_seen);   
     fflush(output_log_file_conf.file);
 }
 
