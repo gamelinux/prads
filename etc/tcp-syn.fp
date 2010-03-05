@@ -424,6 +424,7 @@ T4:64:1:60:M1412,S,T,N,W0:.:Linux:2.4 (rare!)
 
 S4:64:1:60:S,T,M1460,N,W1:.:Linux:2.6.27 (Android 1.5)
 S4:64:1:60:M*,N,N,T,N,W4:.:Linux:2.6.28 Maemo 5 (Nokia N900)
+S4:64:1:52:M*,N,N,S,N,W1:.:Linux:2.6 OpenWRT (UC) Kacper confirm
 
 # Generic *Linux* sigs
 65535:64:0:60:M*,N,W*,S,T:.:@Linux:2.6 (Generic dfrag-)
@@ -538,13 +539,12 @@ S2:255:1:48:M*,W0,E:.:MacOS:8.6 classic
 65535:255:1:48:M*,N,N,N,N:.:MacOS:9.1 (OT 2.7.4) (2)
 
 65535:64:1:64:M*,N,W0,N,N,T,S,E,E:P:MacOS:OS X 10.4.11 (UC)
-65535:64:1:64:M1452,N,W1,N,N,T,S:.:MacOS:OS X 10.5.7
-65535:64:1:64:M1380,N,W1,N,N,T,S,E,E:P:MacOS:Intel Mac OS X 10.X (UC)
-65535:64:1:64:M1380,N,W1,N,N,T,S,E,E:P:MacOS:Intel Mac OS X 10.6.2 (RFC1323+) (UC)
+65535:64:1:64:M*,N,W1,N,N,T,S:.:MacOS:OS X 10.5.7
+65535:64:1:64:M*,N,W1,N,N,T,S,E,E:P:MacOS:Intel Mac OS X 10.6.2 (RFC1323+) (UC)
 65535:64:1:64:M*,N,W3,N,N,T,S,E,E:P:MacOS:Intel Mac OS X 10.6 (UC)
 
-65535:64:1:64:M1460,N,W2,N,N,T,S,E,E:P:MacOS:iPhone OS 3.1.3 (UC)
-65535:64:1:48:M1460,S,E,E:P:MacOS:iPhone OS 3.1.3 (UC)
+65535:64:1:64:M*,N,W2,N,N,T,S,E,E:P:MacOS:iPhone OS 3.1.3 (UC)
+65535:64:1:48:M*,S,E,E:P:MacOS:iPhone OS 3.1.3 (UC)
 
 # ----------------- Windows -----------------
 

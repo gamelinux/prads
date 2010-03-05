@@ -268,8 +268,8 @@ file_os (asset *main, os_asset *os)
     u_ntop(main->ip_addr, main->af, ip_addr_s);
 
     /* ip,vlan,port,proto,OS-FP,FP,timstamp*/
-    fprintf(output_log_file_conf.file, "%s,%u,0,",
-            ip_addr_s, main->vlan ? ntohs(main->vlan) : 0);
+    fprintf(output_log_file_conf.file, "%s,%u,%d,", ip_addr_s,
+            main->vlan ? ntohs(main->vlan) : 0, os->port);
             //ntohs(main->port),service->proto);
 
     switch (os->detection) {
@@ -304,7 +304,8 @@ file_os (asset *main, os_asset *os)
     if (os->raw_fp != NULL) {
         fprintf(output_log_file_conf.file, ",[%s:", (char *)bdata(os->raw_fp));
     } else {
-        bstring b = gen_fp_tcp(&os->fp, os->fp.zero_stamp, 0);
+        //bstring b = gen_fp_tcp(&os->fp, os->fp.zero_stamp, 0);
+        bstring b = gen_fp_tcp(&os->fp, os->uptime, 0);
         os->raw_fp = b;
         fprintf(output_log_file_conf.file, ",[%s:", (char *)bdata(os->raw_fp));
     }

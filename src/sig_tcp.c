@@ -243,6 +243,8 @@ bstring gen_fp_tcp(fp_entry *e, uint32_t tstamp, uint8_t tf)
 
 void print_sig(fp_entry * e)
 {
+    // gen_fp_tcp takes (fingerprint, uptime, TCP_FLAG)
+    // meaning that e->zero_stamp is wrong!
     bstring b = gen_fp_tcp(e, e->zero_stamp, 0);
     char *c = bstr2cstr(b, '-');
     printf("%s", c);
@@ -686,6 +688,9 @@ static int parse_sig_quirks(fp_entry *sig, uint8_t *p)
                 break;
             case 'N':
                 sig->quirks |= QUIRK_FINACK;
+                break;
+            case 'L':
+                sig->quirks |= QUIRK_FLOWL;
                 break;
             case '!':
                 sig->quirks |= QUIRK_BROKEN;
@@ -1270,6 +1275,7 @@ continue_fuzzy:
 
     if (!no_known) {
 
+      // What about IPv6?
       a=(uint8_t*)& PI_IP4SRC(pi);
 
       dlog("\n"); //edward
@@ -1519,7 +1525,13 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
             // If IP header ends past end_ptr
             if ((uint8_t *) (pi->ip6 + 1) > end_ptr)
                 return NULL;
-            if (IP6_FL(pi->ip6) > 0) { //*
+            if (IP6_FL(pi->ip6)) {
+                /* http://tools.ietf.org/html/rfc2460#page-25
+                   The Flow Label field may be used by a source to label sequences of
+                   packets for which it requests special handling by the IPv6 routers.
+                   Mostly Zero today - subject to change in the future...
+                   Maybe parse_ipv6_fl() one day ?
+                 */
                 e.quirks |= QUIRK_FLOWL;
             }
             e.ttl = pi->ip6->hop_lmt;
@@ -1566,6 +1578,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
         payload = opt_ptr + ilen;
     }
     tstamp = parse_tcpopt(opt_ptr, ilen, pi->end_ptr, &e);
+    //if (!tstamp) e.zero_stamp = 1;
 
     e.wsize = ntohs(pi->tcph->t_win);
 

@@ -131,8 +131,8 @@ my $CONFIG                  = qq($CONFDIR/prads.conf);
 pre_config();
 
 my $S_SIGNATURE_FILE        = qq($CONFDIR/tcp-service.sig);
-my $OS_SYN_FINGERPRINT_FILE = qq($CONFDIR/os.fp);
-my $OS_SYNACK_FINGERPRINT_FILE = qq($CONFDIR/osa.fp);
+my $OS_SYN_FINGERPRINT_FILE = qq($CONFDIR/tcp-syn.fp);
+my $OS_SYNACK_FINGERPRINT_FILE = qq($CONFDIR/tcp-synack.fp);
 my $OS_ICMP_FINGERPRINT_FILE= qq($CONFDIR/osi.fp);
 my $OS_UDP_FINGERPRINT_FILE = qq($CONFDIR/osu.fp);
 my $MAC_SIGNATURE_FILE      = qq($CONFDIR/mac.sig);

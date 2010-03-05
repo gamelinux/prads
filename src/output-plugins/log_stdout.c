@@ -37,7 +37,8 @@ void stdout_os (asset *main, os_asset *os)
     if (os->raw_fp != NULL) {
         printf("%s]", (char *)bdata(os->raw_fp));
     } else {
-        bstring b = gen_fp_tcp(&os->fp, os->fp.zero_stamp, 0);
+        //bstring b = gen_fp_tcp(&os->fp, os->fp.zero_stamp, os->detection);
+        bstring b = gen_fp_tcp(&os->fp, os->uptime, os->detection);
         os->raw_fp = b;
         printf("%s]", (char *)bdata(os->raw_fp));
 

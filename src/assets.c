@@ -225,6 +225,7 @@ os_update:
                     tmp_oa->raw_fp = bstrcpy(raw_fp);
 
                     //tmp_sa->i_attempts++;
+                    tmp_oa->port = PI_TCP_SP(pi);
                     tmp_oa->last_seen = pi->pheader->ts.tv_sec;
                     if (uptime) tmp_oa->uptime = uptime;
                     //static char ip_addr_s[INET6_ADDRSTRLEN];
@@ -238,6 +239,7 @@ os_update:
                 if (match->os == tmp_oa->fp.os &&
                     match->desc == tmp_oa->fp.desc){
                 //if (match == tmp_oa->match) {
+                    tmp_oa->port = PI_TCP_SP(pi);
                     tmp_oa->last_seen = pi->pheader->ts.tv_sec;
                     if (uptime)
                         tmp_oa->uptime = uptime;
@@ -262,12 +264,12 @@ os_update:
         } else if(match) {
             // copy the match
             new_oa->fp = *match;
-            new_oa->fp = *match;
+            //new_oa->fp = *match; //why copy it two times?
         }
         //new_oa->i_attempts = 1;
         new_oa->first_seen = pi->pheader->ts.tv_sec;
         new_oa->last_seen = pi->pheader->ts.tv_sec;
-        new_oa->port = pi->s_port;
+        new_oa->port = PI_TCP_SP(pi);
         if (pi->ip4 != NULL) new_oa->ttl = pi->ip4->ip_ttl;
             else if (pi->ip6 != NULL) new_oa->ttl = pi->ip6->hop_lmt;
         if (uptime) new_oa->uptime = uptime;
@@ -310,7 +312,7 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
             }
             goto service_update;
         } else {
-            printf("\nBAD ERROR in update_asset_os\n");
+            printf("\nBAD ERROR in update_asset_service\n");
             return ERROR;
         }
     } else {

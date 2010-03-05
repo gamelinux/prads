@@ -87,8 +87,8 @@ void set_default_config_options()
     config.errbuf[0] = '\0';
     config.configpath = "../etc/";
     // files should be relative to configpath somehow
-    config.sig_file_syn = "../etc/os.fp";
-    config.sig_file_synack = "../etc/osa.fp";
+    config.sig_file_syn = "../etc/tcp-syn.fp";
+    config.sig_file_synack = "../etc/tcp-synack.fp";
     config.sig_file_ack = "../etc/tcp-stray-ack.fp";
     config.sig_file_fin = "../etc/tcp-fin.fp";
     config.sig_file_rst = "../etc/tcp-rst.fp";

@@ -114,7 +114,7 @@ S4:64:1:48:M1460,N,W6:ZA:Linux:2.6 (newer, 6, SYN from HP-UX/11.11)
 
 # --------------- Windows ------------------
 
-8192:64:1:60:M1460,N,W0,N,N,T0:AT:Windows:NT 4.0 (Embedded)
+8192:64:1:60:M1460,N,W0,N,N,T:AT:Windows:NT 4.0 (Embedded)
 65535:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 SP4
 S44:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:XP SP1
 S12:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 (SP1+)
@@ -129,7 +129,7 @@ S6:128:1:44:M*:A:Windows:NT 4.0 SP1+
 16384:128:1:44:M*:A:Windows:2000 (2)
 S16:128:1:44:M*:A:Windows:2000 (3)
 8192:128:1:56:M*,S,T:A:Windows:2000 SP2+, XP SP1+ (seldom 98)
-8192:128:1:60:M*,N,W8,S,T0:AT:Windows:Server 2008 (R2 Standard 64-bit)
+8192:128:1:60:M*,N,W8,S,T:AT:Windows:Server 2008 (R2 Standard 64-bit)
 
 # TEST SIG from  msn.no - UC=Unconfirmed
 8190:255:1:44:M*:A:Windows:Server 2008 (UC)
@@ -183,6 +183,8 @@ S1:255:1:60:N,N,T,N,W0,M*:AT:Solaris:7
 57344:64:1:60:M1460,N,W0,N,N,T:AT:FreeBSD:4.6-4.8 (RFC1323)
 65535:64:1:48:M1460,S:A:FreeBSD:7.0
 65535:64:1:60:M1460,N,W3,S,T:AT:FreeBSD:7.2
+65535:64:1:40:M1220,N,W3,S,T:ATL:FreeBSD:7.2 (UC) IPv6
+65535:64:1:60:M1460,N,W6,S,T:AT:FreeBSD:8.0 (UC)
 S4:64:1:60:M1460,S,T,N,W4:A:FreeBSD:6-8 (UC 4)
 S4:64:1:60:M1460,S,T,N,W6:A:FreeBSD:6-8 (UC 6)
 
@@ -263,7 +265,7 @@ S1:30:0:44:M1730:A:Cyclades:PR3000
 5792:64:1:60:W0,N,N,N,T,M1460:ZAT:FortiNet:FortiGate 50
 S1:64:1:44:M1460:A:NetCache:5.3.1
 8192:64:0:44:M1380:A:Juniper:NetScreen 6 (Firewall+VPN)
-65535:64:1:64:M1460,N,W1,N,N,T0,S,E,E:PAT:Juniper:JUNOS 9.3S7.2
+65535:64:1:64:M1460,N,W1,N,N,T,S,E,E:PAT:Juniper:JUNOS 9.3S7.2
 #4096:26:0:44:M1460:A JunOS ?
 
 2048:64:0:44:M1460:A:Radware: UC
