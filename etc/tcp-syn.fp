@@ -739,6 +739,10 @@ S32:64:1:56:M*,N,N,S,N,N,?12:.:AMIGA:3.9 BB2 with Miami stack
 
 S44:255:0:44:M536:.:FreeMiNT:1 patch 16A (Atari)
 
+# ----------------- PlayStation -------------
+
+65535:64:1:64:M1460,N,W0,S,N,N,N,N,T:.:Playstation:PS3
+
 ###########################################
 # Appliance / embedded / other signatures #
 ###########################################

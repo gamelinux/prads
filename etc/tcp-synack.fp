@@ -110,7 +110,9 @@ S4:64:1:52:M*,N,N,S,N,W9:ZA:Linux:2.6 (newer, 9)
 # Different response when *Unknown* connects:
 S4:64:1:48:M1460,N,N,S:ZA:Linux:2.6 (Generic 2, SYN from Windows) 
 S4:64:1:48:M1460,N,W6:ZA:Linux:2.6 (newer, 6, SYN from HP-UX/11.11)
+S4:64:1:48:M1460,N,W7:ZA:Linux:2.6 (newer, 7, SYN from Unknown, HP-UX?)
 5672:64:0:60:M1430,S,T,N,W6:AT:Linux:2.6 (Google)
+5792:64:1:56:M1460,S,T:ZAT:Linux:2.6 (Syn from Unknown)
 
 # --------------- Windows ------------------
 

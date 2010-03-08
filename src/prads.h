@@ -32,7 +32,7 @@
 #define VERSION                       "0.1.8"
 #define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
-#define ASSET_TIMEOUT                 1800      /* Time befor an asset is deleted if no updates */
+#define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                500000
