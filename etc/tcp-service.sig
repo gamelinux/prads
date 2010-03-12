@@ -37,51 +37,51 @@ ssh,v/Cisco IDS SSH/$2/Protocol $1/,SSH-([.\d]+)-CiscoIDS\/LoginServer[_-](\S+)
 ssh,v/libssh/$2/Protocol $1/,SSH-([.\d]+)-libssh-(\S+)
 # SSH-2.0-dropbear_0.51
 
-# WWW Signatures
-www,v/Apache/$1//,Server: Apache\/([\S]+)[\r\n]
-www,v/Apache/$1/$2/,Server: Apache\/([\S]+)[\s]+\((.*)\)
-www,v/Apache/$1/$2/,Server: Apache\/([\S]+)[\s]+([\S]+)
-www,v/Apache///,Server: Apache[\r\n]
-www,v/Stronghold/$1/$2/,Server: Stronghold\/([\S]+) ([\S]+)
-www,v/Microsoft-IIS/$1//,Server: Microsoft-IIS\/([\S]+)[\r\n]
-www,v/Netscape Enterprise/$1//,Server: Netscape-Enterprise\/([\S]+)
-www,v/NetCache//$1/,Server: NetCache (\(.*\))
-www,v/Switch and Data - EdgePrism/$1//,Server:  EdgePrism\/([\S]+)
-www,v/thttp/$1/$2/,Server: thttpd\/([\S]+) ([\S]+)
-www,v/Apache Tomcat/$1/$2/,Server: Apache Tomcat\/([\S]+) (\(.*\))
-www,v/Apache Coyote/$1//,Server: Apache[ -]{1}Coyote\/([\S]+)
-www,v/DoubleClick Adserver///,Server: DCLK-HttpSvr
-www,v/Resin JSP Engine/$1//,Server: Resin\/([\S]+)
-www,v/Akamai Ghost///,Server: AkamaiGHost
-www,v/Footprint Distributor/$1//,Server: Footprint Distributor V([\S]+)
-www,v/AOLserver/$1//,Server: AOLserver\/([\S]+)
-www,v/IBM WebSphere Application Server/$1//,Server: WebSphere Application Server\/([\S]+)
-www,v/Netscape Brew/$1//,Server: Netscape-Brew\/([\S]+)
-www,v/swcd/$1//,Server: swcd\/([\S]+)[\r\n]
-www,v/TrueSpectra Image Server/$1//,Server: TrueSpectra Image Server Version ([\S]+)
-www,v/Oracle Apache Server/$1/$2/,Server: Oracle HTTP Server Powered by Apache\/([\S]+) (\([\S]+\))
-www,v/Enhydra Application Server/$1//,Server: Enhydra-MultiServer\/([\S]+)
-www,v/Zeus Web Server/$1//,Server: Zeus\/([\S]+)
-www,v/Inktomi Traffic Cache/$2/$1/,Via: HTTP/1.. ([\S]+) \(Traffic-Server\/([\S]+)
-www,v/Cougar/$1//,Server: Cougar\/([\S]+)[\r\n]
-www,v/GWS/$1//,Server: GWS\/([\S]+)[\r\n]
-www,v/Apache AdvancedExtranetServer/$1/$2/,Server: Apache-AdvancedExtranetServer\/([\S]+) \(([\S|\s]+)\)
-www,v/IBM HTTP Server/$1/$2/,Server: IBM_HTTP_Server\/([\S]+) ([\S]+)
-www,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
-www,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
-#www,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
-#www,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
+# HTTP Signatures
+http,v/Apache/$1//,Server: Apache\/([\S]+)[\r\n]
+http,v/Apache/$1/$2/,Server: Apache\/([\S]+)[\s]+\((.*)\)
+http,v/Apache/$1/$2/,Server: Apache\/([\S]+)[\s]+([\S]+)
+http,v/Apache///,Server: Apache[\r\n]
+http,v/Stronghold/$1/$2/,Server: Stronghold\/([\S]+) ([\S]+)
+http,v/Microsoft-IIS/$1//,Server: Microsoft-IIS\/([\S]+)[\r\n]
+http,v/Netscape Enterprise/$1//,Server: Netscape-Enterprise\/([\S]+)
+http,v/NetCache//$1/,Server: NetCache (\(.*\))
+http,v/Switch and Data - EdgePrism/$1//,Server:  EdgePrism\/([\S]+)
+http,v/thttp/$1/$2/,Server: thttpd\/([\S]+) ([\S]+)
+http,v/Apache Tomcat/$1/$2/,Server: Apache Tomcat\/([\S]+) (\(.*\))
+http,v/Apache Coyote/$1//,Server: Apache[ -]{1}Coyote\/([\S]+)
+http,v/DoubleClick Adserver///,Server: DCLK-HttpSvr
+http,v/Resin JSP Engine/$1//,Server: Resin\/([\S]+)
+http,v/Akamai Ghost///,Server: AkamaiGHost
+http,v/Footprint Distributor/$1//,Server: Footprint Distributor V([\S]+)
+http,v/AOLserver/$1//,Server: AOLserver\/([\S]+)
+http,v/IBM WebSphere Application Server/$1//,Server: WebSphere Application Server\/([\S]+)
+http,v/Netscape Brew/$1//,Server: Netscape-Brew\/([\S]+)
+http,v/swcd/$1//,Server: swcd\/([\S]+)[\r\n]
+http,v/TrueSpectra Image Server/$1//,Server: TrueSpectra Image Server Version ([\S]+)
+http,v/Oracle Apache Server/$1/$2/,Server: Oracle HTTP Server Powered by Apache\/([\S]+) (\([\S]+\))
+http,v/Enhydra Application Server/$1//,Server: Enhydra-MultiServer\/([\S]+)
+http,v/Zeus Web Server/$1//,Server: Zeus\/([\S]+)
+http,v/Inktomi Traffic Cache/$2/$1/,Via: HTTP/1.. ([\S]+) \(Traffic-Server\/([\S]+)
+http,v/Cougar/$1//,Server: Cougar\/([\S]+)[\r\n]
+http,v/GWS/$1//,Server: GWS\/([\S]+)[\r\n]
+http,v/Apache AdvancedExtranetServer/$1/$2/,Server: Apache-AdvancedExtranetServer\/([\S]+) \(([\S|\s]+)\)
+http,v/IBM HTTP Server/$1/$2/,Server: IBM_HTTP_Server\/([\S]+) ([\S]+)
+http,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
+http,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
+#http,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
+#http,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 #Need to polish the Zope sig - this is just the raw string:
-#www,v/Zope/$1//,Server: Zope/(Zope 2.9.1-, python 2.4.2, linux2) ZServer/1.1
-www,v/Server: $1///,Server: (\w*)\r\n
+#http,v/Zope/$1//,Server: Zope/(Zope 2.9.1-, python 2.4.2, linux2) ZServer/1.1
+http,v/Server: $1///,Server: (\w*)\r\n
 
-wwwproxy,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
-wwwproxy,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
+http,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
+http,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 
 # X-SOAP-Server: NuSOAP/0.7.2 (1.94)
-#www,v/NuSOAP/$1/$2/X-SOAP-Server: NuSOAP\/([.\d]+) \(([.\d]+)\)
-# Fallback WWW Signature
-#www,v/Unknown HTTP//$1/,^(HTTP/\d.\d)
+#http,v/NuSOAP/$1/$2/X-SOAP-Server: NuSOAP\/([.\d]+) \(([.\d]+)\)
+# Fallback http Signature
+#http,v/Unknown HTTP//$1/,^(HTTP/\d.\d)
 
 # SSL Signatures
 ssl,v/Generic TLS 1.0 SSL///,^\x16\x03\x01..\x02\0\0.\x03\x01

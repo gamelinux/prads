@@ -31,10 +31,10 @@
 
 # Standard Query response - no error
 #53,v/DNS///,^..\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00
-dns,v/DNS SQR No Error///,\x81\x80\x00\x01\x00
+domain,v/DNS SQR No Error///,\x81\x80\x00\x01\x00
 # Standard Query response - no such name
 #53,v/DNS///,^..\x84\x03\x00\x01\x00\x00\x00\x01\x00\x00
-53,v/DNS SQR No Such Name///,\x84\x03\x00\x01\x00\x00\x00
+domain,v/DNS SQR No Such Name///,\x84\x03\x00\x01\x00\x00\x00
 # Bind version:
 
 #53,v/DNS///,A\?

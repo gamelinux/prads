@@ -41,31 +41,36 @@
 # Conclusion: Higher detection rate and a small increase in resources
 ### Often used User-Agents
 # Mozilla
-#www,v/Mozilla Browser/$1/$2/,User-Agent\x3a Mozilla\/(.*)\r\n
+#http,v/Mozilla Browser/$1/$2/,User-Agent\x3a Mozilla\/(.*)\r\n
 ### Moderate used User-Agents
 # Opera
-#www,v/Opera/$1/$2/,User-Agent\x3a Opera\/(.*)\r\n
+#http,v/Opera/$1/$2/,User-Agent\x3a Opera\/(.*)\r\n
 ### Little used User-Agents
 ## CUPS
-#www,v/Cups Client/$1//,User-Agent\x3a CUPS\/(.*)\r\n
+#http,v/Cups Client/$1//,User-Agent\x3a CUPS\/(.*)\r\n
 ## Perl
-#www,v/Perl LWP/$1/$2,lwp-request\/([.\d]+) libwww-perl/([.\d]+)
-#www,v/Perl LWP/$1//,User-Agent\x3a lwp-request\/([.\d]+)
+#http,v/Perl LWP/$1/$2,lwp-request\/([.\d]+) libwww-perl/([.\d]+)
+#http,v/Perl LWP/$1//,User-Agent\x3a lwp-request\/([.\d]+)
 ## Mozilla
-#smtp,v/Mozilla/$1/$2/,User-Agent: (Mozilla-)?Thunderbird (.*)
+#http,v/Mozilla/$1/$2/,User-Agent: (Mozilla-)?Thunderbird (.*)
 
 ### User-Agent fallbacks
-#misc,v/User-Agent: $1//,User-Agent\x3A (.*)[\0x1F\r\n]
-#misc,v/User-Agent: $1//,User-Agent\x3A (.*)\0x1F
-#misc,v/User-Agent: $1//,User-Agent\x3a (.*)\r
-#misc,v/User-Agent: $1//,User-Agent\x3a (.*)\n
+#http,v/User-Agent: /$1//,User-Agent\x3A (.*)[\0x1F\r\n]
+#http,v/User-Agent: /$1//,User-Agent\x3A (.*)\0x1F
+#http,v/User-Agent: /$1//,User-Agent\x3a (.*)\r
+#http,v/User-Agent: /$1//,User-Agent\x3a (.*)\n
 
 # After some testing today, I propose new sigs:
-misc,v/User-Agent1:/$1//,User-Agent\x3A ([.+-]+)\0x1F
-misc,v/User-Agent2:/$1/$2/,User-Agent\x3A (.*)[+-](.*)\r
-misc,v/User-Agent3:/$1/$2/,User-Agent\x3A (.*)[+-](.*)\n
-misc,v/User-Agent4:/$1//,User-Agent\x3a (.*)\r
-misc,v/User-Agent5:/$1//,User-Agent\x3a (.*)\n
+#http,v/User-Agent1:/$1//,User-Agent\x3A ([.+-]+)\0x1F
+#http,v/User-Agent2:/$1/$2/,User-Agent\x3A (.*)[+-](.*)\r
+#http,v/User-Agent3:/$1/$2/,User-Agent\x3A (.*)[+-](.*)\n
+#http,v/User-Agent4:/$1//,User-Agent\x3a (.*)\r
+#http,v/User-Agent5:/$1//,User-Agent\x3a (.*)\n
+http,v/$1///,User-Agent\x3A ([.+-]+)\0x1F
+http,v/$1//$2/,User-Agent\x3A (.*)[+-](.*)\r
+http,v/$1//$2/,User-Agent\x3A (.*)[+-](.*)\n
+http,v/$1///,User-Agent\x3a (.*)\r
+http,v/$1///,User-Agent\x3a (.*)\n
 
 ####### User-Agent Section END #############################################
 

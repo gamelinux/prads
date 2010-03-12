@@ -80,12 +80,16 @@ while (<REPORT>) {
         $asset=$_;
         $os = $details = "";
 
-        # 65535:128:1:48:M1460,N,N,S:.:Windows:2000 SP4, XP SP1+
-        #if ($s_info =~ /.*:.*:.*:.*:.*:.*:(.*):(.*):.*:.*:.*:.*hrs/) {
-        if ($s_info =~ /:[\d]{2,4}:\d:.*:.*:.*:(\w+):(.*):link/) {
-            $os = $1;
-            $details = $2;
-            #print "$os - $details\n";
+        if ( $service =~ /SYN/ ) {
+            # 65535:128:1:48:M1460,N,N,S:.:Windows:2000 SP4, XP SP1+
+            #if ($s_info =~ /.*:.*:.*:.*:.*:.*:(.*):(.*):.*:.*:.*:.*hrs/) {
+            if ($s_info =~ /:[\d]{2,4}:\d:.*:.*:.*:(\w+):(.*):link/) {
+                $os = $1;
+                $details = $2;
+                #print "$os - $details\n";
+            }
+        } elsif ( $service =~ /SERVER/ || $service =~ /CLIENT/ ) {
+            $s_info =~ s/^(\w+):(.*)$/$2/;
         }
 
         # Assign this line to the asset data structure.
@@ -194,10 +198,10 @@ foreach $asset (sort (keys (%asset_storage))) {
     	printf("%-5s %-10s %-30s\n", "Port", "Service", "TCP-Application");
         @sorted = sort {$$a[0] <=> $$b[0]} @{$asset_storage{$asset}->{"TCP"}};
     
-    foreach $_ (@sorted) {
-	    printf("%-5d %-10s %-30s\n", $_->[0], $_->[1], $_->[2])
-    }
-    #if ($asset_storage{$asset}->{"TCP"}) {
+        foreach $_ (@sorted) {
+	        printf("%-5d %-10s %-30s\n", $_->[0], $_->[1], $_->[2])
+        }
+        #if ($asset_storage{$asset}->{"TCP"}) {
 	    print "\n";
     }
 

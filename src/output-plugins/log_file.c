@@ -232,10 +232,12 @@ file_service (asset *main, serv_asset *service)
             ip_addr_s, main->vlan ? ntohs(main->vlan) : 0,
             ntohs(service->port),service->proto);
         if (service->role == 1) {
-            fprintf(output_log_file_conf.file, "SERVER,[%s]",
+            fprintf(output_log_file_conf.file, "SERVER,[%s:%s]",
+                (char*)bdata(service->service),
                 (char *)bdata(service->application));
         } else {
-            fprintf(output_log_file_conf.file, "CLIENT,[%s]",
+            fprintf(output_log_file_conf.file, "CLIENT,[%s:%s]",
+                (char*)bdata(service->service),
                 (char*)bdata(service->application));
         }
 
