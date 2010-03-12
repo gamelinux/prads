@@ -181,6 +181,17 @@ sub make_attribute_table {
                 die "[!] ERROR: Cannot open output file for writing  - $!\n";
     $putxml = new XML::Writer(OUTPUT => $xmlout, NEWLINES => 0, DATA_MODE => 1, DATA_INDENT => 1, UNSAFE => 1);
     $putxml->startTag('SNORT_ATTRIBUTES');
+    $putxml->startTag('ATTRIBUTE_MAP');
+        $putxml->startTag('ENTRY');
+            $putxml->startTag('ID');
+                $putxml->characters("31337");
+            $putxml->endTag('ID');
+            $putxml->startTag('VALUE');
+                $putxml->characters("Edward Fjellskaal");
+            $putxml->endTag('VALUE');
+        $putxml->endTag('ENTRY');
+    $putxml->endTag('ATTRIBUTE_MAP');
+
     $putxml->startTag('ATTRIBUTE_TABLE');
 
     foreach $asset (sort (keys (%ASSETDB))) {
