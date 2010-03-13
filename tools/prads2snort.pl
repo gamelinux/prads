@@ -45,15 +45,17 @@ prads2snort.pl - Some one needs to populate the host_attribute.xml file!
  -i|--infile     : file to feed prads2snort.pl
  -o|--outfile    : file to write host_attribute data to (host_attribute.xml)
  -d|--default    : set Default OS if unknown (linux,bsd,macos,windows)
+ -v|--verbose    : prints out OS, frag, stream and confidence of asset
  -h|--help       : this help message
  --version       : show prads2snort.pl version
 
 =cut
 
-our $VERSION                = 0.01;
+our $VERSION                = 0.11;
 our $DEBUG                  = 0;
+our $VERBOSE                = 0;
 our $FORCE                  = 0;
-our $assetcnt               = 0;
+our $VERS                   = 0;
 our $INFILE                 = qq(/tmp/prads-asset.log);
 our $OUTFILE                = qq(hosts_attribute.xml);
 our $DEFAULTOS              = qq(linux);
@@ -63,9 +65,15 @@ Getopt::Long::GetOptions(
     'infile|i=s'            => \$INFILE,
     'outfile|o=s'           => \$OUTFILE,
     'default|d=s'           => \$DEFAULTOS,
+    'verbose|v'             => \$VERBOSE,
     'force|f'               => \$FORCE,
-    'version'               => \$VERSION,
+    'version'               => \$VERS,
 );
+
+our $assetcnt               = 0;
+our $knowns                 = 0;
+our $unknowns               = 0;
+our $aconfedence            = 0;
 
 print_header();
 parse_asset_file();
@@ -204,8 +212,17 @@ sub make_attribute_table {
         my $details = normalize_description($os, $desc);
         my ($frag3, $stream5) = get_policy($os, $desc);
         if ($os =~ /unknown/) {
-            print "Unknown OS for $asset - Applying frag3=$frag3 and stream5=$stream5\n";
-            #next;
+            $unknowns++;
+            if ($VERBOSE) {
+                print "$asset OS:Unknown - Applying frag3=$frag3, stream5=$stream5 and confidence:$confidence\n";
+            }
+            #next if $skippunknownsorsomething;
+        } else {
+            $knowns++;
+            $aconfedence += $confidence;
+            if ($VERBOSE) {
+                print "$asset OS:$os - Applying frag3=$frag3, stream5=$stream5 and confidence:$confidence\n";
+            }
         }
         $putxml->startTag('HOST');
             $putxml->startTag('IP');
@@ -648,7 +665,11 @@ sub get_server_and_version {
 sub print_header {
     print "\n[*] Made by Edward Fjellskaal <edwardfjellskaal\@gmail.com> (c) 2010\n";
     print "[*] Reading PRADS log file: $INFILE\n";
-    print "[*] Writing to snort attribute file: $OUTFILE\n\n";
+    print "[*] Writing to snort attribute file: $OUTFILE\n";
+    if ($VERS) {
+        print "[*] Version: $VERSION\n\n";
+        exit 0;
+    }
 }
 
 =head2 print_footer
@@ -658,7 +679,12 @@ sub print_header {
 =cut
 
 sub print_footer {
-    print "\n[*] Processed $assetcnt hosts...\n";
-    print "[*] Done...\n";
+    my $avg = ($aconfedence / $assetcnt) ;
+    $avg =~ s/(\d{1,3})\.?.*/$1/;
+    print "[*] Processed $assetcnt hosts...\n";
+    print "[*] Hosts with Indication of a known OS: $knowns\n";
+    print "[*] Average confidence: $avg%\n";
+    print "[*] Hosts with unknown OS: $unknowns\n";
+    print "[*] Done...\n\n";
 }
 
