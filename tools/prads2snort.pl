@@ -22,7 +22,8 @@
 use strict;
 use warnings;
 
-use Getopt::Long qw(:config no_ignore_case bundling);
+#use Getopt::Long qw(:config no_ignore_case bundling);
+use Getopt::Long qw/:config auto_version auto_help/;
 use XML::Writer;
 use IO::File;
 use Switch;
@@ -43,6 +44,7 @@ prads2snort.pl - Some one needs to populate the host_attribute.xml file!
 
  -i|--infile     : file to feed prads2snort.pl
  -o|--outfile    : file to write host_attribute data to (host_attribute.xml)
+ -d|--default    : set Default OS if unknown (linux,bsd,macos,windows)
  -h|--help       : this help message
  --version       : show prads2snort.pl version
 
@@ -54,11 +56,13 @@ our $FORCE                  = 0;
 our $assetcnt               = 0;
 our $INFILE                 = qq(/tmp/prads-asset.log);
 our $OUTFILE                = qq(hosts_attribute.xml);
+our $DEFAULTOS              = qq(linux);
 our %ASSETDB;
 
 Getopt::Long::GetOptions(
     'infile|i=s'            => \$INFILE,
     'outfile|o=s'           => \$OUTFILE,
+    'default|d=s'           => \$DEFAULTOS,
     'force|f'               => \$FORCE,
     'version'               => \$VERSION,
 );
@@ -308,6 +312,21 @@ sub get_policy {
                 case /Vista/ {$frag3 = "Windows"; $stream5 = "vista";}
                 else {$frag3 = "Windows"; $stream5 = "windows";}
             }   
+        }
+        case /unknown/ {
+            if ($DEFAULTOS =~ /linux/) {
+                $frag3 = "linux";
+                $stream5 = "linux";
+            } elsif ($DEFAULTOS =~ /bsd/) {
+                $frag3 = "BSD";
+                $stream5 = "bsd";
+            } elsif ($DEFAULTOS =~ /windows/) {
+                $frag3 = "Windows";
+                $stream5 = "windows";
+            } elsif ($DEFAULTOS =~ /macos/) {
+                $frag3 = "First";
+                $stream5 = "macos";
+            }
         }
         #else {$frag3 = "BSD"; $stream5 = "bsd";}
     }
