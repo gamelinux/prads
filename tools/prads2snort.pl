@@ -30,11 +30,11 @@ use Switch;
 
 =head1 NAME
 
-prads2snort.pl - Some one needs to populate the host_attribute.xml file!
+ prads2snort.pl - Some one needs to populate the host_attribute.xml file!
 
 =head1 VERSION
 
-0.1
+ 0.1
 
 =head1 SYNOPSIS
 
@@ -292,7 +292,7 @@ sub make_attribute_table {
     $xmlout->close();
 }
 
-=head get_policy
+=head2 get_policy
 
  Gets the frag3 and stream5 policy
 
@@ -314,20 +314,47 @@ sub get_policy {
         }
         case /IRIX/ {$frag3 = "BSD"; $stream5 = "irix";}
         case /Linux/ {
+            # stream5: Linux 2.4 and 2.6     = linux
+            #          Linux 2.2 and earlier = old-linux
+            # frag3:   linux for all linuxes
+            $frag3 = "linux";
             switch ($DESC){
-                case /2.2/ {$frag3 = "linux"; $stream5 = "old-linux";}
-                case /2.0/ {$frag3 = "linux"; $stream5 = "old-linux";}
-                else {$frag3 = "linux"; $stream5 = "linux";}
+                case /2\.6/ {$stream5 = "linux";}
+                case /2\.4/ {$stream5 = "linux";}
+                case /2\.2/ {$stream5 = "old-linux";}
+                case /2\.0/ {$stream5 = "old-linux";}
+                else {$stream5 = "linux";}
             }
+        }
+        case /NetBSD/ {
+            # Assuming Freebsd properties!
+            # frag3:   FreeBSD = BSD
+            # stream5: bsd
+            $frag3 = "BSD"; $stream5 = "bsd";
+        }
+        case /FreeBSD/ {
+            # frag3:   FreeBSD = BSD
+            # stream5: bsd
+            $frag3 = "BSD"; $stream5 = "bsd";
+        }
+        case /OpenBSD/ {
+            # frag3:   OpenBSD = linux
+            # stream5: OpenBSD = bsd
+            $frag3 = "linux"; $stream5 = "bsd";
         }
         case /MacOS/ {$frag3 = "First"; $stream5 = "macos";}
         case /^SunOS/ {$frag3 = "First"; $stream5 = "first";}
         case /Solaris/ {$frag3 = "Solaris"; $stream5 = "solaris";}
         case /Windows/ {
+            # frag3  :Windows (95/98/NT4/W2K/XP) = Windows
+            # stream5: Windows 2003 Server (Guessing also 2008) = win2003
+            #          Windows Vista = vista
+            #          All other Windows = windows
+            $frag3 = "Windows";
             switch ($DESC){
-                case /200[3,8]/ {$frag3 = "Windows"; $stream5 = "win2003";}
-                case /Vista/ {$frag3 = "Windows"; $stream5 = "vista";}
-                else {$frag3 = "Windows"; $stream5 = "windows";}
+                case /200[3,8]/ {$stream5 = "win2003";}
+                case /Vista/ {$stream5 = "vista";}
+                else {$stream5 = "windows";}
             }   
         }
         case /unknown/ {
