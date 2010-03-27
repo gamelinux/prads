@@ -391,6 +391,7 @@ S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6)
 
 # added -kwy
 S2:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6 loopback)
+S4:64:1:60:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7 fedora12)
 S4:64:1:40:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7) IPv6
 S4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 7)
 T4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 7)

@@ -158,19 +158,21 @@ foreach $asset (sort (keys (%asset_storage))) {
     	}
     }
 
+    my ($os,$desc,$confidence) = guess_asset_os($asset);
+    print "OS:   $os $desc ($confidence%)\n";
     # Output OS and details
-    $i = 0;
-    foreach $_ ( @ { $asset_storage{$asset}->{"OS"}}) {
-        my ($date) = from_unixtime($_->[3]);
-        printf("OS %-1s:   %-1s ", $_->[0], $_->[1]);
-        if ($_->[2] ne "unknown") {
-            printf("- %-18s", $_->[2]);
-        } else {
-            printf("                  ");
-        }
-        printf(" (%-19s)\n", $date);
-        $i++;
-    }
+    #$i = 0;
+    #foreach $_ ( @ { $asset_storage{$asset}->{"OS"}}) {
+    #    my ($date) = from_unixtime($_->[3]);
+    #    printf("OS %-1s:   %-1s ", $_->[0], $_->[1]);
+    #    if ($_->[2] ne "unknown") {
+    #        printf("- %-18s", $_->[2]);
+    #    } else {
+    #        printf("                  ");
+    #    }
+    #    printf(" (%-19s)\n", $date);
+    #    $i++;
+    #}
 
     # Output MAC Addresses
     $i = 0;
@@ -225,6 +227,97 @@ foreach $asset (sort (keys (%asset_storage))) {
 if ($opt_w) {
     close (STDOUT);
 }
+
+sub guess_asset_os {
+    my $asset = shift;
+    my ($OS, $DETAILS, $CONFIDENCE) = ("unknown", "unknown", 0);
+    push my @prefiltered, ($OS, $DETAILS, $CONFIDENCE);
+    my %countos;
+    my %countdesc;
+
+    foreach $OS (@ {$asset_storage{$asset}->{"OS"}}) {
+        if ($OS->[0] =~ /^SYNACK$/ ) {
+            $countos{ $OS->[1] }{"count"} += 4;
+        } elsif ($OS->[0] =~ /^SYN$/ ) {
+            $countos{$OS->[1]}{"count"} += 6;
+        } elsif ($OS->[0] =~ /^ACK$/ || $OS->[0] =~ /^FIN$/ || $OS->[0] =~ /^RST$/ ) {
+            $countos{$OS->[1]}{"count"} += 1;
+        }
+    }
+
+    my ($os, $os1, $os2);
+    my $int = 0;
+    for my $os (sort { $countos{$a} <=> $countos{$b} } keys %countos) {
+        next if ($os =~ /unknown/ );
+        if ($int == 0) {
+            $os1 = $os;
+        } else {
+            $os2 = $os;
+            last;
+        }
+        $int +=1;
+        #print "$countos{$os}{count}\t$os\n";
+    }
+    if (not defined $os1) {
+        if (not defined $os2) {
+            $OS = "unknown";
+        } else {
+            $OS = $os2;
+        }
+    } else {
+        $OS = $os1;
+    }
+
+    return @prefiltered unless $OS;
+    return @prefiltered if ($OS =~ /unknown/);
+
+    #if ( $countos{$os1}{count} > $countos{$os2}{count} ) {
+    #    $OS = $os1;
+    #} elsif ( $countos{$os1}{count} == $countos{$os2}{count} ) {
+    #    # sort on last timestamp or something...
+    #    # in the future
+    #    $OS = $os1;
+    #}
+
+    foreach my $DESC (@ {$asset_storage{$asset}->{"OS"}}) {
+        next if not $DESC->[1] =~ /$OS/;
+        if ($DESC->[0] =~ /^SYN$/) {
+            $DETAILS = $DESC->[2];
+            last
+        } elsif ($DESC->[0] =~ /^SYNACK$/) {
+            $DETAILS = $DESC->[2];
+        } else {
+            $DETAILS = $DESC->[2];
+        }
+    }
+
+    if (not defined $DETAILS) {
+        print "arrgggg\n";
+        foreach my $DESC (@ {$asset_storage{$asset}->{"OS"}}) {
+            next if not $DESC->[1] =~ /$OS/;
+            if ($DESC->[0] =~ /^RST$/) {
+                $DETAILS = $DESC->[2];
+                last
+            } elsif ($DESC->[0] =~ /^ACK$/) {
+                $DETAILS = $DESC->[2];
+            } else {
+                $DETAILS = $DESC->[2];
+            }
+        }
+    }
+
+    if ( not defined $OS ) {
+        $DETAILS = "unknown";
+        $CONFIDENCE = 0;
+        $OS = "unknown";
+    } else {
+        $CONFIDENCE = 20 + (10 * $countos{$OS}{count});
+        $CONFIDENCE = 100 if $CONFIDENCE > 100;
+    }
+    push my @filtered, ($OS, $DETAILS, $CONFIDENCE);
+    return @filtered;
+}
+
 
 # --------------------------------------------
 # FUNCTION	: from_unixtime
