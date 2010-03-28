@@ -158,8 +158,8 @@ foreach $asset (sort (keys (%asset_storage))) {
     	}
     }
 
-    my ($os,$desc,$confidence) = guess_asset_os($asset);
-    print "OS:   $os $desc ($confidence%)\n";
+    my ($os,$desc,$confidence,$timestamp,$flux) = guess_asset_os($asset);
+    print "OS:   $os $desc ($confidence%) $flux\n";
     # Output OS and details
     #$i = 0;
     #foreach $_ ( @ { $asset_storage{$asset}->{"OS"}}) {
@@ -201,6 +201,7 @@ foreach $asset (sort (keys (%asset_storage))) {
         @sorted = sort {$$a[0] <=> $$b[0]} @{$asset_storage{$asset}->{"TCP"}};
     
         foreach $_ (@sorted) {
+            next if ($_->[3] < $timestamp);
 	        printf("%-5d %-10s %-30s\n", $_->[0], $_->[1], $_->[2])
         }
         #if ($asset_storage{$asset}->{"TCP"}) {
@@ -213,6 +214,7 @@ foreach $asset (sort (keys (%asset_storage))) {
         @sorted = sort {$$a[0] <=> $$b[0]} @{$asset_storage{$asset}->{"UDP"}};
     
     foreach $_ (@sorted) {
+        next if ($_->[3] < $timestamp);
         printf("%-5d %-10s %-30s\n", $_->[0], $_->[1], $_->[2])
     }
     #if ($asset_storage{$asset}->{"UDP"}) {
@@ -228,14 +230,53 @@ if ($opt_w) {
     close (STDOUT);
 }
 
+sub check_last_os_switch {
+    my $asset = shift;
+    my $ctimestamp = 0;
+    my $syn = 0;
+
+    #foreach $OS (@ {$asset_storage{$asset}->{"OS"}}) {
+    foreach $OS (sort { $a <=> $b } (@ {$asset_storage{$asset}->{"OS"}})) {
+        if ($OS->[0] =~ /^SYN$/ ) {
+            $syn += 1;
+#print "S : $OS->[0] $OS->[1] $OS->[2] $OS->[3] $syn\n";
+            $ctimestamp = $OS->[3] if ($OS->[3] > $ctimestamp);
+        }
+    }
+
+    if ($syn == 0) {
+        foreach $OS (sort { $a <=> $b } (@ {$asset_storage{$asset}->{"OS"}})) {
+            if ($OS->[0] =~ /^SYNACK$/ ) {
+                $syn += 1;
+#print "SA: $OS->[0] $OS->[1] $OS->[2] $OS->[3]\n";
+                $ctimestamp = $OS->[3] if ($OS->[3] > $ctimestamp);
+            }
+        }
+    }
+#print "R : $ctimestamp\n";
+    push my @return, ($ctimestamp, $syn);
+    return @return;
+}
+
 sub guess_asset_os {
     my $asset = shift;
-    my ($OS, $DETAILS, $CONFIDENCE) = ("unknown", "unknown", 0);
-    push my @prefiltered, ($OS, $DETAILS, $CONFIDENCE);
+    my ($OS, $DETAILS, $CONFIDENCE, $TS, $FLUX) = ("unknown", "unknown", 0, 0, 0);
+    push my @prefiltered, ($OS, $DETAILS, $CONFIDENCE, $TS, $FLUX);
     my %countos;
     my %countdesc;
 
+    # look for latest os switch...
+    ($TS,$FLUX) = check_last_os_switch($asset);
+#print "TS: $TS\n";
+    # Lets look back the last 12 hours...
+    # The OS might have sent a synack long before a syn
+    # if thats what made the timestamp. And we also might
+    # have missed some servies :)
+    $TS = $TS - 43200; 
+
     foreach $OS (@ {$asset_storage{$asset}->{"OS"}}) {
+        next if ($OS->[3] < $TS);
+#print "OS: $OS->[0]\n";
         if ($OS->[0] =~ /^SYNACK$/ ) {
             $countos{ $OS->[1] }{"count"} += 4;
         } elsif ($OS->[0] =~ /^SYN$/ ) {
@@ -268,8 +309,9 @@ sub guess_asset_os {
         $OS = $os1;
     }
 
-    return @prefiltered unless $OS;
-    return @prefiltered if ($OS =~ /unknown/);
+    push my @midfiltered, ("unknown", "unknown", 0, $TS, $FLUX);
+    return @midfiltered unless $OS;
+    return @midfiltered if ($OS =~ /unknown/);
 
     #if ( $countos{$os1}{count} > $countos{$os2}{count} ) {
     #    $OS = $os1;
@@ -280,6 +322,7 @@ sub guess_asset_os {
     #}
 
     foreach my $DESC (@ {$asset_storage{$asset}->{"OS"}}) {
+        next if ($DESC->[3] < $TS);
         next if not $DESC->[1] =~ /$OS/;
         if ($DESC->[0] =~ /^SYN$/) {
             $DETAILS = $DESC->[2];
@@ -294,6 +337,7 @@ sub guess_asset_os {
     if (not defined $DETAILS) {
         print "arrgggg\n";
         foreach my $DESC (@ {$asset_storage{$asset}->{"OS"}}) {
+            next if ($DESC->[3] < $TS);
             next if not $DESC->[1] =~ /$OS/;
             if ($DESC->[0] =~ /^RST$/) {
                 $DETAILS = $DESC->[2];
@@ -314,8 +358,8 @@ sub guess_asset_os {
         $CONFIDENCE = 20 + (10 * $countos{$OS}{count});
         $CONFIDENCE = 100 if $CONFIDENCE > 100;
     }
-    push my @filtered, ($OS, $DETAILS, $CONFIDENCE);
-    return @filtered;
+    push my @postfiltered, ($OS, $DETAILS, $CONFIDENCE, $TS, $FLUX);
+    return @postfiltered;
 }
 
 

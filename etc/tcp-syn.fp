@@ -761,7 +761,8 @@ S4:64:1:60:W0,N,S,T,M1460:.:FortiNet:FortiGate 50
 
 8192:64:1:44:M1460:.:@Eagle:Secure Gateway
 
-65535:64:1:64:M1460,N,W1,N,N,T,S:A:Juniper:JunOS 9.2-9-4
+65535:64:1:64:M1460,N,W1,N,N,T,S:A:Juniper:JUNOS 9.2-9-4
+16384:64:1:64:M1460,N,W0,N,N,T,S,E,E:P:Juniper:JUNOS 9.3S7.2
 
 #S4:64:1:72:M1460,S,T,N,W6,?76:.:Riverbed:RiOS 5.x
 
