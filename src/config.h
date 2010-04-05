@@ -1,9 +1,11 @@
+#ifndef CONFIG_H
+#define CONFIG_H
 #include "common.h"
 
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
     struct pcap_stat    ps;             /* libpcap stats */
-    prads_stat          pr_s;          /* prads stats */
+    prads_stat          pr_s;           /* prads stats */
     struct bpf_program  cfilter;        /**/
     bpf_u_int32         net_mask;       /**/
     uint8_t     cflags;                 /* config flags */
@@ -28,6 +30,7 @@ typedef struct _globalconfig {
     bstring     sig_file_cli_tcp;       /* Filename of tcp client sig file */
     bstring     sig_file_serv_udp;      /* Filename of udp server sig file */
     bstring     sig_file_cli_udp;       /* Filename of udp client sig file */
+    bstring     assetlog;               /* Filename of prads-asset.log */
     char       *sig_file_syn;           /* Filename of TCP SYN sig file */
     char       *sig_file_synack;        /* Filename of TCP SYNACK sig file */
     char       *sig_file_ack;           /* Filename of TCP Stray-ACK sig file */
@@ -67,3 +70,5 @@ void parse_config_file(bstring fname);
 int brtrim (bstring string);
 int bltrim (bstring string);
 void free_config();
+
+#endif                          // CONFIG_H

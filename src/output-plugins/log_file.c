@@ -60,7 +60,7 @@ int init_output_log_file (bstring filename)
 
         /* Open file and assign it to the global FILE pointer.  */
         if ((output_log_file_conf.file = fopen(bdata(output_log_file_conf.filename), "a")) == NULL) {
-            printf("Cannot open log file %s for append!", bdata(output_log_file_conf.filename));
+            printf("Cannot open log file %s for append!\n", bdata(output_log_file_conf.filename));
         }
     }
 

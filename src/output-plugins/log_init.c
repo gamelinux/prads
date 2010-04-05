@@ -2,12 +2,13 @@
 #include "log_file.h"
 //#include "log_sguil.h"
 
-//extern globalconfig config;
+extern globalconfig config;
 
 void init_logging()
 {
     //if (you want to log to file)
-        bstring file = bfromcstr("/tmp/prads-asset.log");
+        //bstring file = bfromcstr("/tmp/prads-asset.log");
+        bstring file = bstrcpy(config.assetlog);
         init_output_log_file(file);
         bdestroy(file);
     //

@@ -988,8 +988,9 @@ static void usage()
     printf(" OPTIONS:\n");
     printf("\n");
     printf(" -i             : network device (default: eth0)\n");
+    printf(" -c             : prads config file\n");
     printf(" -b             : berkeley packet filter\n");
-    printf(" -d             : path to logdir\n");
+    //printf(" -d             : path to logdir\n");
     printf(" -u             : user\n");
     printf(" -g             : group\n");
     printf(" -D             : enables daemon mode\n");
@@ -1012,11 +1013,12 @@ int main(int argc, char *argv[])
 {
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
     memset(&config, 0, sizeof(globalconfig));
+    int ch = 0;
     set_default_config_options();
     bstring pconfile = bfromcstr("../etc/prads.conf");
-    init_logging();
-    parse_config_file(pconfile);
-    bdestroy (pconfile);
+    //parse_config_file(pconfile);
+    //init_logging();
+    //bdestroy (pconfile);
 
     cxtbuffer = NULL;
     cxtrackerid = 0;
@@ -1028,11 +1030,13 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
-    int ch = 0;
-    while ((ch = getopt(argc, argv, "b:d:Dg:hi:p:P:u:va:")) != -1)
+    while ((ch = getopt(argc, argv, "c:b:d:Dg:hi:p:P:u:va:")) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
+            break;
+        case 'c':
+            pconfile = bfromcstr(optarg);
             break;
         case 'i':
             config.dev = strdup(optarg);
@@ -1076,6 +1080,10 @@ int main(int argc, char *argv[])
         printf("[*] You must be root..\n");
         return (1);
     }
+
+    parse_config_file(pconfile);
+    init_logging();
+    bdestroy (pconfile);
 
     parse_nets(config.s_net, network);
 
