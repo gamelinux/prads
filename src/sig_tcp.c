@@ -1035,7 +1035,8 @@ static inline void parse_quirks(uint8_t ftype, tcp_header *tcph, uint32_t *quirk
  * yes, this function returns the timestamp for now */ 
 static inline uint32_t parse_tcpopt(const uint8_t *opt_ptr, int32_t ilen, const uint8_t *end_ptr, fp_entry *e)
 {
-    uint8_t ocnt = 0, olen;
+    uint8_t ocnt = 0;
+    int32_t olen;
     // mnemonics
     uint32_t *quirks = &e->quirks;
     uint8_t *op = e->opt;
