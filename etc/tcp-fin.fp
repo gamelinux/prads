@@ -32,6 +32,8 @@
 
 S4:64:1:*:.:AFDN:Linux:2.6 arm
 
+32736:64:1:40:.:AFN:Linux:2.0
+
 
 ## Freebsd
 8326:64:1:52:N,N,T:ATFN!:Freebsd:freebsd.org

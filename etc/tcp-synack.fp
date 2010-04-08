@@ -114,9 +114,19 @@ S4:64:1:48:M1460,N,W7:ZA:Linux:2.6 (newer, 7, SYN from Unknown, HP-UX?)
 5672:64:0:60:M1430,S,T,N,W6:AT:Linux:2.6 (Google)
 5792:64:1:56:M1460,S,T:ZAT:Linux:2.6 (Syn from Unknown)
 
+# Red Hat rhel 4uX
+# 2.6.9-55.ELsmp
+5776:64:1:56:M*,S,T:ZAT:Linux:2.6.9-5x (rhel4)
+# 2.6.9-34.ELsmp
+5792:64:1:56:M*,S,T:ZAT:Linux:2.6.9-3x (rhel4)
+
+# Astaro Security Gateway v7.xxx
+5792:64:1:56:M*,S,T:ZAT:Linux:2.6 (ASG 7)
+
 # --------------- Windows ------------------
 
 8192:64:1:60:M1460,N,W0,N,N,T:AT:Windows:NT 4.0 (Embedded)
+6384:64:1:60:M1460,N,W0,N,N,T:AT:Windows:NT 4.0 (Embedded)
 65535:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 SP4
 S44:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:XP SP1
 S12:128:1:64:M*,N,W0,N,N,T0,N,N,S:A:Windows:2000 (SP1+)
@@ -323,4 +333,5 @@ S16:64:0:60:M512,N,W0,N,N,T:A:VxWorks:VxWorks 5.4.2
 
 8688:64:1:64:M1460,N,W0,N,N,S,N,N,T0:AT:HP:Officejet (printer) (UC)
 1448:255:1:60:M1460,S,T0,N,W0:ZAT:Lexmark:T634 (printer) (UC)
+S1:64:1:60:M1460,N,W0,N,N,T:AT:HP:LaserJet (printer cp4005) (UC)
 
