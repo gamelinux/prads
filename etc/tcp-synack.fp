@@ -74,6 +74,7 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.6 or 2.4 w/o timestamps
 5792:64:1:60:M*,S,T,N,W4:ZAT:Linux:2.6 (newer, 4)
 5792:64:1:60:M*,S,T,N,W5:ZAT:Linux:2.6 (newer, 5)
 5792:64:1:60:M*,S,T,N,W6:ZAT:Linux:2.6 (newer, 6)
+5696:64:1:60:S,T,M*,N,W6:ZAT:Linux:2.6 (newer, 6) IPSec
 5792:64:1:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
 5712:64:1:40:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7) IPv6
 5792:64:0:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
@@ -112,6 +113,7 @@ S4:64:1:48:M1460,N,N,S:ZA:Linux:2.6 (Generic 2, SYN from Windows)
 S4:64:1:48:M1460,N,W6:ZA:Linux:2.6 (newer, 6, SYN from HP-UX/11.11)
 S4:64:1:48:M1460,N,W7:ZA:Linux:2.6 (newer, 7, SYN from Unknown, HP-UX?)
 5672:64:0:60:M1430,S,T,N,W6:AT:Linux:2.6 (Google)
+5392:64:1:60:M*,S,T,N,W9:ZAT:Linux:2.6 (Google mini)
 5792:64:1:56:M1460,S,T:ZAT:Linux:2.6 (Syn from Unknown)
 
 # Red Hat rhel 4uX
@@ -331,7 +333,7 @@ S16:64:0:60:M512,N,W0,N,N,T:A:VxWorks:VxWorks 5.4.2
 5792:64:1:60:M1460,S,T,N,W8:T:Linux:Yahoo! (*.crawl.yahoo.net)
 6144:64:0:60:M1460,N,W0,N,N,T:AT:OpenVMS:X.Y (MultiNet V5.2(16) stack) (UC)
 
-8688:64:1:64:M1460,N,W0,N,N,S,N,N,T0:AT:HP:Officejet (printer) (UC)
+8688:64:1:64:M1460,N,W0,N,N,S,N,N,T:AT:HP:Officejet (printer) (UC)
 1448:255:1:60:M1460,S,T0,N,W0:ZAT:Lexmark:T634 (printer) (UC)
 S1:64:1:60:M1460,N,W0,N,N,T:AT:HP:LaserJet (printer cp4005) (UC)
 
