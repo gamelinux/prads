@@ -97,6 +97,7 @@ sub parse_asset_file {
     # Open prads asset file
     open (ASSETFILE, "<$INFILE") or die "[!] ERROR: Unable to open file: $INFILE - $!\n";
 
+    print "\n*** PARSING OF ASSET FILE ***\n\n" if $DEBUG;
     while (<ASSETFILE>) {
         chomp;
         next if (/^asset,vlan,port,proto/ || /^#/);
@@ -108,16 +109,17 @@ sub parse_asset_file {
     
             my $asset=$_;
             my $os = my $details = my $services = "unknown";
+            print "[*] $asset\n" if $DEBUG;
     
             if ( $service =~ /SYN/ || $service =~ /^ACK$/ || $service =~ /^RST$/ || $service =~ /^FIN$/ ) {
                 if ($s_info =~ /:[\d]{2,4}:\d:.*:.*:.*:(\w+):(.*):link/) {
                     $os = $1;
                     $details = $2;
-                    print "SYN(+ACK):$os - $details\n" if $DEBUG;
+                    print "[**] SYN(+ACK):$os - $details\n" if $DEBUG;
                 } elsif ($s_info =~ /:[\d]{2,4}:\d:.*:.*:.*:(\w+):(.*):uptime/) {
                     $os = $1;
                     $details = $2;
-                    print "RST/ACK/FIN:$os - $details\n" if $DEBUG;
+                    print "[**] RST/ACK/FIN:$os - $details\n" if $DEBUG;
                 } else {
                     switch ($s_info) {
                         case /:Linux:/ {
@@ -141,8 +143,8 @@ sub parse_asset_file {
                             $details = $1 if defined $1;
                         }
                     }
-                print "FALLBACK: $s_info\n" if $DEBUG;
-                print "FALLBACK: $os - $details\n" if $DEBUG;
+                print "[**] FALLBACK: $s_info\n" if $DEBUG;
+                print "[**] FALLBACK: $os - $details\n" if $DEBUG;
                 }
             } elsif ( $service =~ /SERVER/ || $service =~ /CLIENT/ ) {
                 $s_info =~ s/^(\w+):(.*)$/$2/;
@@ -206,9 +208,12 @@ sub make_attribute_table {
 
     $putxml->startTag('ATTRIBUTE_TABLE');
 
+    print "\n*** PARSING OF ASSET DB ***\n\n" if $DEBUG;
     foreach $asset (sort (keys (%ASSETDB))) {
+        next if not defined $asset;
         $assetcnt++;
-        my ($os,$desc,$confidence) = guess_asset_os($asset);
+        print "[****] Processing $asset\n" if $DEBUG;
+        my ($os,$desc,$confidence,$timestamp,$flux) = guess_asset_os($asset);
         my $details = normalize_description($os, $desc);
         my ($frag3, $stream5) = get_policy($os, $desc);
         if ($os =~ /unknown/) {
@@ -262,12 +267,15 @@ sub make_attribute_table {
             $putxml->endTag('OPERATING_SYSTEM');
 
             if ($ASSETDB{$asset}->{"TCPSER"} || $ASSETDB{$asset}->{"UDPSER"}) {
+            # Metadata service tags in rules:
+            # grep "metadata:service" /etc/snort/rules/*.rules|sed "s/.*metadata\:service \(.\+\);.*;)/\1/"|awk '{print $1}'|sort -u
                 $putxml->startTag('SERVICES');
                 if ($ASSETDB{$asset}->{"TCPSER"}) {
-                    make_service_attributes($asset, "tcp", "TCPSER", $putxml);
+                    make_service_attributes($asset, "tcp", "TCPSER", $putxml, $timestamp);
                 }
+
                 if ($ASSETDB{$asset}->{"UDPSER"}) {
-                    make_service_attributes($asset, "udp", "UDPSER", $putxml);
+                    make_service_attributes($asset, "udp", "UDPSER", $putxml, $timestamp);
                 }
                 $putxml->endTag('SERVICES');
             }
@@ -283,6 +291,7 @@ sub make_attribute_table {
             #    $putxml->endTag('CLIENTS');
             #}
         $putxml->endTag('HOST');
+        print "[****] Done\n\n" if $DEBUG;
     }
 
     # End it all
@@ -409,6 +418,31 @@ sub normalize_description {
     }
 }
 
+sub check_last_os_switch {
+    my $asset = shift;
+    my $ctimestamp = 0;
+    my $syn = 0;
+    foreach my $OS (@ {$ASSETDB{$asset}->{"OS"}}) {
+        if ($OS->[0] =~ /^SYN$/ ) {
+            $syn += 1;
+            $ctimestamp = $OS->[3] if ($OS->[3] > $ctimestamp);
+        }
+    }
+
+    if ($syn == 0) {
+        foreach my $OS (sort { $a <=> $b } (@ {$ASSETDB{$asset}->{"OS"}})) {
+            if ($OS->[0] =~ /^SYNACK$/ ) {
+                $syn += 1;
+                $ctimestamp = $OS->[3] if ($OS->[3] > $ctimestamp);
+            }
+        }
+    }
+
+    push my @return, ($ctimestamp, $syn);
+    #print "[--] Returning from check_last_os_switch\n" if $DEBUG;
+    return @return;
+}
+
 =head2 guess_asset_os
 
  Tries to guess the asset OS in an inteligent way..
@@ -421,12 +455,18 @@ sub normalize_description {
 
 sub guess_asset_os {
     my $asset = shift;
-    my ($OS, $DETAILS, $CONFIDENCE) = ("unknown", "unknown", 0);
-    push my @prefiltered, ($OS, $DETAILS, $CONFIDENCE);
+    my ($OS, $DETAILS, $CONFIDENCE, $TS, $FLUX) = ("unknown", "unknown", 0, 0, 0);
     my %countos;
     my %countdesc;
 
+    # look for latest os switch...
+    ($TS,$FLUX) = check_last_os_switch($asset);
+    # Lets look back the last 12 hours... Configurable?
+    $TS = $TS - 43200;
+
     foreach $OS (@ {$ASSETDB{$asset}->{"OS"}}) {
+        next if ($OS->[3] < $TS);
+        print "[-] " . $OS->[0] . ": " . $OS->[1] . "\n" if $DEBUG;
         if ($OS->[0] =~ /^SYNACK$/ ) {
             $countos{ $OS->[1] }{"count"} += 4;
         } elsif ($OS->[0] =~ /^SYN$/ ) {
@@ -436,41 +476,35 @@ sub guess_asset_os {
         }
     }
 
-    my ($os, $os1, $os2);
-    my $int = 0;
+    my $HighestCNT = 0;
+    my $HighestOS = [];
     for my $os (sort { $countos{$a} <=> $countos{$b} } keys %countos) {
         next if ($os =~ /unknown/ );
-        if ($int == 0) {
-            $os1 = $os;
-        } else {
-            $os2 = $os;
-            last;
+        print "[-] OS Counts: $os (" . $countos{$os}{"count"} . ")\n" if $DEBUG;
+        if ($countos{$os}{"count"} > $HighestCNT) {
+            $HighestCNT = $countos{$os}{"count"};
+            $HighestOS->[1] = $HighestOS->[0] if defined $HighestOS->[0];
+            $HighestOS->[0] = $os;
+        } elsif ($countos{$os}{"count"} == $HighestCNT) {
+            $HighestOS->[2] = $HighestOS->[1] if defined $HighestOS->[1];
+            $HighestOS->[1] = $os;
         }
-        $int +=1;
-        #print "$countos{$os}{count}\t$os\n";
     }
-    if (not defined $os1) {
-        if (not defined $os2) {
-            $OS = "unknown";
-        } else {
-            $OS = $os2;
-        }
+
+    if (not defined $HighestOS->[0]) {
+        $OS = "unknown";
     } else {
-        $OS = $os1;
+        $OS = $HighestOS->[0];
     }
     
-    return @prefiltered unless $OS;
-    return @prefiltered if ($OS =~ /unknown/);
+    push my @midfiltered, ("unknown", "unknown", 0, $TS, $FLUX);
+    return @midfiltered unless $OS;
+    return @midfiltered if ($OS =~ /unknown/);
 
-    #if ( $countos{$os1}{count} > $countos{$os2}{count} ) {
-    #    $OS = $os1;
-    #} elsif ( $countos{$os1}{count} == $countos{$os2}{count} ) {
-    #    # sort on last timestamp or something...
-    #    # in the future
-    #    $OS = $os1;
-    #}
+    print "[-] Final Guess OS: $OS\n" if $DEBUG;
 
     foreach my $DESC (@ {$ASSETDB{$asset}->{"OS"}}) {
+        next if ($DESC->[3] < $TS);
         next if not $DESC->[1] =~ /$OS/;
         if ($DESC->[0] =~ /^SYN$/) {
             $DETAILS = $DESC->[2];
@@ -483,8 +517,9 @@ sub guess_asset_os {
     }
 
     if (not defined $DETAILS) {
-        print "arrgggg\n";
+        print "[*] ERR - No details!\n" if $DEBUG;
         foreach my $DESC (@ {$ASSETDB{$asset}->{"OS"}}) {
+            next if ($DESC->[3] < $TS);
             next if not $DESC->[1] =~ /$OS/;
             if ($DESC->[0] =~ /^RST$/) {
                 $DETAILS = $DESC->[2];
@@ -498,6 +533,7 @@ sub guess_asset_os {
     }
 
     if ( not defined $OS ) {
+        print "[*] ERR - No OS!\n" if $DEBUG;
         $DETAILS = "unknown";
         $CONFIDENCE = 0;
         $OS = "unknown";
@@ -505,8 +541,10 @@ sub guess_asset_os {
         $CONFIDENCE = 20 + (10 * $countos{$OS}{count});
         $CONFIDENCE = 100 if $CONFIDENCE > 100;
     }
-    push my @filtered, ($OS, $DETAILS, $CONFIDENCE);
-    return @filtered;
+    print "[-] Final Guess Details: $DETAILS\n" if $DEBUG;
+    print "[-] Confidence: $CONFIDENCE\n" if $DEBUG;
+    push my @postfiltered, ($OS, $DETAILS, $CONFIDENCE, $TS, $FLUX);
+    return @postfiltered;
 }
 
 =head2 make_service_attributes
@@ -516,15 +554,50 @@ sub guess_asset_os {
 =cut
 
 sub make_service_attributes {
-    my ($asset, $proto, $key, $putxml) = @_;
-    my @sorted = sort {$$a[0] <=> $$b[0]} @{$ASSETDB{$asset}->{"$key"}};
+    my ($asset, $proto, $key, $putxml, $TS) = @_;
+    #my @unique = @{$ASSETDB{$asset}->{"$key"}};
+    my @servassets = sort {$$a[0] <=> $$b[0]} @{$ASSETDB{$asset}->{"$key"}};
     #$proto =~ tr/A-Z/a-z/;
+    my $PORTS = [];
+    foreach my $SA (@servassets) {
+        next if not defined $SA;
+        if ($SA->[4] < $TS) { # Skipp old assets
+            print "[##] Skipping old ASSET! " . $SA->[3] . "\n"  if $DEBUG;
+            next;
+        }
+        my ($port, $service, $services, $details, $discovered) = ($SA->[0], $SA->[1], $SA->[2], $SA->[3], $SA->[4]);
+        if ($service =~ /SERVER/) {
+            print "[#*] SERVER: $services:$port - $details" if $DEBUG;
+            if ($services =~ /unknown/ || $services =~ /^@/) {
+                print " (Skipped)\n" if $DEBUG;
+                next;
+            }
+            if (defined $PORTS->[$port]) {
+                if ($PORTS->[$port]->[4] < $discovered) {
+                    $PORTS->[$port] = $SA;
+                    print " (Updated!)\n" if $DEBUG;
+                }
+            } else {
+                $PORTS->[$port] = $SA;
+                print " (New)\n" if $DEBUG;
+            }
+        }
+    }
+    return if not defined $PORTS;
+
     my $confidence = 90;
-    foreach $_ (@sorted) {
+    my $tservices = "";
+    foreach $_ (@$PORTS) {
+        next if not defined $_;
         my ($port, $service, $services, $details, $discovered) = ($_->[0], $_->[1], $_->[2], $_->[3], $_->[4]);
         if ($service =~ /SERVER/) {
-            next if $services =~ /unknown/;
-            next if $services =~ /@/;
+            print "[#+] SERVER: $services:$port - $details (Added)\n" if $DEBUG;
+            if ($tservices eq '') {
+                $tservices = $services;
+            } else {
+                $tservices = "$tservices, $services"
+            }
+            
             my ($serv, $vers) = get_server_and_version($details);
             $putxml->startTag('SERVICE');
                 $putxml->startTag('PORT');
@@ -567,6 +640,10 @@ sub make_service_attributes {
             $putxml->endTag('SERVICE'); 
         }
     }
+    if ($VERBOSE && not $tservices eq '') {
+        print "$asset SERVICES $proto: $tservices\n";
+    }
+    #print "[--] Returned from make_server_attributes\n" if $DEBUG;
 }
 
 =head2 make_client_attributes

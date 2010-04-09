@@ -115,12 +115,16 @@ S4:64:1:48:M1460,N,W7:ZA:Linux:2.6 (newer, 7, SYN from Unknown, HP-UX?)
 5672:64:0:60:M1430,S,T,N,W6:AT:Linux:2.6 (Google)
 5392:64:1:60:M*,S,T,N,W9:ZAT:Linux:2.6 (Google mini)
 5792:64:1:56:M1460,S,T:ZAT:Linux:2.6 (Syn from Unknown)
+5792:64:1:60:M1460,S,T,N,W5:ZA:Linux:2.6 (newer, 5,SYN from Unknown)
 
 # Red Hat rhel 4uX
 # 2.6.9-55.ELsmp
-5776:64:1:56:M*,S,T:ZAT:Linux:2.6.9-5x (rhel4)
+5776:64:1:56:M*,S,T:ZAT:Linux:2.6.9 (rhel4)
 # 2.6.9-34.ELsmp
-5792:64:1:56:M*,S,T:ZAT:Linux:2.6.9-3x (rhel4)
+5792:64:1:56:M*,S,T:ZAT:Linux:2.6.9 (rhel4)
+# Red Hat rhel 5uX
+# 2.6.18-164.15.1.el5
+5792:60:1:56:M*,N,N,T:ZAT:Linux:2.6.18 (rhel5)
 
 # Astaro Security Gateway v7.xxx
 5792:64:1:56:M*,S,T:ZAT:Linux:2.6 (ASG 7)
@@ -178,6 +182,7 @@ S23:60:0:48:M*,N,W0:A:Tru64:5.0 (1)
 # ----------------- Solaris ----------------
 
 49232:64:1:64:N,N,T,M*,N,W0,N,N,S:AT:Solaris:9 (1)
+S34:63:1:52:M1460,N,W0,N,N,S:A:Solaris:9-10 (UC)
 49232:64:1:64:N,N,T,M*,N,W0,N,N,S:A:Solaris:10
 S1:255:1:60:N,N,T,N,W0,M*:AT:Solaris:7
 24656:64:1:44:M*:A:Solaris:8

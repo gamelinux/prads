@@ -67,7 +67,7 @@ S4:64:1:0:.:A:Linux:2.6
 
 ## Windows
 #*(65535):128:1:*:N,N,T:AT!:Windows:support.windows.com
-*:64:1:0:.:A:Windows:www.microsoft.com
+#*:64:1:0:.:A:Windows:www.microsoft.com
 *:128:1:0:.:A:Windows:XP
 
 
