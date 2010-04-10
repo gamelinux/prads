@@ -335,7 +335,6 @@ sub guess_asset_os {
     }
 
     if (not defined $DETAILS) {
-        print "arrgggg\n";
         foreach my $DESC (@ {$asset_storage{$asset}->{"OS"}}) {
             next if ($DESC->[3] < $TS);
             next if not $DESC->[1] =~ /$OS/;

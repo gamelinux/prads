@@ -63,13 +63,15 @@ S4:64:1:0:.:A:Linux:2.6
 
 ## Freebsd
 #8326:64:1:*:N,N,T:AT!:Freebsd:freebsd.org
-#8325:64:1:*:N,N,T:AT!:
+#8305:64:1:0:N,N,T:AT:Freebsd: (UC)
+#8325:64:1:*:N,N,T:AT!:Freebsd: (UC)
 
 ## Windows
 #*(65535):128:1:*:N,N,T:AT!:Windows:support.windows.com
 #*:64:1:0:.:A:Windows:www.microsoft.com
 *:128:1:0:.:A:Windows:XP
 
-
+# Solaris
+32806:61:1:0:N,N,T:AT:Solaris:Sun OpenStorage 7310
 
 

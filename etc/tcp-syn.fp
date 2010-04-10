@@ -387,6 +387,7 @@ S4:64:1:60:M*,S,T,N,W2:!:Linux:2.6, seldom 2.4 (arm)
 T4:64:1:60:M*,S,T,N,W2:.:Linux:2.6 (older, 5)
 
 S4:64:1:60:M*,S,T,N,W5:.:Linux:2.6 (newer, 5)
+S4:64:1:60:M*,S,T,N,W6:Z:Linux:2.6 (newer, 6)
 S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6)
 
 # added -kwy

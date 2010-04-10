@@ -37,6 +37,7 @@ S4:64:1:*:.:AFDN:Linux:2.6 arm
 
 ## Freebsd
 8326:64:1:52:N,N,T:ATFN!:Freebsd:freebsd.org
+8305:64:1:52:N,N,T:ATFN:Freebsd:7.2 (UC)
 
 ## Windows
 *:128:1:*:.:AFDN:Windows:2008 Server (UC)
@@ -50,3 +51,5 @@ S4:64:1:*:.:AFDN:Linux:2.6 arm
 
 
 
+## Solaris
+32806:61:1:52:N,N,T:ATFN:Solaris:Sun OpenStorage 7310

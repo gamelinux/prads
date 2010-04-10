@@ -211,4 +211,5 @@ S43:64:1:40:.:KA:AOL:proxy (dropped, lame)
 
 *:64:1:*:N,N,T:KATD:Linux:2.4 (?) + data (dropped, lame)
 *:64:1:*:.:KAD:FreeBSD:4.8 + data (dropped, lame)
+0:64:1:40:.:K0A:Solaris:Sun OpenStorage 7310
 
