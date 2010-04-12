@@ -60,6 +60,7 @@ our $INFILE                 = qq(/tmp/prads-asset.log);
 our $OUTFILE                = qq(hosts_attribute.xml);
 our $DEFAULTOS              = qq(linux);
 our %ASSETDB;
+our %STATS;
 
 Getopt::Long::GetOptions(
     'infile|i=s'            => \$INFILE,
@@ -216,6 +217,8 @@ sub make_attribute_table {
         my ($os,$desc,$confidence,$timestamp,$flux) = guess_asset_os($asset);
         my $details = normalize_description($os, $desc);
         my ($frag3, $stream5) = get_policy($os, $desc);
+        $STATS{'OS'}{"$os"}{'count'} ++;
+        $STATS{'OS'}{"$os"}{'confidence'} += $confidence;
         if ($os =~ /unknown/) {
             $unknowns++;
             if ($VERBOSE) {
@@ -783,12 +786,17 @@ sub print_header {
 =cut
 
 sub print_footer {
-    my $avg = ($aconfedence / $assetcnt) ;
+    my $avg = ($aconfedence / ($assetcnt - $STATS{"OS"}{"unknown"}{'count'} )) ;
     $avg =~ s/(\d{1,3})\.?.*/$1/;
     print "[*] Processed $assetcnt hosts...\n";
     print "[*] Hosts with Indication of a known OS: $knowns\n";
-    print "[*] Average confidence: $avg%\n";
-    print "[*] Hosts with unknown OS: $unknowns\n";
+    foreach my $OS (keys %{$STATS{"OS"}}) {
+        my $conf = $STATS{"OS"}{"$OS"}{'confidence'} / $STATS{"OS"}{"$OS"}{'count'};
+        $conf =~ s/(\d{1,3})\.?.*/$1/;
+        print "[--] $OS: " . $STATS{"OS"}{"$OS"}{'count'} . 
+                " ($conf%)\n";
+    }
+    print "[*] Overall average confidence: $avg%\n";
     print "[*] Done...\n\n";
 }
 
