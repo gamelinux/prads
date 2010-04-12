@@ -52,7 +52,7 @@ use Switch;
 =cut
 
 our $VERSION                = 0.11;
-our $DEBUG                  = 0;
+our $DEBUG                  = 1;
 our $VERBOSE                = 0;
 our $FORCE                  = 0;
 our $VERS                   = 0;
@@ -696,33 +696,26 @@ sub make_client_attributes {
 
 sub get_server_and_version {
     my $details = shift;
-    my ($serv, $vers) = ("test","1234");
+    my ($serv, $vers) = ("UNKNOWN","UNKNOWN");
     
     switch ($details) {
         case /Apache/ {
             $serv = "Apache";
             if ($details =~ /([.\d]+)/) {
                 $vers = $1;
-                
-            } else {
-                $vers = "unknown";
             }
         }
         case /Microsoft-IIS/ {
             $serv = "Microsoft-IIS";
             if ($details =~ /([.\d]+)/) {
                 $vers = $1;
-            } else {
-                $vers = "unknown";
             }
         }
-        case /^Server/ {
+        case /^Server:/ {
             $details =~ /Server: (.*)/;
             $serv = $1;
             if ($details =~ /([.\d]+)/) {
                 $vers = $1;
-            } else {
-                $vers = "unknown";
             }
         }
         case /Generic TLS 1\.0 SSL/ {
@@ -734,28 +727,35 @@ sub get_server_and_version {
             $serv = $1;
             if ($details =~ /([.\d]+)/) {
                 $vers = $1;
-            } else {
-                $vers = "unknown";
             }
         }
         case /Zope/ {
             $serv = "Zope";
             if ($details =~ /([.\d]+).*/) {
                 $vers = $1;
-            } else {
-                $vers = "unknown";
-            }            
+            }
         }
-        #case // {
+        #case /OpenSSL/ {
         #}
         #case // {
         #}
 
         else {
-            $vers =~ s/^(\w+)[\ :](.*)/$2/;
-            my $serv = $1;
-            if ($vers =~ /([.\d]+).*/) {
-                $vers = $1;
+            if ($details =~ /^(\w+)[\ :](.*)/ ) {
+                $serv = $1;
+                if ($details =~ /([.\d]+).*/) {
+                    $vers = $1;
+                }
+            } elsif ($details =~ /^(\w+).*/ ) {
+                $serv = $1;
+                if ($details =~ /([.\d]+).*/) {
+                    $vers = $1;
+                }
+            } else {
+                if ($details =~ /([.\d]+)/) {
+                    $vers = $1;
+                    $serv = $details;
+                }
             }
         }
     }

@@ -14,61 +14,6 @@
     vec.w[3] = 0; \
 } while (0)
 
-
-/* For prads, I guess cx_track needs to return a value, which can
- * be used for evaluating if we should do some fingerprinting
- * I suggest:
- * 0 : NEVER CHECK PACKAGE
- * 1 : Check package - (Package comes from Client)
- * 2 : Check package - (Package comes from Server)
- */
-
-/* void cx_track(uint64_t ip_src,uint16_t src_port,uint64_t ip_dst,uint16_t dst_port,
-               uint8_t ip_proto,uint16_t p_bytes,uint8_t tcpflags,time_t tstamp, int af) { */
-
-/*
-void setup_cxt_info(connection *cxt, connection *head, connection ** bucket_ptr, struct in6_addr *ip_src,
-                    uint16_t src_port, struct in6_addr *ip_dst, uint16_t dst_port,
-                    uint8_t ip_proto, uint16_t p_bytes, uint8_t tcpflags,
-                    time_t tstamp, int af)
-{
-    extern u_int64_t cxtrackerid;
-    cxtrackerid += 1;
-    if (cxt == NULL) {
-        cxt = (connection *) calloc(1, sizeof (connection));
-        *
-         * printf("[*] New connection...\n");
-         *
-        if (head != NULL) {
-            head->prev = cxt;
-        }
-
-        cxt->cxid = cxtrackerid;
-        cxt->af = af;
-        cxt->s_tcpFlags = tcpflags;
-        cxt->d_tcpFlags = 0x00;
-        cxt->s_total_bytes = p_bytes;
-        cxt->s_total_pkts = 1;
-        cxt->d_total_bytes = 0;
-        cxt->d_total_pkts = 0;
-        cxt->start_time = tstamp;
-        cxt->last_pkt_time = tstamp;
-
-        cxt->s_ip = *ip_src;
-        cxt->d_ip = *ip_dst;
-
-        cxt->s_port = src_port;
-        cxt->d_port = dst_port;
-        cxt->proto = ip_proto;
-        cxt->next = head;
-        cxt->prev = NULL;
-        *bucket_ptr = cxt;
-        return;
-    }
-    return;
-}
-*/
-
 int cx_track(struct in6_addr *ip_src, uint16_t src_port,
              struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
              uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af)
@@ -91,13 +36,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
     extern connection *bucket[BUCKET_SIZE];
     cxt = bucket[hash];
     head = cxt;
-/*
-    if (cxt == NULL) {
-        setup_cxt_info(cxt, head, &bucket[hash], ip_src, src_port, ip_dst, src_port, ip_proto,
-                       p_bytes, tcpflags, tstamp, af);
-        return 1;
-    }
-*/
+
     while (cxt != NULL) {
         if (af == AF_INET) {
             if (cxt->s_port == src_port && cxt->d_port == dst_port
@@ -171,9 +110,6 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
         cxt = cxt->next;
     }
 
-//    setup_cxt_info(cxt, head, &bucket[hash], ip_src, src_port, ip_dst, src_port, ip_proto,
-//                       p_bytes, tcpflags, tstamp, af);
-//    return 1;
     if (cxt == NULL) {
         extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
@@ -198,17 +134,6 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
 
         cxt->s_ip = *ip_src;
         cxt->d_ip = *ip_dst;
-
-        /*
-         * if (af = AF_INET) { 
-         * cxt->s_ip6.s6_addr32[1]          = 0; 
-         * cxt->s_ip6.s6_addr32[2]          = 0; 
-         * cxt->s_ip6.s6_addr32[3]          = 0; 
-         * cxt->d_ip6.s6_addr32[1]          = 0; 
-         * cxt->d_ip6.s6_addr32[2]          = 0; 
-         * cxt->d_ip6.s6_addr32[3]          = 0; 
-         * } 
-         */
 
         cxt->s_port = src_port;
         cxt->d_port = dst_port;
@@ -334,42 +259,12 @@ uint32_t make_hash(packetinfo *pi)
 }*/
 inline
 void connection_tracking(packetinfo *pi) {
-    //connection *cxt = NULL;
-    //connection *head = NULL;
     uint32_t hash;
 
     // add to packetinfo ? dont through int32 around :)
     hash = make_hash(pi);
     cxt_update(pi, hash);
     return;
-    //extern connection *bucket[BUCKET_SIZE];
-    //cxt = cxt_get_from_hash(pi, hash);
-/*    if (cxt == NULL)
-        return;
-    //head = cxt;
-    if (pi->flags & PKT_IS_FROM_CLIENT) {
-        dlog("[*] Updating src connection: %lu\n", cxt->cxid);
-        cxt_update_src(cxt, pi);
-
-    } else {
-        dlog("[*] Updating dst connection: %lu\n", cxt->cxid);
-        cxt_update_dst(cxt, pi);
-    }
-    return; */
-    /*if (cxt == NULL) {
-        cxt = (connection *) connection_alloc();
-        //cxt = (connection *) calloc(1, sizeof(connection));
-        if (head != NULL) {
-            head->prev = cxt;
-        }
-        cxt_new(cxt,pi);
-        dlog("[*] New connection: %lu\n",cxt->cxid);
-        cxt->next = head;
-        bucket[hash] = cxt;
-        return;
-    }
-    printf("[*] Error in session tracking...\n");
-    exit (1);*/
 }
 
 /*
@@ -385,8 +280,6 @@ void end_sessions()
     int xpir;
     uint32_t curcxt = 0;
     uint32_t expired = 0;
-    //extern connection *cxtbuffer, *bucket[BUCKET_SIZE];
-    //cxtbuffer = NULL;
     
     for (cxt = cxt_est_q.bot; cxt != NULL;) {
         xpir = 0;
@@ -466,9 +359,6 @@ void end_sessions()
             cxt = cxt->prev;
         }
     }
-    /*
-     * printf("Expired: %u of %u total connections:\n",expired,curcxt); 
-     */
 }
 
 void del_connection(connection * cxt, connection ** bucket_ptr)
@@ -517,7 +407,4 @@ void end_all_sessions()
             }
         }
     }
-    /*
-     * printf("Expired: %d.\n",expired); 
-     */
 }

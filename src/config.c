@@ -355,37 +355,3 @@ int brtrim (bstring string)
     return 0;
 }
 
-
-/*
-int conf_module_plugin (bstring value, int (*ptrFunc)(bstring, bstring))
-{
-    struct bstrList *list;
-
-    if (*ptrFunc == NULL)
-        return -1;
-
-    // Split line in half.  There should only be one ':'. 
-    if ((list = bsplit(value, ':')) != NULL) {
-        if (list->qty > 1) {
-            // Input processor contains an argument.
-            if ((btrim(list->entry[1])) == -1)
-                elog("warning:  'btrim' in function 'conf_module_processor' faild.");
-            if (((*ptrFunc)(list->entry[0], list->entry[1])) == -1)
-                elog("warning:  'ptrFunc' in function 'conf_module_processor' failed.");
-        } else {
-            // Input processor does not contain an argument.
-            bstring empty = bfromcstr("");
-            if (((*ptrFunc)(list->entry[0], empty)) == -1)
-                elog("warning:  'ptrFunc' in function 'conf_module_processor' failed.");
-            bdestroy(empty);
-        }
-        if (list != NULL)
-            bstrListDestroy(list);
-
-    } else {
-        elog("warning:  'split' in function 'conf_module_processor' failed.");
-    }
-
-    return 0;
-}
-*/

@@ -206,10 +206,6 @@ short update_asset_os (
 os_update:
     tmp_oa = pi->asset->os;
     head_oa = pi->asset->os;
-    //printf("[*] FOUND ASSET\n");
-    //dlog("[%lu] Incoming asset, %s: %u:%u [%s]\n",
-    //     tstamp, (char*)bdata(detection),ip_addr.s6_addr32[0],ntohs(port),(char*)bdata(raw_fp));
-
     pi->asset->last_seen = pi->pheader->ts.tv_sec;    
 
     while (tmp_oa != NULL) {
@@ -218,19 +214,13 @@ os_update:
                 // old style save-the-fp-string OS detection
                 if (biseq(raw_fp, tmp_oa->raw_fp) == 1) {
                     /* Found! */
-                    // tmp_oa->detection = detection; // ok we just checked
-
                     // FIXME: inefficient string copies
                     bdestroy(tmp_oa->raw_fp);
                     tmp_oa->raw_fp = bstrcpy(raw_fp);
-
                     //tmp_sa->i_attempts++;
                     tmp_oa->port = PI_TCP_SP(pi);
                     tmp_oa->last_seen = pi->pheader->ts.tv_sec;
                     if (uptime) tmp_oa->uptime = uptime;
-                    //static char ip_addr_s[INET6_ADDRSTRLEN];
-                    //u_ntop(ip_addr, af, ip_addr_s);
-                    //dlog("[*] asset %s fp update %16s\n", bdata(detection), ip_addr_s);
                     return SUCCESS;
                 }
             }else if (match){
@@ -324,9 +314,7 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
 
 service_update:
 
-    //dlog("Incomming Asset: %d:%d:%d\n",ip_addr.s6_addr32[0],port,proto);
     /* Find asset within linked list */
-    //printf("[*] FOUND ASSET\n");
     tmp_sa = head_sa = pi->asset->services;
     pi->asset->last_seen = pi->pheader->ts.tv_sec;    
 
@@ -344,10 +332,6 @@ service_update:
              *  and the service registered in the service_asset starts with '@', discard it and
              *  register the new asset!
              */
-//            if (!(biseq(UNKNOWN, application) == 1)
-//                &&
-//                (biseq(UNKNOWN, tmp_sa->application))
-//                == 1) {
             if ((application->data[0] != '@') && (tmp_sa->application->data[0] == '@')) {
                 tmp_sa->i_attempts = 0;
                 bdestroy(tmp_sa->service);
@@ -490,10 +474,6 @@ arp_update:
         memcpy(&pi->asset->mac_addr, arp_sha, MAC_ADDR_LEN);
         pi->asset->last_seen = pi->pheader->ts.tv_sec;
         log_asset_arp(pi->asset);
-        /* For verbos sanity checking */
-        //static char ip_addr_s[INET6_ADDRSTRLEN];
-        //inet_ntop(AF_INET, &ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-        //dlog("[*] added mac address to asset: %s\n",ip_addr_s);
         return SUCCESS;
     }
 }

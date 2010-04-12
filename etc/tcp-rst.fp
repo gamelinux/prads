@@ -187,6 +187,8 @@ S43:64:1:40:.:KA:AOL:proxy (dropped, lame)
 1:64:1:40:.:KA:Linux:2.4/2.6 (dropped, lame)
 1:64:1:52:N,N,T:KAT:Linux:2.6 (dropped, lame)
 63:64:1:40:.:KA:Linux:2.4 (newer) mips
+54:64:1:*:N,N,T:KAT:2.6 (dropped, lame) (UC)
+S2:64:1:*:.:KA:Linux:2.6 (dropped, lame) (UC)
 #*:64:1:40:.:KA:FreeBSD:4.8 (dropped, lame)
 #*:64:1:52:N,N,T:KAT:Linux:2.4 (dropped, lame)
 0:255:0:40:.:KAF:3Com:SuperStack II (dropped, lame)
