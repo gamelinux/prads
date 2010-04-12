@@ -69,6 +69,8 @@ http,v/Apache AdvancedExtranetServer/$1/$2/,Server: Apache-AdvancedExtranetServe
 http,v/IBM HTTP Server/$1/$2/,Server: IBM_HTTP_Server\/([\S]+) ([\S]+)
 http,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
 http,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
+http,v/nginx/$1//Server: nginx\/([\S]+)
+http,v/lighttpd/$1//Server: lighttpd/([\S]+)
 #http,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 #http,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 #Need to polish the Zope sig - this is just the raw string:
@@ -200,3 +202,9 @@ munin,v/Munin Node/$1//, munin node at (.*)
 
 # Subversion
 svn,v/Subversion server http///,\( success \( 2 2 \( \) \( edit-pipeline svndiff1 absent-entries commit-revprops depth log-revprops partial-replay \) \) \)
+
+# NNTP
+nntp,v/nnrpd-indi///,^200 The server welcomes .*. Authorization required for reading and posting.
+nntp,v/InterNetNews NNRP/$2//,^200 (.*) InterNetNews NNRP server INN ([.\d]+)
+#nntp,v/nnrpd-indi///,^281 Authentication accepted. \(UID=[\d]+\)
+

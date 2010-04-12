@@ -602,6 +602,7 @@ sub make_service_attributes {
             }
             
             my ($serv, $vers) = get_server_and_version($details);
+            $STATS{'SERVICE'}{"$serv"}{'count'} ++;
             $putxml->startTag('SERVICE');
                 $putxml->startTag('PORT');
                     $putxml->startTag('ATTRIBUTE_VALUE');
@@ -735,9 +736,13 @@ sub get_server_and_version {
                 $vers = $1;
             }
         }
-        #case /OpenSSL/ {
-        #}
-        #case // {
+        case /Remote Desktop Protocol/ {
+            $serv = "RDP";
+            if ($details =~ /\((.*)\)/) {
+                $vers = $1;
+            }
+        }
+        #case /SMTP|HTTP|.../ {
         #}
 
         else {
@@ -796,7 +801,11 @@ sub print_footer {
         print "[--] $OS: " . $STATS{"OS"}{"$OS"}{'count'} . 
                 " ($conf%)\n";
     }
-    print "[*] Overall average confidence: $avg%\n";
+    print "[*] Overall average OS confidence: $avg%\n";
+    # $STATS{'SERVICE'}{"$serv"}{'count'}
+    foreach my $SRV (keys %{$STATS{"SERVICE"}}) {
+        print "[--] $SRV: " . $STATS{"SERVICE"}{"$SRV"}{'count'} . "\n";
+    }
     print "[*] Done...\n\n";
 }
 
