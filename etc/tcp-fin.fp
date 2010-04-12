@@ -24,15 +24,21 @@
 ## Linux
 #smallvalue(500>):54:1:52:N,N,T0:ATFN
 #*:64:1:52:N,N,T:ATFN:Linux:2.6
+14:64:1:52:N,N,T:ATFN:Linux:2.6
 46:64:1:52:N,N,T:ATFN:Linux:2.6
 54:64:1:52:N,N,T:ATFN:Linux:2.6
+62:60:1:52:N,N,T:ATFN:Linux:2.6
+80:64:1:52:N,N,T:ATFN:Linux:2.6
+91:64:1:52:N,N,T:ATFN:Linux:2.6
 108:64:1:52:N,N,T:ATFN:Linux:2.6
+159:64:1:52:N,N,T:ATFN:Linux:2.6
 216:64:1:52:N,N,T:ATFN:Linux:2.6
-14:64:1:52:N,N,T:ATFN:Linux:2.6 (newer)
 
 S4:64:1:*:.:AFDN:Linux:2.6 arm
 
 32736:64:1:40:.:AFN:Linux:2.0
+
+#54:64:1:*:N,N,T:ATFDN:Linux:Nagios
 
 
 ## Freebsd
@@ -52,4 +58,4 @@ S4:64:1:*:.:AFDN:Linux:2.6 arm
 
 
 ## Solaris
-32806:61:1:52:N,N,T:ATFN:Solaris:Sun OpenStorage 7310
+32806:64:1:52:N,N,T:ATFN:Solaris:Sun OpenStorage 7310

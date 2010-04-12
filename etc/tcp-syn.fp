@@ -426,7 +426,7 @@ T4:64:1:60:M1412,S,T,N,W0:.:Linux:2.4 (rare!)
 
 S4:64:1:60:S,T,M1460,N,W1:.:Linux:2.6.27 (Android 1.5)
 S4:64:1:60:M*,N,N,T,N,W4:.:Linux:2.6.28 Maemo 5 (Nokia N900)
-S44:69:1:64:M1460,N,N,T,N,W0,N,N,S:.:Nokia:E71 Mobile (UC)
+S44:70:1:64:M1460,N,N,T,N,W0,N,N,S:.:Nokia:E71 Mobile (UC)
 S4:64:1:52:M*,N,N,S,N,W1:.:Linux:2.6 OpenWRT (UC) Kacper confirm
 
 # Generic *Linux* sigs
