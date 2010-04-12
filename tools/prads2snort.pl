@@ -52,7 +52,7 @@ use Switch;
 =cut
 
 our $VERSION                = 0.11;
-our $DEBUG                  = 1;
+our $DEBUG                  = 0;
 our $VERBOSE                = 0;
 our $FORCE                  = 0;
 our $VERS                   = 0;
