@@ -74,7 +74,7 @@ while (<REPORT>) {
 
     R_REPORT: {
         # asset,vlan,port,proto,service,[service-info],distance,discovered
-        /^([\d\.:]+),([\d]{1,4}),([\d]{1,5}),([\d]{1,3}),(\S+?),\[(.*)\],([\d]{1,3}),(\d{10})/ && do {
+        /^([\w\.:]+),([\d]{1,4}),([\d]{1,5}),([\d]{1,3}),(\S+?),\[(.*)\],([\d]{1,3}),(\d{10})/ && do {
         ($sip, $vlan, $sport, $proto, $service, $s_info, $distance, $discovered) = ($1, $2, $3, $4, $5, $6, $7, $8);
 
         $asset=$_;

@@ -52,7 +52,7 @@ use Switch;
 =cut
 
 our $VERSION                = 0.11;
-our $DEBUG                  = 0;
+our $DEBUG                  = 1;
 our $VERBOSE                = 0;
 our $FORCE                  = 0;
 our $VERS                   = 0;
@@ -105,7 +105,7 @@ sub parse_asset_file {
     
         R_REPORT: {
             # asset,vlan,port,proto,service,[service-info],distance,discovered
-            /^([\d\.:]+),([\d]{1,4}),([\d]{1,5}),([\d]{1,3}),(\S+?),\[(.*)\],([\d]{1,3}),(\d{10})/ && do {
+            /^([\w\.:]+),([\d]{1,4}),([\d]{1,5}),([\d]{1,3}),(\S+?),\[(.*)\],([\d]{1,3}),(\d{10})/ && do {
             my ($sip, $vlan, $sport, $proto, $service, $s_info, $distance, $discovered) = ($1, $2, $3, $4, $5, $6, $7, $8);
     
             my $asset=$_;
@@ -791,18 +791,26 @@ sub print_header {
 =cut
 
 sub print_footer {
+    if ((not defined $assetcnt) || ($assetcnt == 0)) {
+        print "[*] No assets found!\n";
+        exit 0;
+    }
+    $STATS{"OS"}{"unknown"}{'count'} = 0 if not defined $STATS{"OS"}{"unknown"}{'count'};
     my $avg = ($aconfedence / ($assetcnt - $STATS{"OS"}{"unknown"}{'count'} )) ;
     $avg =~ s/(\d{1,3})\.?.*/$1/;
     print "[*] Processed $assetcnt hosts...\n";
     print "[*] Hosts with Indication of a known OS: $knowns\n";
     foreach my $OS (keys %{$STATS{"OS"}}) {
+        next if not defined $STATS{"OS"}{"$OS"}{'count'};
+        next if $STATS{"OS"}{"$OS"}{'count'} == 0;
+        next if not defined $STATS{"OS"}{"$OS"}{'confidence'};
+        next if $STATS{"OS"}{"$OS"}{'confidence'} == 0;
         my $conf = $STATS{"OS"}{"$OS"}{'confidence'} / $STATS{"OS"}{"$OS"}{'count'};
         $conf =~ s/(\d{1,3})\.?.*/$1/;
         print "[--] $OS: " . $STATS{"OS"}{"$OS"}{'count'} . 
                 " ($conf%)\n";
     }
     print "[*] Overall average OS confidence: $avg%\n";
-    # $STATS{'SERVICE'}{"$serv"}{'count'}
     foreach my $SRV (keys %{$STATS{"SERVICE"}}) {
         print "[--] $SRV: " . $STATS{"SERVICE"}{"$SRV"}{'count'} . "\n";
     }
