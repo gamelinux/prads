@@ -23,8 +23,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-my $version	= '0.1';
-my $date	= '2010-03-05';
+my $version	= '0.2';
+my $date	= '2010-04-14';
 
 # ---------------------------------------------------------------------
 #use strict;
@@ -35,7 +35,7 @@ eval("use Socket"); die "[!] ERROR:  Socket module must be insalled!\n" if $@;
 use vars qw ($opt_h $opt_r $opt_w $opt_n $opt_p);
 
 # Variable Declarations
-my $report_file		= "/tmp/prads-asset.log";
+my $report_file		= "/var/log/prads-asset.log";
 
 # Data Structure:
 # %asset_storage = (
@@ -51,11 +51,12 @@ my %asset_storage	= ();
 # Parse Command Line
 GetOptions(
     'r=s'   => \$opt_r,
-	'w=s'   => \$opt_w,
-	'n'     => \$opt_n,
-	'p'     => \$opt_p,
-	'h|?'   => \$opt_h,
-	'help'  => \$opt_h
+    'w=s'   => \$opt_w,
+    'n'     => \$opt_n,
+    'p'     => \$opt_p,
+    'i=s'   => \$opt_i,
+    'h|?'   => \$opt_h,
+    'help'  => \$opt_h
 );
 usage() if $opt_h;
 $report_file = $opt_r if ($opt_r);
@@ -77,6 +78,9 @@ while (<REPORT>) {
         /^([\w\.:]+),([\d]{1,4}),([\d]{1,5}),([\d]{1,3}),(\S+?),\[(.*)\],([\d]{1,3}),(\d{10})/ && do {
         ($sip, $vlan, $sport, $proto, $service, $s_info, $distance, $discovered) = ($1, $2, $3, $4, $5, $6, $7, $8);
 
+        if ($opt_i) {
+            next if not $opt_i eq $sip;
+        }
         $asset=$_;
         $os = $details = "";
 
@@ -421,11 +425,12 @@ sub check_ip {
 # --------------------------------------------
 sub usage {
     print <<__EOT__;
-Usage:
--r <file>	: PRADS Raw Report File
--w <file>	: Output file
--n		: Do not convert IP addresses to names.
--p		: Do not convert RFC 1918 IP addresses to names.
+ Usage:
+  -r <file>   : PRADS Raw Report File
+  -w <file>   : Output file
+  -i <IP>     : Just get info for this IP
+  -n          : Do not convert IP addresses to names.
+  -p          : Do not convert RFC 1918 IP addresses to names.
 
 __EOT__
     exit;
@@ -436,9 +441,10 @@ __EOT__
 # --------------------------------------------
 sub print_header {
     print <<__EOT__;
-prads-asset-report - PRADS Text Reporting Module
-$version - $date
-Edward Fjellskaal <edward\@redpill-linpro.com>
+\n prads-asset-report - PRADS Text Reporting Module
+ $version - $date
+ Edward Fjellskaal <edward\@redpill-linpro.com>
+ http://prads.projects.linpro.no/
 
 __EOT__
 }
