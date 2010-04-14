@@ -988,6 +988,7 @@ static void usage()
     printf(" OPTIONS:\n");
     printf("\n");
     printf(" -i             : network device (default: eth0)\n");
+    printf(" -r             : read pcap file\n");
     printf(" -c             : prads config file\n");
     printf(" -b             : berkeley packet filter\n");
     //printf(" -d             : path to logdir\n");
@@ -1030,7 +1031,7 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
-    while ((ch = getopt(argc, argv, "c:b:d:Dg:hi:p:P:u:va:")) != -1)
+    while ((ch = getopt(argc, argv, "c:b:d:Dg:hi:p:r:P:u:va:")) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
@@ -1040,6 +1041,9 @@ int main(int argc, char *argv[])
             break;
         case 'i':
             config.dev = strdup(optarg);
+            break;
+        case 'r':
+            config.pcap_file = blk2bstr(optarg, strlen(optarg));
             break;
         case 'b':
             config.bpff = strdup(optarg);
@@ -1075,11 +1079,6 @@ int main(int argc, char *argv[])
             exit(1);
             break;
         }
-
-    if (getuid()) {
-        printf("[*] You must be root..\n");
-        return (1);
-    }
 
     parse_config_file(pconfile);
     init_logging();
@@ -1139,46 +1138,60 @@ int main(int argc, char *argv[])
     //load_servicefp_file(4,"../etc/udp-client.sig");
     init_services();
 
-    /*
-     * look up an available device if non specified
-     */
-    if (config.dev == 0x0)
-        config.dev = pcap_lookupdev(config.errbuf);
-    printf("[*] Device: %s\n", config.dev);
+    if (config.pcap_file) {
+        /* Read from PCAP file specified by '-r' switch. */
+        printf("[*] Reading from file %s\n", bdata(config.pcap_file));
+        if (!(config.handle = pcap_open_offline(bdata(config.pcap_file), config.errbuf))) {
+            printf("[*] Unable to open %s.  (%s)", bdata(config.pcap_file), config.errbuf);
+        }
+    } else {
 
-    if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
-        printf("[*] Error pcap_open_live: %s \n", config.errbuf);
-        exit(1);
-    } else if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
-        printf("[*] Error pcap_compile user_filter: %s\n",
-               pcap_geterr(config.handle));
-        exit(1);
+        if (getuid()) {
+            printf("[*] You must be root..\n");
+            return (1);
+        }
+    
+        /*
+         * look up an available device if non specified
+         */
+        if (config.dev == 0x0)
+            config.dev = pcap_lookupdev(config.errbuf);
+        printf("[*] Device: %s\n", config.dev);
+    
+        if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
+            printf("[*] Error pcap_open_live: %s \n", config.errbuf);
+            exit(1);
+        } else if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
+            printf("[*] Error pcap_compile user_filter: %s\n",
+                   pcap_geterr(config.handle));
+            exit(1);
+        }
+    
+        pcap_setfilter(config.handle, &config.cfilter);
+    
+        /*
+         * B0rk if we see an error...
+         */
+        if (strlen(config.errbuf) > 0) {
+            printf("[*] Error errbuf: %s \n", config.errbuf);
+            exit(1);
+        }
+    
+        if (config.daemon_flag) {
+            if (!is_valid_path(config.pidpath))
+                printf
+                    ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
+            openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
+            printf("[*] Daemonizing...\n\n");
+            daemonize(NULL);
+        }
+    
+        if (config.drop_privs_flag) {
+            printf("[*] Dropping privs...\n\n");
+            drop_privs();
+        }
     }
-
-    pcap_setfilter(config.handle, &config.cfilter);
-
-    /*
-     * B0rk if we see an error...
-     */
-    if (strlen(config.errbuf) > 0) {
-        printf("[*] Error errbuf: %s \n", config.errbuf);
-        exit(1);
-    }
-
-    if (config.daemon_flag) {
-        if (!is_valid_path(config.pidpath))
-            printf
-                ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
-        openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
-        printf("[*] Daemonizing...\n\n");
-        daemonize(NULL);
-    }
-
-    if (config.drop_privs_flag) {
-        printf("[*] Dropping privs...\n\n");
-        drop_privs();
-    }
-
+ 
     bucket_keys_NULL();
     alarm(CHECK_TIMEOUT);
 
