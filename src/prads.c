@@ -1143,7 +1143,8 @@ int main(int argc, char *argv[])
         printf("[*] Reading from file %s\n", bdata(config.pcap_file));
         if (!(config.handle = pcap_open_offline(bdata(config.pcap_file), config.errbuf))) {
             printf("[*] Unable to open %s.  (%s)", bdata(config.pcap_file), config.errbuf);
-        }
+        } 
+
     } else {
 
         if (getuid()) {
@@ -1161,13 +1162,11 @@ int main(int argc, char *argv[])
         if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
             printf("[*] Error pcap_open_live: %s \n", config.errbuf);
             exit(1);
-        } else if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
-            printf("[*] Error pcap_compile user_filter: %s\n",
-                   pcap_geterr(config.handle));
-            exit(1);
-        }
-    
-        pcap_setfilter(config.handle, &config.cfilter);
+        } //else if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
+          //  printf("[*] Error pcap_compile user_filter: %s\n",
+          //         pcap_geterr(config.handle));
+          //  exit(1);
+        //}
     
         /*
          * B0rk if we see an error...
@@ -1195,11 +1194,21 @@ int main(int argc, char *argv[])
     bucket_keys_NULL();
     alarm(CHECK_TIMEOUT);
 
+    if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
+            printf("[*] Error pcap_compile user_filter: %s\n", pcap_geterr(config.handle));
+            exit(1);
+    }
+
+    if (pcap_setfilter(config.handle, &config.cfilter)) {
+            printf("[*] Unable to set pcap filter!  %s", pcap_geterr(config.handle));
+    }
+
     cxt_init();
     printf("[*] Sniffing...\n\n");
     pcap_loop(config.handle, -1, got_packet, NULL);
 
-    pcap_close(config.handle);
+    game_over();
+    //pcap_close(config.handle);
     return (0);
 }
 
