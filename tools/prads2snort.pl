@@ -56,7 +56,7 @@ our $DEBUG                  = 1;
 our $VERBOSE                = 0;
 our $FORCE                  = 0;
 our $VERS                   = 0;
-our $INFILE                 = qq(/tmp/prads-asset.log);
+our $INFILE                 = qq(/var/log/prads-asset.log);
 our $OUTFILE                = qq(hosts_attribute.xml);
 our $DEFAULTOS              = qq(linux);
 our %ASSETDB;
