@@ -71,6 +71,7 @@ http,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
 http,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
 http,v/nginx/$1//Server: nginx\/([\S]+)
 http,v/lighttpd/$1//Server: lighttpd/([\S]+)
+http,v/TwistedWeb/$1//Server: TwistedWeb/([\S]+)[\r\n]
 #http,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 #http,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 #Need to polish the Zope sig - this is just the raw string:
