@@ -69,9 +69,9 @@ http,v/Apache AdvancedExtranetServer/$1/$2/,Server: Apache-AdvancedExtranetServe
 http,v/IBM HTTP Server/$1/$2/,Server: IBM_HTTP_Server\/([\S]+) ([\S]+)
 http,v/Boa Web Server/$1//,Server: Boa\/([\S]+)
 http,v/Netscape Enterprise/$1/AOL/,Server: Netscape-Enterprise\/([\S]+) AOL
-http,v/nginx/$1//Server: nginx\/([\S]+)
-http,v/lighttpd/$1//Server: lighttpd/([\S]+)
-http,v/TwistedWeb/$1//Server: TwistedWeb/([\S]+)[\r\n]
+http,v/nginx/$1//,Server: nginx\/([\S]+)
+http,v/lighttpd/$1//,Server: lighttpd/([\S]+)
+http,v/TwistedWeb/$1//,Server: TwistedWeb/([\S]+)[\r\n]
 #http,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 #http,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 #Need to polish the Zope sig - this is just the raw string:
@@ -82,7 +82,7 @@ http,v/Squid/$1//,Server: squid\/([\S]+)[\r\n]
 http,v/Varnish/$1//,Via: ([\S]+)varnish[\r\n]
 
 # X-SOAP-Server: NuSOAP/0.7.2 (1.94)
-#http,v/NuSOAP/$1/$2/X-SOAP-Server: NuSOAP\/([.\d]+) \(([.\d]+)\)
+#http,v/NuSOAP/$1/$2/,X-SOAP-Server: NuSOAP\/([.\d]+) \(([.\d]+)\)
 # Fallback http Signature
 #http,v/Unknown HTTP//$1/,^(HTTP/\d.\d)
 
