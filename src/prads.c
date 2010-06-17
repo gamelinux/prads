@@ -1016,7 +1016,7 @@ int main(int argc, char *argv[])
     memset(&config, 0, sizeof(globalconfig));
     int ch = 0;
     set_default_config_options();
-    bstring pconfile = bfromcstr("../etc/prads.conf");
+    bstring pconfile = bfromcstr(CONFDIR "prads.conf");
     //parse_config_file(pconfile);
     //init_logging();
     //bdestroy (pconfile);

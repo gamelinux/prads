@@ -2,7 +2,7 @@
 #CC=gcc
 LDFLAGS=-lpcap -lpcre
 CONFDIR=../etc
-CFLAGS=-O3 -DCONFDIR='"${CONFDIR}"'
+CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
