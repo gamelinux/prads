@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>
 Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>
-Build-Depends: debhelper (>= 7) libpcap-dev libpcre3-dev
+Build-Depends: debhelper (>= 7), libpcap-dev, libpcre3-dev
 Standards-Version: 3.7.3
 Homepage: http://gamelinux.github.com/prads/
 Vcs-Git: git://github.com/gamelinux/prads.git
@@ -11,7 +11,7 @@ Vcs-Browser: http://github.com/gamelinux/prads/tree/master
 
 Package: prads
 Architecture: any
-Depends: libpcap0.8 libpcre3
+Depends: libpcap0.8, libpcre3
 Description: Passive Real-time Asset Detection System
  prads is a "Passive Real-time Asset Detection System".  It passively
  listen to network traffic and gathers information on hosts and
