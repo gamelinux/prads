@@ -1,0 +1,26 @@
+This package was debianized by Kacper Wysocki <kwy@redpill-linpro.com> on
+Wed, 20 May 2009 14:10:12 +0200.
+
+It was downloaded from http://gamelinux.github.com/prads/
+
+Upstream Author(s):
+
+    Edward Fjellskål <edward@redpill-linpro.com>
+    Jan Henning Thorsen <jht@linpro.no>
+    Kacper Wysocki <kwy@redpill-linpro.com>
+
+Copyright:
+
+    Copyright (C) 2009 Edward Fjellskål
+    Copyright (C) 2009 Jan Henning Thorsen
+    Copyright (C) 2009 Kacper Wysocki
+
+License:
+
+    This library is free software, you can redistribute it and/or modify it under the same terms as Perl itself.
+
+The Debian packaging is (C) 2009, Kacper Wysocki <kwy@redpill-linpro.com> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+
+The various included signature files are (C) their respective authors.
+

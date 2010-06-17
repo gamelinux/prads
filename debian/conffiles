@@ -1,0 +1,8 @@
+/etc/prads/prads.conf
+/etc/prads/os.fp
+/etc/prads/osa.fp
+/etc/prads/mtu.sig
+/etc/prads/mac.sig
+/etc/prads/tcp-clients.sig
+/etc/prads/tcp-service.sig
+/etc/prads/udp-service.sig
