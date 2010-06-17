@@ -67,7 +67,7 @@ binary-arch: build install
 	dh_install
 #	dh_installinit
 #	dh_installcron
-	dh_installman docs/prads.1.gz
+	dh_installman doc/prads.1.gz
 	dh_link
 	dh_strip
 	dh_compress
