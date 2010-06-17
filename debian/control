@@ -11,7 +11,7 @@ Vcs-Browser: http://github.com/gamelinux/prads/tree/master
 
 Package: prads
 Architecture: any
-Depends: ${shlib:Depends}, ${misc:Depends}, libpcap0.8, libpcre3
+Depends: ${shlibs:Depends}, ${misc:Depends}, libpcap0.8, libpcre3
 Description: Passive Real-time Asset Detection System
  prads is a "Passive Real-time Asset Detection System".  It passively
  listen to network traffic and gathers information on hosts and
