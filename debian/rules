@@ -62,7 +62,7 @@ binary-arch: build install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs 
-	dh_installdocs
+	dh_installdocs --exclude=INSTALL --exclude=LICENSE
 	dh_installexamples
 	dh_install
 #	dh_installinit
