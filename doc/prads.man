@@ -1,0 +1,80 @@
+=========
+ PRADS
+=========
+
+---------------------------------------------
+Passive Real-time Asset Detection System
+---------------------------------------------
+
+:Author: edwardfjellskaal@gmail.com
+:Date:   2010-06-17
+:Copyright: public domain
+:Version: 0.1
+:Manual section: 1
+:Manual group: Networking
+
+.. TODO: authors and author with name <email>
+
+SYNOPSIS
+========
+
+  prads -i eth1 -v
+
+DESCRIPTION
+===========
+
+Is a Passive Real-time Asset Detection System.
+It passively listen to network traffic and gathers information
+on hosts and services it sees on the network. This information
+can be used to map your network, letting you know what services
+and hosts are alive/used, or can be used together with your
+favorite IDS/IPS setup for "event to host/service" correlation.
+
+Gathering info about your hosts in real-time, will also let you
+detect assets that are just connected to the network for a short
+period of time, where a active network scan (nmap etc.) would take
+long time, and not common to run continually, hence missing the asset. 
+
+The initial goal of implementing PRADS, was to make the
+host_attribute_table.xml for Snort (automatically) and to add more
+info into the Sguil application. The list of useful stuff that
+PRADS can be used for is growing all the time. PRADS aims to be the
+one-stop-shop for passive asset detection. If you can detect it
+passively, PRADS should have it implemented! 
+
+OPTIONS
+=======
+
+ -i             : network device (default: eth0)
+ -r             : read pcap file
+ -c             : prads config file
+ -b             : berkeley packet filter
+ -u             : user
+ -g             : group
+ -D             : enables daemon mode
+ -h             : this help message
+ -v             : verbose
+ -a             : home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0')
+
+PROBLEMS
+========
+
+1. None
+
+SEE ALSO
+========
+
+* `PRADS <http://prads.projects.linpro.no/>`__
+* `p0f <http://lcamtuf.coredump.cx/p0f.shtml>`__
+* `PADS <http://passive.sourceforge.net/>`__
+
+BUGS
+====
+
+- Report bugs here:
+* http://github.com/gamelinux/prads/issues
+
+- For general questions:
+* http://projects.linpro.no/mailman/listinfo/prads-devel 
+* http://projects.linpro.no/mailman/listinfo/prads-users
+
