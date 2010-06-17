@@ -27,7 +27,7 @@ build-stamp: configure-stamp
 	dh_testdir
 
 	# Add here commands to compile the package.
-	#$(MAKE)
+	$(MAKE)
 	#docbook-to-man debian/prads.sgml > prads.1
 
 	touch $@
