@@ -5,12 +5,22 @@ MANDIR=${PREFIX}/share/man/man1
 
 build:
 	@echo "You need libpcre-dev and libpcap-dev to compile this program."
-	${MAKE} -C src/
+	${MAKE} CONFDIR=${CONFDIR} -C src/
 
 clean:
 	${MAKE} -C src/ $@
+	rm -f doc/prads.1 doc/prads.1.gz
 
-install: 
+.PHONY: man
+man: doc/prads.1.gz
+
+doc/prads.1.gz: doc/prads.1
+	@>$@<$< gzip -9
+
+doc/prads.1: doc/prads.man
+	rst2man $< >$@
+
+install: man
 	# binary
 	install -d ${DESTDIR}${BINDIR}
 	install -m 755 -o root -g root src/prads ${DESTDIR}${BINDIR}/prads

@@ -987,17 +987,17 @@ static void usage()
     printf("\n");
     printf(" OPTIONS:\n");
     printf("\n");
-    printf(" -i             : network device (default: eth0)\n");
-    printf(" -r             : read pcap file\n");
-    printf(" -c             : prads config file\n");
-    printf(" -b             : berkeley packet filter\n");
-    //printf(" -d             : path to logdir\n");
-    printf(" -u             : user\n");
-    printf(" -g             : group\n");
-    printf(" -D             : enables daemon mode\n");
-    printf(" -h             : this help message\n");
-    printf(" -v             : verbose\n");
-    printf(" -a             : home nets (eg: '87.238.44.0/25,10.0.0.0/255.0.0.0')\n\n");
+    printf(" -i <iface>      Network device <iface> (default: eth0).\n");
+    printf(" -r <file>       Read pcap <file>.\n");
+    printf(" -c <file>       Read config from <file>\n");
+    printf(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
+    //printf(" -d            to logdir\n");
+    printf(" -u <user>       Run as user <user>.\n");
+    printf(" -g <group>      Run as group <group>.\n");
+    printf(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
+    printf(" -D              Enables daemon mode.\n");
+    printf(" -h              This help message.\n");
+    printf(" -v              Verbose.\n");
 }
 
 int preallocate_cxt (void)

@@ -86,13 +86,13 @@ void set_default_config_options()
     // default source net owns everything
     config.s_net   = "0.0.0.0/0,::/0";
     config.errbuf[0] = '\0';
-    config.configpath = "../etc/";
+    config.configpath = CONFDIR "";
     // files should be relative to configpath somehow
-    config.sig_file_syn = "../etc/tcp-syn.fp";
-    config.sig_file_synack = "../etc/tcp-synack.fp";
-    config.sig_file_ack = "../etc/tcp-stray-ack.fp";
-    config.sig_file_fin = "../etc/tcp-fin.fp";
-    config.sig_file_rst = "../etc/tcp-rst.fp";
+    config.sig_file_syn = CONFDIR "tcp-syn.fp";
+    config.sig_file_synack = CONFDIR "tcp-synack.fp";
+    config.sig_file_ack = CONFDIR "tcp-stray-ack.fp";
+    config.sig_file_fin = CONFDIR "tcp-fin.fp";
+    config.sig_file_rst = CONFDIR "tcp-rst.fp";
     config.sig_syn = NULL;
     config.sig_synack = NULL;
     config.sig_ack = NULL;
