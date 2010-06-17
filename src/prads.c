@@ -1135,10 +1135,10 @@ int main(int argc, char *argv[])
     display_config();
 
     // should be config file too
-    load_servicefp_file(1, "../etc/tcp-service.sig");
-    load_servicefp_file(2, "../etc/udp-service.sig");
-    load_servicefp_file(3, "../etc/tcp-clients.sig");
-    //load_servicefp_file(4,"../etc/udp-client.sig");
+    load_servicefp_file(1, CONFDIR "tcp-service.sig");
+    load_servicefp_file(2, CONFDIR "udp-service.sig");
+    load_servicefp_file(3, CONFDIR "tcp-clients.sig");
+    //load_servicefp_file(4, CONFDIR "udp-client.sig");
     init_services();
 
     if (config.pcap_file) {

@@ -173,7 +173,7 @@
 #define STDBUF                         1024
 
 #define INSTALL_SYSCONFDIR             ""
-#define TCP_SIGNATURE_LIST             "/../etc/tcp-service.sig"
+#define TCP_SIGNATURE_LIST             CONFDIR "tcp-service.sig"
 
 #define MAX_APP                        100
 #define MAX_VER                        25
