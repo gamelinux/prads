@@ -1,7 +1,8 @@
 #Makefile
 #CC=gcc
 LDFLAGS=-lpcap -lpcre
-CFLAGS=-O3 
+CONFDIR=../etc
+CFLAGS=-O3 -DCONFDIR='"${CONFDIR}"'
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
