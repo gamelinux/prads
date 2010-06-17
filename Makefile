@@ -1,6 +1,7 @@
 PREFIX=/usr/local
 BINDIR=${PREFIX}/bin
 CONFDIR=${PREFIX}/etc/prads
+MANDIR=${PREFIX}/share/man/man1
 
 build:
 	@echo "You need libpcre-dev and libpcap-dev to compile this program."
@@ -48,5 +49,6 @@ install: man
 	install -m 644 -o root -g root etc/web-application.sig ${DESTDIR}${CONFDIR}/
 	# ports 
 	install -m 644 -o root -g root etc/udp.ports ${DESTDIR}${CONFDIR}/
+	install -m 644 -o root -g root doc/prads.1.gz ${DESTDIR}${MANDIR}/
 
 .PHONY: build clean install
