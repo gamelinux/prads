@@ -65,7 +65,7 @@ int load_servicefp_file(int storage, char *sigfile)
      * Check for a PADS_SIGNATURE_LIST file within the current directory.  
      */
     if ((fp = fopen(TCP_SIGNATURE_LIST, "r")) != NULL) {
-        filename = bformat("./%s", sigfile);
+        filename = bformat("%s", sigfile);
         fclose(fp);
     } else {
         filename = bformat(sigfile);
