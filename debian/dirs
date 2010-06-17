@@ -1,4 +1,4 @@
 etc/prads
 usr/sbin
-usr/share/perl5/NetPacket
+usr/share/man/man1
 var/lib/prads
