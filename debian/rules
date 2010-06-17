@@ -38,7 +38,7 @@ clean:
 	rm -f build-stamp configure-stamp
 
 	# Add here commands to clean up after the build process.
-	#$(MAKE) clean
+	$(MAKE) clean
 
 	dh_clean 
 
@@ -49,7 +49,7 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/prads.
-	$(MAKE) PREFIX=/usr CONFDIR=/etc/prads PMDIR=/usr/share/perl5 DESTDIR=$(CURDIR)/debian/prads install
+	$(MAKE) PREFIX=/usr CONFDIR=/etc/prads DESTDIR=$(CURDIR)/debian/prads install
 
 # Build architecture-independent files here.
 binary-indep: build install

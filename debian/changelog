@@ -1,3 +1,21 @@
+prads (0.2.0-1) unstable; urgency=low
+
+  * PRADS release 0.2.0
+  * SYN,SYNACK,ACK,FIN,RST, IPv6, service, client, UDP, ICMP, ARP support
+  * added and fixed many signatures
+  * log to prads-asset.log
+  * eat pcaps (-r file.pcap)
+  * dump statistics on exit
+  * wirefuzz script
+  * prads2snort and other fun tools
+  * better IPv6 support
+  * better OS guessing
+  * awesome memory usage and stability
+  * l337 optimizations for high thruput
+  * code refactoring, cleanups & bugfixes and more
+
+ -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Thu, 17 Jun 2010 14:14:48 +0200
+
 prads (0.1.1-1) unstable; urgency=low
 
   [ Kacper Wysocki (Redpill-Linpro) ]
