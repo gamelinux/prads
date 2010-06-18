@@ -196,22 +196,22 @@ void file_arp (asset *main)
 {
     /* ip,vlan,port,proto,ARP (mac-resolved),mac-address,timstamp*/
     static char ip_addr_s[INET6_ADDRSTRLEN];
-    if (output_log_file_conf.file != NULL) {
-        u_ntop(main->ip_addr, main->af, ip_addr_s);
-        if (main->mac_resolved != NULL) {
-            /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
-            fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
-                main->vlan ? ntohs(main->vlan) : 0,bdata(main->mac_resolved),
-                hex2mac((const char *)main->mac_addr), main->last_seen);
-        } else {
-            /* ip,0,0,ARP,mac-address,timstamp */
-            fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP,[%s],0,%lu\n", ip_addr_s,
-                main->vlan ? ntohs(main->vlan) : 0,hex2mac((const char *)main->mac_addr), main->last_seen);
-        }
-        fflush(output_log_file_conf.file);
-    } else {
-        fprintf(stderr, "[!] ERROR:  File handle not open!\n");
+    if (output_log_file_conf.file == NULL) {
+        elog("[!] ERROR:  File handle not open!\n");
+        return;
     }
+    u_ntop(main->ip_addr, main->af, ip_addr_s);
+    if (main->mac_resolved != NULL) {
+        /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
+        fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
+            main->vlan ? ntohs(main->vlan) : 0,bdata(main->mac_resolved),
+            hex2mac((const char *)main->mac_addr), main->last_seen);
+    } else {
+        /* ip,0,0,ARP,mac-address,timstamp */
+        fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP,[%s],0,%lu\n", ip_addr_s,
+            main->vlan ? ntohs(main->vlan) : 0,hex2mac((const char *)main->mac_addr), main->last_seen);
+    }
+    fflush(output_log_file_conf.file);
 }
 
 /* ----------------------------------------------------------
@@ -245,7 +245,7 @@ file_service (asset *main, serv_asset *service)
         fprintf(output_log_file_conf.file, ",%d,%lu\n",tmp_ttl - service->ttl,service->last_seen);
         fflush(output_log_file_conf.file);
     } else {
-        fprintf(stderr, "[!] ERROR:  File handle not open!\n");
+        elog("[!] ERROR:  File handle not open!\n");
     }
 }
 
@@ -263,7 +263,8 @@ file_os (asset *main, os_asset *os)
     uint8_t tmp_ttl;
 
     if (output_log_file_conf.file == NULL) {
-        fprintf(stderr, "[!] ERROR:  File handle not open!\n");
+        elog("[!] ERROR:  File handle not open!\n");
+
         return;
     }
 
