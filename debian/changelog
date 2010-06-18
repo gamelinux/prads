@@ -1,3 +1,9 @@
+prads (0.2.0-1compat2) unstable; urgency=low
+
+  * etch packaging - very special and very compatible
+
+ -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Fri, 18 Jun 2010 15:49:12 +0200
+
 prads (0.2.0-1compat1) unstable; urgency=low
 
   * lenny packaging - a little special and more compatible

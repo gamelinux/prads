@@ -1128,7 +1128,8 @@ int main(int argc, char *argv[])
     }
 
     printf("\n[*] Running prads %s\n", VERSION);
-    printf("[*] Using %s\n", pcap_lib_version());
+
+    //printf("[*] Using %s\n", pcap_lib_version());
     printf("[*] Using PCRE version %s\n", pcre_version());
 
     //if (config.verbose) display_config();
