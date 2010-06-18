@@ -6,7 +6,7 @@ CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
-CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign -Wno-nonnull
+CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign -Wno-nonnull -DCONFDIR='"${CONFDIR}/"'
 endif
 
 SERVICE_OBJ = servicefp/servicefp.o servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o 
