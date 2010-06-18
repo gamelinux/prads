@@ -174,6 +174,9 @@
 
 #define INSTALL_SYSCONFDIR             ""
 #define TCP_SIGNATURE_LIST             CONFDIR "tcp-service.sig"
+#define LOGDIR                         "/var/log/"
+#define PRADS_ASSETLOG                 "prads-asset.log"
+#define MODE_WRITE                     "w"
 
 #define MAX_APP                        100
 #define MAX_VER                        25
