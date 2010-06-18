@@ -37,23 +37,47 @@ log_file_conf output_log_file_conf;
 int init_output_log_file (bstring filename)
 {
     FILE *fp;
+    char *mode = "r";
+    int retry = 0;
 
     /* Make sure filename isn't NULL. */
     if (filename != NULL)
         output_log_file_conf.filename = bstrcpy(filename);
     else
-        output_log_file_conf.filename = bstrcpy(bfromcstr("prads-assets.log"));
+        output_log_file_conf.filename = bfromcstr(PRADS_ASSETLOG);
 
     /* Check to see if *filename exists. */
-    if ((fp = fopen(bdata(output_log_file_conf.filename), "r")) == NULL) {
-        /* File does not exist, create new.. */
-        if ((output_log_file_conf.file = fopen(bdata(output_log_file_conf.filename), "w")) != NULL) {
-            fprintf(output_log_file_conf.file, "asset,vlan,port,proto,service,[service-info],distance,discovered\n");
-
-        } else {
-            printf("Cannot open file %s!", bdata(output_log_file_conf.filename));
+reopen:
+    if ((fp = fopen(bdata(output_log_file_conf.filename), mode)) == NULL) {
+        int e = errno;
+        switch(e) {
+            case EISDIR:
+            case EFAULT:
+            case EACCES:
+                /* retry in current working directory */
+                if(retry){
+                    elog("%s denied opening access log '%s'", strerror(e), bdata(output_log_file_conf.filename));
+                    return e;
+                }
+                bdestroy(output_log_file_conf.filename);
+                output_log_file_conf.filename = bfromcstr(PRADS_ASSETLOG);
+                retry++;
+                goto reopen;
+            case ENOENT:
+                mode = MODE_WRITE;
+                goto reopen;
+            default:
+                elog("Cannot open file %s: %s!", bdata(output_log_file_conf.filename), strerror(errno));
+                return e;
         }
+
     } else {
+        fp = output_log_file_conf.file = fp;
+
+        if (mode == MODE_WRITE){
+            /* File did not exist, create new.. */
+            fprintf(output_log_file_conf.file, "asset,vlan,port,proto,service,[service-info],distance,discovered\n");
+        }
         /* File does exist, read it into data structure. */
         fclose(fp);
 //       read_report_file();
