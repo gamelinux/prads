@@ -1,3 +1,9 @@
+prads (0.2.0-1l) unstable; urgency=low
+
+  * lenny packaging - a little special and more compatible
+
+ -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Fri, 18 Jun 2010 13:36:06 +0000
+
 prads (0.2.0-1) unstable; urgency=low
 
   * PRADS release 0.2.0

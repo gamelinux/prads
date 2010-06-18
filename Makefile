@@ -9,7 +9,7 @@ build:
 
 clean:
 	${MAKE} -C src/ $@
-	rm -f doc/prads.1 doc/prads.1.gz
+	rm -f doc/prads.1.gz
 
 .PHONY: man
 man: doc/prads.1.gz
