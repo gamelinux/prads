@@ -9,21 +9,26 @@ build:
 
 clean:
 	${MAKE} -C src/ $@
-	rm -f doc/prads.1.gz
+	rm -f doc/prads.1 doc/prads.1.gz
+	rm -f doc/prads-wirefuzz.1 doc/prads-wirefuzz.1.gz
+	rm -f doc/prads-asset-report.1 doc/prads-asset-report.1.gz
+	rm -f doc/prads2snort.1 doc/prads2snort.1.gz
 
 .PHONY: man
-man: doc/prads.1.gz
+man: doc/prads.1.gz doc/prads-asset-report.1.gz doc/prads-wirefuzz.1.gz doc/prads2snort.1.gz
 
-doc/prads.1.gz: doc/prads.1
+doc/%.1.gz: doc/%.1
 	@>$@<$< gzip -9
 
-doc/prads.1: doc/prads.man
+doc/%.1: doc/%.man
 	rst2man $< >$@
 
 install: man
-	# binary
+	# binaries
 	install -d ${DESTDIR}${BINDIR}
 	install -m 755 -o root -g root src/prads ${DESTDIR}${BINDIR}/prads
+	install -m 755 -o root -g root tools/prads-asset-report ${DESTDIR}${BINDIR}/prads-asset-report
+	install -m 755 -o root -g root tools/prads2snort ${DESTDIR}${BINDIR}/prads2snort
 	# config
 	install -d ${DESTDIR}${CONFDIR}
 	install -m 644 -o root -g root etc/prads.conf ${DESTDIR}${CONFDIR}/
@@ -49,6 +54,9 @@ install: man
 	install -m 644 -o root -g root etc/web-application.sig ${DESTDIR}${CONFDIR}/
 	# ports 
 	install -m 644 -o root -g root etc/udp.ports ${DESTDIR}${CONFDIR}/
+	# man pages
 	install -m 644 -o root -g root doc/prads.1.gz ${DESTDIR}${MANDIR}/
+	install -m 644 -o root -g root doc/prads-asset-report.1.gz ${DESTDIR}${MANDIR}/
+	install -m 644 -o root -g root doc/prads2snort.1.gz ${DESTDIR}${MANDIR}/
 
 .PHONY: build clean install

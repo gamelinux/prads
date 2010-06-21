@@ -1,0 +1,75 @@
+===================
+ prads-asset-report
+===================
+
+---------------------------
+PRADS Text Reporting Module
+---------------------------
+
+:Author: edwardfjellskaal@gmail.com
+:Date:   2010-06-21
+:Copyright: GPL
+:Version: 0.2
+:Manual section: 1
+:Manual group: networking
+
+.. TODO: authors and author with name <email>
+
+SYNOPSIS
+========
+
+  prads-asset-report -r /var/log/prads-asset.log -w /tmp/asset-report.txt
+
+DESCRIPTION
+===========
+
+PRADS is a Passive Real-time Asset Detection System.
+
+PRADS passively listens to network traffic and gathers information
+on hosts and services it sees on the network. This information
+can be used to map your network, letting you know what services
+and hosts are alive/used, or can be used together with your
+favorite IDS/IPS setup for "event to host/service" correlation.
+
+Gathering info about your hosts in real-time will also let you
+detect assets that are just connected to the network for a short
+period of time, where a active network scan (nmap etc.) would take
+long time, and not common to run continually, hence missing the asset. 
+
+prads-asset-report parses prads-asset.log prints out some useful
+information about the hosts prads has managed to gather info about.
+
+OPTIONS
+=======
+
+-r <file>       PRADS Raw Report File
+-w <file>       Output file
+-i <IP>         Just get info for this IP
+-n              Do not convert IP addresses to names.
+-p              Do not convert RFC 1918 IP addresses to names.
+
+
+PROBLEMS
+========
+
+1. Much more logic can be built into it!
+
+SEE ALSO
+========
+
+* PRADS <http://prads.projects.linpro.no/>
+* p0f <http://lcamtuf.coredump.cx/p0f.shtml>
+* PADS <http://passive.sourceforge.net/>
+
+BUGS
+====
+
+Report bugs here:
+
+- http://github.com/gamelinux/prads/issues 
+
+For general questions:
+
+- http://projects.linpro.no/mailman/listinfo/prads-devel 
+- http://projects.linpro.no/mailman/listinfo/prads-users
+
