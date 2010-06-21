@@ -1,0 +1,61 @@
+==============
+prads-wirefuzz
+==============
+
+----------------------------------------------
+Feeds prads b0rked pcap data to help find bugs
+----------------------------------------------
+
+:Author: edwardfjellskaal@gmail.com
+:Date:   2010-06-21
+:Copyright: GPL
+:Version: 0.2
+:Manual section: 1
+:Manual group: networking
+
+.. TODO: authors and author with name <email>
+
+SYNOPSIS
+========
+
+prads-wirefuzz -r=/home/somepath/pcaps/*/* -c=/home/somepath/prads.conf -y -e=0.02 -p src/prads
+
+DESCRIPTION
+===========
+
+PRADS is a Passive Real-time Asset Detection System.
+
+prads-wirefuzz is used to feed prads b0rked pcap data.
+This helps us find bugs so that we can make prads better!
+
+Borrowed from Suricata, which got it from Wireshark!
+
+OPTIONS
+=======
+
+-h or help         Shows details about how to use prads-wirefuzz
+
+PROBLEMS
+========
+
+1. A bit tricky to set up for novice
+
+SEE ALSO
+========
+
+* PRADS <http://prads.projects.linpro.no/>
+* p0f <http://lcamtuf.coredump.cx/p0f.shtml>
+* PADS <http://passive.sourceforge.net/>
+
+BUGS
+====
+
+Report bugs here:
+
+- http://github.com/gamelinux/prads/issues 
+
+For general questions:
+
+- http://projects.linpro.no/mailman/listinfo/prads-devel 
+- http://projects.linpro.no/mailman/listinfo/prads-users
+
