@@ -1190,7 +1190,7 @@ re_lookup:
 
   p = sig[SIGHASH(e->size,e->optcnt,e->quirks,e->df) % hashsize];
 
-  if (PI_TOS(pi)) tos_desc = lookup_tos(PI_TOS(pi));
+  if (PI_IP4(pi)) tos_desc = lookup_tos(PI_TOS(pi));
 
   //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
   while (p) {

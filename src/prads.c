@@ -1031,13 +1031,16 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
-    while ((ch = getopt(argc, argv, "c:b:d:Dg:hi:p:r:P:u:va:")) != -1)
+    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:")) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
             break;
         case 'c':
             pconfile = bfromcstr(optarg);
+            break;
+        case 'C':
+            config.chroot_dir = strdup(optarg);
             break;
         case 'i':
             config.dev = strdup(optarg);
@@ -1175,23 +1178,32 @@ int main(int argc, char *argv[])
          * B0rk if we see an error...
          */
         if (strlen(config.errbuf) > 0) {
-            printf("[*] Error errbuf: %s \n", config.errbuf);
+            elog("[*] Error errbuf: %s \n", config.errbuf);
             exit(1);
         }
-    
-        if (config.daemon_flag) {
-            if (!is_valid_path(config.pidpath))
-                printf
-                    ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
-            openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
-            printf("[*] Daemonizing...\n\n");
-            daemonize(NULL);
+
+        if(config.chroot_dir){
+            olog("[*] Chrooting to dir '%s'..\n", config.chroot_dir);
+            if(set_chroot()){
+                elog("[!] failed to chroot\n");
+                exit(1);
+            }
         }
     
         if (config.drop_privs_flag) {
-            printf("[*] Dropping privs...\n\n");
+            olog("[*] Dropping privs...\n");
             drop_privs();
         }
+
+        if (config.daemon_flag) {
+            if (!is_valid_path(config.pidpath))
+                elog
+                    ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
+            openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
+            olog("[*] Daemonizing...\n\n");
+            daemonize(NULL);
+        }
+    
     }
  
     bucket_keys_NULL();

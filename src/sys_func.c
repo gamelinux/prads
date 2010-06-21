@@ -175,7 +175,7 @@ int set_chroot(void)
      * change to the directory 
      */
     if (chdir(config.chroot_dir) != 0) {
-        printf("set_chroot: Can not chdir to \"%s\": %s\n", config.chroot_dir,
+        elog("set_chroot: Can not chdir to \"%s\": %s\n", config.chroot_dir,
                strerror(errno));
     }
 
@@ -189,12 +189,12 @@ int set_chroot(void)
      * make the chroot call 
      */
     if (chroot(absdir) < 0) {
-        printf("Can not chroot to \"%s\": absolute: %s: %s\n", config.chroot_dir,
+        elog("Can not chroot to \"%s\": absolute: %s: %s\n", config.chroot_dir,
                absdir, strerror(errno));
     }
 
     if (chdir("/") < 0) {
-        printf("Can not chdir to \"/\" after chroot: %s\n",
+        elog("Can not chdir to \"/\" after chroot: %s\n",
                strerror(errno));
     }
 
@@ -214,8 +214,17 @@ int drop_privs(void)
 
     if (config.group_name != NULL) {
         do_setgid = 1;
-        if (isdigit(config.group_name[0]) == 0) {
+        if (!isdigit(config.group_name[0])) {
             gr = getgrnam(config.group_name);
+            if(!gr){
+                if(config.chroot_dir){
+                    elog("ERROR: you have chrootetd and must set numeric group ID.\n");
+                    exit(1);
+                }else{
+                    elog("ERROR: couldn't get ID for group %s, group does not exist.")
+                    exit(1);
+                }
+            }
             groupid = gr->gr_gid;
         } else {
             groupid = strtoul(config.group_name, &endptr, 10);
