@@ -1,3 +1,9 @@
+prads (0.2.0-2) unstable; urgency=low
+
+  * install prads-asset-log, prads2snort and prads-wirefuzz too.
+
+ -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Mon, 21 Jun 2010 10:51:38 +0200
+
 prads (0.2.0-1) unstable; urgency=low
 
   * PRADS release 0.2.0
