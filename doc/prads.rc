@@ -23,14 +23,14 @@ PIDFILE=/var/run/prads/$NAME.pid
 
 test -x $DAEMON || exit 0
 
-# Include varnish defaults if available
+# Include prads defaults if available
 if [ -f /etc/default/prads ] ; then
         . /etc/default/prads
 fi
 
 case "$1" in
 	start)
-		output=$(/bin/tempfile -s.varnish)
+		output=$(/bin/tempfile -s.prads)
 		log_daemon_msg "Starting $DESC" 
 		log_progress_msg $NAME
                 if start-stop-daemon \
