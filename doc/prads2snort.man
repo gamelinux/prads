@@ -1,10 +1,10 @@
-=========
- PRADS2SNORT
-=========
+===========
+prads2snort
+===========
 
----------------------------------------------
-PRADS2SNORT (Snort autotuning of Frag3 and Stream5
----------------------------------------------
+-------------------------------------
+Snort autotuning of Frag3 and Stream5
+-------------------------------------
 
 :Author: edwardfjellskaal@gmail.com
 :Date:   2010-06-21
@@ -44,12 +44,12 @@ PRADS2SNORT is the tool that does this!
 OPTIONS
 =======
 
--i|--infile   file to feed prads2snort.pl
--o|--outfile  file to write host_attribute data to (host_attribute.xml)
--d|--default  set Default OS if unknown (linux,bsd,macos,windows)
--v|--verbose  prints out OS, frag, stream and confidence of asset
--h|--help     this help message
---version     show prads2snort.pl version
+-i|--infile <file>          file to feed prads2snort.pl
+-o|--outfile <file>         file to write host_attribute data to (host_attribute.xml)
+-d|--default <os>           set Default OS if unknown (linux,bsd,macos,windows)
+-v|--verbose                prints out OS, frag, stream and confidence of asset
+-h|--help                   this help message
+--version                   show prads2snort.pl version
 
 PROBLEMS
 ========
