@@ -44,11 +44,11 @@ PRADS2SNORT is the tool that does this!
 OPTIONS
 =======
 
--i|--infile <file>          file to feed prads2snort.pl
--o|--outfile <file>         file to write host_attribute data to (host_attribute.xml)
--d|--default <os>           set Default OS if unknown (linux,bsd,macos,windows)
--v|--verbose                prints out OS, frag, stream and confidence of asset
--h|--help                   this help message
+-i, --infile <file>          file to feed prads2snort.pl
+-o, --outfile <file>         file to write host_attribute data to (host_attribute.xml)
+-d, --default <os>           set Default OS if unknown (linux,bsd,macos,windows)
+-v, --verbose                prints out OS, frag, stream and confidence of asset
+-h, --help                   this help message
 --version                   show prads2snort.pl version
 
 PROBLEMS
