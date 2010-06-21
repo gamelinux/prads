@@ -21,9 +21,12 @@ doc/prads.1: doc/prads.man
 	rst2man $< >$@
 
 install: man
-	# binary
+	# binaries
 	install -d ${DESTDIR}${BINDIR}
 	install -m 755 -o root -g root src/prads ${DESTDIR}${BINDIR}/prads
+	install -m 755 -o root -g root tools/prads-asset-report ${DESTDIR}${BINDIR}/prads
+	install -m 755 -o root -g root tools/prads-wirefuzz ${DESTDIR}${BINDIR}/prads-wirefuzz
+	install -m 755 -o root -g root tools/prads2snort ${DESTDIR}${BINDIR}/prads2snort
 	# config
 	install -d ${DESTDIR}${CONFDIR}
 	install -m 644 -o root -g root etc/prads.conf ${DESTDIR}${CONFDIR}/
