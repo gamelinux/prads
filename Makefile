@@ -24,7 +24,7 @@ install: man
 	# binaries
 	install -d ${DESTDIR}${BINDIR}
 	install -m 755 -o root -g root src/prads ${DESTDIR}${BINDIR}/prads
-	install -m 755 -o root -g root tools/prads-asset-report ${DESTDIR}${BINDIR}/prads
+	install -m 755 -o root -g root tools/prads-asset-report ${DESTDIR}${BINDIR}/prads-asset-report
 	install -m 755 -o root -g root tools/prads-wirefuzz ${DESTDIR}${BINDIR}/prads-wirefuzz
 	install -m 755 -o root -g root tools/prads2snort ${DESTDIR}${BINDIR}/prads2snort
 	# config
