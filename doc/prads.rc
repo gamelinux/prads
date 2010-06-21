@@ -1,0 +1,80 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:          prads
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start PRADS sensor.
+# Description:       This script provides a packet level 
+#                    passive host and service detecion system
+#                    in a chroot environment
+### END INIT INFO
+
+# Source function library
+. /lib/lsb/init-functions
+
+NAME=prads
+DESC="Passive Realtime Asset Detection System"
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/prads
+PIDFILE=/var/run/prads/$NAME.pid
+
+test -x $DAEMON || exit 0
+
+# Include varnish defaults if available
+if [ -f /etc/default/prads ] ; then
+        . /etc/default/prads
+fi
+
+case "$1" in
+	start)
+		output=$(/bin/tempfile -s.varnish)
+		log_daemon_msg "Starting $DESC" 
+		log_progress_msg $NAME
+                if start-stop-daemon \
+		   --start --quiet --pidfile ${PIDFILE} --exec ${DAEMON} -- \
+                   -P ${PIDFILE} ${DAEMON_OPTS} > ${output} 2>&1; then
+			log_end_msg 0
+		else
+			log_end_msg 1
+			cat $output
+			exit 1
+		fi
+		rm $output
+		;;
+	stop)
+		log_daemon_msg "Stopping $DESC"
+		log_progress_msg $NAME
+		if start-stop-daemon \
+		   --stop --quiet --pidfile $PIDFILE --retry 10 \
+		   --exec $DAEMON; then
+			log_end_msg 0
+		else
+			log_end_msg 1
+		fi
+        	;;
+	reload)
+		log_daemon_msg "Reloading $DESC"
+		log_progress_msg $NAME
+		if :; then
+			log_end_msg 0
+		else
+			log_end_msg 1
+		fi
+		;;
+	status)
+		status_of_proc -p "${PIDFILE}" "${DAEMON}" "${NAME}"
+		;;
+	restart|force-reload)
+		$0 stop
+		$0 start
+        	;;
+	*)
+        	log_success_msg "Usage: $0 {start|stop|restart|force-reload}"
+        	exit 1
+        ;;
+esac
+
+exit 0
