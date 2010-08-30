@@ -113,6 +113,7 @@ void parse_config_file(bstring fname)
 
     if ((fp = fopen((char *)bdata(fname), "r")) == NULL) {
         elog("Unable to open configuration file - %s\n", bdata(fname));
+        return;
     }
 
     filedata = bread ((bNread) fread, fp);

@@ -75,7 +75,7 @@ int load_servicefp_file(int storage, char *sigfile)
      * Open Signature File 
      */
     if ((fp = fopen((char *)bdata(filename), "r")) == NULL) {
-        printf("Unable to open signature file - %s", bdata(filename));
+        printf("Unable to open signature file - %s\n", bdata(filename));
         return 1;
     }
 
