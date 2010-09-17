@@ -1109,7 +1109,12 @@ borken:
             ilen -= 9;
             opt_ptr += 9;
             break;
-
+        case TCPOPT_PROXBLUECOAT:
+        case TCPOPT_PROXCISCO:
+        case TCPOPT_PROXRIVERBED1:
+        case TCPOPT_PROXRIVERBED2:
+            dlog("magic middleware option %02x detected", *(opt_ptr - 1) );
+            // fallthru for now..
         default:
             // * Hrmpf... 
             if (opt_ptr + 1 > end_ptr)
