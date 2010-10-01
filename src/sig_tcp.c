@@ -1284,9 +1284,13 @@ continue_fuzzy:
       // What about IPv6?
       a=(uint8_t*)& PI_IP4SRC(pi);
 
-      dlog("\n"); //edward
-      dlog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
-             PI_TCP_SP(pi),p->os);
+      if(*a){
+          dlog("\n"); //edward
+          dlog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
+                 PI_TCP_SP(pi),p->os);
+      }else{
+          dlog("ipv6 packet __FIXME__");
+      }
 
       if (!no_osdesc) dlog("%s ",p->desc);
 
