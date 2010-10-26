@@ -1,3 +1,11 @@
+prads (0.2.0-3) UNRELEASED; urgency=low
+
+  * Add init script and default file
+  * Update source format to 3.0 (quilt)
+  * Use a simpler rules file
+
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Tue, 26 Oct 2010 14:04:10 +0200
+
 prads (0.2.0-2) unstable; urgency=low
 
   * install prads-asset-log, prads2snort and prads-wirefuzz too.
