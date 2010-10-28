@@ -704,13 +704,17 @@ void parse_udp (packetinfo *pi)
     update_asset(pi);
     //if (is_set_guess_upd_direction(config)) {
     udp_guess_direction(pi); // fix DNS server transfers?
+    // Check for Passive DNS
+    // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
     if (IS_CSSET(&config,CS_UDP_SERVICES)) {
         if (pi->af == AF_INET) {
             
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
+                // Check for UDP SERVICE
                 service_udp4(pi);
             }
+            // UPD Fingerprinting
             if (IS_COSET(&config,CO_UDP)) fp_udp4(pi, pi->ip4, pi->udph, pi->end_ptr);
         } else if (pi->af == AF_INET6) {
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
