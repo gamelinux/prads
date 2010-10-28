@@ -29,6 +29,18 @@ Point Release 0.4
 Point Release 0.4
  * Graphic display of network topology
 
+
+Passive DNS : Only on the answer from the DNS SERVER
+TIMESTAMP,DNS-SERVER-IP,QUERY-TYPE,QUERY-CLASS,QUERY-DATA,RESURSE-TYPE,RESURSE-CLASS,RESURSE-DATA,MISC
+ TIMESTAMP: unixtimestamp
+ DNS-SERVER-IP: The ip of the dns server responding
+ MISC: Other data in the answer
+ foreach additional record $UDP-DNS-PAYLOAD {
+  TIMESTAMP,DNS-SERVER-IP,QUERY-TYPE,QUERY-CLASS,QUERY-DATA,RESURSE-TYPE,RESURSE-CLASS,RESURSE-DATA,MISC
+ }
+
+
+
 .
 .
 .
