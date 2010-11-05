@@ -22,7 +22,7 @@ DAEMON=/usr/local/bin/prads
 RUNDIR=/var/run/prads
 PIDFILE=/var/run/prads/$NAME.pid
 LOGFILE=/var/log/prads.log
-DAEMON_OPTS="-u 6005 -g 6005 -D -C $RUNDIR -p $RUNDIR/prads_.pid -P /var/run/prads/ -l $LOGFILE"
+DAEMON_OPTS="-u 6005 -g 6005 -D -C $RUNDIR -l $LOGFILE"
 
 mkdir /tmp/prads
 test -x $DAEMON || exit 0
