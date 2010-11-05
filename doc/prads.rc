@@ -18,9 +18,13 @@
 NAME=prads
 DESC="Passive Realtime Asset Detection System"
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/bin/prads
+DAEMON=/usr/local/bin/prads
+RUNDIR=/var/run/prads
 PIDFILE=/var/run/prads/$NAME.pid
+LOGFILE=/var/log/prads.log
+DAEMON_OPTS="-u 6005 -g 6005 -D -C $RUNDIR -p $RUNDIR/prads_.pid -P /var/run/prads/ -l $LOGFILE"
 
+mkdir /tmp/prads
 test -x $DAEMON || exit 0
 
 # Include prads defaults if available
