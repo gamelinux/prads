@@ -1040,7 +1040,8 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
-    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:")) != -1)
+    parse_config_file(pconfile);
+    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
