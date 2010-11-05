@@ -191,11 +191,13 @@ int set_chroot(void)
     if (chroot(absdir) < 0) {
         elog("Can not chroot to \"%s\": absolute: %s: %s\n", config.chroot_dir,
                absdir, strerror(errno));
+        exit(3);
     }
 
     if (chdir("/") < 0) {
         elog("Can not chdir to \"/\" after chroot: %s\n",
                strerror(errno));
+        exit(3);
     }
 
     return 0;
