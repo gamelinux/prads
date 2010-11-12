@@ -35,7 +35,8 @@
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
 #include "sig.h"
-#include "output-plugins/log_init.h"
+//#include "output-plugins/log_init.h"
+#include "output-plugins/log_file.h"
 
 /*  G L O B A L E S  *** (or candidates for refactoring, as we say)***********/
 uint64_t cxtrackerid;
@@ -1002,6 +1003,10 @@ static void usage()
     printf(" -g <group>      Run as group <group>.\n");
     printf(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     printf(" -D              Enables daemon mode.\n");
+    printf(" -p <pidfile>    Name of pidfile\n");
+    printf(" -P <path>       Pid lives in <path>\n");
+    printf(" -l <file>       Log assets to <file>\n");
+    printf(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     printf(" -h              This help message.\n");
     printf(" -v              Verbose.\n");
 }
@@ -1037,7 +1042,8 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
-    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:")) != -1)
+    parse_config_file(pconfile);
+    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
@@ -1084,13 +1090,17 @@ int main(int argc, char *argv[])
         case 'P':
             config.pidpath = strdup(optarg);
             break;
+        case 'l':
+            config.assetlog = bfromcstr(optarg);
+            break;
         default:
             exit(1);
             break;
         }
 
-    parse_config_file(pconfile);
-    init_logging();
+    //init_logging(config.assetlog);
+    printf("logging to file %s\n", bstr2cstr(config.assetlog,0));
+    init_output_log_file(config.assetlog);
     bdestroy (pconfile);
 
     parse_nets(config.s_net, network);
