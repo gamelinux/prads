@@ -633,6 +633,8 @@ void parse_tcp (packetinfo *pi)
         } 
     }
 
+    // Check payload for known magic bytes that defines files!
+
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
         if (IS_CSSET(&config,CS_TCP_CLIENT)
                 && !ISSET_DONT_CHECK_CLIENT(pi)) {
