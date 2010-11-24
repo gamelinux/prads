@@ -1,3 +1,11 @@
+prads (0.2.1-1) unstable; urgency=low
+
+  * unhide new cool options (-l file, -p pid, -P path, -C chroot)
+  * prads2snort --skip
+  * file output plugin
+
+ -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Wed, 24 Nov 2010 19:31:53 +0000
+
 prads (0.2.0-2) unstable; urgency=low
 
   * install prads-asset-log, prads2snort and prads-wirefuzz too.
