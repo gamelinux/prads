@@ -45,6 +45,7 @@ use Switch;
  -i|--infile     : file to feed prads2snort.pl
  -o|--outfile    : file to write host_attribute data to (host_attribute.xml)
  -d|--default    : set Default OS if unknown (linux,bsd,macos,windows)
+ -s|--skip       : Skip OSes that has a match less than XX %
  -v|--verbose    : prints out OS, frag, stream and confidence of asset
  -h|--help       : this help message
  --version       : show prads2snort.pl version
@@ -54,6 +55,7 @@ use Switch;
 our $VERSION                = 0.11;
 our $DEBUG                  = 0;
 our $VERBOSE                = 0;
+our $SKIPOS                 = 0;
 our $FORCE                  = 0;
 our $VERS                   = 0;
 our $INFILE                 = qq(/var/log/prads-asset.log);
@@ -66,6 +68,7 @@ Getopt::Long::GetOptions(
     'infile|i=s'            => \$INFILE,
     'outfile|o=s'           => \$OUTFILE,
     'default|d=s'           => \$DEFAULTOS,
+    'skip|s=s'              => \$SKIPOS,
     'verbose|v'             => \$VERBOSE,
     'force|f'               => \$FORCE,
     'version'               => \$VERS,
@@ -219,12 +222,15 @@ sub make_attribute_table {
         my ($frag3, $stream5) = get_policy($os, $desc);
         $STATS{'OS'}{"$os"}{'count'} ++;
         $STATS{'OS'}{"$os"}{'confidence'} += $confidence;
+        if ($confidence < $SKIPOS) {
+            print "$asset OS:Unknown - Skipping, confidence:$confidence\n" if $VERBOSE;
+            next;
+        }
         if ($os =~ /unknown/) {
             $unknowns++;
             if ($VERBOSE) {
                 print "$asset OS:Unknown - Applying frag3=$frag3, stream5=$stream5 and confidence:$confidence\n";
             }
-            #next if $skippunknownsorsomething;
         } else {
             $knowns++;
             $aconfedence += $confidence;

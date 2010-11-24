@@ -167,6 +167,15 @@
 #define TCPOPT_WSCALE                 3 /* Window scaling */
 #define TCPOPT_SACKOK                 4 /* Selective ACK permitted */
 #define TCPOPT_TIMESTAMP              8 /* Stamp out timestamping! */
+/* various transparent proxy detection fields */
+#define TCPOPT_PROXBLUECOAT           0xFD
+#define TCPOPT_PROXCISCO              0x21
+#define TCPOPT_PROXRIVERBED1          0x4C
+#define TCPOPT_PROXRIVERBED2          0x4E
+/* seen this before? */
+#define TCPOPT_WTF1                   0x32
+#define TCPOPT_WTF2                   0x1e 
+
 
 #define SUCCESS                        0
 #define ERROR                          1

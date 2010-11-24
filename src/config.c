@@ -99,6 +99,8 @@ void set_default_config_options()
     config.sig_fin = NULL;
     config.sig_rst = NULL;
     config.sig_hashsize = 241;
+    // don't chroot by default
+    config.chroot_dir = NULL;
 }
 
 void parse_config_file(bstring fname)
@@ -111,6 +113,7 @@ void parse_config_file(bstring fname)
 
     if ((fp = fopen((char *)bdata(fname), "r")) == NULL) {
         elog("Unable to open configuration file - %s\n", bdata(fname));
+        return;
     }
 
     filedata = bread ((bNread) fread, fp);

@@ -53,10 +53,15 @@ install: man
 	install -m 644 -o root -g root etc/service-string.sig ${DESTDIR}${CONFDIR}/
 	install -m 644 -o root -g root etc/web-application.sig ${DESTDIR}${CONFDIR}/
 	# ports 
+	install -d ${DESTDIR}${CONFDIR}
 	install -m 644 -o root -g root etc/udp.ports ${DESTDIR}${CONFDIR}/
+	install -d ${DESTDIR}${CONFDIR}/init.d
+	install -m 755 -o root -g root doc/prads.rc ${DESTDIR}${CONFDIR}/init.d/
 	# man pages
+	install -d ${DESTDIR}${MANDIR}
 	install -m 644 -o root -g root doc/prads.1.gz ${DESTDIR}${MANDIR}/
 	install -m 644 -o root -g root doc/prads-asset-report.1.gz ${DESTDIR}${MANDIR}/
 	install -m 644 -o root -g root doc/prads2snort.1.gz ${DESTDIR}${MANDIR}/
+
 
 .PHONY: build clean install

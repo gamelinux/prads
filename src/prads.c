@@ -35,7 +35,8 @@
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
 #include "sig.h"
-#include "output-plugins/log_init.h"
+//#include "output-plugins/log_init.h"
+#include "output-plugins/log_file.h"
 
 /*  G L O B A L E S  *** (or candidates for refactoring, as we say)***********/
 uint64_t cxtrackerid;
@@ -633,6 +634,8 @@ void parse_tcp (packetinfo *pi)
         } 
     }
 
+    // Check payload for known magic bytes that defines files!
+
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
         if (IS_CSSET(&config,CS_TCP_CLIENT)
                 && !ISSET_DONT_CHECK_CLIENT(pi)) {
@@ -704,13 +707,17 @@ void parse_udp (packetinfo *pi)
     update_asset(pi);
     //if (is_set_guess_upd_direction(config)) {
     udp_guess_direction(pi); // fix DNS server transfers?
+    // Check for Passive DNS
+    // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
     if (IS_CSSET(&config,CS_UDP_SERVICES)) {
         if (pi->af == AF_INET) {
             
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
+                // Check for UDP SERVICE
                 service_udp4(pi);
             }
+            // UPD Fingerprinting
             if (IS_COSET(&config,CO_UDP)) fp_udp4(pi, pi->ip4, pi->udph, pi->end_ptr);
         } else if (pi->af == AF_INET6) {
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
@@ -996,6 +1003,10 @@ static void usage()
     printf(" -g <group>      Run as group <group>.\n");
     printf(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     printf(" -D              Enables daemon mode.\n");
+    printf(" -p <pidfile>    Name of pidfile\n");
+    printf(" -P <path>       Pid lives in <path>\n");
+    printf(" -l <file>       Log assets to <file>\n");
+    printf(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     printf(" -h              This help message.\n");
     printf(" -v              Verbose.\n");
 }
@@ -1031,13 +1042,17 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
-    while ((ch = getopt(argc, argv, "c:b:d:Dg:hi:p:r:P:u:va:")) != -1)
+    parse_config_file(pconfile);
+    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
             break;
         case 'c':
             pconfile = bfromcstr(optarg);
+            break;
+        case 'C':
+            config.chroot_dir = strdup(optarg);
             break;
         case 'i':
             config.dev = strdup(optarg);
@@ -1075,13 +1090,17 @@ int main(int argc, char *argv[])
         case 'P':
             config.pidpath = strdup(optarg);
             break;
+        case 'l':
+            config.assetlog = bfromcstr(optarg);
+            break;
         default:
             exit(1);
             break;
         }
 
-    parse_config_file(pconfile);
-    init_logging();
+    //init_logging(config.assetlog);
+    printf("logging to file %s\n", bstr2cstr(config.assetlog,0));
+    init_output_log_file(config.assetlog);
     bdestroy (pconfile);
 
     parse_nets(config.s_net, network);
@@ -1175,23 +1194,32 @@ int main(int argc, char *argv[])
          * B0rk if we see an error...
          */
         if (strlen(config.errbuf) > 0) {
-            printf("[*] Error errbuf: %s \n", config.errbuf);
+            elog("[*] Error errbuf: %s \n", config.errbuf);
             exit(1);
         }
-    
-        if (config.daemon_flag) {
-            if (!is_valid_path(config.pidpath))
-                printf
-                    ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
-            openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
-            printf("[*] Daemonizing...\n\n");
-            daemonize(NULL);
+
+        if(config.chroot_dir){
+            olog("[*] Chrooting to dir '%s'..\n", config.chroot_dir);
+            if(set_chroot()){
+                elog("[!] failed to chroot\n");
+                exit(1);
+            }
         }
     
         if (config.drop_privs_flag) {
-            printf("[*] Dropping privs...\n\n");
+            olog("[*] Dropping privs...\n");
             drop_privs();
         }
+
+        if (config.daemon_flag) {
+            if (!is_valid_path(config.pidpath))
+                elog
+                    ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
+            openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
+            olog("[*] Daemonizing...\n\n");
+            daemonize(NULL);
+        }
+    
     }
  
     bucket_keys_NULL();

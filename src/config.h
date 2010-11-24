@@ -43,7 +43,7 @@ typedef struct _globalconfig {
     signature   *sig_client_udp;        /* Pointer to list of udp client signatures */
     fmask       *network[MAX_NETS];     /* Struct for fmask */
     char        *dev;                   /* Device name to use for sniffing */
-    char        *dpath;                 /* ... ??? ... */
+    char        *dpath;                 /* ... ??? seriously ???... */
     char        *chroot_dir;            /* Directory to chroot to */
     char        *group_name;            /* Groupe to drop privileges too */
     char        *user_name;             /* User to drop privileges too */
