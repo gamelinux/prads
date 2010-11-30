@@ -21,6 +21,8 @@ all: prads
 prads: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
 
+static: $(OBJECTS)
+	$(MAKE) CFLAGS+=-static prads
 debug:
 	 ${MAKE} DEBUG=y
 

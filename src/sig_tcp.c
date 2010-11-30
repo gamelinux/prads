@@ -1109,7 +1109,12 @@ borken:
             ilen -= 9;
             opt_ptr += 9;
             break;
-
+        case TCPOPT_PROXBLUECOAT:
+        case TCPOPT_PROXCISCO:
+        case TCPOPT_PROXRIVERBED1:
+        case TCPOPT_PROXRIVERBED2:
+            dlog("magic middleware option %02x detected", *(opt_ptr - 1) );
+            // fallthru for now..
         default:
             // * Hrmpf... 
             if (opt_ptr + 1 > end_ptr)
@@ -1190,7 +1195,7 @@ re_lookup:
 
   p = sig[SIGHASH(e->size,e->optcnt,e->quirks,e->df) % hashsize];
 
-  if (PI_TOS(pi)) tos_desc = lookup_tos(PI_TOS(pi));
+  if (PI_IP4(pi)) tos_desc = lookup_tos(PI_TOS(pi));
 
   //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
   while (p) {
@@ -1279,9 +1284,13 @@ continue_fuzzy:
       // What about IPv6?
       a=(uint8_t*)& PI_IP4SRC(pi);
 
-      dlog("\n"); //edward
-      dlog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
-             PI_TCP_SP(pi),p->os);
+      if(*a){
+          dlog("\n"); //edward
+          dlog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
+                 PI_TCP_SP(pi),p->os);
+      }else{
+          dlog("ipv6 packet __FIXME__");
+      }
 
       if (!no_osdesc) dlog("%s ",p->desc);
 

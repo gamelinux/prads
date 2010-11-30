@@ -352,6 +352,7 @@ void end_sessions()
             connection *tmp = cxt;
             cxt = cxt->prev;
 
+            /* cxt_requeue(tmp, &cxt_est_q, &cxt_log_q); */
             cxt_requeue(tmp, &cxt_est_q, &cxt_spare_q);
             CLEAR_CXT(tmp);
             //printf("[*] connection deleted!!!\n");

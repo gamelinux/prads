@@ -20,6 +20,10 @@ typedef struct _cxtqueue
 /* spare/unused/prealloced connection trackers live here */
 cxtqueue cxt_spare_q;
 
+/* dead connections waiting to be written to disk if */
+/* connection tracking output is enabled             */
+cxtqueue cxt_log_q;
+
 /* All "established" connections live here, the top holds the
  * last recently used (lru) connection */
 cxtqueue cxt_est_q;
