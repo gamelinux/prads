@@ -1,3 +1,17 @@
+prads (0.2.1-1compat1) unstable; urgency=low
+
+  * compat release for old distros
+
+ -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Tue, 30 Nov 2010 17:02:12 +0000
+
+prads (0.2.1-1) unstable; urgency=low
+
+  * unhide new cool options (-l file, -p pid, -P path, -C chroot)
+  * prads2snort --skip
+  * file output plugin
+
+ -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Wed, 24 Nov 2010 19:31:53 +0000
+
 prads (0.2.0-1compat2) unstable; urgency=low
 
   * etch packaging - very special and very compatible
