@@ -9,10 +9,6 @@ build:
 
 clean:
 	${MAKE} -C src/ $@
-	rm -f doc/prads.1.gz
-	rm -f doc/prads-wirefuzz.1.gz
-	rm -f doc/prads-asset-report.1.gz
-	rm -f doc/prads2snort.1.gz
 
 .PHONY: man
 man: doc/prads.1.gz doc/prads-asset-report.1.gz doc/prads-wirefuzz.1.gz doc/prads2snort.1.gz
