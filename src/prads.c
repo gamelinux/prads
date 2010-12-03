@@ -1103,7 +1103,8 @@ int main(int argc, char *argv[])
     init_output_log_file(config.assetlog);
     bdestroy (pconfile);
 
-    parse_nets(config.s_net, network);
+    if(config.s_net)
+       parse_nets(config.s_net, network);
 
     if(config.ctf & CO_SYN){
         int32_t rc;
