@@ -70,6 +70,10 @@ void set_end_sessions()
         extern time_t tstamp;
         tstamp = time(NULL);
         end_sessions();
+        /* if no cxtracking is turned on - dont log to disk */
+        /* if (log_cxt == 1) log_expired_cxt(); */
+        /* if no asset detection is turned on - dont log to disk! */
+        /* if (log_assets == 1) update_asset_list(); */
         update_asset_list();
         intr_flag = 0;
         alarm(CHECK_TIMEOUT);
