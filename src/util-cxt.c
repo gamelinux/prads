@@ -1,10 +1,12 @@
 /*
  * Author: Gurvinder Singh <gurvindersinghdahiya@gmail.com>
+ * Fikling by Kacper Wyoscki
  *
  * Created on January 16, 2010, 1:18 PM
  */
 
 #include "prads.h"
+#include "cxt.h"
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
 #include <stddef.h>
@@ -67,19 +69,27 @@ void cxt_update_src (connection *cxt, packetinfo *pi)
     return;
 }
 
-inline void cxt_update (packetinfo *pi, uint32_t hash)
+inline void cxt_update (packetinfo *pi)
 {
     connection *cxt = NULL;
     int ret = 0;
+    uint32_t hash;
     /* get our hash bucket and lock it */
-    cxtbucket *cb = &cxt_hash[hash];
+    if (pi->ip4 != NULL) {
+        hash = CXT_HASH4(PI_IP4SRC(pi),PI_IP4DST(pi));
+        hash = hash % BUCKET_SIZE;
+    } else {
+        hash = CXT_HASH6(&PI_IP6SRC(pi),&PI_IP6DST(pi));
+        hash = hash % BUCKET_SIZE;
+    }
+    cxt = bucket[hash];
 
     /* see if the bucket already has a connection */
-    if (cb->cxt == NULL) {
+    if (cxt == NULL) {
         /* no, so get a new one */
-        cxt = cb->cxt = cxt_dequeue(&cxt_spare_q);
+        cxt = cxt_dequeue(&cxt_spare_q);
         if (cxt == NULL) {
-            cxt = cb->cxt = connection_alloc();
+            cxt = connection_alloc();
             if (cxt == NULL) {
                 return;
             }
@@ -91,15 +101,12 @@ inline void cxt_update (packetinfo *pi, uint32_t hash)
         /* got one, initialize and return */
         cxt_new(cxt,pi);
         cxt_requeue(cxt, NULL, &cxt_est_q);
-        cxt->cb = cb;
         cxt_update_src(cxt, pi);
         pi->cxt = cxt;
         return;
     }
 
     /* ok, we have a flow in the bucket. Let's find out if it is our flow */
-    cxt = cb->cxt;
-
     /* see if this is the flow we are looking for */
     if (pi->af == AF_INET) {
         if (CMP_CXT4(cxt, PI_IP4SRC(pi), pi->s_port, PI_IP4DST(pi), pi->d_port)) {
@@ -131,7 +138,7 @@ inline void cxt_update (packetinfo *pi, uint32_t hash)
                 cxt = pcxt->hnext = cxt_dequeue(&cxt_spare_q);
                 if (cxt == NULL) {
 
-                    cxt = cb->cxt = connection_alloc();
+                    cxt = connection_alloc();
                     if (cxt == NULL) {
                         return;
                     }
@@ -144,7 +151,6 @@ inline void cxt_update (packetinfo *pi, uint32_t hash)
                 cxt_new(cxt,pi);
                 cxt_requeue(cxt, NULL, &cxt_est_q);
 
-                cxt->cb = cb;
                 cxt_update_src(cxt, pi);
                 pi->cxt = cxt;
                 return;
@@ -173,10 +179,10 @@ inline void cxt_update (packetinfo *pi, uint32_t hash)
                 if (cxt->hnext) cxt->hnext->hprev = cxt->hprev;
                 if (cxt->hprev) cxt->hprev->hnext = cxt->hnext;
 
-                cxt->hnext = cb->cxt;
+                cxt->hnext = cxt;
                 cxt->hprev = NULL;
-                cb->cxt->hprev = cxt;
-                cb->cxt = cxt;
+                cxt->hprev = cxt;
+                cxt = cxt;
 
                 /* found our connection */
                 pi->cxt = cxt;
@@ -203,9 +209,6 @@ void free_queue()
         connection_free(cxt);
     }
 
-    if (cxt_hash != NULL) {
-        free(cxt_hash);
-    }
     printf("\nqueue memory has been cleared");
 }
 
@@ -224,8 +227,8 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->start_time = pi->pheader->ts.tv_sec;
         cxt->last_pkt_time = pi->pheader->ts.tv_sec;
         if(pi->af == AF_INET){
-            IP4ADDR(cxt->s_ip) = PI_IP4SRC(pi);
-            IP4ADDR(cxt->d_ip) = PI_IP4DST(pi);
+            IP4ADDR(&cxt->s_ip) = PI_IP4SRC(pi);
+            IP4ADDR(&cxt->d_ip) = PI_IP4DST(pi);
         }else{
             cxt->s_ip = PI_IP6SRC(pi);
             cxt->d_ip = PI_IP6DST(pi);

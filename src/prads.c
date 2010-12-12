@@ -169,8 +169,8 @@ inline int filter_packet(const int af, void *ipptr)
                 inet_ntop(af, ip, output, MAX_NETS);
                 vlog(0x2, "ip: %s\n", output);
 #endif
-                if((*ip & network[i].mask.__u6_addr.__u6_addr32[0])
-                    == network[i].addr.__u6_addr.__u6_addr32[0]) {
+                if((*ip & IP4ADDR(&network[i].mask))
+                    == IP4ADDR(&network[i].addr)){
                     our = 1;
                     break;
                 }
@@ -835,18 +835,15 @@ int parse_network (char *net_s, struct in6_addr *network)
         }
         printf("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
                net_s,
-               network->__u6_addr.__u6_addr32[0],
-               network->__u6_addr.__u6_addr32[1],
-               network->__u6_addr.__u6_addr32[2],
-               network->__u6_addr.__u6_addr32[3]
+               IP6ADDR(network)
               );
     } else {
         type = AF_INET;
-        if (!inet_pton(type, net_s, &network->__u6_addr.__u6_addr32[0])) {
+        if (!inet_pton(type, net_s, &IP4ADDR(network))) {
             perror("parse_nets");
             return -1;
         }
-        printf("Network4 %16s \t-> 0x%08x\n", net_s, network->__u6_addr.__u6_addr32[0]);
+        printf("Network4 %16s \t-> 0x%08x\n", net_s, IP4ADDR(network));
     }
     return type;
 }
@@ -859,8 +856,8 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
     // parse netmask into host order
     if (type == AF_INET && (t = strchr(f, '.')) > f && t-f < 4) {
         // full ipv4 netmask : dotted quads
-        inet_pton(type, f, &netmask->__u6_addr.__u6_addr32[0]);
-        printf("mask 4 %s \t-> 0x%08x\n", f, netmask->__u6_addr.__u6_addr32[0]);
+        inet_pton(type, f, &IP4ADDR(netmask));
+        printf("mask 4 %s \t-> 0x%08x\n", f, IP4ADDR(netmask));
     } else if (type == AF_INET6 && NULL != (t = strchr(f, ':'))) {
         // full ipv6 netmasĸ
         printf("mask 6 %s\n", f);
@@ -872,11 +869,11 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
         if (type == AF_INET) {
             uint32_t shift = 32 - mask;
             if (mask)
-                netmask->__u6_addr.__u6_addr32[0] = ntohl( ((unsigned int)-1 >> shift)<< shift);
+                IP4ADDR(netmask) = ntohl( ((unsigned int)-1 >> shift)<< shift);
             else
-                netmask->__u6_addr.__u6_addr32[0] = 0;
+                IP4ADDR(netmask) = 0;
 
-            printf("0x%08x\n", netmask->__u6_addr.__u6_addr32[0]);
+            printf("0x%08x\n", IP4ADDR(netmask));
         } else if (type == AF_INET6) {
             //mask = 128 - mask;
             int j = 0;
@@ -889,13 +886,13 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             if (mask > 0) {
                 netmask->s6_addr[j] = -1 << (8 - mask);
             }
-            inet_ntop(type, &netmask->__u6_addr.__u6_addr32[0], output, MAX_NETS);
+            inet_ntop(type, &IP4ADDR(netmask), output, MAX_NETS);
             printf("mask: %s\n", output);
             // pcap packets are in host order.
-            netmask->__u6_addr.__u6_addr32[0] = ntohl(netmask->__u6_addr.__u6_addr32[0]);
-            netmask->__u6_addr.__u6_addr32[1] = ntohl(netmask->__u6_addr.__u6_addr32[1]);
-            netmask->__u6_addr.__u6_addr32[2] = ntohl(netmask->__u6_addr.__u6_addr32[2]);
-            netmask->__u6_addr.__u6_addr32[3] = ntohl(netmask->__u6_addr.__u6_addr32[3]);
+            IP6ADDR0(netmask) = ntohl(IP6ADDR0(netmask));
+            IP6ADDR1(netmask) = ntohl(IP6ADDR1(netmask));
+            IP6ADDR2(netmask) = ntohl(IP6ADDR2(netmask));
+            IP6ADDR3(netmask) = ntohl(IP6ADDR3(netmask));
 
         }
     }
@@ -970,27 +967,6 @@ nets_end:
     return;
 }
 
-void cxt_init()
- {
-    /* alloc hash memory */
-    cxt_hash = calloc(CXT_DEFAULT_HASHSIZE, sizeof(cxtbucket));
-    if (cxt_hash == NULL) {
-        printf("calloc failed %s\n", strerror(errno));
-        exit(1);
-    }
-    uint32_t i = 0;
-
-    /* pre allocate conection trackers */
-    for (i = 0; i < CXT_DEFAULT_PREALLOC; i++) {
-        connection *cxt = connection_alloc();
-        if (cxt == NULL) {
-            printf("ERROR: connection_alloc failed: %s\n", strerror(errno));
-            exit(1);
-        }
-        cxt_enqueue(&cxt_spare_q,cxt);
-     }
-}
-
 static void usage()
 {
     printf("USAGE:\n");
@@ -1015,16 +991,6 @@ static void usage()
     printf(" -v              Verbose.\n");
 }
 
-int preallocate_cxt (void)
-{
-    int i;
-    for (i=0;i<BUCKET_SIZE;i++) {
-        bucket[i] = (connection *)calloc(1, sizeof(connection));
-        if(bucket[i] == NULL)
-            return 0;
-    }
-    return 1;
-}
 int main(int argc, char *argv[])
 {
     printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
