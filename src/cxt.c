@@ -23,16 +23,29 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
     connection *head = NULL;
     uint32_t hash;
 
+#ifdef OSX
     if (af == AF_INET) {
-        hash = ((ip_src->s6_addr32[0] + ip_dst->s6_addr32[0])) % BUCKET_SIZE;
+        hash = ((ip_src->__u6_addr.__u6_addr32[0] + ip_dst->__u6_addr.__u6_addr32[0])) % BUCKET_SIZE;
     } else if (af == AF_INET6) {
         hash =
-            ((ip_src->s6_addr32[0] + ip_src->s6_addr32[1] +
-              ip_src->s6_addr32[2] + ip_src->s6_addr32[3] +
-              ip_dst->s6_addr32[0] + ip_dst->s6_addr32[1] +
-              ip_dst->s6_addr32[2] + ip_dst->s6_addr32[3]
+            ((ip_src->__u6_addr.__u6_addr32[0] + ip_src->__u6_addr.__u6_addr32[1] +
+              ip_src->__u6_addr.__u6_addr32[2] + ip_src->__u6_addr.__u6_addr32[3] +
+              ip_dst->__u6_addr.__u6_addr32[0] + ip_dst->__u6_addr.__u6_addr32[1] +
+              ip_dst->__u6_addr.__u6_addr32[2] + ip_dst->__u6_addr.__u6_addr32[3]
              )) % BUCKET_SIZE;
     }
+#else
+    if (af == AF_INET) {
+        hash = ((ip_src->__u6_addr.__u6_addr32[0] + ip_dst->__u6_addr.__u6_addr32[0])) % BUCKET_SIZE;
+    } else if (af == AF_INET6) {
+        hash =
+            ((ip_src->__u6_addr.__u6_addr32[0] + ip_src->__u6_addr.__u6_addr32[1] +
+              ip_src->__u6_addr.__u6_addr32[2] + ip_src->__u6_addr.__u6_addr32[3] +
+              ip_dst->__u6_addr.__u6_addr32[0] + ip_dst->__u6_addr.__u6_addr32[1] +
+              ip_dst->__u6_addr.__u6_addr32[2] + ip_dst->__u6_addr.__u6_addr32[3]
+             )) % BUCKET_SIZE;
+    }
+#endif
     extern connection *bucket[BUCKET_SIZE];
     cxt = bucket[hash];
     head = cxt;
@@ -40,8 +53,8 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
     while (cxt != NULL) {
         if (af == AF_INET) {
             if (cxt->s_port == src_port && cxt->d_port == dst_port
-                && cxt->s_ip.s6_addr32[0] == ip_src->s6_addr32[0]
-                && cxt->d_ip.s6_addr32[0] == ip_dst->s6_addr32[0]) {
+                && cxt->s_ip.__u6_addr.__u6_addr32[0] == ip_src->__u6_addr.__u6_addr32[0]
+                && cxt->d_ip.__u6_addr.__u6_addr32[0] == ip_dst->__u6_addr.__u6_addr32[0]) {
                 cxt->s_tcpFlags |= tcpflags;
                 cxt->s_total_bytes += p_bytes;
                 cxt->s_total_pkts += 1;
@@ -52,8 +65,8 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
                 }
                 return 1;       // Client should send the first packet (TCP/SYN - UDP?), hence this is a client
             } else if (cxt->s_port == dst_port && cxt->d_port == src_port
-                       && cxt->s_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[0] == ip_src->s6_addr32[0]) {
+                       && cxt->s_ip.__u6_addr.__u6_addr32[0] == ip_dst->__u6_addr.__u6_addr32[0]
+                       && cxt->d_ip.__u6_addr.__u6_addr32[0] == ip_src->__u6_addr.__u6_addr32[0]) {
                 cxt->d_tcpFlags |= tcpflags;
                 cxt->d_total_bytes += p_bytes;
                 cxt->d_total_pkts += 1;
@@ -66,15 +79,15 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
             }
         } else if (af == AF_INET6) {
             if (cxt->s_port == src_port && cxt->d_port == dst_port
-                && cxt->s_ip.s6_addr32[3] == ip_src->s6_addr32[3]
-                && cxt->s_ip.s6_addr32[2] == ip_src->s6_addr32[2]
-                && cxt->s_ip.s6_addr32[1] == ip_src->s6_addr32[1]
-                && cxt->s_ip.s6_addr32[0] == ip_src->s6_addr32[0]
+                && cxt->s_ip.__u6_addr.__u6_addr32[3] == ip_src->__u6_addr.__u6_addr32[3]
+                && cxt->s_ip.__u6_addr.__u6_addr32[2] == ip_src->__u6_addr.__u6_addr32[2]
+                && cxt->s_ip.__u6_addr.__u6_addr32[1] == ip_src->__u6_addr.__u6_addr32[1]
+                && cxt->s_ip.__u6_addr.__u6_addr32[0] == ip_src->__u6_addr.__u6_addr32[0]
 
-                && cxt->d_ip.s6_addr32[3] == ip_dst->s6_addr32[3]
-                && cxt->d_ip.s6_addr32[2] == ip_dst->s6_addr32[2]
-                && cxt->d_ip.s6_addr32[1] == ip_dst->s6_addr32[1]
-                && cxt->d_ip.s6_addr32[0] == ip_dst->s6_addr32[0]) {
+                && cxt->d_ip.__u6_addr.__u6_addr32[3] == ip_dst->__u6_addr.__u6_addr32[3]
+                && cxt->d_ip.__u6_addr.__u6_addr32[2] == ip_dst->__u6_addr.__u6_addr32[2]
+                && cxt->d_ip.__u6_addr.__u6_addr32[1] == ip_dst->__u6_addr.__u6_addr32[1]
+                && cxt->d_ip.__u6_addr.__u6_addr32[0] == ip_dst->__u6_addr.__u6_addr32[0]) {
 
                 cxt->s_tcpFlags |= tcpflags;
                 cxt->s_total_bytes += p_bytes;
@@ -86,15 +99,15 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
                 }
                 return 1;       // Client
             } else if (cxt->d_port == src_port && cxt->s_port == dst_port
-                       && cxt->s_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
-                       && cxt->s_ip.s6_addr32[1] == ip_dst->s6_addr32[1]
-                       && cxt->s_ip.s6_addr32[2] == ip_dst->s6_addr32[2]
-                       && cxt->s_ip.s6_addr32[3] == ip_dst->s6_addr32[3]
+                       && cxt->s_ip.__u6_addr.__u6_addr32[0] == ip_dst->__u6_addr.__u6_addr32[0]
+                       && cxt->s_ip.__u6_addr.__u6_addr32[1] == ip_dst->__u6_addr.__u6_addr32[1]
+                       && cxt->s_ip.__u6_addr.__u6_addr32[2] == ip_dst->__u6_addr.__u6_addr32[2]
+                       && cxt->s_ip.__u6_addr.__u6_addr32[3] == ip_dst->__u6_addr.__u6_addr32[3]
 
-                       && cxt->d_ip.s6_addr32[0] == ip_src->s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[1] == ip_src->s6_addr32[1]
-                       && cxt->d_ip.s6_addr32[2] == ip_src->s6_addr32[2]
-                       && cxt->d_ip.s6_addr32[3] == ip_src->s6_addr32[3]) {
+                       && cxt->d_ip.__u6_addr.__u6_addr32[0] == ip_src->__u6_addr.__u6_addr32[0]
+                       && cxt->d_ip.__u6_addr.__u6_addr32[1] == ip_src->__u6_addr.__u6_addr32[1]
+                       && cxt->d_ip.__u6_addr.__u6_addr32[2] == ip_src->__u6_addr.__u6_addr32[2]
+                       && cxt->d_ip.__u6_addr.__u6_addr32[3] == ip_src->__u6_addr.__u6_addr32[3]) {
 
                 cxt->d_tcpFlags |= tcpflags;
                 cxt->d_total_bytes += p_bytes;
@@ -162,10 +175,10 @@ uint32_t make_hash(packetinfo *pi)
     if (pi->ip4 != NULL) {
         return (PI_IP4SRC(pi) + PI_IP4DST(pi)) % BUCKET_SIZE;
     } else {
-        return (PI_IP6SRC(pi).s6_addr32[0] + PI_IP6SRC(pi).s6_addr32[1] +
-                PI_IP6SRC(pi).s6_addr32[2] + PI_IP6SRC(pi).s6_addr32[3] +
-                PI_IP6DST(pi).s6_addr32[0] + PI_IP6DST(pi).s6_addr32[1] +
-                PI_IP6DST(pi).s6_addr32[2] + PI_IP6DST(pi).s6_addr32[3]
+        return (PI_IP6SRC(pi).__u6_addr.__u6_addr32[0] + PI_IP6SRC(pi).__u6_addr.__u6_addr32[1] +
+                PI_IP6SRC(pi).__u6_addr.__u6_addr32[2] + PI_IP6SRC(pi).__u6_addr.__u6_addr32[3] +
+                PI_IP6DST(pi).__u6_addr.__u6_addr32[0] + PI_IP6DST(pi).__u6_addr.__u6_addr32[1] +
+                PI_IP6DST(pi).__u6_addr.__u6_addr32[2] + PI_IP6DST(pi).__u6_addr.__u6_addr32[3]
                  ) % BUCKET_SIZE;
     }
 }
@@ -203,14 +216,14 @@ uint32_t make_hash(packetinfo *pi)
     ip6v incoming;
     ip6v compare;
     VEC_FILL(incoming,
-        pi->ip_src.s6_addr32[0],
-        pi->ip_dst.s6_addr32[0],
+        pi->ip_src.__u6_addr.__u6_addr32[0],
+        pi->ip_dst.__u6_addr.__u6_addr32[0],
         pi->s_port,
         pi->d_port);
     while (cxt != NULL) {
         VEC_FILL(compare,
-        cxt->s_ip.s6_addr32[0],
-        cxt->d_ip.s6_addr32[0],
+        cxt->s_ip.__u6_addr.__u6_addr32[0],
+        cxt->d_ip.__u6_addr.__u6_addr32[0],
         cxt->s_port,
         cxt->d_port);
 
@@ -229,8 +242,8 @@ uint32_t make_hash(packetinfo *pi)
 
         // compare the other direction
         VEC_FILL(compare,
-        cxt->d_ip.s6_addr32[0],
-        cxt->s_ip.s6_addr32[0],
+        cxt->d_ip.__u6_addr.__u6_addr32[0],
+        cxt->s_ip.__u6_addr.__u6_addr32[0],
         cxt->d_port,
         cxt->s_port);
 

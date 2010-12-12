@@ -28,6 +28,17 @@
 #include "bstrlib.h"
 #include <pcre.h>
 
+// sidds darwin ports
+#if defined OSX
+#include <netinet/in.h>
+#define IP4ADDR(ip) (ip).__u6_addr.__u6_addr32[0]
+#else
+#define IP4ADDR(ip) (ip).s6_addr32[0]
+#endif
+
+
+
+
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.2.1"
 #define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */
@@ -542,6 +553,21 @@ typedef struct _connection {
 #define ISSET_SERVICE_UNKNOWN(pi)        (pi->cxt->check & CXT_SERVICE_UNKNOWN_SET)
 #define ISSET_CLIENT_UNKNOWN(pi)         (pi->cxt->check & CXT_CLIENT_UNKNOWN_SET)
 // good comparison to optimize
+// XXX: TODO: comotion: use filter_network 64bit instructions
+#ifdef OSX
+#define CMP_ADDR6(a1,a2) \
+    (((a1)->__u6_addr.__u6_addr32[3] == (a2)->__u6_addr.__u6_addr32[3] && \
+      (a1)->__u6_addr.__u6_addr32[2] == (a2)->__u6_addr.__u6_addr32[2] && \
+      (a1)->__u6_addr.__u6_addr32[1] == (a2)->__u6_addr.__u6_addr32[1] && \
+      (a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
+
+// the reason why we can't get rid of pi->s6_addr32
+#define CMP_ADDR4(a1,a2) \
+    (((a1)->__u6_addr.__u6_addr32[0] ==  (a2)))
+    //(((a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
+#define CMP_PORT(p1,p2) \
+    ((p1 == p2))
+#else
 #define CMP_ADDR6(a1,a2) \
     (((a1)->s6_addr32[3] == (a2)->s6_addr32[3] && \
       (a1)->s6_addr32[2] == (a2)->s6_addr32[2] && \
@@ -554,6 +580,7 @@ typedef struct _connection {
     //(((a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
 #define CMP_PORT(p1,p2) \
     ((p1 == p2))
+#endif // OSX
 
 /* Since two or more connections can have the same hash key, we need to
  * compare the connections with the current hash key. */
@@ -568,12 +595,21 @@ typedef struct _connection {
        CMP_PORT((cxt1)->s_port, (sp)) && CMP_PORT((cxt1)->d_port, (dp))))
 
 /* clear the address structure by setting all fields to 0 */
+#ifdef OSX
+#define CLEAR_ADDR(a) { \
+    (a)->__u6_addr.__u6_addr32[0] = 0; \
+    (a)->__u6_addr.__u6_addr32[1] = 0; \
+    (a)->__u6_addr.__u6_addr32[2] = 0; \
+    (a)->__u6_addr.__u6_addr32[3] = 0; \
+}
+#else
 #define CLEAR_ADDR(a) { \
     (a)->s6_addr32[0] = 0; \
     (a)->s6_addr32[1] = 0; \
     (a)->s6_addr32[2] = 0; \
     (a)->s6_addr32[3] = 0; \
 }
+#endif
 
 /* clears the cxt parts */
 #define CLEAR_CXT(cxt) { \

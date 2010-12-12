@@ -11,11 +11,21 @@
 void free_queue(); // util-cxt.c
 extern globalconfig config;
 
+#define OSX
+
+#if defined OSX
+#define IP6ADDR(ip) (ip).__u6_addr
+#else
+#define IP6ADDR(ip) (ip).s6_addr32[0]
+#endif
+
 const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
 {
     if (af == AF_INET) {
         if (!inet_ntop
-            (AF_INET, &ip_addr.s6_addr32[0], dest, INET_ADDRSTRLEN + 1)) {
+            (AF_INET, 
+	     &IP6ADDR(ip_addr),
+		 dest, INET_ADDRSTRLEN + 1)) {
             perror("Something died in inet_ntop");
             return NULL;
         }

@@ -97,7 +97,7 @@ uint8_t asset_lookup(packetinfo *pi)
             while (masset != NULL) {
                 //if (memcmp(&ip_addr,&rec->ip_addr,16)) {
                 if (masset->af == AF_INET 
-                    && masset->ip_addr.s6_addr32[0] == ip){
+                    && masset->ip_addr.__u6_addr.__u6_addr32[0] == ip){
                     pi->asset = masset;
                     if (pi->cxt != NULL) {
                         if (pi->sc == SC_CLIENT) {
@@ -114,7 +114,7 @@ uint8_t asset_lookup(packetinfo *pi)
             }
             return ERROR;
         } else if (pi->af == AF_INET6) {
-            hash = ((PI_IP6SRC(pi).s6_addr32[3])) % BUCKET_SIZE;
+            hash = ((PI_IP6SRC(pi).__u6_addr.__u6_addr32[3])) % BUCKET_SIZE;
             masset = passet[hash];
             while (masset != NULL) {
                 if (masset->af == AF_INET6 &&
@@ -416,14 +416,14 @@ void add_asset(packetinfo *pi)
 
     if (pi->af == AF_INET) {
         if(pi->arph) // mongo arp check
-            //memcpy(&masset->ip_addr.s6_addr32[0], pi->arph->arp_spa, sizeof(uint32_t));
-            masset->ip_addr.s6_addr32[0] = *(uint32_t*) pi->arph->arp_spa;
+            //memcpy(&masset->ip_addr.__u6_addr.__u6_addr32[0], pi->arph->arp_spa, sizeof(uint32_t));
+            masset->ip_addr.__u6_addr.__u6_addr32[0] = *(uint32_t*) pi->arph->arp_spa;
         else
-            masset->ip_addr.s6_addr32[0] = PI_IP4SRC(pi);
-        hash = masset->ip_addr.s6_addr32[0] % BUCKET_SIZE;
+            masset->ip_addr.__u6_addr.__u6_addr32[0] = PI_IP4SRC(pi);
+        hash = masset->ip_addr.__u6_addr.__u6_addr32[0] % BUCKET_SIZE;
     } else if (pi->af == AF_INET6) {
         masset->ip_addr = PI_IP6SRC(pi);
-        hash = ((PI_IP6SRC(pi).s6_addr32[3])) % BUCKET_SIZE;
+        hash = ((PI_IP6SRC(pi).__u6_addr.__u6_addr32[3])) % BUCKET_SIZE;
     }
 
     masset->next = passet[hash];

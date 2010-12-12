@@ -22,7 +22,11 @@
 */
 
 /*  I N C L U D E S  *********************************************************/
+#ifdef OSX
+#include <sys/malloc.h>
+#else
 #include <malloc.h>
+#endif
 
 #include "common.h"
 #include "prads.h"
@@ -158,15 +162,15 @@ inline int filter_packet(const int af, void *ipptr)
                 if (network[i].type != AF_INET)
                     continue;
 #if DEBUG == 2
-                inet_ntop(af, &network[i].addr.s6_addr32[0], output, MAX_NETS);
+                inet_ntop(af, &network[i].addr.__u6_addr.__u6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "Filter: %s\n", output);
-                inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
+                inet_ntop(af, &network[i].mask.__u6_addr.__u6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "mask: %s\n", output);
                 inet_ntop(af, ip, output, MAX_NETS);
                 vlog(0x2, "ip: %s\n", output);
 #endif
-                if((*ip & network[i].mask.s6_addr32[0])
-                    == network[i].addr.s6_addr32[0]) {
+                if((*ip & network[i].mask.__u6_addr.__u6_addr32[0])
+                    == network[i].addr.__u6_addr.__u6_addr32[0]) {
                     our = 1;
                     break;
                 }
@@ -216,14 +220,14 @@ inline int filter_packet(const int af, void *ipptr)
                     }
 
 #else
-                    if ((ip_s.s6_addr32[0] & network[i].mask.s6_addr32[0])
-                        == network[i].addr.s6_addr32[0]
-                        && (ip_s.s6_addr32[1] & network[i].mask.s6_addr32[1])
-                        == network[i].addr.s6_addr32[1]
-                        && (ip_s.s6_addr32[2] & network[i].mask.s6_addr32[2])
-                        == network[i].addr.s6_addr32[2]
-                        && (ip_s.s6_addr32[3] & network[i].mask.s6_addr32[3])
-                        == network[i].addr.s6_addr32[3]) {
+                    if ((ip_s.__u6_addr.__u6_addr32[0] & network[i].mask.__u6_addr.__u6_addr32[0])
+                        == network[i].addr.__u6_addr.__u6_addr32[0]
+                        && (ip_s.__u6_addr.__u6_addr32[1] & network[i].mask.__u6_addr.__u6_addr32[1])
+                        == network[i].addr.__u6_addr.__u6_addr32[1]
+                        && (ip_s.__u6_addr.__u6_addr32[2] & network[i].mask.__u6_addr.__u6_addr32[2])
+                        == network[i].addr.__u6_addr.__u6_addr32[2]
+                        && (ip_s.__u6_addr.__u6_addr32[3] & network[i].mask.__u6_addr.__u6_addr32[3])
+                        == network[i].addr.__u6_addr.__u6_addr32[3]) {
                         our = 1;
                         break;
                     }
@@ -290,8 +294,8 @@ void prepare_ip4 (packetinfo *pi)
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
     pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
     // can be removed if references are replaced by macro
-    //pi->ip_src.s6_addr32[0] = PI_IP4SRC(pi);
-    //pi->ip_dst.s6_addr32[0] = PI_IP4DST(pi);
+    //pi->ip_src.__u6_addr.__u6_addr32[0] = PI_IP4SRC(pi);
+    //pi->ip_dst.__u6_addr.__u6_addr32[0] = PI_IP4DST(pi);
     
     pi->our = filter_packet(pi->af, &PI_IP4SRC(pi));
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
@@ -831,18 +835,18 @@ int parse_network (char *net_s, struct in6_addr *network)
         }
         printf("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
                net_s,
-               network->s6_addr32[0],
-               network->s6_addr32[1],
-               network->s6_addr32[2],
-               network->s6_addr32[3]
+               network->__u6_addr.__u6_addr32[0],
+               network->__u6_addr.__u6_addr32[1],
+               network->__u6_addr.__u6_addr32[2],
+               network->__u6_addr.__u6_addr32[3]
               );
     } else {
         type = AF_INET;
-        if (!inet_pton(type, net_s, &network->s6_addr32[0])) {
+        if (!inet_pton(type, net_s, &network->__u6_addr.__u6_addr32[0])) {
             perror("parse_nets");
             return -1;
         }
-        printf("Network4 %16s \t-> 0x%08x\n", net_s, network->s6_addr32[0]);
+        printf("Network4 %16s \t-> 0x%08x\n", net_s, network->__u6_addr.__u6_addr32[0]);
     }
     return type;
 }
@@ -855,8 +859,8 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
     // parse netmask into host order
     if (type == AF_INET && (t = strchr(f, '.')) > f && t-f < 4) {
         // full ipv4 netmask : dotted quads
-        inet_pton(type, f, &netmask->s6_addr32[0]);
-        printf("mask 4 %s \t-> 0x%08x\n", f, netmask->s6_addr32[0]);
+        inet_pton(type, f, &netmask->__u6_addr.__u6_addr32[0]);
+        printf("mask 4 %s \t-> 0x%08x\n", f, netmask->__u6_addr.__u6_addr32[0]);
     } else if (type == AF_INET6 && NULL != (t = strchr(f, ':'))) {
         // full ipv6 netmasĸ
         printf("mask 6 %s\n", f);
@@ -868,11 +872,11 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
         if (type == AF_INET) {
             uint32_t shift = 32 - mask;
             if (mask)
-                netmask->s6_addr32[0] = ntohl( ((unsigned int)-1 >> shift)<< shift);
+                netmask->__u6_addr.__u6_addr32[0] = ntohl( ((unsigned int)-1 >> shift)<< shift);
             else
-                netmask->s6_addr32[0] = 0;
+                netmask->__u6_addr.__u6_addr32[0] = 0;
 
-            printf("0x%08x\n", netmask->s6_addr32[0]);
+            printf("0x%08x\n", netmask->__u6_addr.__u6_addr32[0]);
         } else if (type == AF_INET6) {
             //mask = 128 - mask;
             int j = 0;
@@ -885,13 +889,13 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             if (mask > 0) {
                 netmask->s6_addr[j] = -1 << (8 - mask);
             }
-            inet_ntop(type, &netmask->s6_addr32[0], output, MAX_NETS);
+            inet_ntop(type, &netmask->__u6_addr.__u6_addr32[0], output, MAX_NETS);
             printf("mask: %s\n", output);
             // pcap packets are in host order.
-            netmask->s6_addr32[0] = ntohl(netmask->s6_addr32[0]);
-            netmask->s6_addr32[1] = ntohl(netmask->s6_addr32[1]);
-            netmask->s6_addr32[2] = ntohl(netmask->s6_addr32[2]);
-            netmask->s6_addr32[3] = ntohl(netmask->s6_addr32[3]);
+            netmask->__u6_addr.__u6_addr32[0] = ntohl(netmask->__u6_addr.__u6_addr32[0]);
+            netmask->__u6_addr.__u6_addr32[1] = ntohl(netmask->__u6_addr.__u6_addr32[1]);
+            netmask->__u6_addr.__u6_addr32[2] = ntohl(netmask->__u6_addr.__u6_addr32[2]);
+            netmask->__u6_addr.__u6_addr32[3] = ntohl(netmask->__u6_addr.__u6_addr32[3]);
 
         }
     }

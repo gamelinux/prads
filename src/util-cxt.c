@@ -224,8 +224,8 @@ void cxt_new (connection *cxt, packetinfo *pi)
         cxt->start_time = pi->pheader->ts.tv_sec;
         cxt->last_pkt_time = pi->pheader->ts.tv_sec;
         if(pi->af == AF_INET){
-            cxt->s_ip.s6_addr32[0] = PI_IP4SRC(pi);
-            cxt->d_ip.s6_addr32[0] = PI_IP4DST(pi);
+            IP4ADDR(cxt->s_ip) = PI_IP4SRC(pi);
+            IP4ADDR(cxt->d_ip) = PI_IP4DST(pi);
         }else{
             cxt->s_ip = PI_IP6SRC(pi);
             cxt->d_ip = PI_IP6DST(pi);
