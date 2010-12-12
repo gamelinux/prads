@@ -1617,37 +1617,11 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
         match = find_match(sig,
                            config.sig_hashsize,
                            &e,
-                           pi,
+                           pi, // pass all packet characteristics
                            tstamp,
                            end_ptr - (uint8_t *) pi->ip4,
                            payload
                           );
-        /*
-        match = find_match(
-                sig,
-               config.sig_hashsize,
-               e.size,
-               e.df,
-               e.ttl,
-               e.wsize,
-               pi->ip_src.s6_addr32[0],
-               pi->ip_dst.s6_addr32[0], //ip_dst,
-               ntohs(pi->tcph->src_port),
-               ntohs(pi->tcph->dst_port),
-               e.optcnt,
-               e.opt,
-               e.mss,
-               e.wsc,
-               tstamp,
-               pi->ip4->ip_tos,
-               e.quirks,
-               pi->tcph->t_flags & (TF_ECE|TF_CWR), //ECN
-               (uint8_t*) pi->ip4,
-               end_ptr - (uint8_t *) pi->ip4,
-               payload
-               // pts, // *not used
-               );
-        */
     }
 
     //if (match->os != NULL) memcpy(&e.next->os, match->os, MAXLINE);

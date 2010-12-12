@@ -26,17 +26,8 @@
 #define PRADS_H
 #include "common.h"
 #include "bstrlib.h"
-#include <pcre.h>
-
-// sidds darwin ports
-#if defined OSX
 #include <netinet/in.h>
-#define IP4ADDR(ip) (ip).__u6_addr.__u6_addr32[0]
-#else
-#define IP4ADDR(ip) (ip).s6_addr32[0]
-#endif
-
-
+#include <pcre.h>
 
 
 /*  D E F I N E S  ************************************************************/
@@ -555,6 +546,9 @@ typedef struct _connection {
 // good comparison to optimize
 // XXX: TODO: comotion: use filter_network 64bit instructions
 #ifdef OSX
+// sidds darwin ports
+#define IP4ADDR(ip) (ip)->__u6_addr.__u6_addr32[0]
+
 #define CMP_ADDR6(a1,a2) \
     (((a1)->__u6_addr.__u6_addr32[3] == (a2)->__u6_addr.__u6_addr32[3] && \
       (a1)->__u6_addr.__u6_addr32[2] == (a2)->__u6_addr.__u6_addr32[2] && \
@@ -564,10 +558,21 @@ typedef struct _connection {
 // the reason why we can't get rid of pi->s6_addr32
 #define CMP_ADDR4(a1,a2) \
     (((a1)->__u6_addr.__u6_addr32[0] ==  (a2)))
-    //(((a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
+#define CMP_ADDRA(a1,a2) \
+    (((a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
+
 #define CMP_PORT(p1,p2) \
     ((p1 == p2))
 #else
+#define IP6ADDR0(ip) ((ip)->s6_addr32[0])
+#define IP6ADDR1(ip) ((ip)->s6_addr32[1])
+#define IP6ADDR2(ip) ((ip)->s6_addr32[2])
+#define IP6ADDR3(ip) ((ip)->s6_addr32[3])
+#define IP6ADDR(ip) \
+    IP6ADDR0(ip), IP6ADDR1(ip), IP6ADDR2(ip), IP6ADDR3(ip)
+
+#define IP4ADDR(ip) ((ip)->s6_addr32[0])
+
 #define CMP_ADDR6(a1,a2) \
     (((a1)->s6_addr32[3] == (a2)->s6_addr32[3] && \
       (a1)->s6_addr32[2] == (a2)->s6_addr32[2] && \
@@ -575,9 +580,12 @@ typedef struct _connection {
       (a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
 
 // the reason why we can't get rid of pi->s6_addr32
-#define CMP_ADDR4(a1,a2) \
-    (((a1)->s6_addr32[0] ==  (a2)))
-    //(((a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
+// apples and apples
+#define CMP_ADDR4A(a1,a2) \
+    ((a1)->s6_addr32[0] == (a2)->s6_addr32[0])
+// apples and oranges
+#define CMP_ADDR4(apple,orange) \
+    (((apple)->s6_addr32[0] ==  (orange)))
 #define CMP_PORT(p1,p2) \
     ((p1 == p2))
 #endif // OSX
@@ -585,9 +593,12 @@ typedef struct _connection {
 /* Since two or more connections can have the same hash key, we need to
  * compare the connections with the current hash key. */
 #define CMP_CXT4(cxt1, src, sp, dst, dp) \
-    ((CMP_ADDR4(&((cxt1)->s_ip), (src)) && \
-       CMP_ADDR4(&((cxt1)->d_ip),(dst)) && \
-       CMP_PORT((cxt1)->s_port, (sp)) && CMP_PORT((cxt1)->d_port, (dp))))
+    (( \
+       CMP_PORT((cxt1)->s_port, (sp)) && \
+       CMP_PORT((cxt1)->d_port, (dp)) && \
+       CMP_ADDR4(&((cxt1)->s_ip), (src)) && \
+       CMP_ADDR4(&((cxt1)->d_ip), (dst))    \
+    ))
 
 #define CMP_CXT6(cxt1, src, sp, dst, dp) \
     ((CMP_ADDR6(&(cxt1)->s_ip, (src)) && \

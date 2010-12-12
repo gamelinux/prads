@@ -38,9 +38,9 @@ void cxtbuffer_write () {
 
          if ( verbose == 1 ) {
             if (cxt->ipversion == AF_INET) {
-               if (!inet_ntop(AF_INET, &cxt->s_ip.s6_addr32[0], src_s, INET_ADDRSTRLEN + 1 ))
+               if (!inet_ntop(AF_INET, & IP4ADDR(cxt->s_ip), src_s, INET_ADDRSTRLEN + 1 ))
                   perror("Something died in inet_ntop");
-               if (!inet_ntop(AF_INET, &cxt->d_ip.s6_addr32[0], dst_s, INET_ADDRSTRLEN + 1 ))
+               if (!inet_ntop(AF_INET, & IP4ADDR(cxt->d_ip), dst_s, INET_ADDRSTRLEN + 1 ))
                   perror("Something died in inet_ntop");
             }
             else if (cxt->ipversion == AF_INET6) {
