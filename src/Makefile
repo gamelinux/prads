@@ -1,12 +1,19 @@
 #Makefile
 #CC=gcc
 LDFLAGS=-lpcap -lpcre
-CONFDIR=../etc
 CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
 CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign -Wno-nonnull -DCONFDIR='"${CONFDIR}/"'
+endif
+
+BUILD=osx
+ifeq (${BUILD},osx)
+CFLAGS+=-I/opt/local/include/ -DOSX
+CONFDIR=/opt/etc/prads
+else
+CONFDIR=../etc
 endif
 
 SERVICE_OBJ = servicefp/servicefp.o servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o 
