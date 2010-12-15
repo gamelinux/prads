@@ -44,6 +44,7 @@ int init_output_log_file (bstring filename)
     if (filename != NULL)
         output_log_file_conf.filename = bstrcpy(filename);
     else
+       // the unsaid default
         output_log_file_conf.filename = bfromcstr(PRADS_ASSETLOG);
 
     /* Check to see if *filename exists. */
@@ -285,9 +286,11 @@ file_os (asset *main, os_asset *os)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;
+    uint32_t fail;
 
-    if (output_log_file_conf.file == NULL) {
-        elog("[!] ERROR:  File handle not open!\n");
+    if (output_log_file_conf.file == NULL && 
+        (fail = init_output_log_file (NULL))){
+        elog("[!] ERROR:  File handle not open: %s!\n", strerror(fail));
 
         return;
     }
