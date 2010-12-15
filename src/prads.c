@@ -161,7 +161,7 @@ inline int filter_packet(const int af, void *ipptr)
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if (network[i].type != AF_INET)
                     continue;
-#if DEBUG == 2
+#ifdef DEBUG_PACKET
                 inet_ntop(af, &network[i].addr.__u6_addr.__u6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "Filter: %s\n", output);
                 inet_ntop(af, &network[i].mask.__u6_addr.__u6_addr32[0], output, MAX_NETS);
@@ -189,7 +189,7 @@ inline int filter_packet(const int af, void *ipptr)
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
-#if DEBUG == 2
+#ifdef DEBUG_PACKET
                 inet_ntop(af, &network[i].addr, output, MAX_NETS);
                 dlog("net:  %s\n", output);
                 inet_ntop(af, &network[i].mask, output, MAX_NETS);
