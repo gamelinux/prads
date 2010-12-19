@@ -528,7 +528,7 @@ typedef struct _connection {
     uint8_t  check;               /* Flags spesifying checking */
     struct   _asset *c_asset;     /* pointer to src asset */
     struct   _asset *s_asset;     /* pointer to server asset */
-    struct   _cxtbucket *cb;
+    struct   _cxtbucket *cb;      /* pointer to resource in connection track bucket */
 } connection;
 #define CXT_DONT_CHECK_SERVER     0x01  /* Dont check server packets */
 #define CXT_DONT_CHECK_CLIENT     0x02  /* Dont check client packets */

@@ -63,10 +63,9 @@ typedef struct _globalconfig {
     fp_entry   **sig_fin;               /* FIN signature hash */
     fp_entry   **sig_rst;               /* RST signature hash */
 } globalconfig;
-#define ISSET_CONFIG_VERBOSE(config)    (config->cflags & CONFIG_VERBOSE)
-#define ISSET_CONFIG_UPDATES(config)    (config->cflags & CONFIG_UPDATES)
-#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & CONFIG_SYSLOG)
-//#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & 0x08)
+#define ISSET_CONFIG_VERBOSE(config)    ((config)->cflags & CONFIG_VERBOSE)
+#define ISSET_CONFIG_UPDATES(config)    ((config)->cflags & CONFIG_UPDATES)
+#define ISSET_CONFIG_SYSLOG(config)     ((config)->cflags & CONFIG_SYSLOG)
 
 void display_config();
 void set_default_config_options();

@@ -261,19 +261,13 @@ void end_sessions()
     for (cxt = cxt_est_q.bot; cxt != NULL;) {
         xpir = 0;
         curcxt++;
-        /*
-         * TCP
-         */
+        /** TCP */
         if (cxt->proto == IP_PROTO_TCP) {
-            /*
-             * FIN from both sides
-             */
+            /* * FIN from both sides */
             if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
                     && (check_time - cxt->last_pkt_time) > 5) {
                 xpir = 1;
-            }                /*
-                 * RST from eather side 
-                 */
+            } /* * RST from either side */
             else if ((cxt->s_tcpFlags & TF_RST
                     || cxt->d_tcpFlags & TF_RST)
                     && (check_time - cxt->last_pkt_time) > 5) {
@@ -324,7 +318,8 @@ void end_sessions()
                 cxt->hprev->hnext = cxt->hnext;
             if (cxt->hnext)
                 cxt->hnext->hprev = cxt->hprev;
-            if (cxt->cb->cxt == cxt)
+            // cb is deprecated (we believe)
+            if (cxt->cb && cxt->cb->cxt == cxt)
                 cxt->cb->cxt = cxt->hnext;
 
             connection *tmp = cxt;
