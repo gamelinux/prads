@@ -62,3 +62,10 @@ S4:64:1:*:.:AFDN:Linux:2.6 arm
 
 # Cisco Iron Port
 16560:64:1:40:.:AFN:Cisco:AsyncOS phoebe 7.1.2 (Iron Port)
+
+# signatures from Eric Kollmann
+64292:128:1:40:.:AFN:Windows:Windows XP
+64560:128:1:40:.:AFN:Windows:Windows XP
+252:128:1:40:.:AFN:Windows:Windows 7/2008 R2
+6432:64:1:40:.:AFN:Netgear:Netgear WNR3500
+
