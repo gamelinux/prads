@@ -207,26 +207,26 @@
  */
 
 typedef struct _ether_header {
-    u_char ether_dst[6];        /* destination MAC */
-    u_char ether_src[6];        /* source MAC */
+    uint8_t ether_dst[6];        /* destination MAC */
+    uint8_t ether_src[6];        /* source MAC */
 
     union {
         struct etht {
-            u_short ether_type; /* ethernet type (normal) */
+            uint16_t ether_type; /* ethernet type (normal) */
         } etht;
 
         struct qt {
-            u_short eth_t_8021; /* ethernet type/802.1Q tag */
-            u_short eth_t_8_vid;
-            u_short eth_t_8_type;
+            uint16_t eth_t_8021; /* ethernet type/802.1Q tag */
+            uint16_t eth_t_8_vid;
+            uint16_t eth_t_8_type;
         } qt;
 
         struct qot {
-            u_short eth_t_80212;        /* ethernet type/802.1QinQ */
-            u_short eth_t_82_mvid;
-            u_short eth_t_82_8021;
-            u_short eth_t_82_vid;
-            u_short eth_t_82_type;
+            uint16_t eth_t_80212;        /* ethernet type/802.1QinQ */
+            uint16_t eth_t_82_mvid;
+            uint16_t eth_t_82_8021;
+            uint16_t eth_t_82_vid;
+            uint16_t eth_t_82_type;
         } qot;
     } vlantag;
 
@@ -650,7 +650,7 @@ typedef struct _packetinfo {
     // eth_type(pi) is same as pi->eth_type, no?
     // marked candidates for deletion
     const struct pcap_pkthdr *pheader; /* Libpcap packet header struct pointer */
-    const u_char *  packet;         /* Unsigned char pointer to raw packet */
+    const uint8_t *  packet;         /* Unsigned char pointer to raw packet */
     // compute (all) these from packet
     uint32_t        eth_hlen;       /* Ethernet header lenght */
     uint16_t        mvlan;          /* Metro vlan tag */
@@ -751,7 +751,7 @@ typedef struct _asset {
     int af;                     /* IP AF_INET */
     uint16_t        vlan;       /* vlan tag */
     struct in6_addr ip_addr;    /* IP asset address */
-    unsigned char mac_addr[MAC_ADDR_LEN];       /* Asset MAC address */
+    uint8_t mac_addr[MAC_ADDR_LEN];       /* Asset MAC address */
     bstring mac_resolved;       /* Asset MAC vendor name */
     serv_asset *services;       /* Linked list with services detected */
     os_asset *os;               /* Linked list with OSes detected */
@@ -783,12 +783,6 @@ typedef struct _signature {
     struct _signature *next;    /* Next record in the list. */
     struct _signature *prev;    /* Next record in the list. */
 } signature;
-
-typedef struct _vendor {
-    unsigned int mac;           /* MAC ADDRESS */
-    bstring vendor;             /* Vendor */
-    struct _vendor *next;       /* Next vendor structure */
-} vendor;
 
 typedef struct _servicelist {
     bstring     service_name;   /* Service (@http) etc. */
