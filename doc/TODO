@@ -62,7 +62,10 @@ Sep 04 21:00:45 <qru>    * 01                   TCP / ICMP Asset Discovered
 Sep 04 21:00:45 <qru>    * 02                   ARP Asset Discovered
 Sep 04 21:00:45 <qru>    * 03                   TCP / ICMP Statistic Information
 
-Kacper's TODO items & krazy ideas:
+====================================
+ Kacper's TODO items & krazy ideas:
+====================================
+
  > design doc! => good design == god API for free
  == easier to make good gui with good api
       /  main program (prads)  \
@@ -74,9 +77,11 @@ Kacper's TODO items & krazy ideas:
  .data exchange api? in-memory updates should be available
  for realtime display, db insertion or offline dumping
  .signature matching {SYN,UDP,ICMP,++} based on generated fp
- match = signature[hash(fp)]. 
+
+match = signature[hash(fp)]. 
     > Take away multiple matches.
     > Normalize OS, provides "best guess"
+
  .service fingerprints == good regex module
   finding byte-sigs before regex.
  - NAT detection
@@ -84,7 +89,7 @@ Kacper's TODO items & krazy ideas:
  - trust relationships :-)
  - DDoS detection
  - Flood protection: malloc-free shmem ringbugger
- - phase plane analysis seqnum fingerprints
+ - phase plane analysis of initial SEQ = fingerprint signatures
  - active prads-informed firewall
  - UPnP. BGP IGMP, multicast, tcp6 etc etc
  - how to do vuln checks? / match to db
@@ -112,8 +117,6 @@ Optimizations:
  log / visualize / stats / db insert
  * get prads.c to prads.pl state. superdaemon + subfunction daemons
  -> duplicate the commandline of perl
- * phase plane analysis of initial SEQ = fingerprint signatures
- * release packages: deb/rpm
  * async IO and other scaling factors
  * mobile (wifi,ether,ip,tcp)-frame scanning app for android/iPhone (+ autohack?)
  * autogen nagios host table
@@ -122,6 +125,7 @@ Optimizations:
  * realitme / SDL visio map
 
 Edward's TODO items:
+=====================
  - fix SERVICE, both TCP and UDP... together with Kacper?
    Need to make it faster, and maybe drop newlines etc.?
    Kacper mentioned precompiling regexp
@@ -141,6 +145,16 @@ Minor issues to trac:
  like "UNKNOWN"
  - make sanity checker macro's on all API funcs that handle packet fields
   (* packetinfo makes for caller opacity)
+
+Passive DNS : Only on the answer from the DNS SERVER
+TIMESTAMP,DNS-SERVER-IP,QUERY-TYPE,QUERY-CLASS,QUERY-DATA,RESURSE-TYPE,RESURSE-CLASS,RESURSE-DATA,MISC
+ TIMESTAMP: unixtimestamp
+ DNS-SERVER-IP: The ip of the dns server responding
+ MISC: Other data in the answer
+ foreach additional record $UDP-DNS-PAYLOAD {
+  TIMESTAMP,DNS-SERVER-IP,QUERY-TYPE,QUERY-CLASS,QUERY-DATA,RESURSE-TYPE,RESURSE-CLASS,RESURSE-DATA,MISC
+ }
+
 
 
 DONE
