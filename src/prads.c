@@ -293,9 +293,6 @@ void prepare_ip4 (packetinfo *pi)
     pi->af = AF_INET;
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
     pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
-    // can be removed if references are replaced by macro
-    //pi->ip_src.__u6_addr.__u6_addr32[0] = PI_IP4SRC(pi);
-    //pi->ip_dst.__u6_addr.__u6_addr32[0] = PI_IP4DST(pi);
     
     pi->our = filter_packet(pi->af, &PI_IP4SRC(pi));
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
