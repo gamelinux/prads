@@ -68,8 +68,6 @@ extern globalconfig config;
 #define SIGHASH(tsize,optcnt,q,df) \
 	( ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) )
 	//( ((wsize) << 3) ^ ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) )
-#define debug(x...)	fprintf(stderr,x)
-#define fatal(x...)	do { debug("[-] ERROR: " x); exit(1); } while (0)
 
 uint32_t packet_count;
 uint8_t operating_mode;
@@ -842,7 +840,7 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
     }
 
     fclose(f);
-#ifdef DUMP_HASH
+#ifdef DUMP_SIG_HASH
     {
         int i;
         for (i = 0; i < sigcnt; i++) {

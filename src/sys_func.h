@@ -10,6 +10,8 @@
 #define dlog(fmt, ...) do { ; } while(0)
 #define vlog(fmt, ...) do { ; } while(0)
 #endif
+#define debug(x...)	fprintf(stderr,x)
+#define fatal(x...)	do { debug("[-] ERROR: " x); exit(1); } while (0)
 
 #define SETFLAG(key,flags) do{ key |= (flags); }while(0)
 #define RESETFLAG(key,flags) do { key &= ~(flags); }while(0)

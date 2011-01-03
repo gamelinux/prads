@@ -39,8 +39,13 @@
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
 #include "sig.h"
+#include "mac.h"
 //#include "output-plugins/log_init.h"
 #include "output-plugins/log_file.h"
+
+#ifndef CONFDIR
+#define CONFDIR "/etc/prads/"
+#endif
 
 /*  G L O B A L E S  *** (or candidates for refactoring, as we say)***********/
 uint64_t cxtrackerid;
@@ -1009,6 +1014,8 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
+    mac_entry **macp = NULL;
+    load_mac("../etc/mac.sig", &macp, 0);
     parse_config_file(pconfile);
     while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
