@@ -82,19 +82,19 @@ void set_end_sessions()
 
 void unload_tcp_sigs()
 {
-    if(config.ctf & CO_SYN){
+    if(config.ctf & CO_SYN && config.sig_syn){
         unload_sigs(config.sig_syn, config.sig_hashsize);
     }
-    if(config.ctf & CO_SYNACK){
+    if(config.ctf & CO_SYNACK && config.sig_synack){
         unload_sigs(config.sig_synack, config.sig_hashsize);
     }
-    if(config.ctf & CO_ACK){
+    if(config.ctf & CO_ACK && config.sig_ack){
         unload_sigs(config.sig_ack, config.sig_hashsize);
     }
-    if(config.ctf & CO_RST){
+    if(config.ctf & CO_RST && config.sig_rst){
         unload_sigs(config.sig_rst, config.sig_hashsize);
     }    
-    if(config.ctf & CO_FIN){
+    if(config.ctf & CO_FIN && config.sig_fin){
         unload_sigs(config.sig_fin, config.sig_hashsize);
     }
 }
