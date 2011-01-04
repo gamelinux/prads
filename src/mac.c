@@ -72,7 +72,59 @@ void print_mac(mac_entry *e){
    return;
 }
 
+/* match mac with vendor list
+ * most specific match first.
+ * 
+ * how does this grab ya:
+ * aa:bb:cc:dd:ee:ff matches
+ * aa:bb:cc:d0/26
+ * .. by searching upward from
+ * aa:bb:cc:00
+ */
+mac_entry *match_mac(mac_entry **db, const uint8_t mac[], uint8_t mask)
+{
+   uint32_t index = hash_mac(mac, mask/8);
+   uint8_t r,i,ditch = 0;
 
+   if(mask == 0)
+      return NULL; // oopsy we run out of matches.
+
+   // hash will only get us so far, we must search the rest of the way
+   mac_entry *match = db[index];
+   if(match) {
+
+check_match:
+      do {
+         for(i = 0; i < match->mask / 8; i++){
+            if (mac[i] != match->o[i])
+               i = 6; // 7!? flag and break
+         }
+         if(i == 7)
+            continue; // we flagged and broke
+         // do we have a winner?           
+         r = 8 - (match->mask % 8);
+         if(r) {
+            // there is more to match, maybe less than a nibble
+            if(! ~((mac[i] & match->o[i]) >> r))
+               return match; // if the bits match, expression is 0
+         } else {
+            // easy case: we have a winner..
+            return match;
+         }
+      } while (NULL != (match = match->next));
+   }
+   // real tough case.. we didn't find anything down the road
+   // and must search upwards :-P
+   if( ! ditch ){
+      for(ditch = 1; ditch < 0xFF; ditch++){
+         match = db[index +ditch];
+         if(match)
+            goto check_match;
+      }
+   }
+   // tail recurse, defer to the wisdom of our elders
+   return match_mac(db, mac, mask - 8);
+}
 
 
 /* load_mac: fill **macp with mac_entry
@@ -90,7 +142,7 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
 {
     mac_entry **sig; // output
     uint32_t ln = 0;
-    uint32_t sigcnt = 0;
+    uint32_t sigcnt = 0; 
     debug("opening %s\n", file);
     FILE *f = fopen(file, "r");
     char buf[MAXLINE];
@@ -177,13 +229,13 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
            strncpy(comment, p, lp);
         }
         
-        /* assemble & hash */
+        /* roll hash */
         entry.vendor = strdup(vendor);
         entry.comment = comment;
         if(!entry.mask)
-           entry.mask = 48 - octet * 8;
+           entry.mask = octet * 8; //48 - octet * 8;
 
-        int index = MAC_HASH((entry.o));
+        int index = hash_mac(entry.o, octet);
         e = sig[index];
 
         if (!e) {
@@ -218,9 +270,10 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
 #endif
 #ifdef DEBUG_HASH
     {
-        int i;
+        int i,max;
         mac_entry *p;
         printf("Hash table layout: ");
+        max = 0;
         for (i = 0; i < MAC_HASHSIZE; i++) {
             int z = 0;
             p = sig[i];
@@ -228,14 +281,19 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
                 p = p->next;
                 z++;
             }
+            max = (max > z)? max : z;
             printf("%d ", z);
+
         }
         putchar('\n');
+        printf ("max : %d\n", max);
     }
 #endif                          /* DEBUG_HASH */
     
     if (!sigcnt)
         debug("[!] WARNING: no signatures loaded from config file.\n");
+    else
+       dlog("%d sigs from %d lines\n", sigcnt, ln);
 
     return 0;
 }

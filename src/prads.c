@@ -1014,8 +1014,15 @@ int main(int argc, char *argv[])
     signal(SIGALRM, set_end_sessions);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
 
+    // MAC load/match tester
     mac_entry **macp = NULL;
     load_mac("../etc/mac.sig", &macp, 0);
+    //uint8_t mac[6] = { 0x01, 0x11, 0x1E, 0x00, 0x00, 0x01, };
+    uint8_t mac[6] = { 0x01, 0x20, 0x25, 0x00, 0x00, 0x01, };
+    mac_entry *match = match_mac(macp, mac, 48);
+    if(match) printf ("horray! %s\n", match->vendor);
+    else printf ("boo:-(\n");
+
     parse_config_file(pconfile);
     while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {

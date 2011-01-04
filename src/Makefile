@@ -5,7 +5,11 @@ CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
-CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign -Wno-nonnull -DCONFDIR='"${CONFDIR}/"' -DDUMP_HASH -DDEBUG_HASH
+CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign -Wno-nonnull -DCONFDIR='"${CONFDIR}/"'
+endif
+
+ifneq (${EXTRADEBUG},)
+CFLAGS+= -DDUMP_HASH -DDEBUG_HASH -DDEBUG=2 -DDEBUG=2
 endif
 
 BUILD=gnu
@@ -35,6 +39,7 @@ prads: $(OBJECTS)
 
 static: $(OBJECTS)
 	$(MAKE) CFLAGS+=-static prads
+
 debug:
 	 ${MAKE} DEBUG=y
 
