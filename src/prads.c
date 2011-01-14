@@ -988,11 +988,14 @@ static void usage()
     printf(" -v              Verbose.\n");
 }
 
+extern int optind;
+
 int main(int argc, char *argv[])
 {
-    printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
+    vlog(2, "%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
+
     memset(&config, 0, sizeof(globalconfig));
-    int ch = 0;
+    int ch = 0, verbose_already = 0;
     set_default_config_options();
     bstring pconfile = bfromcstr(CONFDIR "prads.conf");
     //parse_config_file(pconfile);
@@ -1007,9 +1010,10 @@ int main(int argc, char *argv[])
     signal(SIGINT, game_over);
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
-    //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
+    //signal(SIGALRM, game_over); // Use this to debug segfault when exiting
 
-    while ((ch = getopt(argc, argv, "c:v")) != -1)
+    // do first-pass args parse for commandline-passed config file
+    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
         case 'c':
             pconfile = bfromcstr(optarg);
@@ -1017,11 +1021,23 @@ int main(int argc, char *argv[])
         case 'v':
             config.verbose++;
             break;
+        case 'h':
+            usage();
+            exit(0);
         default:
             break;
         }
 
+    if(config.verbose)
+        verbose_already = 1;
+
     parse_config_file(pconfile);
+
+    // reset verbosity before 2nd coming, but only if set on cli
+    if(verbose_already)
+        config.verbose = 0;
+    optind = 1;
+
     while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
         case 'a':
@@ -1073,6 +1089,7 @@ int main(int argc, char *argv[])
             config.assetlog = bfromcstr(optarg);
             break;
         default:
+            elog("oops, someone forgot to parse argument: '%c'", ch);
             exit(1);
             break;
         }
