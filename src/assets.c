@@ -195,7 +195,7 @@ short update_asset_os (
         if (pi->asset != NULL) {
             goto os_update;
         } else {
-            printf("\nBAD ERROR in update_asset_os\n");
+            elog("BAD ERROR in update_asset_os\n");
             return ERROR;
         }
     } else {
@@ -207,7 +207,7 @@ short update_asset_os (
 os_update:
     tmp_oa = pi->asset->os;
     head_oa = pi->asset->os;
-    pi->asset->last_seen = pi->pheader->ts.tv_sec;    
+    pi->asset->last_seen = pi->pheader->ts.tv_sec;
 
     while (tmp_oa != NULL) {
         if (detection == tmp_oa->detection) {
@@ -219,7 +219,11 @@ os_update:
                     bdestroy(tmp_oa->raw_fp);
                     tmp_oa->raw_fp = bstrcpy(raw_fp);
                     //tmp_sa->i_attempts++;
-                    tmp_oa->port = PI_TCP_SP(pi);
+                    if(pi->tcph)
+                        tmp_oa->port = PI_TCP_SP(pi);
+                    else
+                        tmp_oa->port = 0;
+
                     tmp_oa->last_seen = pi->pheader->ts.tv_sec;
                     if (uptime) tmp_oa->uptime = uptime;
                     return SUCCESS;
@@ -230,7 +234,12 @@ os_update:
                 if (match->os == tmp_oa->fp.os &&
                     match->desc == tmp_oa->fp.desc){
                 //if (match == tmp_oa->match) {
-                    tmp_oa->port = PI_TCP_SP(pi);
+
+                    if(pi->tcph)
+                        tmp_oa->port = PI_TCP_SP(pi);
+                    else
+                        tmp_oa->port = 0;
+
                     tmp_oa->last_seen = pi->pheader->ts.tv_sec;
                     if (uptime)
                         tmp_oa->uptime = uptime;
@@ -260,7 +269,12 @@ os_update:
         //new_oa->i_attempts = 1;
         new_oa->first_seen = pi->pheader->ts.tv_sec;
         new_oa->last_seen = pi->pheader->ts.tv_sec;
-        new_oa->port = PI_TCP_SP(pi);
+
+        if(pi->tcph)
+            new_oa->port = PI_TCP_SP(pi);
+        else
+            new_oa->port = 0;
+
         if (pi->ip4 != NULL) new_oa->ttl = pi->ip4->ip_ttl;
             else if (pi->ip6 != NULL) new_oa->ttl = pi->ip6->hop_lmt;
         if (uptime) new_oa->uptime = uptime;
