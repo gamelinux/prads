@@ -5,7 +5,7 @@ CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
-CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign -Wno-nonnull -DCONFDIR='"${CONFDIR}/"'
+CFLAGS = -g -DDEBUG -Wall -DCONFDIR='"${CONFDIR}/"'
 endif
 
 ifneq (${EXTRADEBUG},)
