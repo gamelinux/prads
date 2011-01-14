@@ -51,13 +51,18 @@ static mac_entry *alloc_mac(mac_entry *e)
     return n;
 }
 
-void print_mac(mac_entry *e){
+void print_mac(const uint8_t *mac){
    int i;
+   for(i = 0; i < 6; i++){
+      printf("%02hhx:", mac[i]);
+   }
+}
+
+void print_mac_entry(mac_entry *e){
    if(!e) return;
 
-   for(i = 0; i < 6; i++){
-      printf("%02hhx:", e->o[i]);
-   }
+   print_mac(e->o);
+
    if(e->mask)
       printf("/%d", e->mask);
 
@@ -67,9 +72,14 @@ void print_mac(mac_entry *e){
 
    printf("\n");
 
-   if(e->next)
-      print_mac(e->next);
    return;
+}
+
+void print_mac_entries(mac_entry *e) {
+   print_mac_entry(e);
+
+   if(e->next)
+      print_mac_entries(e->next);
 }
 
 /* match mac with vendor list
@@ -83,8 +93,14 @@ void print_mac(mac_entry *e){
  */
 mac_entry *match_mac(mac_entry **db, const uint8_t mac[], uint8_t mask)
 {
-   uint32_t index = hash_mac(mac, mask/8);
+   uint32_t index = hash_mac(mac, mask / 8);
    uint8_t r,i,ditch = 0;
+   /* debug
+   if(mask == 48) {
+      print_mac(mac);
+      printf("/%d match\n", mask);
+   } */
+
 
    if(mask == 0)
       return NULL; // oopsy we run out of matches.
@@ -95,17 +111,24 @@ mac_entry *match_mac(mac_entry **db, const uint8_t mac[], uint8_t mask)
 
 check_match:
       do {
+         //print_mac_entry(match);
+        
+         /* XXX: we could definitely take advantage of
+          * 64bit or SIMD instructions to speed this up, here and in the hash func
+          */
          for(i = 0; i < match->mask / 8; i++){
             if (mac[i] != match->o[i])
                i = 6; // 7!? flag and break
          }
-         if(i == 7)
+         if(i == 7){
             continue; // we flagged and broke
+         }
          // do we have a winner?           
-         r = 8 - (match->mask % 8);
+         r = match->mask % 8;
          if(r) {
             // there is more to match, maybe less than a nibble
-            if(! ~((mac[i] & match->o[i]) >> r))
+            //dlog("nibble match! /%d :%d, %02x=?%02x\n", match->mask, r, mac[i] >> match->mask, match->o[i] >> match->mask);
+            if(! ((mac[i] ^ match->o[i]) & (0xFF << (8 - r))) )
                return match; // if the bits match, expression is 0
          } else {
             // easy case: we have a winner..
@@ -113,17 +136,23 @@ check_match:
          }
       } while (NULL != (match = match->next));
    }
+   // tail recurse, defer to the wisdom of our elders
+   if(! ditch ) {
+      match = match_mac(db, mac, mask - 8);
+   }
+
    // real tough case.. we didn't find anything down the road
-   // and must search upwards :-P
-   if( ! ditch ){
-      for(ditch = 1; ditch < 0xFF; ditch++){
+   // and must search upwards :-P. This is the DITCH, we scan
+   // 255 hashpoints per octet to find out if there is anything around..
+
+   if(!match) {
+      while(ditch++ < 0xFF) {
          match = db[index +ditch];
          if(match)
             goto check_match;
       }
    }
-   // tail recurse, defer to the wisdom of our elders
-   return match_mac(db, mac, mask - 8);
+   return match;
 }
 
 
@@ -232,6 +261,8 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
         /* roll hash */
         entry.vendor = strdup(vendor);
         entry.comment = comment;
+
+        // if there is no mask, all octets count
         if(!entry.mask)
            entry.mask = octet * 8; //48 - octet * 8;
 
@@ -263,7 +294,7 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
         for (i = 0; i < MAC_HASHSIZE; i++) {
             if(sig[i]){
                printf("%d: ", i);
-               print_mac(sig[i]);
+               print_mac_entries(sig[i]);
             }
         }
     }
