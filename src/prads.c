@@ -85,6 +85,7 @@ void prepare_icmp (packetinfo *pi);
 void prepare_gre (packetinfo *pi);
 void prepare_greip (packetinfo *pi);
 void prepare_other (packetinfo *pi);
+void parse_eth (packetinfo *pi);
 void parse_ip4 (packetinfo *pi);
 void parse_ip6 (packetinfo *pi);
 void parse_tcp (packetinfo *pi);
@@ -122,6 +123,7 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     inpacket = 1;
     prepare_eth(pi);
     check_vlan(pi);
+    parse_eth(pi);
 
     if (pi->eth_type == ETHERNET_TYPE_IP) {
         prepare_ip4(pi);
@@ -270,6 +272,21 @@ void prepare_eth (packetinfo *pi)
     pi->eth_hlen = ETHERNET_HEADER_LEN;
     return;
 }
+
+void parse_eth (packetinfo *pi)
+{
+    if (!IS_CSSET(&config,CS_MAC)) return;
+    uint8_t *mac = pi->eth_hdr->ether_src;
+    mac_entry *match = match_mac(config.sig_mac, mac, 48);
+    print_mac(mac);
+    printf("mac matched: %s\n", match->vendor);
+    
+    // call update_asset_mac or smth?
+    // stats?
+    //config.pr_s.eth_recv++;
+    return;
+}
+
 
 void check_vlan (packetinfo *pi)
 {
@@ -1019,6 +1036,7 @@ int main(int argc, char *argv[])
     load_mac("../etc/mac.sig", &macp, 0);
     //uint8_t mac[6] = { 0x01, 0x11, 0x1E, 0x00, 0x00, 0x01, };
     uint8_t mac[6] = { 0x01, 0x20, 0x25, 0x00, 0x00, 0x01, };
+    printf("Testing!\n");
     mac_entry *match = match_mac(macp, mac, 48);
     if(match) printf ("horray! %s\n", match->vendor);
     else printf ("boo:-(\n");
@@ -1086,6 +1104,13 @@ int main(int argc, char *argv[])
 
     if(config.s_net)
        parse_nets(config.s_net, network);
+
+    if(config.ctf & CS_MAC){
+        int32_t rc;
+        printf("[*] Loading MAC fingerprints from file %s\n");
+        rc = load_mac(config.sig_file_mac, &config.sig_mac, 0);
+        if(rc) perror("mac loadage failed!");
+    }
 
     if(config.ctf & CO_SYN){
         int32_t rc;

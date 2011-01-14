@@ -67,6 +67,7 @@
 #define CS_TCP_CLIENT                 0x02
 #define CS_UDP_SERVICES               0x04  /* Currently implying server+client*/
 #define CS_UDP_CLIENT                 0x08
+#define CS_MAC                        0x10
 #define CS_ICMP                       0x20
 #define CS_ARP                        0x80
 
@@ -499,6 +500,16 @@ typedef struct _fp_entry {
     uint32_t line;              /* config file line */
     struct _fp_entry *next;
 } fp_entry;
+
+/* mac address database entry */
+typedef struct _mac_entry {
+  uint8_t o[MAC_ADDR_LEN];
+  uint8_t mask; // optional
+  char *vendor;
+  char *comment;
+  struct _mac_entry *next;
+} mac_entry;
+
 
 /*
  * Structure for connections
