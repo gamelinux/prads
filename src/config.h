@@ -2,6 +2,10 @@
 #define CONFIG_H
 #include "common.h"
 
+#define CONFIG_VERBOSE 0x01
+#define CONFIG_UPDATES 0x02
+#define CONFIG_SYSLOG 0x04
+
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
     struct pcap_stat    ps;             /* libpcap stats */
@@ -59,10 +63,9 @@ typedef struct _globalconfig {
     fp_entry   **sig_fin;               /* FIN signature hash */
     fp_entry   **sig_rst;               /* RST signature hash */
 } globalconfig;
-#define ISSET_CONFIG_VERBOSE(config)    (config->cflags & 0x01)
-#define ISSET_CONFIG_UPDATES(config)    (config->cflags & 0x02)
-#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & 0x04)
-//#define ISSET_CONFIG_SYSLOG(config)     (config->cflags & 0x08)
+#define ISSET_CONFIG_VERBOSE(config)    ((config)->cflags & CONFIG_VERBOSE)
+#define ISSET_CONFIG_UPDATES(config)    ((config)->cflags & CONFIG_UPDATES)
+#define ISSET_CONFIG_SYSLOG(config)     ((config)->cflags & CONFIG_SYSLOG)
 
 void display_config();
 void set_default_config_options();

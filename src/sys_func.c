@@ -15,7 +15,9 @@ const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
 {
     if (af == AF_INET) {
         if (!inet_ntop
-            (AF_INET, &ip_addr.s6_addr32[0], dest, INET_ADDRSTRLEN + 1)) {
+            (AF_INET, 
+	     &IP4ADDR(&ip_addr),
+		 dest, INET_ADDRSTRLEN + 1)) {
             perror("Something died in inet_ntop");
             return NULL;
         }
@@ -39,8 +41,6 @@ uint8_t normalize_ttl (uint8_t ttl)
 void bucket_keys_NULL()
 {
     int cxkey;
-    extern connection *bucket[BUCKET_SIZE];
-
     for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
         bucket[cxkey] = NULL;
     }
@@ -70,6 +70,10 @@ void set_end_sessions()
         extern time_t tstamp;
         tstamp = time(NULL);
         end_sessions();
+        /* if no cxtracking is turned on - dont log to disk */
+        /* if (log_cxt == 1) log_expired_cxt(); */
+        /* if no asset detection is turned on - dont log to disk! */
+        /* if (log_assets == 1) update_asset_list(); */
         update_asset_list();
         intr_flag = 0;
         alarm(CHECK_TIMEOUT);
@@ -238,13 +242,17 @@ int drop_privs(void)
         do_setgid = 1;
         if (isdigit(config.user_name[0]) == 0) {
             pw = getpwnam(config.user_name);
-            userid = pw->pw_uid;
+            if (pw != NULL) {
+                userid = pw->pw_uid;
+            } else {
+                printf("[E] User %s not found!\n", config.user_name);
+            }
         } else {
             userid = strtoul(config.user_name, &endptr, 10);
             pw = getpwuid(userid);
         }
 
-        if (config.group_name == NULL) {
+        if (config.group_name == NULL && pw != NULL) {
             groupid = pw->pw_gid;
         }
     }

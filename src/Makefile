@@ -1,12 +1,20 @@
 #Makefile
 #CC=gcc
 LDFLAGS=-lpcap -lpcre
-CONFDIR=../etc
 CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
 DCFLAGS=-g
 PCFLAGS=-g -pg
 ifneq (${DEBUG},)
 CFLAGS = -g -DDEBUG -Wall -Wno-pointer-sign -Wno-nonnull -DCONFDIR='"${CONFDIR}/"'
+endif
+
+BUILD=gnu
+ifeq (${BUILD},osx)
+CFLAGS+=-I/opt/local/include/ -DOSX
+CONFDIR=/opt/etc/prads
+else
+CFLAGS+=-D__USE_GNU
+CONFDIR=../etc
 endif
 
 SERVICE_OBJ = servicefp/servicefp.o servicefp/mac.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o 
@@ -17,6 +25,9 @@ CXT_OBJ = util-cxt-queue.o util-cxt.o cxt.o
 OBJECTS = bstrlib.o sig_tcp.o config.o sys_func.o ${CXT_OBJ} ${LOG_OBJ} assets.o prads.o ${IPFP_OBJ} ${SERVICE_OBJ}
 
 all: prads
+
+osx:
+	$(MAKE) BUILD=osx
 
 prads: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)

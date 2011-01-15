@@ -2,6 +2,7 @@
  * Author: Gurvinder Singh <gurvindersinghdahiya@gmail.com>
  *
  * Created on January 16, 2010, 1:18 PM
+ * Fixed a little by comotion, December 11th
  */
 
 #ifndef _UTIL_CXT_H
@@ -17,11 +18,10 @@ typedef struct _cxtbucket {
     connection *cxt;
 } cxtbucket;
 
-cxtbucket *cxt_hash;
-
+extern connection *bucket[];
 
 /* prototypes */
-inline void cxt_update (packetinfo *, uint32_t);
+inline void cxt_update (packetinfo *);
 connection *connection_alloc(void);
 void cxt_update_dst (connection *cxt, packetinfo *pi);
 void cxt_update_src (connection *cxt, packetinfo *pi);

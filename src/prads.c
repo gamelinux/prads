@@ -22,7 +22,11 @@
 */
 
 /*  I N C L U D E S  *********************************************************/
+#ifdef OSX
+#include <sys/malloc.h>
+#else
 #include <malloc.h>
+#endif
 
 #include "common.h"
 #include "prads.h"
@@ -157,16 +161,16 @@ inline int filter_packet(const int af, void *ipptr)
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if (network[i].type != AF_INET)
                     continue;
-#if DEBUG == 2
-                inet_ntop(af, &network[i].addr.s6_addr32[0], output, MAX_NETS);
+#ifdef DEBUG_PACKET
+                inet_ntop(af, &network[i].addr.__u6_addr.__u6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "Filter: %s\n", output);
-                inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
+                inet_ntop(af, &network[i].mask.__u6_addr.__u6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "mask: %s\n", output);
                 inet_ntop(af, ip, output, MAX_NETS);
                 vlog(0x2, "ip: %s\n", output);
 #endif
-                if((*ip & network[i].mask.s6_addr32[0])
-                    == network[i].addr.s6_addr32[0]) {
+                if((*ip & IP4ADDR(&network[i].mask))
+                    == IP4ADDR(&network[i].addr)){
                     our = 1;
                     break;
                 }
@@ -185,7 +189,7 @@ inline int filter_packet(const int af, void *ipptr)
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
-#if DEBUG == 2
+#ifdef DEBUG_PACKET
                 inet_ntop(af, &network[i].addr, output, MAX_NETS);
                 dlog("net:  %s\n", output);
                 inet_ntop(af, &network[i].mask, output, MAX_NETS);
@@ -216,14 +220,14 @@ inline int filter_packet(const int af, void *ipptr)
                     }
 
 #else
-                    if ((ip_s.s6_addr32[0] & network[i].mask.s6_addr32[0])
-                        == network[i].addr.s6_addr32[0]
-                        && (ip_s.s6_addr32[1] & network[i].mask.s6_addr32[1])
-                        == network[i].addr.s6_addr32[1]
-                        && (ip_s.s6_addr32[2] & network[i].mask.s6_addr32[2])
-                        == network[i].addr.s6_addr32[2]
-                        && (ip_s.s6_addr32[3] & network[i].mask.s6_addr32[3])
-                        == network[i].addr.s6_addr32[3]) {
+                    if ((ip_s.__u6_addr.__u6_addr32[0] & network[i].mask.__u6_addr.__u6_addr32[0])
+                        == network[i].addr.__u6_addr.__u6_addr32[0]
+                        && (ip_s.__u6_addr.__u6_addr32[1] & network[i].mask.__u6_addr.__u6_addr32[1])
+                        == network[i].addr.__u6_addr.__u6_addr32[1]
+                        && (ip_s.__u6_addr.__u6_addr32[2] & network[i].mask.__u6_addr.__u6_addr32[2])
+                        == network[i].addr.__u6_addr.__u6_addr32[2]
+                        && (ip_s.__u6_addr.__u6_addr32[3] & network[i].mask.__u6_addr.__u6_addr32[3])
+                        == network[i].addr.__u6_addr.__u6_addr32[3]) {
                         our = 1;
                         break;
                     }
@@ -289,9 +293,6 @@ void prepare_ip4 (packetinfo *pi)
     pi->af = AF_INET;
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
     pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
-    // can be removed if references are replaced by macro
-    //pi->ip_src.s6_addr32[0] = PI_IP4SRC(pi);
-    //pi->ip_dst.s6_addr32[0] = PI_IP4DST(pi);
     
     pi->our = filter_packet(pi->af, &PI_IP4SRC(pi));
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
@@ -634,6 +635,8 @@ void parse_tcp (packetinfo *pi)
         } 
     }
 
+    // Check payload for known magic bytes that defines files!
+
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
         if (IS_CSSET(&config,CS_TCP_CLIENT)
                 && !ISSET_DONT_CHECK_CLIENT(pi)) {
@@ -829,18 +832,15 @@ int parse_network (char *net_s, struct in6_addr *network)
         }
         printf("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
                net_s,
-               network->s6_addr32[0],
-               network->s6_addr32[1],
-               network->s6_addr32[2],
-               network->s6_addr32[3]
+               IP6ADDR(network)
               );
     } else {
         type = AF_INET;
-        if (!inet_pton(type, net_s, &network->s6_addr32[0])) {
+        if (!inet_pton(type, net_s, &IP4ADDR(network))) {
             perror("parse_nets");
             return -1;
         }
-        printf("Network4 %16s \t-> 0x%08x\n", net_s, network->s6_addr32[0]);
+        printf("Network4 %16s \t-> 0x%08x\n", net_s, IP4ADDR(network));
     }
     return type;
 }
@@ -853,8 +853,8 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
     // parse netmask into host order
     if (type == AF_INET && (t = strchr(f, '.')) > f && t-f < 4) {
         // full ipv4 netmask : dotted quads
-        inet_pton(type, f, &netmask->s6_addr32[0]);
-        printf("mask 4 %s \t-> 0x%08x\n", f, netmask->s6_addr32[0]);
+        inet_pton(type, f, &IP4ADDR(netmask));
+        printf("mask 4 %s \t-> 0x%08x\n", f, IP4ADDR(netmask));
     } else if (type == AF_INET6 && NULL != (t = strchr(f, ':'))) {
         // full ipv6 netmasĸ
         printf("mask 6 %s\n", f);
@@ -866,11 +866,11 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
         if (type == AF_INET) {
             uint32_t shift = 32 - mask;
             if (mask)
-                netmask->s6_addr32[0] = ntohl( ((unsigned int)-1 >> shift)<< shift);
+                IP4ADDR(netmask) = ntohl( ((unsigned int)-1 >> shift)<< shift);
             else
-                netmask->s6_addr32[0] = 0;
+                IP4ADDR(netmask) = 0;
 
-            printf("0x%08x\n", netmask->s6_addr32[0]);
+            printf("0x%08x\n", IP4ADDR(netmask));
         } else if (type == AF_INET6) {
             //mask = 128 - mask;
             int j = 0;
@@ -883,13 +883,13 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             if (mask > 0) {
                 netmask->s6_addr[j] = -1 << (8 - mask);
             }
-            inet_ntop(type, &netmask->s6_addr32[0], output, MAX_NETS);
+            inet_ntop(type, &IP4ADDR(netmask), output, MAX_NETS);
             printf("mask: %s\n", output);
             // pcap packets are in host order.
-            netmask->s6_addr32[0] = ntohl(netmask->s6_addr32[0]);
-            netmask->s6_addr32[1] = ntohl(netmask->s6_addr32[1]);
-            netmask->s6_addr32[2] = ntohl(netmask->s6_addr32[2]);
-            netmask->s6_addr32[3] = ntohl(netmask->s6_addr32[3]);
+            IP6ADDR0(netmask) = ntohl(IP6ADDR0(netmask));
+            IP6ADDR1(netmask) = ntohl(IP6ADDR1(netmask));
+            IP6ADDR2(netmask) = ntohl(IP6ADDR2(netmask));
+            IP6ADDR3(netmask) = ntohl(IP6ADDR3(netmask));
 
         }
     }
@@ -964,27 +964,6 @@ nets_end:
     return;
 }
 
-void cxt_init()
- {
-    /* alloc hash memory */
-    cxt_hash = calloc(CXT_DEFAULT_HASHSIZE, sizeof(cxtbucket));
-    if (cxt_hash == NULL) {
-        printf("calloc failed %s\n", strerror(errno));
-        exit(1);
-    }
-    uint32_t i = 0;
-
-    /* pre allocate conection trackers */
-    for (i = 0; i < CXT_DEFAULT_PREALLOC; i++) {
-        connection *cxt = connection_alloc();
-        if (cxt == NULL) {
-            printf("ERROR: connection_alloc failed: %s\n", strerror(errno));
-            exit(1);
-        }
-        cxt_enqueue(&cxt_spare_q,cxt);
-     }
-}
-
 static void usage()
 {
     printf("USAGE:\n");
@@ -1009,21 +988,14 @@ static void usage()
     printf(" -v              Verbose.\n");
 }
 
-int preallocate_cxt (void)
-{
-    int i;
-    for (i=0;i<BUCKET_SIZE;i++) {
-        bucket[i] = (connection *)calloc(1, sizeof(connection));
-        if(bucket[i] == NULL)
-            return 0;
-    }
-    return 1;
-}
+extern int optind;
+
 int main(int argc, char *argv[])
 {
-    printf("%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
+    vlog(2, "%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
+
     memset(&config, 0, sizeof(globalconfig));
-    int ch = 0;
+    int ch = 0, verbose_already = 0;
     set_default_config_options();
     bstring pconfile = bfromcstr(CONFDIR "prads.conf");
     //parse_config_file(pconfile);
@@ -1038,9 +1010,34 @@ int main(int argc, char *argv[])
     signal(SIGINT, game_over);
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
-    //signal(SIGALRM, game_over); // Use this to debug segfault when exiting :)
+    //signal(SIGALRM, game_over); // Use this to debug segfault when exiting
+
+    // do first-pass args parse for commandline-passed config file
+    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
+        switch (ch) {
+        case 'c':
+            pconfile = bfromcstr(optarg);
+            break;
+        case 'v':
+            config.verbose++;
+            break;
+        case 'h':
+            usage();
+            exit(0);
+        default:
+            break;
+        }
+
+    if(config.verbose)
+        verbose_already = 1;
 
     parse_config_file(pconfile);
+
+    // reset verbosity before 2nd coming, but only if set on cli
+    if(verbose_already)
+        config.verbose = 0;
+    optind = 1;
+
     while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
         case 'a':
@@ -1092,6 +1089,7 @@ int main(int argc, char *argv[])
             config.assetlog = bfromcstr(optarg);
             break;
         default:
+            elog("oops, someone forgot to parse argument: '%c'", ch);
             exit(1);
             break;
         }
@@ -1101,7 +1099,8 @@ int main(int argc, char *argv[])
     init_output_log_file(config.assetlog);
     bdestroy (pconfile);
 
-    parse_nets(config.s_net, network);
+    if(config.s_net)
+       parse_nets(config.s_net, network);
 
     if(config.ctf & CO_SYN){
         int32_t rc;

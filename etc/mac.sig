@@ -15413,6 +15413,10 @@ AB-00-00-04-00-00	DECNET-Phase-IV-Router-Hello-packets
 AB-00-03-00-00-00	DEC-Local-Area-Transport-(LAT)-old
 AB-00-04-01-00-00/32	DEC-Local-Area-VAX-Cluster-groups-SCA
 CF-00-00-00-00-00	Ethernet-Configuration-Test-protocol-(Loopback)
+
+# new sigs
+F0-AD-4E	GlobalScale Technologies, Inc   # SheevaPlug or GuruPlug
+
 FF-FF-00-60-00-04	Lantastic
 FF-FF-00-40-00-01	Lantastic
 FF-FF-01-E0-00-04	Lantastic
