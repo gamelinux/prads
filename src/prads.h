@@ -763,7 +763,7 @@ typedef struct _asset {
     uint16_t        vlan;       /* vlan tag */
     struct in6_addr ip_addr;    /* IP asset address */
     uint8_t mac_addr[MAC_ADDR_LEN];       /* Asset MAC address */
-    bstring mac_resolved;       /* Asset MAC vendor name */
+    mac_entry *macentry;        /* Asset MAC vendor name */
     serv_asset *services;       /* Linked list with services detected */
     os_asset *os;               /* Linked list with OSes detected */
 } asset;

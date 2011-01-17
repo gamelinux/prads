@@ -53,7 +53,6 @@ globalconfig config;
 time_t tstamp;
 connection *bucket[BUCKET_SIZE];
 connection *cxtbuffer = NULL;
-asset *passet[BUCKET_SIZE];
 servicelist *services[MAX_PORTS];
 signature *sig_serv_tcp = NULL;
 signature *sig_serv_udp = NULL;
@@ -277,13 +276,23 @@ void parse_eth (packetinfo *pi)
 {
     if (!IS_CSSET(&config,CS_MAC)) return;
     uint8_t *mac = pi->eth_hdr->ether_src;
+    /* XXX: how is mac matching supposed to work?
+
+     * answer: lookup macs on pertinent frames
+     * and hash into mac asset database
+     * mac assets are like regular assets,
+     * and contain references to other assets they involve
+    if(! pi->asset->mace)
     mac_entry *match = match_mac(config.sig_mac, mac, 48);
+    //pi->asset->mace ;
+
     print_mac(mac);
     printf("mac matched: %s\n", match->vendor);
     
     // call update_asset_mac or smth?
     // stats?
     //config.pr_s.eth_recv++;
+    */
     return;
 }
 

@@ -4,10 +4,12 @@
 #include "sys_func.h"
 #include "output-plugins/log_dispatch.h"
 #include "config.h"
+#include "mac.h"
 
 extern globalconfig config;
 // static strings for comparison
 extern bstring UNKNOWN;
+static asset *passet[BUCKET_SIZE];
 
 void update_asset(packetinfo *pi)
 {
@@ -60,28 +62,65 @@ void update_os_stats(uint8_t detection)
     }
 }
 
-// asset_lookup should return 0 on success, 1 on failure
-//asset *asset_lookup(struct in6_addr ip, int af)
+void flip_connection(packetinfo *pi, asset* masset)
+{
+   if (pi->sc == SC_CLIENT) {
+      if (pi->cxt->reversed == 0)
+         pi->cxt->c_asset = masset;
+      else 
+         pi->cxt->s_asset = masset;
+   } else {
+      if (pi->cxt->reversed == 0)
+         pi->cxt->s_asset = masset;
+      else
+         pi->cxt->c_asset = masset;
+   }
+   if (pi->sc == SC_CLIENT) {
+      if (pi->cxt->reversed == 0)
+         pi->cxt->c_asset = masset;
+      else
+         pi->cxt->s_asset = masset;
+   } else {
+      if (pi->cxt->reversed == 0)
+         pi->cxt->s_asset = masset;
+      else
+         pi->cxt->c_asset = masset;
+   }
+}
+
+asset* connection_lookup(packetinfo *pi)
+{
+   if(NULL == pi->cxt){
+      return NULL;
+   }
+
+   if (pi->sc == SC_CLIENT && pi->cxt->reversed == 0 && pi->cxt->c_asset != NULL) {
+      return pi->cxt->c_asset;
+   } else if (pi->sc == SC_CLIENT && pi->cxt->reversed == 1 && pi->cxt->s_asset != NULL) {
+      return pi->cxt->s_asset;
+   } else if (pi->sc == SC_SERVER && pi->cxt->reversed == 0 && pi->cxt->s_asset != NULL) {
+      return pi->cxt->s_asset;
+   } else if (pi->sc == SC_SERVER && pi->cxt->reversed == 1 && pi->cxt->c_asset != NULL) {
+      return pi->cxt->c_asset;
+   }
+   return NULL;
+}
+/* asset *asset_lookup(struct in6_addr ip, int af)
+ * tries to match your packet to a sender we've seen before
+ * 
+ * 1. already in connection database
+ * 2. ip4 lookup & ip6 lookup
+ * 3. mac lookup
+ *
+ * asset_lookup should return 0 on success, 1 on failure
+ */
 uint8_t asset_lookup(packetinfo *pi)
 {
-    extern asset *passet[BUCKET_SIZE];
     uint64_t hash;
     asset *masset = NULL;
 
-    if (pi->asset != NULL) {
-        return SUCCESS;
-    } else if (pi->sc == SC_CLIENT && pi->cxt->reversed == 0 && pi->cxt->c_asset != NULL) {
-        pi->asset = pi->cxt->c_asset;
-        return SUCCESS;
-    } else if (pi->sc == SC_CLIENT && pi->cxt->reversed == 1 && pi->cxt->s_asset != NULL) {
-        pi->asset = pi->cxt->s_asset;
-        return SUCCESS;
-    } else if (pi->sc == SC_SERVER && pi->cxt->reversed == 0 && pi->cxt->s_asset != NULL) {
-        pi->asset = pi->cxt->s_asset;
-        return SUCCESS;
-    } else if (pi->sc == SC_SERVER && pi->cxt->reversed == 1 && pi->cxt->c_asset != NULL) {
-        pi->asset = pi->cxt->c_asset;
-        return SUCCESS;
+    if (pi->asset != NULL || NULL != (pi->asset = connection_lookup(pi))){
+       return SUCCESS;
     } else {
         if (pi->af == AF_INET) {
             uint32_t ip;
@@ -101,13 +140,7 @@ uint8_t asset_lookup(packetinfo *pi)
                 {
                     pi->asset = masset;
                     if (pi->cxt != NULL) {
-                        if (pi->sc == SC_CLIENT) {
-                            if (pi->cxt->reversed == 0) pi->cxt->c_asset = masset;
-                                else pi->cxt->s_asset = masset;
-                        } else {
-                            if (pi->cxt->reversed == 0) pi->cxt->s_asset = masset;
-                                else pi->cxt->c_asset = masset;
-                        }
+                       flip_connection(pi,masset);
                     }
                     return SUCCESS;
                 }
@@ -122,13 +155,7 @@ uint8_t asset_lookup(packetinfo *pi)
                     CMP_ADDR6(&masset->ip_addr, &PI_IP6SRC(pi))){
                     pi->asset = masset;
                     if (pi->cxt != NULL) {
-                       if (pi->sc == SC_CLIENT) {
-                            if (pi->cxt->reversed == 0) pi->cxt->c_asset = masset;
-                                else pi->cxt->s_asset = masset;
-                        } else {
-                            if (pi->cxt->reversed == 0) pi->cxt->s_asset = masset;
-                                else pi->cxt->c_asset = masset;
-                        }
+                       flip_connection(pi,masset);
                     }
                     return SUCCESS;
                 }
@@ -456,7 +483,16 @@ short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi)
             return ERROR;
         }
     } else {
+
         update_asset(pi);
+        // asset did not exist.
+        // FIXME: we want to be cleverer in update_asset and clearer here.
+        // see update_eth
+        mac_entry *match = match_mac(config.sig_mac, arp_sha, 48);
+        print_mac(arp_sha);
+        printf("mac matched: %s\n", match->vendor);
+        pi->asset->macentry = match;
+
         if (update_asset_arp(arp_sha, pi) == SUCCESS) {
             return SUCCESS;
         } else {
@@ -472,6 +508,10 @@ arp_update:
         return SUCCESS;
     } else {
         /* UPDATE MAC AND TIME STAMP */
+        vlog(1, "Change notice: ");
+        print_mac(pi->asset->mac_addr);
+        vlog(1, "->");
+        print_mac(arp_sha);
         memcpy(&pi->asset->mac_addr, arp_sha, MAC_ADDR_LEN);
         pi->asset->last_seen = pi->pheader->ts.tv_sec;
         log_asset_arp(pi->asset);
@@ -622,7 +662,6 @@ void del_asset(asset * passet, asset ** bucket_ptr)
     /*
      * Free and set to NULL 
      */
-    bdestroy(passet->mac_resolved);
     free(passet);
     passet = NULL;
 }
