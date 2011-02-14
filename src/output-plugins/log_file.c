@@ -229,7 +229,7 @@ void file_arp (asset *main)
     if (main->mac_resolved != NULL) {
         /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
         fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
-            main->vlan ? ntohs(main->vlan) : 0,bdata(main->mac_resolved),
+            main->vlan ? ntohs(main->vlan) : 0,main->mac_resolved,
             hex2mac((const char *)main->mac_addr), main->last_seen);
     } else {
         /* ip,0,0,ARP,mac-address,timstamp */
