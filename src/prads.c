@@ -1135,7 +1135,7 @@ int main(int argc, char *argv[])
 
     if(config.ctf & CS_MAC){
         int32_t rc;
-        printf("[*] Loading MAC fingerprints from file %s\n");
+        printf("[*] Loading MAC fingerprints from file %s\n", config.sig_file_mac);
         rc = load_mac(config.sig_file_mac, &config.sig_mac, 0);
         if(rc) perror("mac loadage failed!");
     }
