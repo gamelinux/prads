@@ -2,12 +2,13 @@
 #CC=gcc
 LDFLAGS=-lpcap -lpcre
 CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
-DCFLAGS=-g
-PCFLAGS=-g -pg
+
 ifneq (${DEBUG},)
 CFLAGS = -g -DDEBUG -Wall -DCONFDIR='"${CONFDIR}/"'
 endif
-
+ifneq (${PROFILE},)
+CFLAGS=-g -pg -DCONFDIR='"${CONFDIR}/"'
+endif
 ifneq (${EXTRADEBUG},)
 CFLAGS+= -DDUMP_HASH -DDEBUG_HASH -DDEBUG=2 -DDEBUG=2
 endif
@@ -44,7 +45,7 @@ debug:
 	 ${MAKE} DEBUG=y
 
 profile:
-	${MAKE} CFLAGS+='${PCFLAGS}'
+	${MAKE} PROFILE=y
 
 clean:
 	-rm -v $(OBJECTS)
