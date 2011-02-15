@@ -6,7 +6,6 @@
 #include "servicefp/servicefp.h"
 #include "config.h"
 #include "sig.h"
-#include "output-plugins/log_init.h"
 
 void free_queue(); // util-cxt.c
 extern globalconfig config;

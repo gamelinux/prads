@@ -2,7 +2,7 @@
 #include "prads.h"
 #include "assets.h"
 #include "sys_func.h"
-#include "output-plugins/log_dispatch.h"
+#include "output-plugins/log.h"
 #include "config.h"
 #include "mac.h"
 

@@ -1,4 +1,7 @@
-#include "log_stdout.h"
+#include "../prads.h"
+#include "../sys_func.h"
+#include "../sig.h"
+#include "../ipfp/ipfp.h"
 
 void stdout_arp (asset *main)
 {

@@ -41,7 +41,7 @@
 #include "sig.h"
 #include "mac.h"
 //#include "output-plugins/log_init.h"
-#include "output-plugins/log_file.h"
+#include "output-plugins/log.h"
 
 #ifndef CONFDIR
 #define CONFDIR "/etc/prads/"
@@ -1062,16 +1062,6 @@ int main(int argc, char *argv[])
     if(config.verbose)
         verbose_already = 1;
 
-    // MAC load/match tester
-    mac_entry **macp = NULL;
-    load_mac("../etc/mac.sig", &macp, 0);
-    //uint8_t mac[6] = { 0x01, 0x11, 0x1E, 0x00, 0x00, 0x01, };
-    uint8_t mac[6] = { 0x01, 0x20, 0x25, 0x00, 0x00, 0x01, };
-    printf("Testing!\n");
-    mac_entry *match = match_mac(macp, mac, 48);
-    if(match) printf ("horray! %s\n", match->vendor);
-    else printf ("boo:-(\n");
-
     parse_config_file(pconfile);
 
     // reset verbosity before 2nd coming, but only if set on cli
@@ -1137,7 +1127,7 @@ int main(int argc, char *argv[])
 
     //init_logging(config.assetlog);
     printf("logging to file %s\n", bstr2cstr(config.assetlog,0));
-    init_output_log_file(config.assetlog);
+    init_logging(LOG_FILE, config.assetlog, config.verbose);
     bdestroy (pconfile);
 
     if(config.s_net)

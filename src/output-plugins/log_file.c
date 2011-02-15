@@ -3,6 +3,7 @@
 **
 ** Copyright (C) 2009, Redpill Linpro
 ** Copyright (C) 2009, Edward Fjellskål <edward.fjellskaal@redpill-linpro.com>
+** Copyright (C) 2011, Kacper Wysocki <kacper.wysocki@redpill-linpro.com>
 **
 ** This program is free software; you can redistribute it and/or modify
 ** it under the terms of the GNU General Public License as published by
@@ -22,9 +23,27 @@
 
 /* ip,vlan,port,proto,(ASSET DETECTION),FP/MAC,distance,uptime,timstamp */
 
+
+/*  I N C L U D E S  *********************************************************/
+#include "../prads.h"
+#include "../sys_func.h"
+#include "../sig.h"
+
+#include <stdio.h>
+
+#include "log.h"
 #include "log_file.h"
 
-log_file_conf output_log_file_conf;
+int init_log_file (output_plugin *log)
+{
+   log->init = &init_output_log_file;
+   log->arp = &file_arp;
+   log->os = &file_os;
+   log->service = &file_service;
+   log->denit = &end_output_log_file;
+   return 0;
+
+}
 
 /* ----------------------------------------------------------
  * FUNCTION : init_output_log_file
@@ -34,22 +53,20 @@ log_file_conf output_log_file_conf;
  * INPUT    : 0 - CSV filename
  * RETURN   : None!
  * --------------------------------------------------------- */
-int init_output_log_file (bstring filename)
+int init_output_log_file (output_plugin *log, const char *file, int flags)
 {
     FILE *fp;
     char *mode = "r";
     int retry = 0;
-
     /* Make sure filename isn't NULL. */
-    if (filename != NULL)
-        output_log_file_conf.filename = bstrcpy(filename);
+    if (!file)
+        return -1;
     else
-       // the unsaid default
-        output_log_file_conf.filename = bfromcstr(PRADS_ASSETLOG);
+        log->path = file;
 
     /* Check to see if *filename exists. */
 reopen:
-    if ((fp = fopen(bdata(output_log_file_conf.filename), mode)) == NULL) {
+    if ((fp = fopen(log->path, mode)) == NULL) {
         int e = errno;
         switch(e) {
             case EISDIR:
@@ -57,35 +74,34 @@ reopen:
             case EACCES:
                 /* retry in current working directory */
                 if(retry){
-                    elog("%s denied opening access log '%s'", strerror(e), bdata(output_log_file_conf.filename));
+                    elog("%s denied opening access log '%s'", strerror(e), log->path);
                     return e;
                 }
-                bdestroy(output_log_file_conf.filename);
-                output_log_file_conf.filename = bfromcstr(PRADS_ASSETLOG);
+                log->path = PRADS_ASSETLOG;
                 retry++;
                 goto reopen;
             case ENOENT:
                 mode = MODE_WRITE;
                 goto reopen;
             default:
-                elog("Cannot open file %s: %s!", bdata(output_log_file_conf.filename), strerror(errno));
+                elog("Cannot open file %s: %s!", log->path, strerror(errno));
                 return e;
         }
 
     } else {
-        fp = output_log_file_conf.file = fp;
+        log->data = (void *) fp;
 
         if (mode == MODE_WRITE){
             /* File did not exist, create new.. */
-            fprintf(output_log_file_conf.file, "asset,vlan,port,proto,service,[service-info],distance,discovered\n");
+            fprintf(fp, "asset,vlan,port,proto,service,[service-info],distance,discovered\n");
         }
         /* File does exist, read it into data structure. */
         fclose(fp);
 //       read_report_file();
 
         /* Open file and assign it to the global FILE pointer.  */
-        if ((output_log_file_conf.file = fopen(bdata(output_log_file_conf.filename), "a")) == NULL) {
-            printf("Cannot open log file %s for append!\n", bdata(output_log_file_conf.filename));
+        if ((log->data = (void *) fopen(log->path, "a")) == NULL) {
+            printf("Cannot open log file %s for append!\n", log->path); 
         }
     }
 
@@ -102,18 +118,18 @@ reopen:
  * RETURN   : None
  * ---------------------------------------------------------- */
 void
-read_report_file (void)
+read_report_file (output_plugin *log)
 {
     FILE *fp;
     bstring filedata;
     struct bstrList *lines;
     int i;
 
-    printf("[*] Processing Assets from persistent file %s\n", bdata(output_log_file_conf.filename));
+    printf("[*] Processing Assets from persistent file %s\n", log->path);
 
     /* Open Signature File */
-    if ((fp = fopen(bdata(output_log_file_conf.filename), "r")) == NULL) {
-        printf("Unable to open CSV file - %s", bdata(output_log_file_conf.filename));
+    if ((fp = fopen(log->path, "r")) == NULL) {
+        printf("Unable to open CSV file - %s", log->path);
     }
 
     /* Read file into 'filedata' and process it accordingly. */
@@ -217,26 +233,26 @@ int parse_raw_report (bstring line)
  * INPUT    : 0 - Main asset
  * RETURN   : VOID
  * ---------------------------------------------------------- */
-void file_arp (asset *main)
+void file_arp (output_plugin *log, asset *main)
 {
     /* ip,vlan,port,proto,ARP (mac-resolved),mac-address,timstamp*/
     static char ip_addr_s[INET6_ADDRSTRLEN];
-    if (output_log_file_conf.file == NULL) {
+    if ((FILE*)log->data == NULL) {
         elog("[!] ERROR:  File handle not open!\n");
         return;
     }
     u_ntop(main->ip_addr, main->af, ip_addr_s);
     if (main->mac_resolved != NULL) {
         /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
-        fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
+        fprintf((FILE*)log->data, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
             main->vlan ? ntohs(main->vlan) : 0,main->mac_resolved,
             hex2mac((const char *)main->mac_addr), main->last_seen);
     } else {
         /* ip,0,0,ARP,mac-address,timstamp */
-        fprintf(output_log_file_conf.file, "%s,%u,0,0,ARP,[%s],0,%lu\n", ip_addr_s,
+        fprintf((FILE*)log->data, "%s,%u,0,0,ARP,[%s],0,%lu\n", ip_addr_s,
             main->vlan ? ntohs(main->vlan) : 0,hex2mac((const char *)main->mac_addr), main->last_seen);
     }
-    fflush(output_log_file_conf.file);
+    fflush((FILE*)log->data);
 }
 
 /* ----------------------------------------------------------
@@ -246,29 +262,29 @@ void file_arp (asset *main)
  *          : 1 - Serice asset
  * ---------------------------------------------------------- */
 void
-file_service (asset *main, serv_asset *service)
+file_service (output_plugin* log,asset *main, serv_asset *service)
 {
-    if (output_log_file_conf.file != NULL) {
+    if ((FILE*)log->data != NULL) {
         uint8_t tmp_ttl;
         static char ip_addr_s[INET6_ADDRSTRLEN];
         u_ntop(main->ip_addr, main->af, ip_addr_s);
         /* ip,vlan,port,proto,SERVICE,application,timstamp*/
-        fprintf(output_log_file_conf.file, "%s,%u,%d,%d,",
+        fprintf((FILE*)log->data, "%s,%u,%d,%d,",
             ip_addr_s, main->vlan ? ntohs(main->vlan) : 0,
             ntohs(service->port),service->proto);
         if (service->role == 1) {
-            fprintf(output_log_file_conf.file, "SERVER,[%s:%s]",
+            fprintf((FILE*)log->data, "SERVER,[%s:%s]",
                 (char*)bdata(service->service),
                 (char *)bdata(service->application));
         } else {
-            fprintf(output_log_file_conf.file, "CLIENT,[%s:%s]",
+            fprintf((FILE*)log->data, "CLIENT,[%s:%s]",
                 (char*)bdata(service->service),
                 (char*)bdata(service->application));
         }
 
         tmp_ttl = normalize_ttl(service->ttl);
-        fprintf(output_log_file_conf.file, ",%d,%lu\n",tmp_ttl - service->ttl,service->last_seen);
-        fflush(output_log_file_conf.file);
+        fprintf((FILE*)log->data, ",%d,%lu\n",tmp_ttl - service->ttl,service->last_seen);
+        fflush((FILE*)log->data);
     } else {
         elog("[!] ERROR:  File handle not open!\n");
     }
@@ -282,48 +298,46 @@ file_service (asset *main, serv_asset *service)
  * RETURN   : VOID
  * ---------------------------------------------------------- */
 void
-file_os (asset *main, os_asset *os)
+file_os (output_plugin *log, asset *main, os_asset *os)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;
     uint32_t fail;
 
-    if (output_log_file_conf.file == NULL && 
-        (fail = init_output_log_file (NULL))){
+    if (!log || log->data == NULL){
         elog("[!] ERROR:  File handle not open: %s!\n", strerror(fail));
-
         return;
     }
 
     u_ntop(main->ip_addr, main->af, ip_addr_s);
 
     /* ip,vlan,port,proto,OS-FP,FP,timstamp*/
-    fprintf(output_log_file_conf.file, "%s,%u,%d,", ip_addr_s,
+    fprintf((FILE*)log->data, "%s,%u,%d,", ip_addr_s,
             main->vlan ? ntohs(main->vlan) : 0, os->port);
             //ntohs(main->port),service->proto);
 
     switch (os->detection) {
         case CO_SYN:
-            fprintf(output_log_file_conf.file, "6,SYN");
+            fprintf((FILE*)log->data, "6,SYN");
             break;
         case CO_SYNACK:
-            fprintf(output_log_file_conf.file, "6,SYNACK");
+            fprintf((FILE*)log->data, "6,SYNACK");
             break;
         case CO_ACK:
-            fprintf(output_log_file_conf.file, "6,ACK");
+            fprintf((FILE*)log->data, "6,ACK");
             break;
         case CO_RST:
-            fprintf(output_log_file_conf.file, "6,RST");
+            fprintf((FILE*)log->data, "6,RST");
             break;
         case CO_FIN:
-            fprintf(output_log_file_conf.file, "6,FIN");
+            fprintf((FILE*)log->data, "6,FIN");
             break;
         case CO_UDP:
-            fprintf(output_log_file_conf.file, "17,UDP");
+            fprintf((FILE*)log->data, "17,UDP");
             break;
         case CO_ICMP:
             // 58 is ICMPv6
-            fprintf(output_log_file_conf.file, "1,ICMP");
+            fprintf((FILE*)log->data, "1,ICMP");
             break;
 
         default:
@@ -332,24 +346,24 @@ file_os (asset *main, os_asset *os)
     }
 
     if (os->raw_fp != NULL) {
-        fprintf(output_log_file_conf.file, ",[%s:", (char *)bdata(os->raw_fp));
+        fprintf((FILE*)log->data, ",[%s:", (char *)bdata(os->raw_fp));
     } else {
         //bstring b = gen_fp_tcp(&os->fp, os->fp.zero_stamp, 0);
         bstring b = gen_fp_tcp(&os->fp, os->uptime, 0);
         os->raw_fp = b;
-        fprintf(output_log_file_conf.file, ",[%s:", (char *)bdata(os->raw_fp));
+        fprintf((FILE*)log->data, ",[%s:", (char *)bdata(os->raw_fp));
     }
-    if (os->fp.os != NULL) fprintf(output_log_file_conf.file,"%s", os->fp.os);
-        else fprintf(output_log_file_conf.file, "unknown");
-    if (os->fp.desc != NULL) fprintf(output_log_file_conf.file, ":%s", os->fp.desc);
-        else fprintf(output_log_file_conf.file, ":unknown");
+    if (os->fp.os != NULL) fprintf((FILE*)log->data,"%s", os->fp.os);
+        else fprintf((FILE*)log->data, "unknown");
+    if (os->fp.desc != NULL) fprintf((FILE*)log->data, ":%s", os->fp.desc);
+        else fprintf((FILE*)log->data, ":unknown");
 
-    if (os->fp.mss) fprintf(output_log_file_conf.file, ":link:%s",lookup_link(os->fp.mss,1));
-    if (os->uptime) fprintf(output_log_file_conf.file, ":uptime:%dhrs",os->uptime/360000);
+    if (os->fp.mss) fprintf((FILE*)log->data, ":link:%s",lookup_link(os->fp.mss,1));
+    if (os->uptime) fprintf((FILE*)log->data, ":uptime:%dhrs",os->uptime/360000);
 
     tmp_ttl = normalize_ttl(os->ttl);
-    fprintf(output_log_file_conf.file, "],%d,%lu\n",tmp_ttl - os->ttl, os->last_seen);   
-    fflush(output_log_file_conf.file);
+    fprintf((FILE*)log->data, "],%d,%lu\n",tmp_ttl - os->ttl, os->last_seen);   
+    fflush((FILE*)log->data);
 }
 
 /* ----------------------------------------------------------
@@ -359,16 +373,12 @@ file_os (asset *main, os_asset *os)
 * INPUT    : None!
  * OUTPUT   : None!
  * ---------------------------------------------------------- */
-int end_output_log_file ()
+int end_output_log_file (output_plugin* log)
 {
     printf("\n[*] Closing log file.");
 
-    if (output_log_file_conf.file != NULL)
-    fclose(output_log_file_conf.file);
-
-    if (output_log_file_conf.filename != NULL)
-    bdestroy(output_log_file_conf.filename);
-
+    if (log->data != NULL)
+    fclose((FILE*)log->data);
     return 0;
 }
 
