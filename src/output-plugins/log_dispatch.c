@@ -94,9 +94,9 @@ void log_asset_service (asset *main, serv_asset *service)
     static char ip_addr_s[INET6_ADDRSTRLEN];
     u_ntop(main->ip_addr, main->af, ip_addr_s);
     if (service->role == 1) {
-        dlog("[*] new service: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));
+        fprintf(stderr, "[*] new service: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));
     } else {
-        dlog("[*] new client: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));
+        fprintf(stderr, "[*] new client: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));
     }
 #endif
     if (log_fun.flags & VERBOSE) {
