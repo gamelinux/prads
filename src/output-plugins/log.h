@@ -23,5 +23,5 @@ enum { VERBOSE = 0x01, FLAGS } log_flags;
 void log_asset_arp (asset *main);
 void log_asset_os (asset *main, os_asset *os);
 void log_asset_service (asset *main, serv_asset *service);
-int init_logging(int type, char *path, int flags);
+int init_logging(int type, const char *path, int flags);
 void end_logging();

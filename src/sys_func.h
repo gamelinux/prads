@@ -34,5 +34,6 @@ void print_pcap_stats();
 void print_prads_stats();
 void unload_tcp_sigs();
 uint8_t normalize_ttl (uint8_t ttl);
+char *hex2mac(const char *mac);
 
 #endif

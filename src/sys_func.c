@@ -399,3 +399,16 @@ int daemonize()
     return SUCCESS;
 }
 
+char *hex2mac(const char *mac)
+{
+
+    static char buf[32];
+
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+             (mac[0] & 0xFF), (mac[1] & 0xFF), (mac[2] & 0xFF),
+             (mac[3] & 0xFF), (mac[4] & 0xFF), (mac[5] & 0xFF));
+
+    return buf;
+}
+
+

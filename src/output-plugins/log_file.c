@@ -56,7 +56,7 @@ int init_log_file (output_plugin *log)
 int init_output_log_file (output_plugin *log, const char *file, int flags)
 {
     FILE *fp;
-    char *mode = "r";
+    const char *mode = MODE_READ;
     int retry = 0;
     /* Make sure filename isn't NULL. */
     if (!file)
@@ -91,7 +91,7 @@ reopen:
     } else {
         log->data = (void *) fp;
 
-        if (mode == MODE_WRITE){
+        if (*mode == 'w'){
             /* File did not exist, create new.. */
             fprintf(fp, "asset,vlan,port,proto,service,[service-info],distance,discovered\n");
         }

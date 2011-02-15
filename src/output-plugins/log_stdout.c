@@ -2,6 +2,7 @@
 #include "../sys_func.h"
 #include "../sig.h"
 #include "../ipfp/ipfp.h"
+#include "log.h"
 
 void stdout_arp (asset *main)
 {

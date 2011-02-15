@@ -4,10 +4,10 @@
  */
 
 //#include "../common.h"
-//#include "../sys_func.h"
 //#include "log_sguil.h"
 
 #include "../prads.h"
+#include "../sys_func.h" // u_ntop
 #include "log.h"
 #include "log_stdout.h"
 #include "log_file.h"
@@ -15,14 +15,14 @@
 output_plugin log_fun;
 
 /* set up function pointers for logging */
-void init_logging(int logtype, const char *file, int flags)
+int init_logging(int logtype, const char *file, int flags)
 {
    log_fun.flags = flags;
    switch (logtype)
    {
       case LOG_FILE:
          if(0 == init_log_file(&log_fun) && log_fun.init){
-            log_fun.init(&log_fun, file, flags);
+            return log_fun.init(&log_fun, file, flags);
          }
          break;
       case LOG_SGUIL:
@@ -38,6 +38,7 @@ void init_logging(int logtype, const char *file, int flags)
       default:
          fprintf(stderr,"whoops! init_logging\n");
    }
+   return 0xFABE;
 }
 
 void end_logging()
@@ -46,20 +47,6 @@ void end_logging()
        log_fun.denit(&log_fun);
     }
 }
-
-char *hex2mac(const char *mac)
-{
-
-    static char buf[32];
-
-    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
-             (mac[0] & 0xFF), (mac[1] & 0xFF), (mac[2] & 0xFF),
-             (mac[3] & 0xFF), (mac[4] & 0xFF), (mac[5] & 0xFF));
-
-    return buf;
-}
-
-
 
 void log_asset_arp (asset *masset)
 {

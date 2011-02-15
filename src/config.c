@@ -84,7 +84,7 @@ void set_default_config_options()
     config.dpath   = "/tmp";
     config.pidfile = strdup("prads.pid");
     config.pidpath = strdup("/var/run");
-    config.assetlog= bfromcstr(LOGDIR PRADS_ASSETLOG);
+    config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     // default source net owns everything
     config.s_net   = "0.0.0.0/0,::/0";
     config.errbuf[0] = '\0';
@@ -260,7 +260,8 @@ void parse_line (bstring line)
         config.pidfile = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "asset_log")) == 1) {
         /* PRADS ASSET LOG */
-        config.assetlog = bstrcpy(value);
+        if(config.assetlog) free(config.assetlog);
+        config.assetlog = bstr2cstr(value,'-');
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
         config.sig_file_serv_tcp = bstrcpy(value);

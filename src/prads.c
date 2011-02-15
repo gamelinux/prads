@@ -1030,7 +1030,6 @@ int main(int argc, char *argv[])
     set_default_config_options();
     bstring pconfile = bfromcstr(CONFDIR "prads.conf");
     //parse_config_file(pconfile);
-    //init_logging();
     //bdestroy (pconfile);
 
     cxtbuffer = NULL;
@@ -1117,7 +1116,7 @@ int main(int argc, char *argv[])
             config.pidpath = strdup(optarg);
             break;
         case 'l':
-            config.assetlog = bfromcstr(optarg);
+            config.assetlog = strdup(optarg);
             break;
         default:
             elog("oops, someone forgot to parse argument: '%c'", ch);
@@ -1125,8 +1124,7 @@ int main(int argc, char *argv[])
             break;
         }
 
-    //init_logging(config.assetlog);
-    printf("logging to file %s\n", bstr2cstr(config.assetlog,0));
+    printf("logging to file %s\n", config.assetlog);
     init_logging(LOG_FILE, config.assetlog, config.verbose);
     bdestroy (pconfile);
 
