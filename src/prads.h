@@ -482,8 +482,8 @@ typedef struct _gre_sre_header
 
 /* Fingerprint / Signature entry */
 typedef struct _fp_entry {
-    uint8_t *os;                /* OS genre */
-    uint8_t *desc;              /* OS description */
+    char *os;                /* OS genre */
+    char *desc;              /* OS description */
     uint8_t no_detail;          /* Disable guesstimates */
     uint8_t generic;            /* Generic hit */
     uint8_t userland;           /* Userland stack */

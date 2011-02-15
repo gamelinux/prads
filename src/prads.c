@@ -275,8 +275,8 @@ void prepare_eth (packetinfo *pi)
 void parse_eth (packetinfo *pi)
 {
     if (!IS_CSSET(&config,CS_MAC)) return;
-    uint8_t *mac = pi->eth_hdr->ether_src;
     /* XXX: how is mac matching supposed to work?
+    uint8_t *mac = pi->eth_hdr->ether_src;
 
      * answer: lookup macs on pertinent frames
      * and hash into mac asset database

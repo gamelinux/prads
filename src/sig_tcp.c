@@ -743,8 +743,8 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
     while ((p = fgets(buf, sizeof(buf), f))) {
         uint32_t l;
 
-        char obuf[MAXLINE], genre[MAXLINE], desc[MAXLINE],
-            quirks[MAXLINE];
+        char obuf[MAXLINE], genre[MAXLINE], desc[MAXLINE];
+        uint8_t quirks[MAXLINE];
         char w[MAXLINE], sb[MAXLINE];
         char *gptr = genre;
         uint32_t t, d, s;
@@ -898,7 +898,7 @@ void unload_sigs(fp_entry **sigp, int size)
 #define MY_MAXDNS 32
 
 #include <netdb.h>
-static inline char* grab_name(char* a) {
+static inline char* grab_name(uint8_t* a) {
   struct hostent* r;
   static char rbuf[MY_MAXDNS+6] = "/";
   uint32_t j;
@@ -923,7 +923,7 @@ static inline char* grab_name(char* a) {
 
 
 
-uint8_t* lookup_link(uint16_t mss,uint8_t txt) {
+char* lookup_link(uint16_t mss, char txt) {
   uint32_t i;
   static char tmp[32];
 
@@ -944,7 +944,7 @@ unknown:
 }
 
 
-static uint8_t* lookup_tos(uint8_t t) {
+static char* lookup_tos(uint8_t t) {
   uint32_t i;
 
   if (!t) return 0;
@@ -1183,7 +1183,7 @@ fp_entry *find_match(
   uint8_t  nat=0;
   fp_entry* p;
   uint8_t  orig_df  = e->df;
-  uint8_t* tos_desc = 0;
+  char* tos_desc = 0;
 
   fp_entry* fuzzy = 0;
   uint8_t fuzzy_now = 0;
