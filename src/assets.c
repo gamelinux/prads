@@ -499,7 +499,9 @@ short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi)
         }
     } else {
 
+        add_asset(pi);
         update_asset(pi);
+
         if ( pi->asset == NULL ) {
             printf("\n[E] update_asset(pi) failed! Asset does not exist! Cant enter MAC!!! die();\n");
             return ERROR;
