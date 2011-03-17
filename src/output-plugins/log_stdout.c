@@ -1,6 +1,30 @@
+#include "../prads.h"
+#include "../sys_func.h"
+#include "../sig.h"
+#include "log.h"
 #include "log_stdout.h"
 
-void stdout_arp (asset *main)
+output_plugin p_stdout = {
+    .init = NULL,
+    .arp = &stdout_arp,
+    .os = &stdout_os,
+    .service = &stdout_service,
+    .denit = &end_log_stdout,
+    .data = NULL,
+};
+
+output_plugin *init_log_stdout()
+{
+    return &p_stdout;
+}
+
+int end_log_stdout (output_plugin *log)
+{
+    return 0;
+}
+
+
+void stdout_arp (output_plugin *unused, asset *main)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
 
@@ -9,13 +33,14 @@ void stdout_arp (asset *main)
         printf("%s", ip_addr_s);
         if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
         printf(",[arp:%s]",
-        hex2mac((const char *)main->mac_addr));
+        hex2mac(main->mac_addr));
+        if(main->macentry) printf(",%s", main->macentry->vendor);
         printf("\n");
     }
     fflush(0);
 }
 
-void stdout_os (asset *main, os_asset *os)
+void stdout_os (output_plugin *unused, asset *main, os_asset *os)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;
@@ -59,7 +84,7 @@ void stdout_os (asset *main, os_asset *os)
     fflush(0);
 }
 
-void stdout_service (asset *main, serv_asset *service)
+void stdout_service (output_plugin* unused, asset *main, serv_asset *service)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;

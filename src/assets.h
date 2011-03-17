@@ -1,3 +1,11 @@
+#define ASSET_HASH4(ip) ((ip) % BUCKET_SIZE)
+
+#ifndef OSX
+#define ASSET_HASH6(ip) ( (ip).s6_addr32[3] % BUCKET_SIZE )
+#else
+#define ASSET_HASH6(ip) ( (ip).__u6_addr.__u6_addr32[3] % BUCKET_SIZE )
+#endif
+
 void add_asset(packetinfo *pi);
 void del_asset(asset * passet, asset ** bucket_ptr);
 void del_os_asset(os_asset ** prev_os, os_asset * passet);

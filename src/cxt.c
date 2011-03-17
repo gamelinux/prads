@@ -14,6 +14,22 @@
     vec.w[3] = 0; \
 } while (0)
 
+void cxt_init()
+{
+    /* alloc hash memory */
+    uint32_t i = 0;
+
+    /* pre allocate conection trackers */
+    for (i = 0; i < CXT_DEFAULT_PREALLOC; i++) {
+        connection *cxt = connection_alloc();
+        if (cxt == NULL) {
+            printf("ERROR: connection_alloc failed: %s\n", strerror(errno));
+            exit(1);
+        }
+        cxt_enqueue(&cxt_spare_q,cxt);
+     }
+}
+
 int cx_track(struct in6_addr *ip_src, uint16_t src_port,
              struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
              uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af)
@@ -24,24 +40,17 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
     uint32_t hash;
 
     if (af == AF_INET) {
-        hash = ((ip_src->s6_addr32[0] + ip_dst->s6_addr32[0])) % BUCKET_SIZE;
+        hash = CXT_HASH4(IP4ADDR(ip_src),IP4ADDR(ip_dst));
     } else if (af == AF_INET6) {
-        hash =
-            ((ip_src->s6_addr32[0] + ip_src->s6_addr32[1] +
-              ip_src->s6_addr32[2] + ip_src->s6_addr32[3] +
-              ip_dst->s6_addr32[0] + ip_dst->s6_addr32[1] +
-              ip_dst->s6_addr32[2] + ip_dst->s6_addr32[3]
-             )) % BUCKET_SIZE;
+        hash = CXT_HASH6(ip_src,ip_dst);
     }
-    extern connection *bucket[BUCKET_SIZE];
     cxt = bucket[hash];
     head = cxt;
 
     while (cxt != NULL) {
+        // Two-way compare of given connection against connection table
         if (af == AF_INET) {
-            if (cxt->s_port == src_port && cxt->d_port == dst_port
-                && cxt->s_ip.s6_addr32[0] == ip_src->s6_addr32[0]
-                && cxt->d_ip.s6_addr32[0] == ip_dst->s6_addr32[0]) {
+            if (CMP_CXT4(cxt,IP4ADDR(ip_src),src_port,IP4ADDR(ip_dst),dst_port)){
                 cxt->s_tcpFlags |= tcpflags;
                 cxt->s_total_bytes += p_bytes;
                 cxt->s_total_pkts += 1;
@@ -51,9 +60,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
                     return 0;   // Dont check!
                 }
                 return 1;       // Client should send the first packet (TCP/SYN - UDP?), hence this is a client
-            } else if (cxt->s_port == dst_port && cxt->d_port == src_port
-                       && cxt->s_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[0] == ip_src->s6_addr32[0]) {
+            } else if (CMP_CXT4(cxt,IP4ADDR(ip_dst),dst_port,IP4ADDR(ip_src),src_port)) {
                 cxt->d_tcpFlags |= tcpflags;
                 cxt->d_total_bytes += p_bytes;
                 cxt->d_total_pkts += 1;
@@ -65,16 +72,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
                 return 2;       // This should be a server (Maybe not when we start up but in the long run)
             }
         } else if (af == AF_INET6) {
-            if (cxt->s_port == src_port && cxt->d_port == dst_port
-                && cxt->s_ip.s6_addr32[3] == ip_src->s6_addr32[3]
-                && cxt->s_ip.s6_addr32[2] == ip_src->s6_addr32[2]
-                && cxt->s_ip.s6_addr32[1] == ip_src->s6_addr32[1]
-                && cxt->s_ip.s6_addr32[0] == ip_src->s6_addr32[0]
-
-                && cxt->d_ip.s6_addr32[3] == ip_dst->s6_addr32[3]
-                && cxt->d_ip.s6_addr32[2] == ip_dst->s6_addr32[2]
-                && cxt->d_ip.s6_addr32[1] == ip_dst->s6_addr32[1]
-                && cxt->d_ip.s6_addr32[0] == ip_dst->s6_addr32[0]) {
+            if (CMP_CXT6(cxt,ip_src,src_port,ip_dst,dst_port)){
 
                 cxt->s_tcpFlags |= tcpflags;
                 cxt->s_total_bytes += p_bytes;
@@ -85,16 +83,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
                     return 0;   // Dont Check!
                 }
                 return 1;       // Client
-            } else if (cxt->d_port == src_port && cxt->s_port == dst_port
-                       && cxt->s_ip.s6_addr32[0] == ip_dst->s6_addr32[0]
-                       && cxt->s_ip.s6_addr32[1] == ip_dst->s6_addr32[1]
-                       && cxt->s_ip.s6_addr32[2] == ip_dst->s6_addr32[2]
-                       && cxt->s_ip.s6_addr32[3] == ip_dst->s6_addr32[3]
-
-                       && cxt->d_ip.s6_addr32[0] == ip_src->s6_addr32[0]
-                       && cxt->d_ip.s6_addr32[1] == ip_src->s6_addr32[1]
-                       && cxt->d_ip.s6_addr32[2] == ip_src->s6_addr32[2]
-                       && cxt->d_ip.s6_addr32[3] == ip_src->s6_addr32[3]) {
+            } else if (CMP_CXT6(cxt,ip_dst,dst_port,ip_src,src_port)){
 
                 cxt->d_tcpFlags |= tcpflags;
                 cxt->d_total_bytes += p_bytes;
@@ -111,6 +100,7 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
     }
 
     if (cxt == NULL) {
+        //TODO: refactor into cxt_new()
         extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
         cxt = (connection *) calloc(1, sizeof(connection));
@@ -156,20 +146,6 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
    return -1;
 }
 
-inline
-uint32_t make_hash(packetinfo *pi)
-{
-    if (pi->ip4 != NULL) {
-        return (PI_IP4SRC(pi) + PI_IP4DST(pi)) % BUCKET_SIZE;
-    } else {
-        return (PI_IP6SRC(pi).s6_addr32[0] + PI_IP6SRC(pi).s6_addr32[1] +
-                PI_IP6SRC(pi).s6_addr32[2] + PI_IP6SRC(pi).s6_addr32[3] +
-                PI_IP6DST(pi).s6_addr32[0] + PI_IP6DST(pi).s6_addr32[1] +
-                PI_IP6DST(pi).s6_addr32[2] + PI_IP6DST(pi).s6_addr32[3]
-                 ) % BUCKET_SIZE;
-    }
-}
-
 /* vector comparisons to speed up cx tracking.
  * meaning, compare source:port and dest:port at the same time.
  *
@@ -188,7 +164,8 @@ uint32_t make_hash(packetinfo *pi)
  * note, we can employ the same technique for ipv6 addresses, but
  * one address at a time.
  */
-/*inline void cx_track_simd_ipv4(packetinfo *pi)
+#ifdef VECTOR_CXTRACKER
+inline void cx_track_simd_ipv4(packetinfo *pi)
 {
     connection *cxt = NULL;
     connection *head = NULL;
@@ -203,14 +180,14 @@ uint32_t make_hash(packetinfo *pi)
     ip6v incoming;
     ip6v compare;
     VEC_FILL(incoming,
-        pi->ip_src.s6_addr32[0],
-        pi->ip_dst.s6_addr32[0],
+        pi->ip_src.__u6_addr.__u6_addr32[0],
+        pi->ip_dst.__u6_addr.__u6_addr32[0],
         pi->s_port,
         pi->d_port);
     while (cxt != NULL) {
         VEC_FILL(compare,
-        cxt->s_ip.s6_addr32[0],
-        cxt->d_ip.s6_addr32[0],
+        cxt->s_ip.__u6_addr.__u6_addr32[0],
+        cxt->d_ip.__u6_addr.__u6_addr32[0],
         cxt->s_port,
         cxt->d_port);
 
@@ -229,8 +206,8 @@ uint32_t make_hash(packetinfo *pi)
 
         // compare the other direction
         VEC_FILL(compare,
-        cxt->d_ip.s6_addr32[0],
-        cxt->s_ip.s6_addr32[0],
+        cxt->d_ip.__u6_addr.__u6_addr32[0],
+        cxt->s_ip.__u6_addr.__u6_addr32[0],
         cxt->d_port,
         cxt->s_port);
 
@@ -256,14 +233,14 @@ uint32_t make_hash(packetinfo *pi)
     }
     printf("[*] Error in session tracking...\n");
     exit (1);
-}*/
+}
+
+#endif
 inline
 void connection_tracking(packetinfo *pi) {
-    uint32_t hash;
 
     // add to packetinfo ? dont through int32 around :)
-    hash = make_hash(pi);
-    cxt_update(pi, hash);
+    cxt_update(pi);
     return;
 }
 
@@ -284,24 +261,19 @@ void end_sessions()
     for (cxt = cxt_est_q.bot; cxt != NULL;) {
         xpir = 0;
         curcxt++;
-        /*
-         * TCP
-         */
+        /** TCP */
         if (cxt->proto == IP_PROTO_TCP) {
-            /*
-             * FIN from both sides
-             */
+            /* * FIN from both sides */
             if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
                     && (check_time - cxt->last_pkt_time) > 5) {
                 xpir = 1;
-            }                /*
-                 * RST from eather side 
-                 */
+            } /* * RST from either side */
             else if ((cxt->s_tcpFlags & TF_RST
                     || cxt->d_tcpFlags & TF_RST)
                     && (check_time - cxt->last_pkt_time) > 5) {
                 xpir = 1;
-            }                // Commented out, since &TF_SYNACK is wrong!
+            }
+            // Commented out, since &TF_SYNACK is wrong!
                 /*
                  * if not a complete TCP 3-way handshake 
                  */
@@ -346,7 +318,8 @@ void end_sessions()
                 cxt->hprev->hnext = cxt->hnext;
             if (cxt->hnext)
                 cxt->hnext->hprev = cxt->hprev;
-            if (cxt->cb->cxt == cxt)
+            // cb is deprecated (we believe)
+            if (cxt->cb && cxt->cb->cxt == cxt)
                 cxt->cb->cxt = cxt->hnext;
 
             connection *tmp = cxt;
@@ -394,7 +367,6 @@ void end_all_sessions()
     connection *cxt;
     int cxkey;
     int expired = 0;
-    extern connection *bucket[BUCKET_SIZE];
 
     for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
         cxt = bucket[cxkey];

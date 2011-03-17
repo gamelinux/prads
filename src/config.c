@@ -48,6 +48,7 @@ void display_config()
     if (IS_CSSET(&config,CS_UDP_SERVICES))  printf (" UDP-SERVICES");
     if (IS_CSSET(&config,CS_ICMP))          printf (" ICMP");
     if (IS_CSSET(&config,CS_ARP))           printf (" ARP");
+    if (IS_CSSET(&config,CS_MAC))           printf (" MAC");
     printf("\n");
 
     return;
@@ -77,12 +78,14 @@ void set_default_config_options()
     config.cof    |= CS_TCP_SERVER;
     config.cof    |= CS_TCP_CLIENT;
     config.cof    |= CS_UDP_SERVICES;
+    config.cof    |= CS_MAC;
     config.dev     = strdup("eth0");
     config.bpff    = strdup("");
     config.dpath   = "/tmp";
     config.pidfile = strdup("prads.pid");
     config.pidpath = strdup("/var/run");
-    config.assetlog= bfromcstr(LOGDIR PRADS_ASSETLOG);
+    config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
+    config.fifo    = NULL;
     // default source net owns everything
     config.s_net   = "0.0.0.0/0,::/0";
     config.errbuf[0] = '\0';
@@ -93,11 +96,13 @@ void set_default_config_options()
     config.sig_file_ack = CONFDIR "tcp-stray-ack.fp";
     config.sig_file_fin = CONFDIR "tcp-fin.fp";
     config.sig_file_rst = CONFDIR "tcp-rst.fp";
+    config.sig_file_mac = CONFDIR "mac.sig";
     config.sig_syn = NULL;
     config.sig_synack = NULL;
     config.sig_ack = NULL;
     config.sig_fin = NULL;
     config.sig_rst = NULL;
+    config.sig_mac = NULL;
     config.sig_hashsize = 241;
     // don't chroot by default
     config.chroot_dir = NULL;
@@ -171,6 +176,12 @@ void parse_line (bstring line)
             else
                 config.daemon_flag = 0;
         }
+    } else if ((biseqcstr(param, "mac")) == 1) {
+        /* MAC CHECK */
+        if (value->data[0] == '1')
+            config.cof |= CS_MAC;
+        else 
+            config.cof &= ~CS_MAC;
     } else if ((biseqcstr(param, "arp")) == 1) {
         /* ARP CHECK */
         if (value->data[0] == '1')
@@ -250,7 +261,11 @@ void parse_line (bstring line)
         config.pidfile = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "asset_log")) == 1) {
         /* PRADS ASSET LOG */
-        config.assetlog = bstrcpy(value);
+        if(config.assetlog) free(config.assetlog);
+        config.assetlog = bstr2cstr(value,'-');
+    } else if ((biseqcstr(param, "fifo")) == 1) {
+        /* FIFO path */
+        config.fifo = bstr2cstr (value, '-');
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
         config.sig_file_serv_tcp = bstrcpy(value);
@@ -265,7 +280,7 @@ void parse_line (bstring line)
         config.sig_file_cli_udp = bstrcpy(value);
     } else if ((biseqcstr(param, "mac_file")) == 1) {
         /* MAC / VENDOR RESOLUTION FILE */
-        config.sig_file_mac = bstrcpy(value);
+        config.sig_file_mac = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "output")) == 1) {
         /* OUTPUT */
         //conf_module_plugin(value, &activate_output_plugin);

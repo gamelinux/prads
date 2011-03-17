@@ -26,10 +26,12 @@
 #define PRADS_H
 #include "common.h"
 #include "bstrlib.h"
+#include <netinet/in.h>
 #include <pcre.h>
 
+
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.2.0"
+#define VERSION                       "0.2.2"
 #define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
@@ -65,6 +67,7 @@
 #define CS_TCP_CLIENT                 0x02
 #define CS_UDP_SERVICES               0x04  /* Currently implying server+client*/
 #define CS_UDP_CLIENT                 0x08
+#define CS_MAC                        0x10
 #define CS_ICMP                       0x20
 #define CS_ARP                        0x80
 
@@ -185,6 +188,7 @@
 #define TCP_SIGNATURE_LIST             CONFDIR "tcp-service.sig"
 #define LOGDIR                         "/var/log/"
 #define PRADS_ASSETLOG                 "prads-asset.log"
+#define MODE_READ                      "r"
 #define MODE_WRITE                     "w"
 
 #define MAX_APP                        100
@@ -205,26 +209,26 @@
  */
 
 typedef struct _ether_header {
-    u_char ether_dst[6];        /* destination MAC */
-    u_char ether_src[6];        /* source MAC */
+    uint8_t ether_dst[6];        /* destination MAC */
+    uint8_t ether_src[6];        /* source MAC */
 
     union {
         struct etht {
-            u_short ether_type; /* ethernet type (normal) */
+            uint16_t ether_type; /* ethernet type (normal) */
         } etht;
 
         struct qt {
-            u_short eth_t_8021; /* ethernet type/802.1Q tag */
-            u_short eth_t_8_vid;
-            u_short eth_t_8_type;
+            uint16_t eth_t_8021; /* ethernet type/802.1Q tag */
+            uint16_t eth_t_8_vid;
+            uint16_t eth_t_8_type;
         } qt;
 
         struct qot {
-            u_short eth_t_80212;        /* ethernet type/802.1QinQ */
-            u_short eth_t_82_mvid;
-            u_short eth_t_82_8021;
-            u_short eth_t_82_vid;
-            u_short eth_t_82_type;
+            uint16_t eth_t_80212;        /* ethernet type/802.1QinQ */
+            uint16_t eth_t_82_mvid;
+            uint16_t eth_t_82_8021;
+            uint16_t eth_t_82_vid;
+            uint16_t eth_t_82_type;
         } qot;
     } vlantag;
 
@@ -479,8 +483,8 @@ typedef struct _gre_sre_header
 
 /* Fingerprint / Signature entry */
 typedef struct _fp_entry {
-    uint8_t *os;                /* OS genre */
-    uint8_t *desc;              /* OS description */
+    char *os;                /* OS genre */
+    char *desc;              /* OS description */
     uint8_t no_detail;          /* Disable guesstimates */
     uint8_t generic;            /* Generic hit */
     uint8_t userland;           /* Userland stack */
@@ -497,6 +501,16 @@ typedef struct _fp_entry {
     uint32_t line;              /* config file line */
     struct _fp_entry *next;
 } fp_entry;
+
+/* mac address database entry */
+typedef struct _mac_entry {
+  uint8_t o[MAC_ADDR_LEN];
+  uint8_t mask; // optional
+  char *vendor;
+  char *comment;
+  struct _mac_entry *next;
+} mac_entry;
+
 
 /*
  * Structure for connections
@@ -526,7 +540,7 @@ typedef struct _connection {
     uint8_t  check;               /* Flags spesifying checking */
     struct   _asset *c_asset;     /* pointer to src asset */
     struct   _asset *s_asset;     /* pointer to server asset */
-    struct   _cxtbucket *cb;
+    struct   _cxtbucket *cb;      /* pointer to resource in connection track bucket */
 } connection;
 #define CXT_DONT_CHECK_SERVER     0x01  /* Dont check server packets */
 #define CXT_DONT_CHECK_CLIENT     0x02  /* Dont check client packets */
@@ -542,6 +556,35 @@ typedef struct _connection {
 #define ISSET_SERVICE_UNKNOWN(pi)        (pi->cxt->check & CXT_SERVICE_UNKNOWN_SET)
 #define ISSET_CLIENT_UNKNOWN(pi)         (pi->cxt->check & CXT_CLIENT_UNKNOWN_SET)
 // good comparison to optimize
+// XXX: TODO: comotion: use filter_network 64bit instructions
+#ifdef OSX
+// sidds darwin ports
+#define IP4ADDR(ip) (ip)->__u6_addr.__u6_addr32[0]
+
+#define CMP_ADDR6(a1,a2) \
+    (((a1)->__u6_addr.__u6_addr32[3] == (a2)->__u6_addr.__u6_addr32[3] && \
+      (a1)->__u6_addr.__u6_addr32[2] == (a2)->__u6_addr.__u6_addr32[2] && \
+      (a1)->__u6_addr.__u6_addr32[1] == (a2)->__u6_addr.__u6_addr32[1] && \
+      (a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
+
+// the reason why we can't get rid of pi->s6_addr32
+#define CMP_ADDR4(a1,a2) \
+    (((a1)->__u6_addr.__u6_addr32[0] ==  (a2)))
+#define CMP_ADDRA(a1,a2) \
+    (((a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
+
+#define CMP_PORT(p1,p2) \
+    ((p1 == p2))
+#else
+#define IP6ADDR0(ip) ((ip)->s6_addr32[0])
+#define IP6ADDR1(ip) ((ip)->s6_addr32[1])
+#define IP6ADDR2(ip) ((ip)->s6_addr32[2])
+#define IP6ADDR3(ip) ((ip)->s6_addr32[3])
+#define IP6ADDR(ip) \
+    IP6ADDR0(ip), IP6ADDR1(ip), IP6ADDR2(ip), IP6ADDR3(ip)
+
+#define IP4ADDR(ip) ((ip)->s6_addr32[0])
+
 #define CMP_ADDR6(a1,a2) \
     (((a1)->s6_addr32[3] == (a2)->s6_addr32[3] && \
       (a1)->s6_addr32[2] == (a2)->s6_addr32[2] && \
@@ -549,18 +592,25 @@ typedef struct _connection {
       (a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
 
 // the reason why we can't get rid of pi->s6_addr32
-#define CMP_ADDR4(a1,a2) \
-    (((a1)->s6_addr32[0] ==  (a2)))
-    //(((a1)->s6_addr32[0] == (a2)->s6_addr32[0]))
+// apples and apples
+#define CMP_ADDR4A(a1,a2) \
+    ((a1)->s6_addr32[0] == (a2)->s6_addr32[0])
+// apples and oranges
+#define CMP_ADDR4(apple,orange) \
+    (((apple)->s6_addr32[0] ==  (orange)))
 #define CMP_PORT(p1,p2) \
     ((p1 == p2))
+#endif // OSX
 
 /* Since two or more connections can have the same hash key, we need to
  * compare the connections with the current hash key. */
 #define CMP_CXT4(cxt1, src, sp, dst, dp) \
-    ((CMP_ADDR4(&((cxt1)->s_ip), (src)) && \
-       CMP_ADDR4(&((cxt1)->d_ip),(dst)) && \
-       CMP_PORT((cxt1)->s_port, (sp)) && CMP_PORT((cxt1)->d_port, (dp))))
+    (( \
+       CMP_PORT((cxt1)->s_port, (sp)) && \
+       CMP_PORT((cxt1)->d_port, (dp)) && \
+       CMP_ADDR4(&((cxt1)->s_ip), (src)) && \
+       CMP_ADDR4(&((cxt1)->d_ip), (dst))    \
+    ))
 
 #define CMP_CXT6(cxt1, src, sp, dst, dp) \
     ((CMP_ADDR6(&(cxt1)->s_ip, (src)) && \
@@ -568,12 +618,21 @@ typedef struct _connection {
        CMP_PORT((cxt1)->s_port, (sp)) && CMP_PORT((cxt1)->d_port, (dp))))
 
 /* clear the address structure by setting all fields to 0 */
+#ifdef OSX
+#define CLEAR_ADDR(a) { \
+    (a)->__u6_addr.__u6_addr32[0] = 0; \
+    (a)->__u6_addr.__u6_addr32[1] = 0; \
+    (a)->__u6_addr.__u6_addr32[2] = 0; \
+    (a)->__u6_addr.__u6_addr32[3] = 0; \
+}
+#else
 #define CLEAR_ADDR(a) { \
     (a)->s6_addr32[0] = 0; \
     (a)->s6_addr32[1] = 0; \
     (a)->s6_addr32[2] = 0; \
     (a)->s6_addr32[3] = 0; \
 }
+#endif
 
 /* clears the cxt parts */
 #define CLEAR_CXT(cxt) { \
@@ -603,7 +662,7 @@ typedef struct _packetinfo {
     // eth_type(pi) is same as pi->eth_type, no?
     // marked candidates for deletion
     const struct pcap_pkthdr *pheader; /* Libpcap packet header struct pointer */
-    const u_char *  packet;         /* Unsigned char pointer to raw packet */
+    const uint8_t *  packet;         /* Unsigned char pointer to raw packet */
     // compute (all) these from packet
     uint32_t        eth_hlen;       /* Ethernet header lenght */
     uint16_t        mvlan;          /* Metro vlan tag */
@@ -704,8 +763,8 @@ typedef struct _asset {
     int af;                     /* IP AF_INET */
     uint16_t        vlan;       /* vlan tag */
     struct in6_addr ip_addr;    /* IP asset address */
-    unsigned char mac_addr[MAC_ADDR_LEN];       /* Asset MAC address */
-    bstring mac_resolved;       /* Asset MAC vendor name */
+    uint8_t mac_addr[MAC_ADDR_LEN];       /* Asset MAC address */
+    mac_entry *macentry;        /* Asset MAC vendor name */
     serv_asset *services;       /* Linked list with services detected */
     os_asset *os;               /* Linked list with OSes detected */
 } asset;
@@ -736,12 +795,6 @@ typedef struct _signature {
     struct _signature *next;    /* Next record in the list. */
     struct _signature *prev;    /* Next record in the list. */
 } signature;
-
-typedef struct _vendor {
-    unsigned int mac;           /* MAC ADDRESS */
-    bstring vendor;             /* Vendor */
-    struct _vendor *next;       /* Next vendor structure */
-} vendor;
 
 typedef struct _servicelist {
     bstring     service_name;   /* Service (@http) etc. */
