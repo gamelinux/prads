@@ -3,6 +3,7 @@
 **
 ** Copyright (C) 2009, Redpill Linpro
 ** Copyright (C) 2009, Edward Fjellskål <edward.fjellskaal@redpill-linpro.com>
+** Copyright (C) 2011, Kacper Wysocki   <kwy@redpill-linpro.com>
 **
 ** This program is free software; you can redistribute it and/or modify
 ** it under the terms of the GNU General Public License as published by
@@ -18,9 +19,37 @@
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 **
+
+** Props go out to Matt Sheldon <matt@mattsheldon.com>
+** author of pads and the basis of this code.
+
+** NOTE: fifo output does not reach its full potential as sguil
+** only supports so much data..
 */
 
-#include "log_sguil.h"
+
+/*  I N C L U D E S  *********************************************************/
+#include "../prads.h"
+#include "../sys_func.h"
+
+#include <stdio.h>
+#include <sys/stat.h>
+
+#include "log.h"
+#include "log_fifo.h"
+
+output_plugin p_fifo = {
+    .init = &init_output_fifo,
+    .arp = &fifo_arp,
+    .os = &fifo_stat,
+    .service = &fifo_service,
+    .denit = &fifo_end,
+};
+
+output_plugin *init_log_fifo()
+{
+    return &p_fifo;
+}
 
 /*
  * NOTES:
@@ -62,67 +91,69 @@
 
  */
 
-sguil_conf output_fifo_conf;
-
 /* ----------------------------------------------------------
- * FUNCTION : init_output_sguil
+ * FUNCTION : init_output_fifo
  * DESC     : This function will initialize the FIFO file.
  * INPUT    : 0 - FIFO filename
  * RETURN   : None!
  * --------------------------------------------------------- */
-int init_output_sguil (bstring fifo_file)
+int init_output_fifo (output_plugin *p, const char* fifo_file, int flags)
 {
     FILE *fp;
-    register u_int len = 0;
-    char *filename;
+    int e;
 
     /* Make sure report_file isn't NULL. */
     if (fifo_file == NULL)
-    fifo_file = bstrcpy(bfromcstr("prads.fifo"));
+        fifo_file = "prads.fifo";
 
-    output_fifo_conf.filename = bstrcpy(fifo_file);
+    p->path = fifo_file;
 
-    mkfifo (bdata(fifo_file), S_IFIFO | 0755);
-
-    if ((output_fifo_conf.file = fopen(bdata(fifo_file), "w+")) == NULL)
-    printf("Unable to open FIFO file (%s)!\n", bdata(fifo_file));
-
-    return;
+    if(0 != mkfifo (fifo_file, S_IFIFO | 0755)){
+        e = errno;
+        perror("creating fifo"); // not fatal
+    }
+    fp = fopen(fifo_file, "w+");
+    if(fp == NULL) {
+        e = errno;
+        perror("opening fifo");
+        return e;
+    }
+    p->data = (void *) fp;
+    return 0;
 }
 
 /* ----------------------------------------------------------
- * FUNCTION : sguil_arp
+ * FUNCTION : fifo_arp
  * DESC     : This function prints an ARP asset to the FIFO file.
  * INPUT    : 0 - IP Address
  *          : 1 - MAC Address
- * RETURN   : 0 - Success
- *          :-1 - Error
  * ---------------------------------------------------------- */
-void
-sguil_arp (asset *main)
+void fifo_arp (output_plugin *p, asset *main)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
+    FILE *fd;
     /* Print to FIFO */
-    if (output_fifo_conf.file != NULL) {
-        u_ntop(main->ip_addr, main->af, ip_addr_s);
-        if (main->mac_resolved != NULL) {
-            /* prads_agent.tcl process each line until it receivs a dot by itself */
-            fprintf(output_fifo_conf.file, "02\n%s\n%u\n%s\n%s\n%d\n.\n", ip_addr_s,
-                    ntohl(main->ip_addr.s_addr), main->mac_resolved,
-                    hex2mac(&main->mac_addr), main->last_seen);
-        } else {
-            /* prads_agent.tcl process each line until it receivs a dot by itself */
-            fprintf(output_fifo_conf.file, "02\n%s\n%u\nunknown\n%s\n%d\n.\n", ip_addr_s,
-                    ntohl(main->ip_addr.s_addr), hex2mac(&main->mac_addr), main->last_seen);
-        }
-        fflush(output_fifo_conf.file);
-    } else {
-        fprintf(stderr, "[!] ERROR:  File handle not open!\n");
+    if (p->data == NULL) {
+        elog("[!] ERROR:  File handle not open!\n");
+        return;
     }
+    fd = (FILE *)p->data;
+    u_ntop(main->ip_addr, main->af, ip_addr_s);
+    if (main->macentry != NULL) {
+        /* prads_agent.tcl process each line until it receivs a dot by itself */
+        fprintf(fd, "02\n%s\n%u\n%s\n%s\n%lu\n.\n", ip_addr_s,
+                IP4ADDR(&main->ip_addr), main->macentry->vendor,
+                hex2mac(main->mac_addr), main->last_seen);
+    } else {
+        /* prads_agent.tcl process each line until it receivs a dot by itself */
+        fprintf(fd, "02\n%s\n%u\nunknown\n%s\n%lu\n.\n", ip_addr_s,
+                IP4ADDR(&main->ip_addr), hex2mac(main->mac_addr), main->last_seen);
+    }
+    fflush(fd);
 }
 
 /* ----------------------------------------------------------
- * FUNCTION : sguil_service
+ * FUNCTION : fifo_service
  * DESC     : Prints a service asset to the FIFO file.
  * INPUT    : 0 - Port
  *          : 1 - IP  Address
@@ -130,27 +161,28 @@ sguil_arp (asset *main)
  *          : 3 - Service
  *          : 4 - Application
  *          : 5 - Discovered
- * RETURN   : 0 - Success
- *          : -1 - Error
  * ---------------------------------------------------------- */
-void
-sguil_service (asset *main, serv_asset *service)
+void fifo_service (output_plugin *p, asset *main, serv_asset *service)
 {
-    if (output_fifo_conf.file != NULL) {
-        /* prads_agent.tcl process each line until it receivs a dot by itself */
-        fprintf(output_fifo_conf.file, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%d\n%s\n.\n",
-                sip, ntohl(main->c_ip_addr.s_addr), 
-                dip, ntohl(main->ip_addr.s_addr), 
-                ntohs(main->c_port), ntohs(main->port), main->proto, 
-                bdata(main->service), bdata(main->application), 
-                main->discovered, bdata(main->hex_payload));
+    FILE *fd;
+    static char sip[INET6_ADDRSTRLEN];
+    /* Print to FIFO */
+    if (p->data == NULL) {
+        elog("[!] ERROR:  File handle not open!\n");
+        return;
+    }
+    fd = (FILE *)p->data;
+    /* prads_agent.tcl process each line until it receivs a dot by itself */
+    u_ntop(main->ip_addr, main->af, sip);
+    fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
+            /* sip, IP4ADDR(&main->c_ip_addr), ?? */
+            sip, IP4ADDR(&main->ip_addr), 
+            "", 0,
+            0, ntohs(service->port), service->proto, 
+            bdata(service->service), bdata(service->application), 
+            main->first_seen, "[PAYLOAD]" /* bdata(main->hex_payload) */);
 
-        fflush(output_fifo_conf.file);
-    }
-    }
-    } else {
-        fprintf(stderr, "[!] ERROR:  File handle not open!\n");
-    }
+    fflush(fd);
 }
 
 /* ----------------------------------------------------------
@@ -159,38 +191,34 @@ sguil_service (asset *main, serv_asset *service)
  * INPUT    : 0 - IP Address
  *          : 1 - Port
  *          : 2 - Protocol
- * RETURN   : 0 - Success
- *          :-1 - Error
  * ---------------------------------------------------------- */
-int print_stat_sguil (Asset *rec)
+void fifo_stat (output_plugin *p, asset *rec, os_asset *os)
 {
-    if (output_fifo_conf.file != NULL) {
-        /* pads_agent.tcl process each line until it receivs a dot by itself */
-        fprintf(output_fifo_conf.file, "03\n%s\n%d\n%d\n%d\n.\n",
-                inet_ntoa(rec->ip_addr), ntohs(rec->port), rec->proto, time(NULL));
-        fflush(output_fifo_conf.file);
-    } else {
-        fprintf(stderr, "[!] ERROR:  File handle not open!\n");
-        return -1;
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    if (p->data == NULL) {
+        elog("[!] ERROR:  File handle not open!\n");
+        return;
     }
-    return 0;
+    /* pads_agent.tcl process each line until it receivs a dot by itself */
+    u_ntop(rec->ip_addr, rec->af, ip_addr_s);
+    fprintf((FILE*)p->data, "03\n%s\n%d\n%d\n%ld\n.\n",
+              ip_addr_s, ntohs(os->port), 0 /*proto*/, rec->last_seen);
+    fflush((FILE*) p->data);
 }
 
 /* ----------------------------------------------------------
- * FUNCTION : end_output_sguil
+ * FUNCTION : fifo_end
  * DESC     : This function frees the memory declared by fifo
  * INPUT    : None
  * OUTPUT   : 0 - Success
  *          :-1 - Error
  * ---------------------------------------------------------- */
-int end_output_sguil ()
+int fifo_end (output_plugin *p)
 {
-    printf("Closing FIFO File used for Sguil\n");
-    fclose(output_fifo_conf.file);
+    olog("Closing FIFO file\n");
+    fclose((FILE *)p->data);
 
-    /* Clean Up */
-    if (output_fifo_conf.filename)
-        bdestroy(output_fifo_conf.filename);
-
+    p->data = NULL;
+    p->path = NULL;
     return 0;
 }

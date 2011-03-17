@@ -3,6 +3,7 @@
 **
 ** Copyright (C) 2009, Redpill Linpro
 ** Copyright (C) 2009, Edward Fjellskål <edward.fjellskaal@redpill-linpro.com>
+** Copyright (C) 2011, Kacper Wysocki <kacper.wysocki@redpill-linpro.com>
 **
 ** This program is free software; you can redistribute it and/or modify
 ** it under the terms of the GNU General Public License as published by
@@ -20,21 +21,11 @@
 **
 */
 
-/*  I N C L U D E S  *********************************************************/
-
-#include <stdio.h>
-#include <sys/stat.h>
-
-/*  D A T A  S T R U C T U R E S  *********************************************/
-typedef struct _sguil_conf
-{
-    FILE *file;         /* File Reference */
-    bstring filename;   /* File's OS name */
-}   sguil_conf;
-
 /*  P R O T O T Y P E S  ******************************************************/
-int init_output_sguil (bstring fifo_file);
-int print_asset_sguil (asset *main);
-int print_arp_asset_sguil (asset *main);
-int print_stat_sguil (asset *main);
-int end_output_sguil (void);
+output_plugin *init_log_fifo(void);
+int init_output_fifo (output_plugin *p, const char *path, int flags);
+/* void fifo_asset (output_plugin *, asset *main); */
+void fifo_arp (output_plugin *, asset *main);
+void fifo_service (output_plugin *, asset *main, serv_asset *service);
+void fifo_stat (output_plugin *,asset *main, os_asset *os);
+int fifo_end (output_plugin *);

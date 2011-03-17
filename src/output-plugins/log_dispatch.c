@@ -4,13 +4,13 @@
  */
 
 //#include "../common.h"
-//#include "log_sguil.h"
 
 #include "../prads.h"
 #include "../sys_func.h" // u_ntop
 #include "log.h"
 #include "log_stdout.h"
 #include "log_file.h"
+#include "log_fifo.h"
 
 int n_outputs = 0;
 output_plugin *log_output[LOG_MAX];
@@ -27,8 +27,8 @@ int init_logging(int logtype, const char *file, int flags)
       case LOG_STDOUT:
          log_fun = init_log_stdout();
          break;
-      case LOG_SGUIL:
-         //init_output_sguil(&log_fun, file, flags);
+      case LOG_FIFO:
+         log_fun = init_log_fifo();
          break;
       /* these types are coming !*/
       case LOG_ASCII:
