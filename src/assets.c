@@ -503,25 +503,11 @@ short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi)
         update_asset(pi);
 
         if ( pi->asset == NULL ) {
-            printf("\n[E] update_asset(pi) failed! Asset does not exist! Cant enter MAC!!! die();\n");
+            elog("update_asset(pi) failed! Asset does not exist! Cant enter MAC!!! die();\n");
             return ERROR;
         }
         // asset did not exist.
-        // FIXME: we want to be cleverer in update_asset and clearer here.
-        // see update_eth
-        //mac_entry *match = NULL;
-        //match = (mac_entry *) calloc(1, sizeof(mac_entry));
         mac_entry *match = match_mac(config.sig_mac, arp_sha, 48);
-        //match = match_mac(config.sig_mac, arp_sha, 48);
-        print_mac(arp_sha);
-        printf("mac matched: %s\n", match->vendor);
-        //if ( pi->asset != NULL ) {
-            //if ( pi->asset->macentry != NULL ) {
-                //free(pi->asset->macentry);
-            //}
-        //} else {
-            //printf ("\nERR\n");
-        //}
         pi->asset->macentry = match;
 
         if (update_asset_arp(arp_sha, pi) == SUCCESS) {
@@ -539,10 +525,15 @@ arp_update:
         return SUCCESS;
     } else {
         /* UPDATE MAC AND TIME STAMP */
-        vlog(1, "Change notice: ");
-        print_mac(pi->asset->mac_addr);
-        vlog(1, "->");
-        print_mac(arp_sha);
+        /* XXX: this handler suxx! */
+        if(memcmp(pi->asset->mac_addr, "\0\0\0\0\0\0", 6)){
+            printf("ACHTUNG! MAC changed! : ");
+            print_mac(pi->asset->mac_addr);
+            printf(" -> ");
+
+            print_mac(arp_sha);
+            printf("\n");
+        }
         memcpy(&pi->asset->mac_addr, arp_sha, MAC_ADDR_LEN);
         pi->asset->last_seen = pi->pheader->ts.tv_sec;
         log_asset_arp(pi->asset);
