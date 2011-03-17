@@ -85,6 +85,7 @@ void set_default_config_options()
     config.pidfile = strdup("prads.pid");
     config.pidpath = strdup("/var/run");
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
+    config.fifo    = NULL;
     // default source net owns everything
     config.s_net   = "0.0.0.0/0,::/0";
     config.errbuf[0] = '\0';
@@ -262,6 +263,9 @@ void parse_line (bstring line)
         /* PRADS ASSET LOG */
         if(config.assetlog) free(config.assetlog);
         config.assetlog = bstr2cstr(value,'-');
+    } else if ((biseqcstr(param, "fifo")) == 1) {
+        /* FIFO path */
+        config.fifo = bstr2cstr (value, '-');
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
         config.sig_file_serv_tcp = bstrcpy(value);

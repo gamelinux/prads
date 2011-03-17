@@ -34,6 +34,7 @@ typedef struct _globalconfig {
     bstring     sig_file_serv_udp;      /* Filename of udp server sig file */
     bstring     sig_file_cli_udp;       /* Filename of udp client sig file */
     char       *assetlog;               /* Filename of prads-asset.log */
+    char       *fifo;                   /* Path to FIFO output */
     bstring     pcap_file;              /* Filename to pcap too read */
     char       *sig_file_syn;           /* Filename of TCP SYN sig file */
     char       *sig_file_synack;        /* Filename of TCP SYNACK sig file */

@@ -1016,6 +1016,7 @@ static void usage()
     olog(" -p <pidfile>    Name of pidfile\n");
     olog(" -P <path>       Pid lives in <path>\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
+    olog(" -f <FIFO>       Log assets to <FIFO>");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -h              This help message.\n");
     olog(" -v              Verbose.\n");
@@ -1050,7 +1051,8 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:"
+    while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
             pconfile = bfromcstr(optarg);
@@ -1075,7 +1077,7 @@ int main(int argc, char *argv[])
         config.verbose = 0;
     optind = 1;
 
-    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:")) != -1)
+    while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
@@ -1123,8 +1125,10 @@ int main(int argc, char *argv[])
             config.pidpath = strdup(optarg);
             break;
         case 'l':
-        case 'f':
             config.assetlog = strdup(optarg);
+            break;
+        case 'f':
+            config.fifo = strdup(optarg);
             break;
         case '?':
             elog("unrecognized argument: '%c'\n", optopt);
@@ -1145,6 +1149,11 @@ int main(int argc, char *argv[])
         olog("logging to file '%s'\n", config.assetlog);
         rc = init_logging(LOG_FILE, config.assetlog, config.verbose);
         if(rc) perror("Logging to file failed!");
+    }
+    if(config.fifo) {
+        olog("logging to FIFO '%s'\n", config.fifo);
+        rc = init_logging(LOG_FIFO, config.fifo, config.verbose);
+        if(rc) perror("Logging to fifo failed!");
     }
 
     if(config.s_net)
