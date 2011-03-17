@@ -251,11 +251,11 @@ void file_arp (output_plugin *log, asset *main)
         /* XXX: vendor info breaks csv niceness */
         fprintf((FILE*)log->data, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
             main->vlan ? ntohs(main->vlan) : 0,main->macentry->vendor,
-            hex2mac((const char *)main->mac_addr), main->last_seen);
+            hex2mac(main->mac_addr), main->last_seen);
     } else {
         /* ip,0,0,ARP,mac-address,timstamp */
         fprintf((FILE*)log->data, "%s,%u,0,0,ARP,[%s],0,%lu\n", ip_addr_s,
-            main->vlan ? ntohs(main->vlan) : 0,hex2mac((const char *)main->mac_addr), main->last_seen);
+            main->vlan ? ntohs(main->vlan) : 0,hex2mac(main->mac_addr), main->last_seen);
     }
     fflush((FILE*)log->data);
 }

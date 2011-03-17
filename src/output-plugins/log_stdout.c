@@ -33,7 +33,7 @@ void stdout_arp (output_plugin *unused, asset *main)
         printf("%s", ip_addr_s);
         if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
         printf(",[arp:%s]",
-        hex2mac((const char *)main->mac_addr));
+        hex2mac(main->mac_addr));
         if(main->macentry) printf(",%s", main->macentry->vendor);
         printf("\n");
     }

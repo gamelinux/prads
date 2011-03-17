@@ -399,7 +399,7 @@ int daemonize()
     return SUCCESS;
 }
 
-char *hex2mac(const char *mac)
+char *hex2mac(const uint8_t *mac)
 {
 
     static char buf[32];
