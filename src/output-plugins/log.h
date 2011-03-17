@@ -17,7 +17,7 @@ typedef struct _output_plugin {
    void *data;                                                 /* anything else */
 } output_plugin;
 
-enum { LOG_ASCII, LOG_STDOUT, LOG_FILE, LOG_SGUIL, LOG_UNIFIED} log_types;
+enum { LOG_ASCII, LOG_STDOUT, LOG_FILE, LOG_SGUIL, LOG_UNIFIED, LOG_MAX} log_types;
 enum { VERBOSE = 0x01, FLAGS } log_flags;
 
 void log_asset_arp (asset *main);

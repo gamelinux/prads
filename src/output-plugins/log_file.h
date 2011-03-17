@@ -21,7 +21,7 @@
 **
 */
 /*  P R O T O T Y P E S  ******************************************************/
-int init_log_file(output_plugin *p);
+output_plugin *init_log_file();
 int init_output_log_file (output_plugin *p, const char *c, int flags);
 void read_report_file (output_plugin *p);
 int parse_raw_report (bstring line);

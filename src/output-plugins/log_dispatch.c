@@ -12,25 +12,25 @@
 #include "log_stdout.h"
 #include "log_file.h"
 
-output_plugin log_fun;
+int n_outputs = 0;
+output_plugin *log_output[LOG_MAX];
 
 /* set up function pointers for logging */
 int init_logging(int logtype, const char *file, int flags)
 {
-   log_fun.flags = flags;
+   output_plugin *log_fun;
    switch (logtype)
    {
       case LOG_FILE:
-         if(0 == init_log_file(&log_fun) && log_fun.init){
-            return log_fun.init(&log_fun, file, flags);
-         }
+         log_fun = init_log_file();
+         break;
+      case LOG_STDOUT:
+         log_fun = init_log_stdout();
          break;
       case LOG_SGUIL:
          //init_output_sguil(&log_fun, file, flags);
          break;
       /* these types are coming !*/
-      case LOG_STDOUT:
-         break;
       case LOG_ASCII:
          break;
       case LOG_UNIFIED:
@@ -38,14 +38,24 @@ int init_logging(int logtype, const char *file, int flags)
       default:
          fprintf(stderr,"whoops! init_logging\n");
    }
+   if(log_fun){
+       log_output[n_outputs++] = log_fun;
+       if(log_fun->init) 
+           return log_fun->init(log_fun, file, flags);
+       else
+           return 0;
+   }
    return 0xFABE;
 }
 
+/* magic logging function - iterate over all loggers */
+// note... this breaks anywhere non-GNU!
+#define log_foo(func, all, count, ...) do { int _i; for(_i = 0; _i < (count) ; _i++) { output_plugin* _p = all[_i]; if(_p && _p -> func) _p -> func(_p, ##__VA_ARGS__); } }while(0)
+
+
 void end_logging()
 {
-    if(log_fun.denit){
-       log_fun.denit(&log_fun);
-    }
+    log_foo(denit, log_output, n_outputs);
 }
 
 void log_asset_arp (asset *masset)
@@ -55,10 +65,7 @@ void log_asset_arp (asset *masset)
     //inet_ntop(AF_INET, &masset->ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
     //dlog("[*] added mac address to asset: %s\n",ip_addr_s);
 #endif
-    if (log_fun.flags & VERBOSE) {
-        stdout_arp(masset);
-    }
-    log_fun.arp(&log_fun, masset);
+    log_foo(arp, log_output, n_outputs, masset);
 }
 
 void log_asset_os (asset *main, os_asset *os)
@@ -69,10 +76,7 @@ void log_asset_os (asset *main, os_asset *os)
     //dlog("[%lu] Incoming asset, %s: %s:%u [%s]\n",
     //os->last_seen, (char*)bdata(os->detection),ip_addr_s,ntohs(os->port),(char*)bdata(os->raw_fp));
 #endif
-    if (log_fun.flags & VERBOSE) {
-        stdout_os(main,os);
-    }
-    log_fun.os(&log_fun, main,os);
+    log_foo(os, log_output, n_outputs, main, os);
 }
 
 void log_asset_service (asset *main, serv_asset *service)
@@ -86,9 +90,6 @@ void log_asset_service (asset *main, serv_asset *service)
         fprintf(stderr, "[*] new client: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));
     }
 #endif
-    if (log_fun.flags & VERBOSE) {
-        stdout_service(main,service);
-    }
-    log_fun.service(&log_fun,main,service);
+    log_foo(service, log_output, n_outputs, main, service);
 }
 

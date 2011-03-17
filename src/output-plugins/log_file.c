@@ -34,15 +34,17 @@
 #include "log.h"
 #include "log_file.h"
 
-int init_log_file (output_plugin *log)
-{
-   log->init = &init_output_log_file;
-   log->arp = &file_arp;
-   log->os = &file_os;
-   log->service = &file_service;
-   log->denit = &end_output_log_file;
-   return 0;
+output_plugin p_file = {
+   .init = &init_output_log_file,
+   .arp = &file_arp,
+   .os = &file_os,
+   .service = &file_service,
+   .denit = &end_output_log_file,
+};
 
+output_plugin *init_log_file ()
+{
+   return &p_file;
 }
 
 /* ----------------------------------------------------------
@@ -101,7 +103,9 @@ reopen:
 
         /* Open file and assign it to the global FILE pointer.  */
         if ((log->data = (void *) fopen(log->path, "a")) == NULL) {
+            int e = errno;
             printf("Cannot open log file %s for append!\n", log->path); 
+            return e;
         }
     }
 
@@ -242,10 +246,11 @@ void file_arp (output_plugin *log, asset *main)
         return;
     }
     u_ntop(main->ip_addr, main->af, ip_addr_s);
-    if (main->mac_resolved != NULL) {
+    if (main->macentry != NULL) {
         /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
+        /* XXX: vendor info breaks csv niceness */
         fprintf((FILE*)log->data, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
-            main->vlan ? ntohs(main->vlan) : 0,main->mac_resolved,
+            main->vlan ? ntohs(main->vlan) : 0,main->macentry->vendor,
             hex2mac((const char *)main->mac_addr), main->last_seen);
     } else {
         /* ip,0,0,ARP,mac-address,timstamp */
@@ -302,10 +307,9 @@ file_os (output_plugin *log, asset *main, os_asset *os)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;
-    uint32_t fail;
 
     if (!log || log->data == NULL){
-        elog("[!] ERROR:  File handle not open: %s!\n", strerror(fail));
+        elog("[!] ERROR:  File handle not open: %s!\n", log->path);
         return;
     }
 
@@ -370,7 +374,7 @@ file_os (output_plugin *log, asset *main, os_asset *os)
  * FUNCTION : end_output_log_file
  * DESC     : This function will free the memory declared
  *          : for the log_file output.
-* INPUT    : None!
+ * INPUT    : output plugin
  * OUTPUT   : None!
  * ---------------------------------------------------------- */
 int end_output_log_file (output_plugin* log)
