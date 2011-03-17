@@ -48,8 +48,8 @@ profile:
 	${MAKE} PROFILE=y
 
 clean:
-	-rm -v $(OBJECTS)
-	-rm prads 
+	-rm -fv $(OBJECTS)
+	-rm -f prads 
 
 indent:
 	find -type f -name '*.[ch]' | xargs indent -kr -i4 -cdb -sc -sob -ss -ncs -ts8 -nut
