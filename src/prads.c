@@ -275,9 +275,11 @@ void prepare_eth (packetinfo *pi)
 void parse_eth (packetinfo *pi)
 {
     if (!IS_CSSET(&config,CS_MAC)) return;
-    /* XXX: how is mac matching supposed to work?
+    /* update_asset_arp(pi->eth_hdr->ether_src, pi);
+
     uint8_t *mac = pi->eth_hdr->ether_src;
 
+     * XXX: how is mac matching supposed to work?
      * answer: lookup macs on pertinent frames
      * and hash into mac asset database
      * mac assets are like regular assets,
@@ -287,7 +289,7 @@ void parse_eth (packetinfo *pi)
     //pi->asset->mace ;
 
     print_mac(mac);
-    printf("mac matched: %s\n", match->vendor);
+    olog("mac matched: %s\n", match->vendor);
     
     // call update_asset_mac or smth?
     // stats?
@@ -581,12 +583,12 @@ void parse_ip6 (packetinfo *pi)
         prepare_other(pi);
         /*
          * if (check != 0) { 
-         * printf("[*] - CHECKING OTHER PACKAGE\n"); 
+         * olog("[*] - CHECKING OTHER PACKAGE\n"); 
          * update_asset(AF_INET6,ip6->ip_src); 
          * service_other(*pi->ip4,*tcph) 
          * fp_other(ip, ttl, ipopts, len, id, ipflags, df); 
          * }else{ 
-         * printf("[*] - NOT CHECKING OTHER PACKAGE\n"); 
+         * olog("[*] - NOT CHECKING OTHER PACKAGE\n"); 
          * } 
          */
         break;
@@ -861,7 +863,7 @@ int parse_network (char *net_s, struct in6_addr *network)
             perror("parse_nets6");
             return -1;
         }
-        printf("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
+        olog("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
                net_s,
                IP6ADDR(network)
               );
@@ -871,7 +873,7 @@ int parse_network (char *net_s, struct in6_addr *network)
             perror("parse_nets");
             return -1;
         }
-        printf("Network4 %16s \t-> 0x%08x\n", net_s, IP4ADDR(network));
+        olog("Network4 %16s \t-> 0x%08x\n", net_s, IP4ADDR(network));
     }
     return type;
 }
@@ -885,15 +887,15 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
     if (type == AF_INET && (t = strchr(f, '.')) > f && t-f < 4) {
         // full ipv4 netmask : dotted quads
         inet_pton(type, f, &IP4ADDR(netmask));
-        printf("mask 4 %s \t-> 0x%08x\n", f, IP4ADDR(netmask));
+        olog("mask 4 %s \t-> 0x%08x\n", f, IP4ADDR(netmask));
     } else if (type == AF_INET6 && NULL != (t = strchr(f, ':'))) {
         // full ipv6 netmasĸ
-        printf("mask 6 %s\n", f);
+        olog("mask 6 %s\n", f);
         inet_pton(type, f, netmask);
     } else {
         // cidr form
         sscanf(f, "%u", &mask);
-        printf("cidr  %u \t-> ", mask);
+        olog("cidr  %u \t-> ", mask);
         if (type == AF_INET) {
             uint32_t shift = 32 - mask;
             if (mask)
@@ -901,7 +903,7 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             else
                 IP4ADDR(netmask) = 0;
 
-            printf("0x%08x\n", IP4ADDR(netmask));
+            olog("0x%08x\n", IP4ADDR(netmask));
         } else if (type == AF_INET6) {
             //mask = 128 - mask;
             int j = 0;
@@ -915,7 +917,7 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
                 netmask->s6_addr[j] = -1 << (8 - mask);
             }
             inet_ntop(type, &IP4ADDR(netmask), output, MAX_NETS);
-            printf("mask: %s\n", output);
+            olog("mask: %s\n", output);
             // pcap packets are in host order.
             IP6ADDR0(netmask) = ntohl(IP6ADDR0(netmask));
             IP6ADDR1(netmask) = ntohl(IP6ADDR1(netmask));
@@ -997,36 +999,40 @@ nets_end:
 
 static void usage()
 {
-    printf("USAGE:\n");
-    printf(" $ prads [options]\n");
-    printf("\n");
-    printf(" OPTIONS:\n");
-    printf("\n");
-    printf(" -i <iface>      Network device <iface> (default: eth0).\n");
-    printf(" -r <file>       Read pcap <file>.\n");
-    printf(" -c <file>       Read config from <file>\n");
-    printf(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
-    //printf(" -d            to logdir\n");
-    printf(" -u <user>       Run as user <user>.\n");
-    printf(" -g <group>      Run as group <group>.\n");
-    printf(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
-    printf(" -D              Enables daemon mode.\n");
-    printf(" -p <pidfile>    Name of pidfile\n");
-    printf(" -P <path>       Pid lives in <path>\n");
-    printf(" -l <file>       Log assets to <file>\n");
-    printf(" -C <dir>        Chroot into <dir> before dropping privs.\n");
-    printf(" -h              This help message.\n");
-    printf(" -v              Verbose.\n");
+    olog("USAGE:\n");
+    olog(" $ prads [options]\n");
+    olog("\n");
+    olog(" OPTIONS:\n");
+    olog("\n");
+    olog(" -i <iface>      Network device <iface> (default: eth0).\n");
+    olog(" -r <file>       Read pcap <file>.\n");
+    olog(" -c <file>       Read config from <file>\n");
+    olog(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
+    //olog(" -d            to logdir\n");
+    olog(" -u <user>       Run as user <user>.\n");
+    olog(" -g <group>      Run as group <group>.\n");
+    olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
+    olog(" -D              Enables daemon mode.\n");
+    olog(" -p <pidfile>    Name of pidfile\n");
+    olog(" -P <path>       Pid lives in <path>\n");
+    olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
+    olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
+    olog(" -h              This help message.\n");
+    olog(" -v              Verbose.\n");
 }
 
 extern int optind;
+extern int opterr;
+extern int optopt;
 
 int main(int argc, char *argv[])
 {
+    int32_t rc = 0;
+    int ch = 0, verbose_already = 0;
+
     vlog(2, "%08x =? %08x, endianness: %s\n\n", 0xdeadbeef, ntohl(0xdeadbeef), (0xdead == ntohs(0xdead)?"big":"little") );
 
     memset(&config, 0, sizeof(globalconfig));
-    int ch = 0, verbose_already = 0;
     set_default_config_options();
     bstring pconfile = bfromcstr(CONFDIR "prads.conf");
     //parse_config_file(pconfile);
@@ -1043,6 +1049,7 @@ int main(int argc, char *argv[])
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting
 
     // do first-pass args parse for commandline-passed config file
+    opterr = 0;
     while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
         switch (ch) {
         case 'c':
@@ -1068,7 +1075,7 @@ int main(int argc, char *argv[])
         config.verbose = 0;
     optind = 1;
 
-    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:")) != -1)
+    while ((ch = getopt(argc, argv, "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:")) != -1)
         switch (ch) {
         case 'a':
             config.s_net = strdup(optarg);
@@ -1116,72 +1123,78 @@ int main(int argc, char *argv[])
             config.pidpath = strdup(optarg);
             break;
         case 'l':
+        case 'f':
             config.assetlog = strdup(optarg);
             break;
-        default:
-            elog("oops, someone forgot to parse argument: '%c'", ch);
-            exit(1);
+        case '?':
+            elog("unrecognized argument: '%c'\n", optopt);
             break;
+        default:
+            elog("Did not recognize argument '%c'\n", ch);
         }
 
-    printf("logging to file %s\n", config.assetlog);
-    init_logging(LOG_FILE, config.assetlog, config.verbose);
     bdestroy (pconfile);
+    // we're done parsing configs - now initialize prads
+
+    if(config.verbose){
+        rc = init_logging(LOG_STDOUT, NULL, config.verbose);
+        if(rc) perror("Logging to standard out failed!");
+    }
+
+    if(config.assetlog) {
+        olog("logging to file '%s'\n", config.assetlog);
+        rc = init_logging(LOG_FILE, config.assetlog, config.verbose);
+        if(rc) perror("Logging to file failed!");
+    }
 
     if(config.s_net)
        parse_nets(config.s_net, network);
 
     if(config.ctf & CS_MAC){
-        int32_t rc;
-        printf("[*] Loading MAC fingerprints from file %s\n", config.sig_file_mac);
+        olog("[*] Loading MAC fingerprints from file %s\n", config.sig_file_mac);
         rc = load_mac(config.sig_file_mac, &config.sig_mac, 0);
         if(rc) perror("mac loadage failed!");
     }
 
     if(config.ctf & CO_SYN){
-        int32_t rc;
-        printf("[*] Loading SYN fingerprints\n");
+        olog("[*] Loading SYN fingerprints\n");
         rc = load_sigs(config.sig_file_syn, &config.sig_syn, config.sig_hashsize);
         if(rc) perror("syn loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_syn, config.sig_hashsize);
     }
     if(config.ctf & CO_SYNACK){
-        int32_t rc;
-        printf("[*] Loading SYNACK fingerprints\n");
+        olog("[*] Loading SYNACK fingerprints\n");
         rc = load_sigs(config.sig_file_synack, &config.sig_synack, config.sig_hashsize);
         if(rc) perror("synack loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_synack, config.sig_hashsize);
     }
     if(config.ctf & CO_ACK){
-        int32_t rc;
-        printf("[*] Loading STRAY-ACK fingerprints\n");
+        olog("[*] Loading STRAY-ACK fingerprints\n");
         rc = load_sigs(config.sig_file_ack, &config.sig_ack, config.sig_hashsize);
         if(rc) perror("stray-ack loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_ack, config.sig_hashsize);
     }
     if(config.ctf & CO_FIN){
-        int32_t rc;
-        printf("[*] Loading FIN fingerprints\n");
+        olog("[*] Loading FIN fingerprints\n");
         rc = load_sigs(config.sig_file_fin, &config.sig_fin, config.sig_hashsize);
         if(rc) perror("fin loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_fin, config.sig_hashsize);
     }
     if(config.ctf & CO_RST){
-        int32_t rc;
-        printf("[*] Loading RST fingerprints\n");
+        olog("[*] Loading RST fingerprints\n");
         rc = load_sigs(config.sig_file_rst, &config.sig_rst, config.sig_hashsize);
         if(rc) perror("rst loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_rst, config.sig_hashsize);
     }
 
-    printf("\n[*] Running prads %s\n", VERSION);
-    printf("[*] Using %s\n", pcap_lib_version());
-    printf("[*] Using PCRE version %s\n", pcre_version());
+    olog("\n[*] Running prads %s\n", VERSION);
+    olog("[*] Using %s\n", pcap_lib_version());
+    olog("[*] Using PCRE version %s\n", pcre_version());
 
     //if (config.verbose) display_config();
     display_config();
@@ -1195,15 +1208,15 @@ int main(int argc, char *argv[])
 
     if (config.pcap_file) {
         /* Read from PCAP file specified by '-r' switch. */
-        printf("[*] Reading from file %s\n", bdata(config.pcap_file));
+        olog("[*] Reading from file %s\n", bdata(config.pcap_file));
         if (!(config.handle = pcap_open_offline(bdata(config.pcap_file), config.errbuf))) {
-            printf("[*] Unable to open %s.  (%s)", bdata(config.pcap_file), config.errbuf);
+            olog("[*] Unable to open %s.  (%s)", bdata(config.pcap_file), config.errbuf);
         } 
 
     } else {
 
         if (getuid()) {
-            printf("[*] You must be root..\n");
+            olog("[*] You must be root..\n");
             return (1);
         }
     
@@ -1212,13 +1225,13 @@ int main(int argc, char *argv[])
          */
         if (config.dev == 0x0)
             config.dev = pcap_lookupdev(config.errbuf);
-        printf("[*] Device: %s\n", config.dev);
+        olog("[*] Device: %s\n", config.dev);
     
         if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
-            printf("[*] Error pcap_open_live: %s \n", config.errbuf);
+            olog("[*] Error pcap_open_live: %s \n", config.errbuf);
             exit(1);
         } //else if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
-          //  printf("[*] Error pcap_compile user_filter: %s\n",
+          //  olog("[*] Error pcap_compile user_filter: %s\n",
           //         pcap_geterr(config.handle));
           //  exit(1);
         //}
@@ -1259,16 +1272,16 @@ int main(int argc, char *argv[])
     alarm(CHECK_TIMEOUT);
 
     if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
-            printf("[*] Error pcap_compile user_filter: %s\n", pcap_geterr(config.handle));
+            olog("[*] Error pcap_compile user_filter: %s\n", pcap_geterr(config.handle));
             exit(1);
     }
 
     if (pcap_setfilter(config.handle, &config.cfilter)) {
-            printf("[*] Unable to set pcap filter!  %s", pcap_geterr(config.handle));
+            olog("[*] Unable to set pcap filter!  %s", pcap_geterr(config.handle));
     }
 
     cxt_init();
-    printf("[*] Sniffing...\n\n");
+    olog("[*] Sniffing...\n\n");
     pcap_loop(config.handle, -1, got_packet, NULL);
 
     game_over();
