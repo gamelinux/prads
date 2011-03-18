@@ -180,7 +180,8 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service)
             "", 0,
             0, ntohs(service->port), service->proto, 
             bdata(service->service), bdata(service->application), 
-            main->first_seen, "[PAYLOAD]" /* bdata(main->hex_payload) */);
+            //main->first_seen, "[PAYLOAD]" /* bdata(main->hex_payload) */);
+            main->first_seen, "5B50524144532D5041594C4F41445D" ); /* [PRADS-PAYLOAD] */
 
     fflush(fd);
 }
