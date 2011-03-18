@@ -86,6 +86,8 @@ inline void cxt_update (packetinfo *pi)
 
     /* see if the bucket already has a connection */
     if (cxt == NULL) {
+printf ("bucket[%u] is empty...\n",hash);
+
         /* no, so get a new one */
         cxt = cxt_dequeue(&cxt_spare_q);
         if (cxt == NULL) {
@@ -100,6 +102,7 @@ inline void cxt_update (packetinfo *pi)
 
         /* got one, initialize and return */
         cxt_new(cxt,pi);
+ bucket[hash] = cxt; /* is this what is missing ???? */
         cxt_requeue(cxt, NULL, &cxt_est_q);
         cxt_update_src(cxt, pi);
         pi->cxt = cxt;
@@ -216,6 +219,7 @@ void free_queue()
 
 void cxt_new (connection *cxt, packetinfo *pi)
 {
+printf("New connection...\n");
         extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
 
