@@ -46,40 +46,6 @@ void bucket_keys_NULL()
     }
 }
 
-void check_interrupt()
-{
-    extern int intr_flag;
-
-    if (intr_flag == 1) {
-        game_over();
-    } else if (intr_flag == 2) {
-        update_asset_list();
-    } else if (intr_flag == 3) {
-        set_end_sessions();
-    } else {
-        intr_flag = 0;
-    }
-}
-
-void set_end_sessions()
-{
-    extern int inpacket, intr_flag;
-    intr_flag = 3;
-
-    if (inpacket == 0) {
-        extern time_t tstamp;
-        tstamp = time(NULL);
-        end_sessions();
-        /* if no cxtracking is turned on - dont log to disk */
-        /* if (log_cxt == 1) log_expired_cxt(); */
-        /* if no asset detection is turned on - dont log to disk! */
-        /* if (log_assets == 1) update_asset_list(); */
-        update_asset_list();
-        intr_flag = 0;
-        alarm(CHECK_TIMEOUT);
-    }
-}
-
 void unload_tcp_sigs()
 {
     if(config.ctf & CO_SYN && config.sig_syn){
@@ -99,29 +65,6 @@ void unload_tcp_sigs()
     }
 }
 
-void game_over()
-{
-    extern int inpacket, intr_flag;
-
-    if (inpacket == 0) {
-        //update_asset_list();
-        clear_asset_list();
-        end_all_sessions();
-        free_queue();
-        del_known_services();
-        del_signature_lists();
-        unload_tcp_sigs();
-        end_logging();
-        print_prads_stats();
-        print_pcap_stats();
-        if (config.handle != NULL) pcap_close(config.handle);
-        free_config(); // segfault here !
-        printf("\nprads ended\n");
-        exit(0);
-    }
-    intr_flag = 1;
-}
-
 void print_pcap_stats()
 {
     if (config.handle == NULL) return;
@@ -132,37 +75,6 @@ void print_pcap_stats()
     printf("\n-- Total packets received                 :%12u",config.ps.ps_recv);
     printf("\n-- Total packets dropped                  :%12u",config.ps.ps_drop);
     printf("\n-- Total packets dropped by Interface     :%12u",config.ps.ps_ifdrop);
-}
-
-void print_prads_stats()
-{
-    extern u_int64_t cxtrackerid;
-    printf("\n-- prads:");
-    printf("\n-- Total packets received from libpcap    :%12u",config.pr_s.got_packets);
-    printf("\n-- Total Ethernet packets received        :%12u",config.pr_s.eth_recv);
-    printf("\n-- Total VLAN packets received            :%12u",config.pr_s.vlan_recv);
-    printf("\n-- Total ARP packets received             :%12u",config.pr_s.arp_recv);
-    printf("\n-- Total IPv4 packets received            :%12u",config.pr_s.ip4_recv);
-    printf("\n-- Total IPv6 packets received            :%12u",config.pr_s.ip6_recv);
-    printf("\n-- Total Other link packets received      :%12u",config.pr_s.otherl_recv);
-    printf("\n-- Total IPinIPv4 packets received        :%12u",config.pr_s.ip4ip_recv);
-    printf("\n-- Total IPinIPv6 packets received        :%12u",config.pr_s.ip6ip_recv);
-    printf("\n-- Total GRE packets received             :%12u",config.pr_s.gre_recv);
-    printf("\n-- Total TCP packets received             :%12u",config.pr_s.tcp_recv);
-    printf("\n-- Total UDP packets received             :%12u",config.pr_s.udp_recv);
-    printf("\n-- Total ICMP packets received            :%12u",config.pr_s.icmp_recv);
-    printf("\n-- Total Other transport packets received :%12u",config.pr_s.othert_recv);
-    printf("\n--");
-    printf("\n-- Total sessions tracked                 :%12lu", cxtrackerid);
-    printf("\n-- Total assets detected                  :%12u",config.pr_s.assets);
-    printf("\n-- Total TCP OS fingerprints detected     :%12u",config.pr_s.tcp_os_assets);
-    printf("\n-- Total UDP OS fingerprints detected     :%12u",config.pr_s.udp_os_assets);
-    printf("\n-- Total ICMP OS fingerprints detected    :%12u",config.pr_s.icmp_os_assets);
-    printf("\n-- Total DHCP OS fingerprints detected    :%12u",config.pr_s.dhcp_os_assets);
-    printf("\n-- Total TCP service assets detected      :%12u",config.pr_s.tcp_services);
-    printf("\n-- Total TCP client assets detected       :%12u",config.pr_s.tcp_clients);
-    printf("\n-- Total UDP service assets detected      :%12u",config.pr_s.udp_services);
-    printf("\n-- Total UDP client assets detected       :%12u",config.pr_s.udp_clients);
 }
 
 int set_chroot(void)
@@ -362,7 +274,6 @@ int daemonize()
 {
     pid_t pid;
     int fd;
-    //extern char *pidfile, *pidpath;
 
     pid = fork();
 

@@ -7,8 +7,6 @@
 #include "mac.h"
 
 extern globalconfig config;
-// static strings for comparison
-extern bstring UNKNOWN;
 static asset *passet[BUCKET_SIZE];
 
 void update_asset(packetinfo *pi)
@@ -444,8 +442,7 @@ service_update:
  * ---------------------------------------------------------- */
 void add_asset(packetinfo *pi)
 {
-    extern asset *passet[BUCKET_SIZE];
-    extern uint64_t hash;
+    uint64_t hash;
     asset *masset = NULL;
 
     config.pr_s.assets++;
@@ -690,7 +687,6 @@ void del_asset(asset * passet, asset ** bucket_ptr)
 
 void clear_asset_list()
 {
-    extern asset *passet[BUCKET_SIZE];
     asset *rec = NULL;
     int akey;
 
@@ -727,9 +723,7 @@ void clear_asset_list()
 
 void update_asset_list()
 {
-    extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
-    extern uint64_t hash;
     asset *rec = NULL;
     int akey;
 

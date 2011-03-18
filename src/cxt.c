@@ -5,29 +5,15 @@
 #include "util-cxt.h"
 #include "util-cxt-queue.h"
 
-// vector fill: srcprt,dstprt,srcip,dstip = 96 bytes. rest is 0
-#define VEC_FILL(vec, _ipsrc,_ipdst,_portsrc,_portdst) do {\
-    vec.s[0] = (_portsrc); \
-    vec.s[1] = (_portdst); \
-    vec.w[1] = (_ipsrc); \
-    vec.w[2] = (_ipdst); \
-    vec.w[3] = 0; \
-} while (0)
+uint64_t cxtrackerid;
+connection *bucket[BUCKET_SIZE];
+connection *cxtbuffer = NULL;
 
 void cxt_init()
 {
-    /* alloc hash memory */
-    uint32_t i = 0;
-
-    /* pre allocate conection trackers */
-    for (i = 0; i < CXT_DEFAULT_PREALLOC; i++) {
-        connection *cxt = connection_alloc();
-        if (cxt == NULL) {
-            printf("ERROR: connection_alloc failed: %s\n", strerror(errno));
-            exit(1);
-        }
-        cxt_enqueue(&cxt_spare_q,cxt);
-     }
+    cxtbuffer = NULL;
+    cxtrackerid = 0;
+    cxt_queue_init();
 }
 
 int cx_track(struct in6_addr *ip_src, uint16_t src_port,
@@ -101,7 +87,6 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
 
     if (cxt == NULL) {
         //TODO: refactor into cxt_new()
-        extern u_int64_t cxtrackerid;
         cxtrackerid += 1;
         cxt = (connection *) calloc(1, sizeof(connection));
         if (head != NULL) {
@@ -146,96 +131,6 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
    return -1;
 }
 
-/* vector comparisons to speed up cx tracking.
- * meaning, compare source:port and dest:port at the same time.
- *
- * about vectors and potential improvements:
- *
- * all 64bit machines have at least SSE2 instructions
- * *BUT* there is no guarantee we won't loose time on
- * copying the vectors around.
- * ... indeed, a quick objdump shows us that
- * there is a shitton of mov instructions to align the addresses.
- *
- * Needs support to give improvements: 
- * the addresses should already be aligned as a 128-bit word
- * in the connection tracking bucket.
- *
- * note, we can employ the same technique for ipv6 addresses, but
- * one address at a time.
- */
-#ifdef VECTOR_CXTRACKER
-inline void cx_track_simd_ipv4(packetinfo *pi)
-{
-    connection *cxt = NULL;
-    connection *head = NULL;
-    uint32_t hash;
-
-    // add to packetinfo ? dont through int32 around :)
-    hash = make_hash(pi);
-    extern connection *bucket[BUCKET_SIZE];
-    cxt = bucket[hash];
-    head = cxt;
-
-    ip6v incoming;
-    ip6v compare;
-    VEC_FILL(incoming,
-        pi->ip_src.__u6_addr.__u6_addr32[0],
-        pi->ip_dst.__u6_addr.__u6_addr32[0],
-        pi->s_port,
-        pi->d_port);
-    while (cxt != NULL) {
-        VEC_FILL(compare,
-        cxt->s_ip.__u6_addr.__u6_addr32[0],
-        cxt->d_ip.__u6_addr.__u6_addr32[0],
-        cxt->s_port,
-        cxt->d_port);
-
-        // single-instruction compare -msse2
-        compare.v = __builtin_ia32_pcmpeqd128(incoming.v,compare.v);
-        // same thing, really. c == v iff c ^ v == 0
-        //compare.v = compare.v ^ incoming.v;
-
-        // 64-bit compare reduce
-        if(!(compare.i[0] & compare.i[1])){
-            //ok
-            dlog("[*] Updating src connection: %lu\n",cxt->cxid);
-            cxt_update_src(cxt,pi);
-            return;
-        }
-
-        // compare the other direction
-        VEC_FILL(compare,
-        cxt->d_ip.__u6_addr.__u6_addr32[0],
-        cxt->s_ip.__u6_addr.__u6_addr32[0],
-        cxt->d_port,
-        cxt->s_port);
-
-        compare.v = __builtin_ia32_pcmpeqd128(incoming.v,compare.v);
-        if(!(compare.i[0] & compare.i[1])){
-            dlog("[*] Updating dst connection: %lu\n",cxt->cxid);
-            cxt_update_dst(cxt,pi);
-            return;
-        }
-        cxt = cxt->next;
-    }
-    if (cxt == NULL) {
-        cxt = (connection *) connection_alloc();
-        //cxt = (connection *) calloc(1, sizeof(connection));
-        if (head != NULL) {
-            head->prev = cxt;
-        }
-        cxt_new(cxt,pi);
-        dlog("[*] New connection: %lu\n",cxt->cxid);
-        cxt->next = head;
-        bucket[hash] = cxt;
-        return;
-    }
-    printf("[*] Error in session tracking...\n");
-    exit (1);
-}
-
-#endif
 inline
 void connection_tracking(packetinfo *pi) {
 
@@ -246,6 +141,8 @@ void connection_tracking(packetinfo *pi) {
 
 /*
  This sub marks sessions as ENDED on different criterias:
+
+ XXX: May be the fugliest code in PRADS :-(
 */
 
 void end_sessions()
@@ -254,65 +151,65 @@ void end_sessions()
     connection *cxt;
     time_t check_time;
     check_time = time(NULL);
-    int xpir;
+    int ended;
     uint32_t curcxt = 0;
     uint32_t expired = 0;
     
     for (cxt = cxt_est_q.bot; cxt != NULL;) {
-        xpir = 0;
+        ended = 0;
         curcxt++;
         /** TCP */
         if (cxt->proto == IP_PROTO_TCP) {
             /* * FIN from both sides */
             if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
                     && (check_time - cxt->last_pkt_time) > 5) {
-                xpir = 1;
+                ended = 1;
             } /* * RST from either side */
             else if ((cxt->s_tcpFlags & TF_RST
                     || cxt->d_tcpFlags & TF_RST)
                     && (check_time - cxt->last_pkt_time) > 5) {
-                xpir = 1;
+                ended = 1;
             }
             // Commented out, since &TF_SYNACK is wrong!
                 /*
                  * if not a complete TCP 3-way handshake 
                  */
                 //else if ( !cxt->s_tcpFlags&TF_SYNACK || !cxt->d_tcpFlags&TF_SYNACK && (check_time - cxt->last_pkt_time) > 10) {
-                //   xpir = 1;
+                //   ended = 1;
                 //}
                 /*
                  * Ongoing timout 
                  */
                 //else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
-                //   xpir = 1;
+                //   ended = 1;
                 //}
             else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-                xpir = 1;
+                ended = 1;
             }
         }            /*
              * UDP 
              */
         else if (cxt->proto == IP_PROTO_UDP
                 && (check_time - cxt->last_pkt_time) > 60) {
-            xpir = 1;
+            ended = 1;
         }            /*
              * ICMP 
              */
         else if (cxt->proto == IP_PROTO_ICMP
                 || cxt->proto == IP6_PROTO_ICMP) {
             if ((check_time - cxt->last_pkt_time) > 60) {
-                xpir = 1;
+                ended = 1;
             }
         }            /*
              * All Other protocols 
              */
         else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-            xpir = 1;
+            ended = 1;
         }
 
-        if (xpir == 1) {
+        if (ended == 1) {
             expired++;
-            xpir = 0;
+            ended = 0;
             /* remove from the hash */
             if (cxt->hprev)
                 cxt->hprev->hnext = cxt->hnext;
@@ -381,3 +278,102 @@ void end_all_sessions()
         }
     }
 }
+
+/* vector comparisons to speed up cx tracking.
+ * meaning, compare source:port and dest:port at the same time.
+ *
+ * about vectors and potential improvements:
+ *
+ * all 64bit machines have at least SSE2 instructions
+ * *BUT* there is no guarantee we won't loose time on
+ * copying the vectors around.
+ * ... indeed, a quick objdump shows us that
+ * there is a shitton of mov instructions to align the addresses.
+ *
+ * Needs support to give improvements: 
+ * the addresses should already be aligned as a 128-bit word
+ * in the connection tracking bucket.
+ *
+ * note, we can employ the same technique for ipv6 addresses, but
+ * one address at a time.
+ */
+#ifdef VECTOR_CXTRACKER
+// vector fill: srcprt,dstprt,srcip,dstip = 96 bytes. rest is 0
+#define VEC_FILL(vec, _ipsrc,_ipdst,_portsrc,_portdst) do {\
+    vec.s[0] = (_portsrc); \
+    vec.s[1] = (_portdst); \
+    vec.w[1] = (_ipsrc); \
+    vec.w[2] = (_ipdst); \
+    vec.w[3] = 0; \
+} while (0)
+
+inline void cx_track_simd_ipv4(packetinfo *pi)
+{
+    connection *cxt = NULL;
+    connection *head = NULL;
+    uint32_t hash;
+
+    // add to packetinfo ? dont through int32 around :)
+    hash = make_hash(pi);
+    cxt = bucket[hash];
+    head = cxt;
+
+    ip6v incoming;
+    ip6v compare;
+    VEC_FILL(incoming,
+        pi->ip_src.__u6_addr.__u6_addr32[0],
+        pi->ip_dst.__u6_addr.__u6_addr32[0],
+        pi->s_port,
+        pi->d_port);
+    while (cxt != NULL) {
+        VEC_FILL(compare,
+        cxt->s_ip.__u6_addr.__u6_addr32[0],
+        cxt->d_ip.__u6_addr.__u6_addr32[0],
+        cxt->s_port,
+        cxt->d_port);
+
+        // single-instruction compare -msse2
+        compare.v = __builtin_ia32_pcmpeqd128(incoming.v,compare.v);
+        // same thing, really. c == v iff c ^ v == 0
+        //compare.v = compare.v ^ incoming.v;
+
+        // 64-bit compare reduce
+        if(!(compare.i[0] & compare.i[1])){
+            //ok
+            dlog("[*] Updating src connection: %lu\n",cxt->cxid);
+            cxt_update_src(cxt,pi);
+            return;
+        }
+
+        // compare the other direction
+        VEC_FILL(compare,
+        cxt->d_ip.__u6_addr.__u6_addr32[0],
+        cxt->s_ip.__u6_addr.__u6_addr32[0],
+        cxt->d_port,
+        cxt->s_port);
+
+        compare.v = __builtin_ia32_pcmpeqd128(incoming.v,compare.v);
+        if(!(compare.i[0] & compare.i[1])){
+            dlog("[*] Updating dst connection: %lu\n",cxt->cxid);
+            cxt_update_dst(cxt,pi);
+            return;
+        }
+        cxt = cxt->next;
+    }
+    if (cxt == NULL) {
+        cxt = (connection *) connection_alloc();
+        //cxt = (connection *) calloc(1, sizeof(connection));
+        if (head != NULL) {
+            head->prev = cxt;
+        }
+        cxt_new(cxt,pi);
+        dlog("[*] New connection: %lu\n",cxt->cxid);
+        cxt->next = head;
+        bucket[hash] = cxt;
+        return;
+    }
+    printf("[*] Error in session tracking...\n");
+    exit (1);
+}
+
+#endif

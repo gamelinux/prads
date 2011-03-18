@@ -11,6 +11,21 @@
 #include "util-cxt-queue.h"
 #include <stddef.h>
 
+void cxt_queue_init()
+{
+    /* alloc hash memory */
+    uint32_t i = 0;
+    /* pre allocate conection trackers */
+    for (i = 0; i < CXT_DEFAULT_PREALLOC; i++) {
+        connection *cxt = connection_alloc();
+        if (cxt == NULL) {
+            printf("ERROR: connection_alloc failed: %s\n", strerror(errno));
+            exit(1);
+        }
+        cxt_enqueue(&cxt_spare_q,cxt);
+     }
+}
+
 /* Allocate a connection */
 connection *connection_alloc(void)
 {
