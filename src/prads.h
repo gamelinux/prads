@@ -519,8 +519,6 @@ typedef struct _mac_entry {
 typedef struct _connection {
     struct   _connection *prev;
     struct   _connection *next;
-    struct   _connection *hprev;  /* Hash bucket list */
-    struct   _connection *hnext;
     time_t   start_time;          /* connection start time */
     time_t   last_pkt_time;       /* last seen packet time */
     uint64_t cxid;                /* connection id */
@@ -540,7 +538,6 @@ typedef struct _connection {
     uint8_t  check;               /* Flags spesifying checking */
     struct   _asset *c_asset;     /* pointer to src asset */
     struct   _asset *s_asset;     /* pointer to server asset */
-    struct   _cxtbucket *cb;      /* pointer to resource in connection track bucket */
 } connection;
 #define CXT_DONT_CHECK_SERVER     0x01  /* Dont check server packets */
 #define CXT_DONT_CHECK_CLIENT     0x02  /* Dont check client packets */
@@ -651,9 +648,6 @@ typedef struct _connection {
     (cxt)->af = 0; \
     (cxt)->proto = 0; \
     (cxt)->cxid = 0; \
-    (cxt)->hnext = NULL; \
-    (cxt)->hprev = NULL; \
-    (cxt)->cb = NULL; \
 }
 
 
@@ -713,8 +707,8 @@ typedef struct _packetinfo {
 #define PI_TCP_DP(pi) ( ntohs((pi)->tcph->dst_port))
 // and more to come
 
-#define SC_SERVER                 0x01  /* pi for this session is client */
-#define SC_CLIENT                 0x02  /* pi for this session is server */
+#define SC_CLIENT                 0x01  /* pi for this session is client */
+#define SC_SERVER                 0x02  /* pi for this session is server */
 
 typedef struct _serv_asset {
     struct _serv_asset *prev;   /* Prev serv_asset structure */

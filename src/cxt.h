@@ -2,7 +2,7 @@
 #define CXT_H
 
 #define CXT_HASH4(src,dst) \
-   src + dst % BUCKET_SIZE
+   ((src + dst) % BUCKET_SIZE)
 
 #ifndef OSX
 #define CXT_HASH6(src,dst) \
@@ -24,10 +24,12 @@
 
 void end_sessions();
 void cxt_init();
-int cx_track(struct in6_addr *ip_src, uint16_t src_port,
+int cx_track(packetinfo *pi);
+/*struct in6_addr *ip_src, uint16_t src_port,
              struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
              uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af);
+*/
 void del_connection(connection *, connection **);
 
-void connection_tracking(packetinfo *pi);
+int connection_tracking(packetinfo *pi);
 #endif // CXT_H

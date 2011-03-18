@@ -999,7 +999,7 @@ void game_over()
         //update_asset_list();
         clear_asset_list();
         end_all_sessions();
-        free_queue();
+        //free_queue();
         del_known_services();
         del_signature_lists();
         unload_tcp_sigs();

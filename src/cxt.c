@@ -1,9 +1,8 @@
+#include <assert.h>
 #include "common.h"
 #include "prads.h"
 #include "cxt.h"
 #include "sys_func.h"
-#include "util-cxt.h"
-#include "util-cxt-queue.h"
 
 uint64_t cxtrackerid;
 connection *bucket[BUCKET_SIZE];
@@ -13,13 +12,51 @@ void cxt_init()
 {
     cxtbuffer = NULL;
     cxtrackerid = 0;
-    cxt_queue_init();
 }
 
-int cx_track(struct in6_addr *ip_src, uint16_t src_port,
-             struct in6_addr *ip_dst, uint16_t dst_port, uint8_t ip_proto,
-             uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af)
+/* freshly smelling connection :d */
+connection *cxt_new()
 {
+    connection *cxt;
+    cxtrackerid++;
+    cxt = (connection *) calloc(1, sizeof(connection));
+    assert(cxt);
+    cxt->cxid = cxtrackerid;
+    return cxt;
+}
+
+int connection_tracking(packetinfo *pi)
+{
+    return cx_track(pi);
+}
+
+
+/* return value: client or server?
+ *** USED TO BE: 0 = dont check, 1 = client, 2 = server
+ * now returns 0, SC_CLIENT(=1), SC_SERVER(=2)
+ */
+
+int cx_track(packetinfo *pi) {
+    struct in6_addr *ip_src;
+    struct in6_addr *ip_dst;
+    uint16_t src_port = pi->s_port;
+    uint16_t dst_port = pi->d_port;
+    uint8_t ip_proto = pi->proto;
+    uint16_t p_bytes = pi->packet_bytes;
+    uint8_t tcpflags;
+    time_t tstamp = pi->pheader->ts.tv_sec;
+    int af = pi->af;
+
+    if(af== AF_INET6){
+        ip_src = &PI_IP6SRC(pi);
+        ip_dst = &PI_IP6DST(pi);
+    }else {
+        // ugly hack :(
+        // the way we do ip4/6 is DIRTY
+        ip_src = &pi->ip4->ip_src;
+        ip_dst = &pi->ip4->ip_dst;
+    }
+    if(pi->tcph) tcpflags = pi->tcph->t_flags;
 
     connection *cxt = NULL;
     connection *head = NULL;
@@ -41,21 +78,25 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
                 cxt->s_total_bytes += p_bytes;
                 cxt->s_total_pkts += 1;
                 cxt->last_pkt_time = tstamp;
+                pi->cxt = cxt;
+                pi->sc = SC_CLIENT;
                 if (cxt->s_total_bytes > MAX_BYTE_CHECK
                     || cxt->s_total_pkts > MAX_PKT_CHECK) {
                     return 0;   // Dont check!
                 }
-                return 1;       // Client should send the first packet (TCP/SYN - UDP?), hence this is a client
+                return SC_CLIENT; // Client should send the first packet (TCP/SYN - UDP?), hence this is a client
             } else if (CMP_CXT4(cxt,IP4ADDR(ip_dst),dst_port,IP4ADDR(ip_src),src_port)) {
                 cxt->d_tcpFlags |= tcpflags;
                 cxt->d_total_bytes += p_bytes;
                 cxt->d_total_pkts += 1;
                 cxt->last_pkt_time = tstamp;
+                pi->cxt = cxt;
+                pi->sc = SC_SERVER;
                 if (cxt->d_total_bytes > MAX_BYTE_CHECK
                     || cxt->d_total_pkts > MAX_PKT_CHECK) {
                     return 0;   // Dont check!
                 }
-                return 2;       // This should be a server (Maybe not when we start up but in the long run)
+                return SC_SERVER;       // This should be a server (Maybe not when we start up but in the long run)
             }
         } else if (af == AF_INET6) {
             if (CMP_CXT6(cxt,ip_src,src_port,ip_dst,dst_port)){
@@ -64,41 +105,37 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
                 cxt->s_total_bytes += p_bytes;
                 cxt->s_total_pkts += 1;
                 cxt->last_pkt_time = tstamp;
+                pi->cxt = cxt;
+                pi->sc = SC_CLIENT;
                 if (cxt->s_total_bytes > MAX_BYTE_CHECK
                     || cxt->s_total_pkts > MAX_PKT_CHECK) {
                     return 0;   // Dont Check!
                 }
-                return 1;       // Client
+                return SC_CLIENT;       // Client
             } else if (CMP_CXT6(cxt,ip_dst,dst_port,ip_src,src_port)){
 
                 cxt->d_tcpFlags |= tcpflags;
                 cxt->d_total_bytes += p_bytes;
                 cxt->d_total_pkts += 1;
                 cxt->last_pkt_time = tstamp;
+                pi->cxt = cxt;
+                pi->sc = SC_SERVER;
                 if (cxt->d_total_bytes > MAX_BYTE_CHECK
                     || cxt->d_total_pkts > MAX_PKT_CHECK) {
                     return 0;   // Dont Check!
                 }
-                return 2;       // Server
+                return SC_SERVER;       // Server
             }
         }
         cxt = cxt->next;
     }
 
     if (cxt == NULL) {
-        //TODO: refactor into cxt_new()
-        cxtrackerid += 1;
-        cxt = (connection *) calloc(1, sizeof(connection));
-        if (head != NULL) {
-            head->prev = cxt;
-        }
-        /*
-         * printf("[*] New connection...\n"); 
-         * calloc initiates with 0, so just  set the things we need.
-         */
-        cxt->cxid = cxtrackerid;
+
+        cxt = cxt_new();
         cxt->af = af;
         cxt->s_tcpFlags = tcpflags;
+        //cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);//why??
         //cxt->d_tcpFlags = 0x00;
         cxt->s_total_bytes = p_bytes;
         cxt->s_total_pkts = 1;
@@ -113,12 +150,22 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
         cxt->s_port = src_port;
         cxt->d_port = dst_port;
         cxt->proto = ip_proto;
-        cxt->next = head;
+
+        cxt->check = 0x00;
+        cxt->c_asset = NULL;
+        cxt->s_asset = NULL;
+        cxt->reversed = 0;
+
         //cxt->prev = NULL;
         /*
          * New connections are pushed on to the head of bucket[s_hash] 
          */
+        cxt->next = head;
+        if (head != NULL) {
+            head->prev = cxt;
+        }
         bucket[hash] = cxt;
+        pi->cxt = cxt;
 
         /*
          * Return value should be 1, telling to do client service fingerprinting 
@@ -131,13 +178,49 @@ int cx_track(struct in6_addr *ip_src, uint16_t src_port,
    return -1;
 }
 
-inline
-void connection_tracking(packetinfo *pi) {
+void reverse_pi_cxt(packetinfo *pi)
+{
+    uint8_t tmpFlags;
+    uint64_t tmp_pkts;
+    uint64_t tmp_bytes;
+    struct in6_addr tmp_ip;
+    uint16_t tmp_port;
+    connection *cxt;
 
-    // add to packetinfo ? dont through int32 around :)
-    cxt_update(pi);
-    return;
+    cxt = pi->cxt;
+
+    /* First we chang the cxt */
+    /* cp src to tmp */
+    tmpFlags = cxt->s_tcpFlags;
+    tmp_pkts = cxt->s_total_pkts;
+    tmp_bytes = cxt->s_total_bytes;
+    tmp_ip = cxt->s_ip;
+    tmp_port = cxt->s_port;
+
+    /* cp dst to src */
+    cxt->s_tcpFlags = cxt->d_tcpFlags;
+    cxt->s_total_pkts = cxt->d_total_pkts;
+    cxt->s_total_bytes = cxt->d_total_bytes;
+    cxt->s_ip = cxt->d_ip;
+    cxt->s_port = cxt->d_port;
+
+    /* cp tmp to dst */
+    cxt->d_tcpFlags = tmpFlags; 
+    cxt->d_total_pkts = tmp_pkts;
+    cxt->d_total_bytes = tmp_bytes;
+    cxt->d_ip = tmp_ip;
+    cxt->d_port = tmp_port;
+
+    /* Not taking any chances :P */
+    cxt->c_asset = cxt->s_asset = NULL;
+    cxt->check = 0x00;
+
+    /* Then we change pi */
+    if (pi->sc == SC_CLIENT) pi->sc = SC_SERVER;
+        else pi->sc = SC_CLIENT;
 }
+
+
 
 /*
  This sub marks sessions as ENDED on different criterias:
@@ -155,7 +238,8 @@ void end_sessions()
     uint32_t curcxt = 0;
     uint32_t expired = 0;
     
-    for (cxt = cxt_est_q.bot; cxt != NULL;) {
+    int iter = 0;
+    for(cxt = bucket[iter++]; iter < BUCKET_SIZE; iter++) while (cxt) {
         ended = 0;
         curcxt++;
         /** TCP */
@@ -211,19 +295,13 @@ void end_sessions()
             expired++;
             ended = 0;
             /* remove from the hash */
-            if (cxt->hprev)
-                cxt->hprev->hnext = cxt->hnext;
-            if (cxt->hnext)
-                cxt->hnext->hprev = cxt->hprev;
-            // cb is deprecated (we believe)
-            if (cxt->cb && cxt->cb->cxt == cxt)
-                cxt->cb->cxt = cxt->hnext;
-
+            if (cxt->prev)
+                cxt->prev->next = cxt->next;
+            if (cxt->next)
+                cxt->next->prev = cxt->prev;
             connection *tmp = cxt;
             cxt = cxt->prev;
 
-            /* cxt_requeue(tmp, &cxt_est_q, &cxt_log_q); */
-            cxt_requeue(tmp, &cxt_est_q, &cxt_spare_q);
             CLEAR_CXT(tmp);
             //printf("[*] connection deleted!!!\n");
         } else {
