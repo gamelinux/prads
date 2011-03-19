@@ -27,9 +27,21 @@ connection *cxt_new()
 
 int connection_tracking(packetinfo *pi)
 {
-    return cx_track(pi);
-}
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    static char ip_addr_d[INET6_ADDRSTRLEN];
+    cx_track(pi);
 
+    if(pi->af == AF_INET6) {
+      u_ntop(pi->ip6->ip_src, pi->af, ip_addr_s);
+      u_ntop(pi->ip6->ip_dst, pi->af, ip_addr_d);
+    }else{
+      inet_ntop(pi->af, & pi->ip4->ip_src, ip_addr_s, INET6_ADDRSTRLEN);
+      inet_ntop(pi->af, & pi->ip4->ip_dst, ip_addr_d, INET6_ADDRSTRLEN);
+    }
+    printf("conn[%4u] %s:%u -> %s:%u [%s]\n",pi->cxt->cxid, ip_addr_s, pi->s_port, ip_addr_d, pi->d_port, pi->sc==0? "notrack!": pi->sc==SC_SERVER?"server":"client");
+
+    return 0;
+}
 
 /* return value: client or server?
  *** USED TO BE: 0 = dont check, 1 = client, 2 = server
@@ -39,6 +51,8 @@ int connection_tracking(packetinfo *pi)
 int cx_track(packetinfo *pi) {
     struct in6_addr *ip_src;
     struct in6_addr *ip_dst;
+    struct in6_addr ips;
+    struct in6_addr ipd;
     uint16_t src_port = pi->s_port;
     uint16_t dst_port = pi->d_port;
     uint8_t ip_proto = pi->proto;
@@ -53,8 +67,10 @@ int cx_track(packetinfo *pi) {
     }else {
         // ugly hack :(
         // the way we do ip4/6 is DIRTY
-        ip_src = &pi->ip4->ip_src;
-        ip_dst = &pi->ip4->ip_dst;
+        ips.s6_addr32[0] = pi->ip4->ip_src;
+        ipd.s6_addr32[0] = pi->ip4->ip_dst;
+        ip_src = &ips;
+        ip_dst = &ipd;
     }
     if(pi->tcph) tcpflags = pi->tcph->t_flags;
 
