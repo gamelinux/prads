@@ -858,7 +858,7 @@ int parse_network (char *net_s, struct in6_addr *network)
             perror("parse_nets6");
             return -1;
         }
-        olog("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
+        dlog("Network6 %-36s \t -> %08x:%08x:%08x:%08x\n",
                net_s,
                IP6ADDR(network)
               );
@@ -868,7 +868,7 @@ int parse_network (char *net_s, struct in6_addr *network)
             perror("parse_nets");
             return -1;
         }
-        olog("Network4 %16s \t-> 0x%08x\n", net_s, IP4ADDR(network));
+        dlog("Network4 %16s \t-> 0x%08x\n", net_s, IP4ADDR(network));
     }
     return type;
 }
@@ -882,15 +882,15 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
     if (type == AF_INET && (t = strchr(f, '.')) > f && t-f < 4) {
         // full ipv4 netmask : dotted quads
         inet_pton(type, f, &IP4ADDR(netmask));
-        olog("mask 4 %s \t-> 0x%08x\n", f, IP4ADDR(netmask));
+        dlog("mask 4 %s \t-> 0x%08x\n", f, IP4ADDR(netmask));
     } else if (type == AF_INET6 && NULL != (t = strchr(f, ':'))) {
         // full ipv6 netmasĸ
-        olog("mask 6 %s\n", f);
+        dlog("mask 6 %s\n", f);
         inet_pton(type, f, netmask);
     } else {
         // cidr form
         sscanf(f, "%u", &mask);
-        olog("cidr  %u \t-> ", mask);
+        dlog("cidr  %u \t-> ", mask);
         if (type == AF_INET) {
             uint32_t shift = 32 - mask;
             if (mask)
@@ -898,7 +898,7 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             else
                 IP4ADDR(netmask) = 0;
 
-            olog("0x%08x\n", IP4ADDR(netmask));
+            dlog("0x%08x\n", IP4ADDR(netmask));
         } else if (type == AF_INET6) {
             //mask = 128 - mask;
             int j = 0;
@@ -912,7 +912,7 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
                 netmask->s6_addr[j] = -1 << (8 - mask);
             }
             inet_ntop(type, &IP4ADDR(netmask), output, MAX_NETS);
-            olog("mask: %s\n", output);
+            dlog("mask: %s\n", output);
             // pcap packets are in host order.
             IP6ADDR0(netmask) = ntohl(IP6ADDR0(netmask));
             IP6ADDR1(netmask) = ntohl(IP6ADDR1(netmask));
@@ -1004,11 +1004,13 @@ void game_over()
         del_signature_lists();
         unload_tcp_sigs();
         end_logging();
-        print_prads_stats();
-        print_pcap_stats();
+        if(!ISSET_CONFIG_QUIET(config)){
+           print_prads_stats();
+           print_pcap_stats();
+        }
         if (config.handle != NULL) pcap_close(config.handle);
         free_config(); // segfault here !
-        printf("\nprads ended\n");
+        olog("\nprads ended.\n");
         exit(0);
     }
     intr_flag = 1;
@@ -1048,32 +1050,32 @@ void set_end_sessions()
 void print_prads_stats()
 {
     extern uint64_t cxtrackerid; // cxt.c
-    printf("\n-- prads:");
-    printf("\n-- Total packets received from libpcap    :%12u",config.pr_s.got_packets);
-    printf("\n-- Total Ethernet packets received        :%12u",config.pr_s.eth_recv);
-    printf("\n-- Total VLAN packets received            :%12u",config.pr_s.vlan_recv);
-    printf("\n-- Total ARP packets received             :%12u",config.pr_s.arp_recv);
-    printf("\n-- Total IPv4 packets received            :%12u",config.pr_s.ip4_recv);
-    printf("\n-- Total IPv6 packets received            :%12u",config.pr_s.ip6_recv);
-    printf("\n-- Total Other link packets received      :%12u",config.pr_s.otherl_recv);
-    printf("\n-- Total IPinIPv4 packets received        :%12u",config.pr_s.ip4ip_recv);
-    printf("\n-- Total IPinIPv6 packets received        :%12u",config.pr_s.ip6ip_recv);
-    printf("\n-- Total GRE packets received             :%12u",config.pr_s.gre_recv);
-    printf("\n-- Total TCP packets received             :%12u",config.pr_s.tcp_recv);
-    printf("\n-- Total UDP packets received             :%12u",config.pr_s.udp_recv);
-    printf("\n-- Total ICMP packets received            :%12u",config.pr_s.icmp_recv);
-    printf("\n-- Total Other transport packets received :%12u",config.pr_s.othert_recv);
-    printf("\n--");
-    printf("\n-- Total sessions tracked                 :%12lu", cxtrackerid);
-    printf("\n-- Total assets detected                  :%12u",config.pr_s.assets);
-    printf("\n-- Total TCP OS fingerprints detected     :%12u",config.pr_s.tcp_os_assets);
-    printf("\n-- Total UDP OS fingerprints detected     :%12u",config.pr_s.udp_os_assets);
-    printf("\n-- Total ICMP OS fingerprints detected    :%12u",config.pr_s.icmp_os_assets);
-    printf("\n-- Total DHCP OS fingerprints detected    :%12u",config.pr_s.dhcp_os_assets);
-    printf("\n-- Total TCP service assets detected      :%12u",config.pr_s.tcp_services);
-    printf("\n-- Total TCP client assets detected       :%12u",config.pr_s.tcp_clients);
-    printf("\n-- Total UDP service assets detected      :%12u",config.pr_s.udp_services);
-    printf("\n-- Total UDP client assets detected       :%12u",config.pr_s.udp_clients);
+    olog("-- prads:\n");
+    olog("-- Total packets received from libpcap    :%12u\n",config.pr_s.got_packets);
+    olog("-- Total Ethernet packets received        :%12u\n",config.pr_s.eth_recv);
+    olog("-- Total VLAN packets received            :%12u\n",config.pr_s.vlan_recv);
+    olog("-- Total ARP packets received             :%12u\n",config.pr_s.arp_recv);
+    olog("-- Total IPv4 packets received            :%12u\n",config.pr_s.ip4_recv);
+    olog("-- Total IPv6 packets received            :%12u\n",config.pr_s.ip6_recv);
+    olog("-- Total Other link packets received      :%12u\n",config.pr_s.otherl_recv);
+    olog("-- Total IPinIPv4 packets received        :%12u\n",config.pr_s.ip4ip_recv);
+    olog("-- Total IPinIPv6 packets received        :%12u\n",config.pr_s.ip6ip_recv);
+    olog("-- Total GRE packets received             :%12u\n",config.pr_s.gre_recv);
+    olog("-- Total TCP packets received             :%12u\n",config.pr_s.tcp_recv);
+    olog("-- Total UDP packets received             :%12u\n",config.pr_s.udp_recv);
+    olog("-- Total ICMP packets received            :%12u\n",config.pr_s.icmp_recv);
+    olog("-- Total Other transport packets received :%12u\n",config.pr_s.othert_recv);
+    olog("--\n");
+    olog("-- Total sessions tracked                 :%12lu\n", cxtrackerid);
+    olog("-- Total assets detected                  :%12u\n",config.pr_s.assets);
+    olog("-- Total TCP OS fingerprints detected     :%12u\n",config.pr_s.tcp_os_assets);
+    olog("-- Total UDP OS fingerprints detected     :%12u\n",config.pr_s.udp_os_assets);
+    olog("-- Total ICMP OS fingerprints detected    :%12u\n",config.pr_s.icmp_os_assets);
+    olog("-- Total DHCP OS fingerprints detected    :%12u\n",config.pr_s.dhcp_os_assets);
+    olog("-- Total TCP service assets detected      :%12u\n",config.pr_s.tcp_services);
+    olog("-- Total TCP client assets detected       :%12u\n",config.pr_s.tcp_clients);
+    olog("-- Total UDP service assets detected      :%12u\n",config.pr_s.udp_services);
+    olog("-- Total UDP client assets detected       :%12u\n",config.pr_s.udp_clients);
 }
 
 
@@ -1088,18 +1090,21 @@ static void usage()
     olog(" -r <file>       Read pcap <file>.\n");
     olog(" -c <file>       Read config from <file>\n");
     olog(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
-    //olog(" -d            to logdir\n");
     olog(" -u <user>       Run as user <user>.\n");
     olog(" -g <group>      Run as group <group>.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     olog(" -D              Enables daemon mode.\n");
+    //olog(" -d            to logdir\n");
     olog(" -p <pidfile>    Name of pidfile\n");
     olog(" -P <path>       Pid lives in <path>\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
     olog(" -f <FIFO>       Log assets to <FIFO>");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -h              This help message.\n");
-    olog(" -v              Verbose.\n");
+    olog(" -v              Verbose output - repeat for more verbosity.\n");
+    olog(" -q              Quiet - try harder not to produce output.\n");
+    olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
+    olog(" -UTIL           Service checks: U:UDP, T:TCP-server, I:ICMP, L:TCP-cLient\n");
 }
 
 
@@ -1129,7 +1134,7 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:"
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qXFRMSAKUTIL"
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
@@ -1170,13 +1175,14 @@ int main(int argc, char *argv[])
             config.dev = strdup(optarg);
             break;
         case 'r':
-            config.pcap_file = blk2bstr(optarg, strlen(optarg));
+            config.pcap_file = strdup(optarg);
             break;
         case 'b':
             config.bpff = strdup(optarg);
             break;
         case 'v':
             config.verbose++;
+            config.cflags |= CONFIG_VERBOSE;
             break;
         case 'd':
             config.dpath = strdup(optarg);
@@ -1208,6 +1214,44 @@ int main(int argc, char *argv[])
         case 'f':
             config.fifo = strdup(optarg);
             break;
+        case 'q':
+            config.cflags |= CONFIG_QUIET;
+            break;
+        case 'X':
+            config.ctf = 0;
+            config.cof = 0;
+            break;
+        case 'F':
+            config.ctf |= CO_FIN;
+            break;
+        case 'R':
+            config.ctf |= CO_RST;
+            break;
+        case 'M':
+            config.cof |= CS_MAC;
+            config.cof |= CS_ARP;
+            break;
+        case 'S':
+            config.ctf |= CO_SYN;
+            break;
+        case 'A':
+            config.ctf |= CO_ACK;
+            break;
+        case 'K':
+            config.ctf |= CO_SYNACK;
+            break;
+        case 'U':
+            config.cof |= CS_UDP_SERVICES;
+            break;
+        case 'T':
+            config.cof |= CS_TCP_SERVER;
+            break;
+        case 'I':
+            config.cof |= CS_ICMP;
+            break;
+        case 'L':
+            config.cof |= CS_TCP_CLIENT;
+            break;
         case '?':
             elog("unrecognized argument: '%c'\n", optopt);
             break;
@@ -1233,71 +1277,78 @@ int main(int argc, char *argv[])
         rc = init_logging(LOG_FIFO, config.fifo, config.verbose);
         if(rc) perror("Logging to fifo failed!");
     }
-
-    if(config.s_net)
+    if(config.s_net){
        parse_nets(config.s_net, network);
-
-    if(config.ctf & CS_MAC){
-        olog("[*] Loading MAC fingerprints from file %s\n", config.sig_file_mac);
+    }
+    olog("[*] Loading fingerprints:\n");
+    if (IS_CSSET(&config,CS_MAC)) {
+        olog("   %8s %s\n", "MAC", config.sig_file_mac);
         rc = load_mac(config.sig_file_mac, &config.sig_mac, 0);
         if(rc) perror("mac loadage failed!");
     }
 
     if(config.ctf & CO_SYN){
-        olog("[*] Loading SYN fingerprints\n");
+        olog("   %8s %s\n", "SYN", config.sig_file_syn);
         rc = load_sigs(config.sig_file_syn, &config.sig_syn, config.sig_hashsize);
         if(rc) perror("syn loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_syn, config.sig_hashsize);
     }
     if(config.ctf & CO_SYNACK){
-        olog("[*] Loading SYNACK fingerprints\n");
+        olog("   %8s %s\n", "SYNACK", config.sig_file_synack);
         rc = load_sigs(config.sig_file_synack, &config.sig_synack, config.sig_hashsize);
         if(rc) perror("synack loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_synack, config.sig_hashsize);
     }
     if(config.ctf & CO_ACK){
-        olog("[*] Loading STRAY-ACK fingerprints\n");
+        olog("   %8s %s\n", "ACK", config.sig_file_ack);
         rc = load_sigs(config.sig_file_ack, &config.sig_ack, config.sig_hashsize);
         if(rc) perror("stray-ack loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_ack, config.sig_hashsize);
     }
     if(config.ctf & CO_FIN){
-        olog("[*] Loading FIN fingerprints\n");
+        olog("   %8s %s\n", "FIN", config.sig_file_fin);
         rc = load_sigs(config.sig_file_fin, &config.sig_fin, config.sig_hashsize);
         if(rc) perror("fin loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_fin, config.sig_hashsize);
     }
     if(config.ctf & CO_RST){
-        olog("[*] Loading RST fingerprints\n");
+        olog("   %8s %s\n", "RST", config.sig_file_rst);
         rc = load_sigs(config.sig_file_rst, &config.sig_rst, config.sig_hashsize);
         if(rc) perror("rst loadage failed!");
         if(config.verbose > 1)
             dump_sigs(config.sig_rst, config.sig_hashsize);
     }
 
+    if (IS_CSSET(&config,CS_TCP_SERVER)){
+        olog("   %8s %s\n", "TCP-service", config.sig_file_serv_tcp);
+        load_servicefp_file(1, CONFDIR "tcp-service.sig");
+    }
+    if (IS_CSSET(&config,CS_UDP_SERVICES)){
+        olog("   %8s %s\n", "TCP-service", config.sig_file_serv_udp);
+        load_servicefp_file(2, CONFDIR "udp-service.sig");
+    }
+    if (IS_CSSET(&config,CS_TCP_CLIENT)){
+        olog("   %8s %s\n", "TCP-service", config.sig_file_cli_tcp);
+        load_servicefp_file(3, CONFDIR "tcp-clients.sig");
+    }
+    init_services();
+
     olog("\n[*] Running prads %s\n", VERSION);
-    olog("[*] Using %s\n", pcap_lib_version());
-    olog("[*] Using PCRE version %s\n", pcre_version());
+    olog("    Using %s\n", pcap_lib_version());
+    olog("    Using PCRE version %s\n", pcre_version());
 
     //if (config.verbose) display_config();
     display_config();
 
-    // should be config file too
-    load_servicefp_file(1, CONFDIR "tcp-service.sig");
-    load_servicefp_file(2, CONFDIR "udp-service.sig");
-    load_servicefp_file(3, CONFDIR "tcp-clients.sig");
-    //load_servicefp_file(4, CONFDIR "udp-client.sig");
-    init_services();
-
     if (config.pcap_file) {
         /* Read from PCAP file specified by '-r' switch. */
-        olog("[*] Reading from file %s\n", bdata(config.pcap_file));
-        if (!(config.handle = pcap_open_offline(bdata(config.pcap_file), config.errbuf))) {
-            olog("[*] Unable to open %s.  (%s)", bdata(config.pcap_file), config.errbuf);
+        olog("[*] Reading from file %s\n", config.pcap_file);
+        if (!(config.handle = pcap_open_offline(config.pcap_file, config.errbuf))) {
+            olog("[*] Unable to open %s.  (%s)", config.pcap_file, config.errbuf);
         } 
 
     } else {
