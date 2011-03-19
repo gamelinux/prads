@@ -84,7 +84,7 @@ void log_asset_service (asset *main, serv_asset *service)
 #ifdef DEBUG
     static char ip_addr_s[INET6_ADDRSTRLEN];
     u_ntop(main->ip_addr, main->af, ip_addr_s);
-    if (service->role == 1) {
+    if (service->role == SC_SERVER ) {
         fprintf(stderr, "[*] new service: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));
     } else {
         fprintf(stderr, "[*] new client: %s:%d %s\n",ip_addr_s,ntohs(service->port),(char *)bdata(service->application));

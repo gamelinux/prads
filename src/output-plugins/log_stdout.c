@@ -93,7 +93,7 @@ void stdout_service (output_plugin* unused, asset *main, serv_asset *service)
     printf("%s", ip_addr_s);
     if (main->vlan != 0) printf(",[vlan:%u]", ntohs(main->vlan));
 
-    if (service->role == 1) {
+    if (service->role == SC_SERVER) {
         printf(",[service:%s:%u:%u]",
         (char *)bdata(service->application),
         ntohs(service->port),service->proto);
