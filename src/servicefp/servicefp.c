@@ -304,7 +304,7 @@ void del_signature_lists()
     /* client udp */
     free_signature_list(sig_client_udp);
 
-    printf("\nsignature list memory has been cleared");
+    dlog("signature list memory has been cleared\n");
 }
 
 void free_signature_list (signature *head)
@@ -442,7 +442,7 @@ void del_known_services()
             free(services[kport]);
         }
     }
-    printf("\nknown services memory has been cleared");
+    dlog("known services memory has been cleared\n");
 }
 
 
