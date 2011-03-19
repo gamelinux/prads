@@ -26,7 +26,7 @@ void update_asset(packetinfo *pi)
 
 void update_service_stats(int role, uint16_t proto)
 {
-    if (role==1) {
+    if (role==SC_SERVER) {
         if (proto== 6) config.pr_s.tcp_services++;
         if (proto==17) config.pr_s.udp_services++;
     } else {
@@ -348,8 +348,7 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
     } else {
         /* If no asset */
         update_asset(pi);
-        if (update_asset_service(pi, service, application) == SUCCESS) return SUCCESS;
-        return ERROR;
+        return update_asset_service(pi, service, application);
     }
 
 service_update:
@@ -503,10 +502,6 @@ short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi)
             elog("update_asset(pi) failed! Asset does not exist! Cant enter MAC!!! die();\n");
             return ERROR;
         }
-        // asset did not exist.
-        mac_entry *match = match_mac(config.sig_mac, arp_sha, 48);
-        pi->asset->macentry = match;
-
         if (update_asset_arp(arp_sha, pi) == SUCCESS) {
             return SUCCESS;
         } else {
@@ -530,6 +525,12 @@ arp_update:
 
             print_mac(arp_sha);
             printf("\n");
+
+        }
+        if(pi->asset->macentry == NULL) {
+           // vendor entry did not exist.
+           mac_entry *match = match_mac(config.sig_mac, arp_sha, 48);
+           pi->asset->macentry = match;
         }
         memcpy(&pi->asset->mac_addr, arp_sha, MAC_ADDR_LEN);
         pi->asset->last_seen = pi->pheader->ts.tv_sec;
@@ -718,7 +719,7 @@ void clear_asset_list()
             del_asset(tmp, &passet[akey]);
         }
     }
-    printf("\nasset memory has been cleared");
+    olog("asset memory has been cleared\n");
 }
 
 void update_asset_list()
