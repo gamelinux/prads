@@ -71,10 +71,10 @@ void print_pcap_stats()
     if (pcap_stats(config.handle, &config.ps) == -1) {
         pcap_perror(config.handle, "pcap_stats");
     }
-    printf("\n-- libpcap:");
-    printf("\n-- Total packets received                 :%12u",config.ps.ps_recv);
-    printf("\n-- Total packets dropped                  :%12u",config.ps.ps_drop);
-    printf("\n-- Total packets dropped by Interface     :%12u",config.ps.ps_ifdrop);
+    olog("-- libpcap:\n");
+    olog("-- Total packets received                 :%12u\n",config.ps.ps_recv);
+    olog("-- Total packets dropped                  :%12u\n",config.ps.ps_drop);
+    olog("-- Total packets dropped by Interface     :%12u\n",config.ps.ps_ifdrop);
 }
 
 int set_chroot(void)
