@@ -2,8 +2,6 @@
 #TODO Passive Real-time Asset Detection System
 ==========
 
-1. Squil!
-
 2. inform firewall / snort / nessus / satan etc
 
 3. Stateful conntrack => trust rel
@@ -30,12 +28,12 @@
          "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_5_7; nb-no) AppleWebKit/525.28.3 (KHTML, like Gecko) Version/3.2.3 Safari/525.28.3"
 
 7. Different output plugins...
-   - PoC should send to stdout or/and logfile (text).
-   - Sguil (Add a switch to make the output better for sguil?)
+   - PoC should send to stdout or/and logfile (text). # done, stdout/file
+   - Sguil (Add a switch to make the output better for sguil?) # done, see fifo
    - output plugins compatible with:
-    -> p0f
+    -> p0f # messy
     -> pads
-    -> sancp
+    -> sancp # cxtracker
     -> prads.pl (sort of anyway)
     -> nagios
     -> snort (host-attribute-table.xml)
@@ -54,15 +52,6 @@
      we can know what Snort/ET/Suricata rules to enable :)
      automatic! 
 
-
-MAC asset detection
-
-Sep 04 21:00:45 <qru>    * action_id            action
-Sep 04 21:00:45 <qru>    * 01                   TCP / ICMP Asset Discovered
-Sep 04 21:00:45 <qru>    * 02                   ARP Asset Discovered
-Sep 04 21:00:45 <qru>    * 03                   TCP / ICMP Statistic Information
-
-====================================
  Kacper's TODO items & krazy ideas:
 ====================================
 
@@ -158,6 +147,8 @@ TIMESTAMP,DNS-SERVER-IP,QUERY-TYPE,QUERY-CLASS,QUERY-DATA,RESURSE-TYPE,RESURSE-C
 
 
 DONE
+- MAC asset detection # DONE
+1. Squil! # DONE
 1. Discover host on ICMP too # DONE
 2. Discover Network Assets based on ARP. # DONE
 3. Internal table of [hosts(IP),services(port-#),ID string(banner of service or string that match),timestamp] # DONE
