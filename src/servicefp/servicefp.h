@@ -1,3 +1,4 @@
+enum {SRV_NONE, SRV_TCP_SERVER=1, SRV_UDP_SERVER, SRV_TCP_CLIENT, SRV_UDP_CLIENT };
 void arp_check(char *eth_hdr, time_t tstamp);
 int load_servicefp_file(int storage, char *sigfile);
 int parse_raw_signature(bstring line, int lineno, int storage);

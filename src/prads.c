@@ -51,10 +51,6 @@
 globalconfig config;
 time_t tstamp;
 servicelist *services[MAX_PORTS];
-signature *sig_serv_tcp = NULL;
-signature *sig_serv_udp = NULL;
-signature *sig_client_tcp = NULL;
-signature *sig_client_udp = NULL;
 int inpacket, gameover, intr_flag;
 int nets = 1;
 
@@ -1325,15 +1321,15 @@ int main(int argc, char *argv[])
 
     if (IS_CSSET(&config,CS_TCP_SERVER)){
         olog("   %8s %s\n", "TCP-service", config.sig_file_serv_tcp);
-        load_servicefp_file(1, CONFDIR "tcp-service.sig");
+        load_servicefp_file(SRV_TCP_SERVER, config.sig_file_serv_tcp );
     }
     if (IS_CSSET(&config,CS_UDP_SERVICES)){
         olog("   %8s %s\n", "TCP-service", config.sig_file_serv_udp);
-        load_servicefp_file(2, CONFDIR "udp-service.sig");
+        load_servicefp_file(SRV_UDP_SERVER, config.sig_file_serv_udp);
     }
     if (IS_CSSET(&config,CS_TCP_CLIENT)){
         olog("   %8s %s\n", "TCP-service", config.sig_file_cli_tcp);
-        load_servicefp_file(3, CONFDIR "tcp-clients.sig");
+        load_servicefp_file(SRV_TCP_CLIENT, config.sig_file_cli_tcp);
     }
     init_services();
 

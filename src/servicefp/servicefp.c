@@ -44,6 +44,11 @@
 #include "../prads.h"
 #include "servicefp.h"
 
+signature *sig_serv_tcp = NULL;
+signature *sig_serv_udp = NULL;
+signature *sig_client_tcp = NULL;
+signature *sig_client_udp = NULL;
+
 /* ----------------------------------------------------------
  * FUNCTION     : init_identification
  * DESCRIPTION  : This function will read the signature file
@@ -228,7 +233,7 @@ int parse_raw_signature(bstring line, int lineno, int storage)
 int add_service_sig(signature *sig, int storage)
 {
     signature *tail;
-    if (storage == 1) {
+    if (storage == SRV_TCP_SERVER ) {
         extern signature *sig_serv_tcp;
         tail = sig_serv_tcp;
         if (sig_serv_tcp == NULL) {
@@ -242,7 +247,7 @@ int add_service_sig(signature *sig, int storage)
             tail->next = sig;
             return 1;
         }
-    } else if (storage == 2) {
+    } else if (storage == SRV_UDP_SERVER) {
         extern signature *sig_serv_udp;
         tail = sig_serv_udp;
         if (sig_serv_udp == NULL) {
@@ -256,7 +261,7 @@ int add_service_sig(signature *sig, int storage)
             tail->next = sig;
             return 1;
         }
-    } else if (storage == 3) {
+    } else if (storage == SRV_TCP_CLIENT) {
         extern signature *sig_client_tcp;
         tail = sig_client_tcp;
         if (sig_client_tcp == NULL) {
@@ -270,7 +275,7 @@ int add_service_sig(signature *sig, int storage)
             tail->next = sig;
             return 1;
         }
-    } else if (storage == 4) {
+    } else if (storage == SRV_TCP_SERVER) {
         extern signature *sig_client_udp;
         tail = sig_client_udp;
         if (sig_client_udp == NULL) {
