@@ -29,17 +29,22 @@ int connection_tracking(packetinfo *pi)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     static char ip_addr_d[INET6_ADDRSTRLEN];
+    struct in_addr *ipa; 
     cx_track(pi);
 
     if(pi->af == AF_INET6) {
       u_ntop(pi->ip6->ip_src, pi->af, ip_addr_s);
       u_ntop(pi->ip6->ip_dst, pi->af, ip_addr_d);
-    }else{
-      inet_ntop(pi->af, & pi->ip4->ip_src, ip_addr_s, INET6_ADDRSTRLEN);
-      inet_ntop(pi->af, & pi->ip4->ip_dst, ip_addr_d, INET6_ADDRSTRLEN);
+    } else {
+      ipa = pi->ip4->ip_src;
+      inet_ntop(pi->af, &ipa, ip_addr_s, INET6_ADDRSTRLEN);
+      ipa = pi->ip4->ip_dst;
+      inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
     }
-    printf("conn[%4u] %s:%u -> %s:%u [%s]\n",pi->cxt->cxid, ip_addr_s, pi->s_port, ip_addr_d, pi->d_port, pi->sc==0? "notrack!": pi->sc==SC_SERVER?"server":"client");
-
+    printf("conn[%4llu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
+	ip_addr_s, pi->s_port,
+        ip_addr_d, pi->d_port,
+	pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
     return 0;
 }
 
