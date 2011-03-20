@@ -42,7 +42,10 @@
 #include "../common.h"
 #include "../sys_func.h"
 #include "../prads.h"
+#include "../config.h"
 #include "servicefp.h"
+
+extern globalconfig config;
 
 signature *sig_serv_tcp = NULL;
 signature *sig_serv_udp = NULL;
@@ -301,13 +304,13 @@ void del_signature_lists()
     extern signature *sig_client_udp;
 
     /* server tcp */
-    free_signature_list(sig_serv_tcp);
+    free_signature_list(config.sig_serv_tcp);
     /* server udp */
-    free_signature_list(sig_serv_udp);
+    free_signature_list(config.sig_serv_udp);
     /* client tcp */
-    free_signature_list(sig_client_tcp);
+    free_signature_list(config.sig_client_tcp);
     /* client udp */
-    free_signature_list(sig_client_udp);
+    free_signature_list(config.sig_client_udp);
 
     dlog("signature list memory has been cleared\n");
 }
