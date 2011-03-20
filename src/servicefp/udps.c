@@ -25,12 +25,11 @@
 
 extern bstring UNKNOWN;
 
-void service_udp4(packetinfo *pi)
+void service_udp4(packetinfo *pi, signature* sig_serv_udp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
     int tmplen;
-    extern signature *sig_serv_udp;
     signature *tmpsig;
     bstring app, service_name;
     app = service_name = NULL;
@@ -87,12 +86,11 @@ void service_udp4(packetinfo *pi)
     }
 }
 
-void service_udp6(packetinfo *pi)
+void service_udp6(packetinfo *pi, signature* sig_serv_udp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
     int tmplen;
-    extern signature *sig_serv_udp;
     signature *tmpsig;
     bstring app,service_name;
     

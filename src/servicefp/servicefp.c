@@ -47,10 +47,7 @@
 
 extern globalconfig config;
 
-signature *sig_serv_tcp = NULL;
-signature *sig_serv_udp = NULL;
-signature *sig_client_tcp = NULL;
-signature *sig_client_udp = NULL;
+servicelist *services[MAX_PORTS];
 
 /* ----------------------------------------------------------
  * FUNCTION     : init_identification
@@ -60,7 +57,7 @@ signature *sig_client_udp = NULL;
  * RETURN       : -1 - Error
  *              : 0 - Normal Return
  * ---------------------------------------------------------- */
-int load_servicefp_file(int storage, char *sigfile)
+int load_servicefp_file(char *sigfile, signature **db)
 {
 
     FILE *fp;
@@ -93,7 +90,7 @@ int load_servicefp_file(int storage, char *sigfile)
     filedata = bread((bNread) fread, fp);
     if ((lines = bsplit(filedata, '\n')) != NULL) {
         for (i = 0; i < lines->qty; i++) {
-            parse_raw_signature(lines->entry[i], i + 1, storage);
+            parse_raw_signature(lines->entry[i], i + 1, db);
         }
     }
 
@@ -118,7 +115,7 @@ int load_servicefp_file(int storage, char *sigfile)
  * RETURN       : 0 - Success
  *              : -1 - Error
  * ---------------------------------------------------------- */
-int parse_raw_signature(bstring line, int lineno, int storage)
+int parse_raw_signature(bstring line, int lineno, signature **db)
 {
     struct bstrList *raw_sig = NULL;
     struct bstrList *title = NULL;
@@ -214,7 +211,7 @@ int parse_raw_signature(bstring line, int lineno, int storage)
          * Add signature to 'signature_list' data structure. 
          */
         if (ret != -1) {
-            if(add_service_sig(sig, storage)) {
+            if(add_service_sig(sig, db)) {
              //dlog("SIG ADDED:%s to %d\n",(char *)bdata(sig->service),storage); 
             }
         }
@@ -233,86 +230,19 @@ int parse_raw_signature(bstring line, int lineno, int storage)
     return ret;
 }
 
-int add_service_sig(signature *sig, int storage)
+int add_service_sig(signature *sig, signature **db)
 {
     signature *tail;
-    if (storage == SRV_TCP_SERVER ) {
-        extern signature *sig_serv_tcp;
-        tail = sig_serv_tcp;
-        if (sig_serv_tcp == NULL) {
-            sig_serv_tcp = sig;
-            return 1;
-        }
-        while (tail->next != NULL) {
-            tail = tail->next;
-        }
-        if (tail->next == NULL ) {
-            tail->next = sig;
-            return 1;
-        }
-    } else if (storage == SRV_UDP_SERVER) {
-        extern signature *sig_serv_udp;
-        tail = sig_serv_udp;
-        if (sig_serv_udp == NULL) {
-            sig_serv_udp = sig;
-            return 1;
-        }
-        while (tail->next != NULL) {
-            tail = tail->next;
-        }
-        if (tail->next == NULL ) {
-            tail->next = sig;
-            return 1;
-        }
-    } else if (storage == SRV_TCP_CLIENT) {
-        extern signature *sig_client_tcp;
-        tail = sig_client_tcp;
-        if (sig_client_tcp == NULL) {
-            sig_client_tcp = sig;
-            return 1;
-        }
-        while (tail->next != NULL) {
-            tail = tail->next;
-        }
-        if (tail->next == NULL ) {
-            tail->next = sig;
-            return 1;
-        }
-    } else if (storage == SRV_TCP_SERVER) {
-        extern signature *sig_client_udp;
-        tail = sig_client_udp;
-        if (sig_client_udp == NULL) {
-            sig_client_udp = sig;
-            return 1;
-        }
-        while (tail->next != NULL) {
-            tail = tail->next;
-        }
-        if (tail->next == NULL ) {
-            tail->next = sig;
-            return 1;
-        }
+    tail = *db;
+    if(tail == NULL) {
+       *db = sig;
+    }else{
+       while(tail->next != NULL) {
+          tail = tail->next;
+       }
+       tail->next = sig;
     }
-    return 0;
-}
-
-void del_signature_lists()
-{
-    extern signature *sig_serv_tcp;
-    extern signature *sig_serv_udp;
-    extern signature *sig_client_tcp;
-    extern signature *sig_client_udp;
-
-    /* server tcp */
-    free_signature_list(config.sig_serv_tcp);
-    /* server udp */
-    free_signature_list(config.sig_serv_udp);
-    /* client tcp */
-    free_signature_list(config.sig_client_tcp);
-    /* client udp */
-    free_signature_list(config.sig_client_udp);
-
-    dlog("signature list memory has been cleared\n");
+    return 1;
 }
 
 void free_signature_list (signature *head)
@@ -330,6 +260,20 @@ void free_signature_list (signature *head)
             head = NULL;
             head = tmp;
     }
+}
+
+void del_signature_lists()
+{
+    /* server tcp */
+    free_signature_list(config.sig_serv_tcp);
+    /* server udp */
+    free_signature_list(config.sig_serv_udp);
+    /* client tcp */
+    free_signature_list(config.sig_client_tcp);
+    /* client udp */
+    free_signature_list(config.sig_client_udp);
+
+    dlog("signature list memory has been cleared\n");
 }
 
 /* ----------------------------------------------------------
@@ -425,8 +369,6 @@ void load_known_ports_file(char *filename, port_t *lports)
 
 void add_known_services(uint8_t proto, uint16_t port, bstring service_name)
 {
-    extern servicelist *services[MAX_PORTS];
-
     if (services[port] == NULL) {
         services[port] = (servicelist *) calloc(1, sizeof(servicelist));
         services[port]->service_name = service_name;
@@ -441,7 +383,6 @@ void add_known_services(uint8_t proto, uint16_t port, bstring service_name)
 
 void del_known_services()
 {
-    extern servicelist *services[MAX_PORTS];
     int kport;
 
     for (kport=0; kport < MAX_PORTS; kport++) {
@@ -456,8 +397,6 @@ void del_known_services()
 
 bstring check_known_port(uint8_t proto, uint16_t port)
 {
-    extern servicelist *services[MAX_PORTS];
-
     if (services[port] == NULL) return NULL;
 
     if (proto == IP_PROTO_TCP && services[port]->proto & 0x01) 

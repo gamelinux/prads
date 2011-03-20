@@ -664,16 +664,18 @@ void parse_tcp (packetinfo *pi)
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
         if (IS_CSSET(&config,CS_TCP_CLIENT)
                 && !ISSET_DONT_CHECK_CLIENT(pi)) {
-            if (pi->af == AF_INET) client_tcp4(pi);
-                else client_tcp6(pi);
+	    plog("Client@\n");
+            if (pi->af == AF_INET) client_tcp4(pi, config.sig_client_tcp);
+                else client_tcp6(pi, config.sig_client_tcp);
         }
         goto bastard_checks;
 
     } else if (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi)) {
         if (IS_CSSET(&config,CS_TCP_SERVER)
                 && !ISSET_DONT_CHECK_SERVICE(pi)) {
-            if (pi->af == AF_INET) service_tcp4(pi);
-                else service_tcp6(pi);
+	    plog("Server@\n");
+            if (pi->af == AF_INET) service_tcp4(pi, config.sig_serv_tcp);
+                else service_tcp6(pi, config.sig_serv_tcp);
         }
         goto bastard_checks;
     }
@@ -740,13 +742,13 @@ void parse_udp (packetinfo *pi)
             
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
                 // Check for UDP SERVICE
-                service_udp4(pi);
+                service_udp4(pi, config.sig_serv_udp);
             }
             // UPD Fingerprinting
             if (IS_COSET(&config,CO_UDP)) fp_udp4(pi, pi->ip4, pi->udph, pi->end_ptr);
         } else if (pi->af == AF_INET6) {
             if (!ISSET_DONT_CHECK_SERVICE(pi)||!ISSET_DONT_CHECK_CLIENT(pi)) {
-                service_udp6(pi);
+                service_udp6(pi, config.sig_client_udp);
             }
             /* fp_udp(ip6, ttl, ipopts, len, id, ipflags, df); */
         }
@@ -1005,7 +1007,7 @@ void game_over()
            print_pcap_stats();
         }
         if (config.handle != NULL) pcap_close(config.handle);
-        free_config(); // segfault here !
+        free_config();
         olog("\nprads ended.\n");
         exit(0);
     }
@@ -1321,15 +1323,15 @@ int main(int argc, char *argv[])
 
     if (IS_CSSET(&config,CS_TCP_SERVER)){
         olog("   %8s %s\n", "TCP-service", config.sig_file_serv_tcp);
-        load_servicefp_file(SRV_TCP_SERVER, config.sig_file_serv_tcp );
+        load_servicefp_file(config.sig_file_serv_tcp, &config.sig_serv_tcp);
     }
     if (IS_CSSET(&config,CS_UDP_SERVICES)){
         olog("   %8s %s\n", "TCP-service", config.sig_file_serv_udp);
-        load_servicefp_file(SRV_UDP_SERVER, config.sig_file_serv_udp);
+        load_servicefp_file(config.sig_file_serv_udp, &config.sig_serv_udp);
     }
     if (IS_CSSET(&config,CS_TCP_CLIENT)){
         olog("   %8s %s\n", "TCP-service", config.sig_file_cli_tcp);
-        load_servicefp_file(SRV_TCP_CLIENT, config.sig_file_cli_tcp);
+        load_servicefp_file(config.sig_file_cli_tcp, &config.sig_client_tcp);
     }
     init_services();
 
