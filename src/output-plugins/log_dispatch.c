@@ -18,6 +18,7 @@ output_plugin *log_output[LOG_MAX];
 /* set up function pointers for logging */
 int init_logging(int logtype, const char *file, int flags)
 {
+   int rc;
    output_plugin *log_fun;
    switch (logtype)
    {
@@ -40,9 +41,12 @@ int init_logging(int logtype, const char *file, int flags)
    }
    if(log_fun){
        log_output[n_outputs++] = log_fun;
-       if(log_fun->init) 
-           return log_fun->init(log_fun, file, flags);
-       else
+       if(log_fun->init) {
+           rc = log_fun->init(log_fun, file, flags);
+           if(rc)
+               n_outputs--;
+           return rc;
+       } else 
            return 0;
    }
    return 0xFABE;
@@ -50,7 +54,15 @@ int init_logging(int logtype, const char *file, int flags)
 
 /* magic logging function - iterate over all loggers */
 // note... this breaks anywhere non-GNU!
-#define log_foo(func, all, count, ...) do { int _i; for(_i = 0; _i < (count) ; _i++) { output_plugin* _p = all[_i]; if(_p && _p -> func) _p -> func(_p, ##__VA_ARGS__); } }while(0)
+#define log_foo(func, all, count, ...) \
+    do { \
+        int _i; \
+        for(_i = 0; _i < (count) ; _i++) { \
+            output_plugin* _p = (all)[_i]; \
+            if(_p && _p -> func) \
+                _p -> func(_p, ##__VA_ARGS__); \
+        } \
+    }while(0)
 
 
 void end_logging()
