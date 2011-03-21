@@ -1,12 +1,15 @@
 #ifndef SYSFUNC_H
 #define SYSFUNC_H
 
-#define elog(fmt, ...) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);
-#define olog(fmt, ...) do{ fprintf(stdout, (fmt), ##__VA_ARGS__); }while(0)
+#define plog(fmt, ...) do{ fprintf(stdout, (fmt), ##__VA_ARGS__); }while(0)
+
+#define olog(fmt, ...) do{ if(!(ISSET_CONFIG_QUIET(config))) fprintf(stdout, (fmt), ##__VA_ARGS__); }while(0)
 #ifdef DEBUG
 #define dlog(fmt, ...) do { fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);} while(0)
 #define vlog(v, fmt, ...) do{ if(DEBUG == v) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__); }while(0)
+#define elog(fmt, ...) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);
 #else
+#define elog(fmt, ...) fprintf(stderr, (fmt), ##__VA_ARGS__);
 #define dlog(fmt, ...) do { ; } while(0)
 #define vlog(fmt, ...) do { ; } while(0)
 #endif
@@ -22,7 +25,7 @@ void bucket_keys_NULL();
 int set_chroot(void);
 int drop_privs(void);
 int is_valid_path(const char *path);
-int create_pid_file(const char *path, const char *filename);
+int create_pid_file(const char *path);
 void game_over();
 void end_all_sessions();
 void del_assets(int ctime);

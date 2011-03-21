@@ -7,8 +7,6 @@
 #include "mac.h"
 
 extern globalconfig config;
-// static strings for comparison
-extern bstring UNKNOWN;
 static asset *passet[BUCKET_SIZE];
 
 void update_asset(packetinfo *pi)
@@ -28,7 +26,7 @@ void update_asset(packetinfo *pi)
 
 void update_service_stats(int role, uint16_t proto)
 {
-    if (role==1) {
+    if (role==SC_SERVER) {
         if (proto== 6) config.pr_s.tcp_services++;
         if (proto==17) config.pr_s.udp_services++;
     } else {
@@ -139,9 +137,6 @@ uint8_t asset_lookup(packetinfo *pi)
                     && CMP_ADDR4( &masset->ip_addr, ip))
                 {
                     pi->asset = masset;
-                    if (pi->cxt != NULL) {
-                       flip_connection(pi,masset);
-                    }
                     return SUCCESS;
                 }
                 masset = masset->next;
@@ -154,9 +149,6 @@ uint8_t asset_lookup(packetinfo *pi)
                 if (masset->af == AF_INET6 &&
                     CMP_ADDR6(&masset->ip_addr, &PI_IP6SRC(pi))){
                     pi->asset = masset;
-                    if (pi->cxt != NULL) {
-                       flip_connection(pi,masset);
-                    }
                     return SUCCESS;
                 }
                 masset = masset->next;
@@ -350,8 +342,7 @@ short update_asset_service(packetinfo *pi, bstring service, bstring application)
     } else {
         /* If no asset */
         update_asset(pi);
-        if (update_asset_service(pi, service, application) == SUCCESS) return SUCCESS;
-        return ERROR;
+        return update_asset_service(pi, service, application);
     }
 
 service_update:
@@ -444,8 +435,7 @@ service_update:
  * ---------------------------------------------------------- */
 void add_asset(packetinfo *pi)
 {
-    extern asset *passet[BUCKET_SIZE];
-    extern uint64_t hash;
+    uint64_t hash;
     asset *masset = NULL;
 
     config.pr_s.assets++;
@@ -506,10 +496,6 @@ short update_asset_arp(u_int8_t arp_sha[MAC_ADDR_LEN], packetinfo *pi)
             elog("update_asset(pi) failed! Asset does not exist! Cant enter MAC!!! die();\n");
             return ERROR;
         }
-        // asset did not exist.
-        mac_entry *match = match_mac(config.sig_mac, arp_sha, 48);
-        pi->asset->macentry = match;
-
         if (update_asset_arp(arp_sha, pi) == SUCCESS) {
             return SUCCESS;
         } else {
@@ -533,6 +519,12 @@ arp_update:
 
             print_mac(arp_sha);
             printf("\n");
+
+        }
+        if(pi->asset->macentry == NULL) {
+           // vendor entry did not exist.
+           mac_entry *match = match_mac(config.sig_mac, arp_sha, 48);
+           pi->asset->macentry = match;
         }
         memcpy(&pi->asset->mac_addr, arp_sha, MAC_ADDR_LEN);
         pi->asset->last_seen = pi->pheader->ts.tv_sec;
@@ -690,7 +682,6 @@ void del_asset(asset * passet, asset ** bucket_ptr)
 
 void clear_asset_list()
 {
-    extern asset *passet[BUCKET_SIZE];
     asset *rec = NULL;
     int akey;
 
@@ -722,24 +713,29 @@ void clear_asset_list()
             del_asset(tmp, &passet[akey]);
         }
     }
-    printf("\nasset memory has been cleared");
+    dlog("asset memory has been cleared\n");
 }
 
+/* update_asset_list()
+ ** iterates over all assets,
+ **** all services
+ **** all OS matches
+ ** and expires old (service, os, asset) since CHECK_TIMEOUT
+ ** optionally printing assets updated since ASSET_TIMEOUT
+ * */
 void update_asset_list()
 {
-    extern asset *passet[BUCKET_SIZE];
     extern time_t tstamp;
-    extern uint64_t hash;
     asset *rec = NULL;
     int akey;
+    serv_asset *tmp_sa = NULL;
+    os_asset *tmp_oa = NULL;
 
     for (akey = 0; akey < BUCKET_SIZE; akey++) {
         rec = passet[akey];
         while (rec != NULL) {
             /* Checks if something has been updated in the asset since last time */
             if (tstamp - rec->last_seen <= CHECK_TIMEOUT) {
-                serv_asset *tmp_sa = NULL;
-                os_asset *tmp_oa = NULL;
                 tmp_sa = rec->services;
                 tmp_oa = rec->os;
                 if (config.print_updates) log_asset_arp(rec);
@@ -750,7 +746,7 @@ void update_asset_list()
                         log_asset_service(rec,tmp_sa);
                     }
                     /* If the asset is getting too old - delete it */
-                    if (config.print_updates && tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
+                    if (tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
                         serv_asset *stmp = tmp_sa;
                         tmp_sa = tmp_sa->next;
                         del_serv_asset(&rec->services, stmp);

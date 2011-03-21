@@ -30,6 +30,7 @@
 
 /*  I N C L U D E S  *********************************************************/
 #include "../prads.h"
+#include "../config.h"
 #include "../sys_func.h"
 
 #include <stdio.h>
@@ -174,14 +175,22 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service)
     fd = (FILE *)p->data;
     /* prads_agent.tcl process each line until it receivs a dot by itself */
     u_ntop(main->ip_addr, main->af, sip);
+    
+    if ( service->role == SC_SERVER ) { /* SERVER ASSET */
     fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
-            /* sip, IP4ADDR(&main->c_ip_addr), ?? */
+            "0.0.0.0", 0,
             sip, IP4ADDR(&main->ip_addr), 
-            "", 0,
             0, ntohs(service->port), service->proto, 
             bdata(service->service), bdata(service->application), 
-            main->first_seen, "[PAYLOAD]" /* bdata(main->hex_payload) */);
-
+            main->first_seen, "505241445320534552564552" ); /* PRADS SERVER */
+    } else { /* CLIENT ASSET */
+    fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
+            sip, IP4ADDR(&main->ip_addr),        
+            "0.0.0.0", 0,
+            0, ntohs(service->port), service->proto, 
+            bdata(service->service), bdata(service->application), 
+            main->first_seen, "505241445320434C49454E54" ); /* PRADS CLIENT */
+    }
     fflush(fd);
 }
 
@@ -215,7 +224,8 @@ void fifo_stat (output_plugin *p, asset *rec, os_asset *os)
  * ---------------------------------------------------------- */
 int fifo_end (output_plugin *p)
 {
-    olog("Closing FIFO file\n");
+    if(p->flags & CONFIG_VERBOSE)
+       plog("Closing FIFO file\n");
     fclose((FILE *)p->data);
 
     p->data = NULL;

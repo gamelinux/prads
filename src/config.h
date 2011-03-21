@@ -4,7 +4,10 @@
 
 #define CONFIG_VERBOSE 0x01
 #define CONFIG_UPDATES 0x02
-#define CONFIG_SYSLOG 0x04
+#define CONFIG_SYSLOG  0x04
+#define CONFIG_QUIET   0x08
+#define CONFIG_CONNECT 0x10
+#define CONFIG_CXWRITE 0x20
 
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
@@ -21,6 +24,7 @@ typedef struct _globalconfig {
     uint8_t     daemon_flag;
     uint8_t     ctf;                    /* Flags for TCP checks, SYN,RST,FIN.... */
     uint8_t     cof;                    /* Flags for other; icmp,udp,other,.... */
+    uint32_t    payload;                /* dump how much of the payload ?  */
     char        errbuf[PCAP_ERRBUF_SIZE];   /**/
     char        *bpff;                  /**/
     char        *user_filter;           /**/
@@ -29,19 +33,19 @@ typedef struct _globalconfig {
     connection  *cxtbuffer;             /* Pointer to list of expired connections */
     asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
     port_t      *lports[MAX_IP_PROTO];  /* Pointer to list of known ports */
-    bstring     sig_file_serv_tcp;      /* Filename of tcp server sig file */
-    bstring     sig_file_cli_tcp;       /* Filename of tcp client sig file */
-    bstring     sig_file_serv_udp;      /* Filename of udp server sig file */
-    bstring     sig_file_cli_udp;       /* Filename of udp client sig file */
     char       *assetlog;               /* Filename of prads-asset.log */
     char       *fifo;                   /* Path to FIFO output */
-    bstring     pcap_file;              /* Filename to pcap too read */
+    char       *pcap_file;              /* Filename to pcap too read */
     char       *sig_file_syn;           /* Filename of TCP SYN sig file */
     char       *sig_file_synack;        /* Filename of TCP SYNACK sig file */
     char       *sig_file_ack;           /* Filename of TCP Stray-ACK sig file */
     char       *sig_file_fin;           /* Filename of TCP FIN sig file */
     char       *sig_file_rst;           /* Filename of TCP RST sig file */
     char       *sig_file_mac;           /* Filename of MAC signature file */
+    char       *sig_file_serv_tcp;      /* Filename of tcp server sig file */
+    char       *sig_file_cli_tcp;       /* Filename of tcp client sig file */
+    char       *sig_file_serv_udp;      /* Filename of udp server sig file */
+    char       *sig_file_cli_udp;       /* Filename of udp client sig file */
     signature   *sig_serv_tcp;          /* Pointer to list of tcp service signatures */
     signature   *sig_serv_udp;          /* Pointer to list of udp service signatures */
     signature   *sig_client_tcp;        /* Pointer to list of tcp client signatures */
@@ -52,9 +56,7 @@ typedef struct _globalconfig {
     char        *chroot_dir;            /* Directory to chroot to */
     char        *group_name;            /* Groupe to drop privileges too */
     char        *user_name;             /* User to drop privileges too */
-    char        *true_pid_name;         /* Pid name */
     char        *pidfile;               /* pidfile */
-    char        *pidpath;               /* Path to pidfile */
     char        *configpath;            /* Path to config dir */
     char        *s_net;                 /* Nets to collect assets for */
     uint32_t     sig_hashsize;          /* size of signature hash */
@@ -65,9 +67,10 @@ typedef struct _globalconfig {
     fp_entry   **sig_rst;               /* RST signature hash */
     mac_entry  **sig_mac;               /* Pointer to hash of mac signatures */
 } globalconfig;
-#define ISSET_CONFIG_VERBOSE(config)    ((config)->cflags & CONFIG_VERBOSE)
-#define ISSET_CONFIG_UPDATES(config)    ((config)->cflags & CONFIG_UPDATES)
-#define ISSET_CONFIG_SYSLOG(config)     ((config)->cflags & CONFIG_SYSLOG)
+#define ISSET_CONFIG_VERBOSE(config)    ((config).cflags & CONFIG_VERBOSE)
+#define ISSET_CONFIG_UPDATES(config)    ((config).cflags & CONFIG_UPDATES)
+#define ISSET_CONFIG_SYSLOG(config)     ((config).cflags & CONFIG_SYSLOG)
+#define ISSET_CONFIG_QUIET(config)      ((config).cflags & CONFIG_QUIET)
 
 void display_config();
 void set_default_config_options();

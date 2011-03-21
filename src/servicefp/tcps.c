@@ -25,16 +25,15 @@
 
 extern bstring UNKNOWN;
 
-void service_tcp4(packetinfo *pi)
+void service_tcp4(packetinfo *pi, signature* sig_serv_tcp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
     int tmplen;
-    extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app,service_name;
 
-    if (pi->plen < 10) return; // if almost no payload - skip
+    if (pi->plen < PAYLOAD_MIN) return; // if almost no payload - skip
     /* should make a config.tcp_server_flowdept etc
      * a range between 500-1000 should be good?
      */
@@ -47,16 +46,19 @@ void service_tcp4(packetinfo *pi)
                        ovector, 15);
         if (rc >= 0) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
-            //printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
+            printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
             update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
             return;
-        //} else if (rc == PCRE_ERROR_NOMATCH) {
-            //printf("pcre nomatch \n");
-        //} else {
-            //printf("pcre error: %d \n", rc);
         }
+        /*
+        } else if (rc == PCRE_ERROR_NOMATCH) {
+            printf("pcre nomatch \n");
+        } else {
+            printf("pcre error: %d \n", rc);
+        }
+        */
         tmpsig = tmpsig->next;
     }
     // Should have a flag set to resolve unknowns to default service
@@ -68,12 +70,11 @@ void service_tcp4(packetinfo *pi)
     }
 }
 
-void service_tcp6(packetinfo *pi)
+void service_tcp6(packetinfo *pi, signature* sig_serv_tcp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
     int tmplen;
-    extern signature *sig_serv_tcp;
     signature *tmpsig;
     bstring app,service_name;
 
