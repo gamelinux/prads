@@ -663,19 +663,21 @@ void parse_tcp (packetinfo *pi)
 
     if (pi->sc == SC_CLIENT && !ISSET_CXT_DONT_CHECK_CLIENT(pi)) {
         if (IS_CSSET(&config,CS_TCP_CLIENT)
-                && !ISSET_DONT_CHECK_CLIENT(pi)) {
-	    plog("Client@\n");
-            if (pi->af == AF_INET) client_tcp4(pi, config.sig_client_tcp);
-                else client_tcp6(pi, config.sig_client_tcp);
+            && !ISSET_DONT_CHECK_CLIENT(pi)) {
+            if (pi->af == AF_INET)
+               client_tcp4(pi, config.sig_client_tcp);
+            else
+               client_tcp6(pi, config.sig_client_tcp);
         }
         goto bastard_checks;
 
     } else if (pi->sc == SC_SERVER && !ISSET_CXT_DONT_CHECK_SERVER(pi)) {
         if (IS_CSSET(&config,CS_TCP_SERVER)
-                && !ISSET_DONT_CHECK_SERVICE(pi)) {
-	    plog("Server@\n");
-            if (pi->af == AF_INET) service_tcp4(pi, config.sig_serv_tcp);
-                else service_tcp6(pi, config.sig_serv_tcp);
+            && !ISSET_DONT_CHECK_SERVICE(pi)) {
+            if (pi->af == AF_INET)
+               service_tcp4(pi, config.sig_serv_tcp);
+            else
+               service_tcp6(pi, config.sig_serv_tcp);
         }
         goto bastard_checks;
     }
