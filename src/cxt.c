@@ -76,7 +76,7 @@ int connection_tracking(packetinfo *pi)
       inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
     }
     if(config.cflags & CONFIG_CONNECT)
-        printf("conn[%4llu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
+        printf("conn[%4lu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
                ip_addr_s, ntohs(pi->s_port),
                ip_addr_d, ntohs(pi->d_port),
                pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
@@ -280,7 +280,7 @@ void cxt_write(connection *cxt, FILE* fd, int human)
                 src_s, ntohs(cxt->s_port),
                 dst_s, ntohs(cxt->d_port));
     } else {
-        fprintf(fd, "%lu|%u|%lu|%u|",
+        fprintf(fd, "%u|%u|%u|%u|",
                 s_ip_t, ntohs(cxt->s_port),
                 d_ip_t, ntohs(cxt->d_port));
     }

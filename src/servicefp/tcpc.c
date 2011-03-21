@@ -41,7 +41,7 @@ void client_tcp4(packetinfo *pi, signature* sig_client_tcp)
 
     tmpsig = sig_client_tcp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, (const char*)pi->payload, tmplen, 0, 0,
                        ovector, 15);
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
@@ -79,7 +79,7 @@ void client_tcp6(packetinfo *pi, signature* sig_client_tcp)
 
     tmpsig = sig_client_tcp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, pi->plen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, (const char*) pi->payload, pi->plen, 0, 0,
                        ovector, 15);
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
