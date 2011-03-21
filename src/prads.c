@@ -1010,11 +1010,12 @@ void game_over()
         end_logging();
         if(!ISSET_CONFIG_QUIET(config)){
            print_prads_stats();
-           print_pcap_stats();
+           if(!config.pcap_file)
+               print_pcap_stats();
         }
         if (config.handle != NULL) pcap_close(config.handle);
         free_config();
-        olog("\nprads ended.\n");
+        olog("\n[*] prads ended.\n");
         exit(0);
     }
     intr_flag = 1;

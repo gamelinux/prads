@@ -1405,7 +1405,7 @@ continue_search:
 
   if (!no_unknown) { 
     a=(uint8_t*)& PI_IP4SRC(pi);
-    vlog(2,"\n%d.%d.%d.%d%s:%d - UNKNOWN [:?:?]",a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_SP(pi));
+    vlog(2,"%d.%d.%d.%d%s:%d - UNKNOWN [:?:?]",a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_SP(pi));
 
     //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
@@ -1476,6 +1476,7 @@ continue_search:
                    ,e->mss,(uint32_t)-1,
                    tstamp ? tstamp / 360000 : -1);
       */
+    vlog(2, "\n");
 
     if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
     //putchar('\n'); //edward

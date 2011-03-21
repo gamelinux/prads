@@ -713,7 +713,7 @@ void clear_asset_list()
             del_asset(tmp, &passet[akey]);
         }
     }
-    olog("asset memory has been cleared\n");
+    dlog("asset memory has been cleared\n");
 }
 
 /* update_asset_list()

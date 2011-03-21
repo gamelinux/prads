@@ -79,7 +79,7 @@ reopen:
                 /* retry in current working directory */
                 if(retry){
                     if(flags & CONFIG_VERBOSE )
-                       elog("%s denied opening access log '%s'", strerror(e), log->path);
+                       elog("%s denied opening asset log '%s'", strerror(e), log->path);
                     return e;
                 }
                 log->path = PRADS_ASSETLOG;
@@ -389,8 +389,7 @@ file_os (output_plugin *log, asset *main, os_asset *os)
  * ---------------------------------------------------------- */
 int end_output_log_file (output_plugin* log)
 {
-    if(log->flags & CONFIG_VERBOSE)
-       plog("[*] Closing log file.\n");
+    dlog("[*] Closing asset log.\n");
 
     if (log->data != NULL)
     fclose((FILE*)log->data);
