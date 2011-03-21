@@ -137,9 +137,6 @@ uint8_t asset_lookup(packetinfo *pi)
                     && CMP_ADDR4( &masset->ip_addr, ip))
                 {
                     pi->asset = masset;
-                    if (pi->cxt != NULL) {
-                       flip_connection(pi,masset);
-                    }
                     return SUCCESS;
                 }
                 masset = masset->next;
@@ -152,9 +149,6 @@ uint8_t asset_lookup(packetinfo *pi)
                 if (masset->af == AF_INET6 &&
                     CMP_ADDR6(&masset->ip_addr, &PI_IP6SRC(pi))){
                     pi->asset = masset;
-                    if (pi->cxt != NULL) {
-                       flip_connection(pi,masset);
-                    }
                     return SUCCESS;
                 }
                 masset = masset->next;
