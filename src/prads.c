@@ -635,6 +635,7 @@ void prepare_tcp (packetinfo *pi)
     pi->d_port = pi->tcph->dst_port;
     connection_tracking(pi);
     //cx_track_simd_ipv4(pi);
+    //if(config.payload) dump_payload(pi->payload, (config.payload<tmplen)?config.payload:tmplen);
     return; 
 }
 
@@ -653,7 +654,8 @@ void parse_tcp (packetinfo *pi)
             if (IS_COSET(&config,CO_SYNACK)) {
                 vlog(0x3, "[*] Got a SYNACK from a SERVER: src_port:%d\n", ntohs(pi->tcph->src_port));
                 fp_tcp(pi, CO_SYNACK);
-                if (pi->sc != SC_SERVER) reverse_pi_cxt(pi);
+                if (pi->sc != SC_SERVER)
+                   reverse_pi_cxt(pi);
                 return;
             }
         } 
@@ -996,10 +998,8 @@ void game_over()
 {
 
     if (inpacket == 0) {
-        //update_asset_list();
         clear_asset_list();
         end_all_sessions();
-        //free_queue();
         del_known_services();
         del_signature_lists();
         unload_tcp_sigs();

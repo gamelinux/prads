@@ -42,7 +42,6 @@ void service_tcp4(packetinfo *pi, signature* sig_serv_tcp)
 
     tmpsig = sig_serv_tcp;
     while (tmpsig != NULL) {
-        printf("doing regex %s\n", bdata(tmpsig->title.app));
         rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
                        ovector, 15);
         if (rc >= 0) {
