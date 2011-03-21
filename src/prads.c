@@ -1370,11 +1370,6 @@ int main(int argc, char *argv[])
 
     } else {
 
-        if (getuid()) {
-            olog("[*] You must be root..\n");
-            return (1);
-        }
-    
         /*
          * look up an available device if non specified
          */
