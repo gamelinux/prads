@@ -15,13 +15,46 @@ void cxt_init()
 }
 
 /* freshly smelling connection :d */
-connection *cxt_new()
+connection *cxt_new(packetinfo *pi)
 {
+    struct in6_addr ips;
+    struct in6_addr ipd;
     connection *cxt;
     cxtrackerid++;
     cxt = (connection *) calloc(1, sizeof(connection));
     assert(cxt);
     cxt->cxid = cxtrackerid;
+
+    cxt->af = pi->af;
+    if(pi->tcph) cxt->s_tcpFlags |= pi->tcph->t_flags;
+    //cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);//why??
+    //cxt->d_tcpFlags = 0x00;
+    cxt->s_total_bytes = pi->packet_bytes;
+    cxt->s_total_pkts = 1;
+    cxt->start_time = pi->pheader->ts.tv_sec;
+    cxt->last_pkt_time = pi->pheader->ts.tv_sec;
+
+    if(pi-> af== AF_INET6){
+        cxt->s_ip = PI_IP6SRC(pi);
+        cxt->d_ip = PI_IP6DST(pi);
+    }else {
+        // ugly hack :(
+        // the way we do ip4/6 is DIRTY
+        ips.s6_addr32[0] = pi->ip4->ip_src;
+        ipd.s6_addr32[0] = pi->ip4->ip_dst;
+        cxt->s_ip = ips;
+        cxt->d_ip = ipd;
+    }
+
+    cxt->s_port = pi->s_port;
+    cxt->d_port = pi->d_port;
+    cxt->proto = pi->proto;
+
+    cxt->check = 0x00;
+    cxt->c_asset = NULL;
+    cxt->s_asset = NULL;
+    cxt->reversed = 0;
+
     return cxt;
 }
 
@@ -42,16 +75,56 @@ int connection_tracking(packetinfo *pi)
       inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
     }
     printf("conn[%4llu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
-	ip_addr_s, pi->s_port,
-        ip_addr_d, pi->d_port,
+	ip_addr_s, ntohs(pi->s_port),
+        ip_addr_d, ntohs(pi->d_port),
 	pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
     return 0;
+}
+
+int cxt_update_client(connection *cxt, packetinfo *pi)
+{
+    cxt->last_pkt_time = pi->pheader->ts.tv_sec;
+
+    if(pi->tcph) cxt->s_tcpFlags |= pi->tcph->t_flags;
+    cxt->s_total_bytes += pi->packet_bytes;
+    cxt->s_total_pkts += 1;
+
+    pi->cxt = cxt;
+    pi->sc = SC_CLIENT;
+    if(!cxt->c_asset)
+        cxt->c_asset = pi->asset; // connection client asset
+    if (cxt->s_total_bytes > MAX_BYTE_CHECK
+        || cxt->s_total_pkts > MAX_PKT_CHECK) {
+        return 0;   // Dont Check!
+    }
+    return SC_CLIENT;
+}
+
+int cxt_update_server(connection *cxt, packetinfo *pi)
+{
+    cxt->last_pkt_time = pi->pheader->ts.tv_sec;
+
+    if(pi->tcph) cxt->d_tcpFlags |= pi->tcph->t_flags;
+    cxt->d_total_bytes += pi->packet_bytes;
+    cxt->d_total_pkts += 1;
+
+    pi->cxt = cxt;
+    pi->sc = SC_SERVER;
+    if(!cxt->s_asset)
+        cxt->s_asset = pi->asset; // server asset
+    if (cxt->d_total_bytes > MAX_BYTE_CHECK
+        || cxt->d_total_pkts > MAX_PKT_CHECK) {
+        return 0;   // Dont check!
+    }
+    return SC_SERVER;
+
 }
 
 /* return value: client or server?
  *** USED TO BE: 0 = dont check, 1 = client, 2 = server
  * now returns 0, SC_CLIENT(=1), SC_SERVER(=2)
  */
+
 
 int cx_track(packetinfo *pi) {
     struct in6_addr *ip_src;
@@ -60,11 +133,11 @@ int cx_track(packetinfo *pi) {
     struct in6_addr ipd;
     uint16_t src_port = pi->s_port;
     uint16_t dst_port = pi->d_port;
-    uint8_t ip_proto = pi->proto;
-    uint16_t p_bytes = pi->packet_bytes;
-    uint8_t tcpflags;
-    time_t tstamp = pi->pheader->ts.tv_sec;
     int af = pi->af;
+    connection *cxt = NULL;
+    connection *head = NULL;
+    uint32_t hash;
+
 
     if(af== AF_INET6){
         ip_src = &PI_IP6SRC(pi);
@@ -72,17 +145,14 @@ int cx_track(packetinfo *pi) {
     }else {
         // ugly hack :(
         // the way we do ip4/6 is DIRTY
+        // FIX IT?!!?
         ips.s6_addr32[0] = pi->ip4->ip_src;
         ipd.s6_addr32[0] = pi->ip4->ip_dst;
         ip_src = &ips;
         ip_dst = &ipd;
     }
-    if(pi->tcph) tcpflags = pi->tcph->t_flags;
 
-    connection *cxt = NULL;
-    connection *head = NULL;
-    uint32_t hash;
-
+    // find the right connection bucket
     if (af == AF_INET) {
         hash = CXT_HASH4(IP4ADDR(ip_src),IP4ADDR(ip_dst));
     } else if (af == AF_INET6) {
@@ -91,112 +161,40 @@ int cx_track(packetinfo *pi) {
     cxt = bucket[hash];
     head = cxt;
 
+    // search through the bucket
     while (cxt != NULL) {
         // Two-way compare of given connection against connection table
         if (af == AF_INET) {
             if (CMP_CXT4(cxt,IP4ADDR(ip_src),src_port,IP4ADDR(ip_dst),dst_port)){
-                cxt->s_tcpFlags |= tcpflags;
-                cxt->s_total_bytes += p_bytes;
-                cxt->s_total_pkts += 1;
-                cxt->last_pkt_time = tstamp;
-                pi->cxt = cxt;
-                pi->sc = SC_CLIENT;
-                if (cxt->s_total_bytes > MAX_BYTE_CHECK
-                    || cxt->s_total_pkts > MAX_PKT_CHECK) {
-                    return 0;   // Dont check!
-                }
-                return SC_CLIENT; // Client should send the first packet (TCP/SYN - UDP?), hence this is a client
+                // Client sends first packet (TCP/SYN - UDP?) hence this is a client
+                return cxt_update_client(cxt, pi);
             } else if (CMP_CXT4(cxt,IP4ADDR(ip_dst),dst_port,IP4ADDR(ip_src),src_port)) {
-                cxt->d_tcpFlags |= tcpflags;
-                cxt->d_total_bytes += p_bytes;
-                cxt->d_total_pkts += 1;
-                cxt->last_pkt_time = tstamp;
-                pi->cxt = cxt;
-                pi->sc = SC_SERVER;
-                if (cxt->d_total_bytes > MAX_BYTE_CHECK
-                    || cxt->d_total_pkts > MAX_PKT_CHECK) {
-                    return 0;   // Dont check!
-                }
-                return SC_SERVER;       // This should be a server (Maybe not when we start up but in the long run)
+                // This is a server (Maybe not when we start up but in the long run)
+                return cxt_update_server(cxt, pi);
             }
         } else if (af == AF_INET6) {
             if (CMP_CXT6(cxt,ip_src,src_port,ip_dst,dst_port)){
-
-                cxt->s_tcpFlags |= tcpflags;
-                cxt->s_total_bytes += p_bytes;
-                cxt->s_total_pkts += 1;
-                cxt->last_pkt_time = tstamp;
-                pi->cxt = cxt;
-                pi->sc = SC_CLIENT;
-                if (cxt->s_total_bytes > MAX_BYTE_CHECK
-                    || cxt->s_total_pkts > MAX_PKT_CHECK) {
-                    return 0;   // Dont Check!
-                }
-                return SC_CLIENT;       // Client
+                return cxt_update_client(cxt, pi);
             } else if (CMP_CXT6(cxt,ip_dst,dst_port,ip_src,src_port)){
-
-                cxt->d_tcpFlags |= tcpflags;
-                cxt->d_total_bytes += p_bytes;
-                cxt->d_total_pkts += 1;
-                cxt->last_pkt_time = tstamp;
-                pi->cxt = cxt;
-                pi->sc = SC_SERVER;
-                if (cxt->d_total_bytes > MAX_BYTE_CHECK
-                    || cxt->d_total_pkts > MAX_PKT_CHECK) {
-                    return 0;   // Dont Check!
-                }
-                return SC_SERVER;       // Server
+                return cxt_update_server(cxt, pi);
             }
         }
         cxt = cxt->next;
     }
+    // bucket turned upside down didn't yeild anything. new connection
+    cxt = cxt_new(pi);
 
-    if (cxt == NULL) {
-
-        cxt = cxt_new();
-        cxt->af = af;
-        cxt->s_tcpFlags = tcpflags;
-        //cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);//why??
-        //cxt->d_tcpFlags = 0x00;
-        cxt->s_total_bytes = p_bytes;
-        cxt->s_total_pkts = 1;
-        //cxt->d_total_bytes = 0;
-        //cxt->d_total_pkts = 0;
-        cxt->start_time = tstamp;
-        cxt->last_pkt_time = tstamp;
-
-        cxt->s_ip = *ip_src;
-        cxt->d_ip = *ip_dst;
-
-        cxt->s_port = src_port;
-        cxt->d_port = dst_port;
-        cxt->proto = ip_proto;
-
-        cxt->check = 0x00;
-        cxt->c_asset = NULL;
-        cxt->s_asset = NULL;
-        cxt->reversed = 0;
-
-        //cxt->prev = NULL;
-        /*
-         * New connections are pushed on to the head of bucket[s_hash] 
-         */
-        cxt->next = head;
-        if (head != NULL) {
-            head->prev = cxt;
-        }
-        bucket[hash] = cxt;
-        pi->cxt = cxt;
-
-        /*
-         * Return value should be 1, telling to do client service fingerprinting 
-         */
-        return 1;
+    /* * New connections are pushed on to the head of bucket[s_hash] */
+    cxt->next = head;
+    if (head != NULL) {
+        // are we doubly linked?
+        head->prev = cxt;
     }
-    /*
-     * Should never be here! 
-     */
-   return -1;
+    bucket[hash] = cxt;
+    pi->cxt = cxt;
+
+    /* * Return value should be 1, telling to do client service fingerprinting */
+    return 1;
 }
 
 void reverse_pi_cxt(packetinfo *pi)
@@ -237,8 +235,10 @@ void reverse_pi_cxt(packetinfo *pi)
     cxt->check = 0x00;
 
     /* Then we change pi */
-    if (pi->sc == SC_CLIENT) pi->sc = SC_SERVER;
-        else pi->sc = SC_CLIENT;
+    if (pi->sc == SC_CLIENT)
+       pi->sc = SC_SERVER;
+    else
+       pi->sc = SC_CLIENT;
 }
 
 
@@ -465,7 +465,7 @@ inline void cx_track_simd_ipv4(packetinfo *pi)
         if (head != NULL) {
             head->prev = cxt;
         }
-        cxt_new(cxt,pi);
+        cxt = cxt_new(pi);
         dlog("[*] New connection: %lu\n",cxt->cxid);
         cxt->next = head;
         bucket[hash] = cxt;
