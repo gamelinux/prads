@@ -36,6 +36,9 @@
 
     update_asset_os(pi, de, fp, tstamp?tstamp:0);
 
+  - prepare_tcp()
+  - parse_tcp()
+
 
  */
 
@@ -53,7 +56,7 @@ extern globalconfig config;
 #define SIG_HASHSIZE 1024
 #define MAXDIST 512
 #define PKT_DLEN 16
-#define PKT_MAXPAY 45
+#define PKT_MAXPAY 145
 
 // in open mode, how many options to parse
 #define TCPOPT_LIMIT 3
@@ -959,7 +962,7 @@ static char* lookup_tos(uint8_t t) {
 }
 
 
-static void dump_packet(uint8_t* pkt,uint16_t plen) {
+void dump_packet(uint8_t* pkt,uint16_t plen) {
   uint32_t i;
   uint8_t  tbuf[PKT_DLEN+1];
   uint8_t* t = tbuf;
@@ -984,7 +987,7 @@ static void dump_packet(uint8_t* pkt,uint16_t plen) {
 }
 
 
-static void dump_payload(uint8_t* data,uint16_t dlen) {
+void dump_payload(uint8_t* data,uint16_t dlen) {
   uint8_t  tbuf[PKT_MAXPAY+2];
   uint8_t* t = tbuf;
   uint8_t  i;
@@ -1001,7 +1004,7 @@ static void dump_payload(uint8_t* data,uint16_t dlen) {
 
   *t = 0;
 
-  vlog(2, "  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
+  plog( "  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
 }
 
 
