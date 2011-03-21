@@ -40,6 +40,7 @@
 #include "util-cxt-queue.h"
 #include "sig.h"
 #include "mac.h"
+#include "tcp.h"
 //#include "output-plugins/log_init.h"
 #include "output-plugins/log.h"
 
@@ -623,12 +624,12 @@ void prepare_tcp (packetinfo *pi)
         vlog(0x3, "[*] IPv4 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - (IP_HL(pi->ip4) * 4) - pi->eth_hlen);
-        pi->payload = (char *)(pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4) + (TCP_OFFSET(pi->tcph) * 4));
+        pi->payload = (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4) + (TCP_OFFSET(pi->tcph) * 4));
     } else if (pi->af==AF_INET6) {
         vlog(0x3, "[*] IPv6 PROTOCOL TYPE TCP:\n");
         pi->tcph = (tcp_header *) (pi->packet + pi->eth_hlen + IP6_HEADER_LEN);
         pi->plen = (pi->pheader->caplen - (TCP_OFFSET(pi->tcph)) * 4 - IP6_HEADER_LEN - pi->eth_hlen);
-        pi->payload = (char *)(pi->packet + pi->eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi->tcph)*4));
+        pi->payload = (pi->packet + pi->eth_hlen + IP6_HEADER_LEN + (TCP_OFFSET(pi->tcph)*4));
     }
     pi->proto  = IP_PROTO_TCP;
     pi->s_port = pi->tcph->src_port;
@@ -715,7 +716,7 @@ void prepare_udp (packetinfo *pi)
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + (IP_HL(pi->ip4) * 4));
         pi->plen = pi->pheader->caplen - UDP_HEADER_LEN -
                     (IP_HL(pi->ip4) * 4) - pi->eth_hlen;
-        pi->payload = (char *)(pi->packet + pi->eth_hlen +
+        pi->payload = (pi->packet + pi->eth_hlen +
                         (IP_HL(pi->ip4) * 4) + UDP_HEADER_LEN);
 
     } else if (pi->af==AF_INET6) {
@@ -723,7 +724,7 @@ void prepare_udp (packetinfo *pi)
         pi->udph = (udp_header *) (pi->packet + pi->eth_hlen + + IP6_HEADER_LEN);
         pi->plen = pi->pheader->caplen - UDP_HEADER_LEN -
                     IP6_HEADER_LEN - pi->eth_hlen;
-        pi->payload = (char *)(pi->packet + pi->eth_hlen +
+        pi->payload = (pi->packet + pi->eth_hlen +
                         IP6_HEADER_LEN + UDP_HEADER_LEN);
     }
     pi->proto  = IP_PROTO_UDP;
@@ -1300,41 +1301,24 @@ int main(int argc, char *argv[])
         if(rc) perror("mac loadage failed!");
     }
 
-    if(config.ctf & CO_SYN){
-        olog("   %8s %s\n", "SYN", config.sig_file_syn);
-        rc = load_sigs(config.sig_file_syn, &config.sig_syn, config.sig_hashsize);
-        if(rc) perror("syn loadage failed!");
-        if(config.verbose > 1)
-            dump_sigs(config.sig_syn, config.sig_hashsize);
+/* helper macro to avoid duplicate code */
+#define load_foo(func, conf, flag, file, hash, len) \
+    if(config. conf & flag) { \
+        int _rc; \
+        olog("   %8s %s\n", # flag, (config. file)); \
+        _rc = func (config. file, & config. hash, config. len); \
+        if(_rc) perror( #flag " load failed!"); \
+        if(config.verbose > 1) { \
+            printf("[*] Dumping " #flag " signatures:\n"); \
+            dump_sigs(config.sig_syn, config.sig_hashsize); \
+            printf("[*] " #flag " signature dump ends.\n"); \
+        } \
     }
-    if(config.ctf & CO_SYNACK){
-        olog("   %8s %s\n", "SYNACK", config.sig_file_synack);
-        rc = load_sigs(config.sig_file_synack, &config.sig_synack, config.sig_hashsize);
-        if(rc) perror("synack loadage failed!");
-        if(config.verbose > 1)
-            dump_sigs(config.sig_synack, config.sig_hashsize);
-    }
-    if(config.ctf & CO_ACK){
-        olog("   %8s %s\n", "ACK", config.sig_file_ack);
-        rc = load_sigs(config.sig_file_ack, &config.sig_ack, config.sig_hashsize);
-        if(rc) perror("stray-ack loadage failed!");
-        if(config.verbose > 1)
-            dump_sigs(config.sig_ack, config.sig_hashsize);
-    }
-    if(config.ctf & CO_FIN){
-        olog("   %8s %s\n", "FIN", config.sig_file_fin);
-        rc = load_sigs(config.sig_file_fin, &config.sig_fin, config.sig_hashsize);
-        if(rc) perror("fin loadage failed!");
-        if(config.verbose > 1)
-            dump_sigs(config.sig_fin, config.sig_hashsize);
-    }
-    if(config.ctf & CO_RST){
-        olog("   %8s %s\n", "RST", config.sig_file_rst);
-        rc = load_sigs(config.sig_file_rst, &config.sig_rst, config.sig_hashsize);
-        if(rc) perror("rst loadage failed!");
-        if(config.verbose > 1)
-            dump_sigs(config.sig_rst, config.sig_hashsize);
-    }
+    load_foo(load_sigs, ctf, CO_SYN, sig_file_syn, sig_syn, sig_hashsize);
+    load_foo(load_sigs, ctf, CO_SYNACK, sig_file_synack, sig_synack, sig_hashsize);
+    load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize);
+    load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize);
+    load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize);
 
     if (IS_CSSET(&config,CS_TCP_SERVER)){
         olog("   %8s %s\n", "TCP-service", config.sig_file_serv_tcp);
@@ -1366,9 +1350,7 @@ int main(int argc, char *argv[])
 
     } else {
 
-        /*
-         * look up an available device if non specified
-         */
+        /* * look up an available device if non specified */
         if (config.dev == 0x0)
             config.dev = pcap_lookupdev(config.errbuf);
         olog("[*] Device: %s\n", config.dev);
@@ -1376,15 +1358,8 @@ int main(int argc, char *argv[])
         if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
             olog("[*] Error pcap_open_live: %s \n", config.errbuf);
             exit(1);
-        } //else if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
-          //  olog("[*] Error pcap_compile user_filter: %s\n",
-          //         pcap_geterr(config.handle));
-          //  exit(1);
-        //}
-    
-        /*
-         * B0rk if we see an error...
-         */
+        }
+        /* * B0rk if we see an error... */
         if (strlen(config.errbuf) > 0) {
             elog("[*] Error errbuf: %s \n", config.errbuf);
             exit(1);
@@ -1416,6 +1391,7 @@ int main(int argc, char *argv[])
     bucket_keys_NULL();
     alarm(CHECK_TIMEOUT);
 
+    /** segfaults on empty pcap! */
     if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
             olog("[*] Error pcap_compile user_filter: %s\n", pcap_geterr(config.handle));
             exit(1);

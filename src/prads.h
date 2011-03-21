@@ -681,7 +681,7 @@ typedef struct _packetinfo {
     gre_header      *greh;          /* GRE header struct pointer */
     uint16_t        gre_hlen;       /* Length of dynamic GRE header length */
     const uint8_t   *end_ptr;       /* Paranoid end pointer of packet */
-    const char      *payload;       /* char pointer to transport payload */
+    const uint8_t   *payload;       /* char pointer to transport payload */
     uint32_t        plen;           /* transport payload length */
     uint32_t        our;            /* Is the asset in our defined network */
     uint8_t         up;             /* Set if the asset has been updated */

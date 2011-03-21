@@ -248,10 +248,10 @@ void print_sig(fp_entry * e)
     // meaning that e->zero_stamp is wrong!
     bstring b = gen_fp_tcp(e, e->zero_stamp, 0);
     char *c = bstr2cstr(b, '-');
-    printf("%s", c);
+    printf("[%s", c);
     bcstrfree(c);
 
-    printf("],[%s:%s", e->os, e->desc);
+    printf("],%s:%s\n", e->os, e->desc);
 }
 void print_sigs(fp_entry * e)
 {
@@ -962,7 +962,7 @@ static char* lookup_tos(uint8_t t) {
 }
 
 
-void dump_packet(uint8_t* pkt,uint16_t plen) {
+void dump_packet(const uint8_t* pkt,uint16_t plen) {
   uint32_t i;
   uint8_t  tbuf[PKT_DLEN+1];
   uint8_t* t = tbuf;
@@ -987,7 +987,7 @@ void dump_packet(uint8_t* pkt,uint16_t plen) {
 }
 
 
-void dump_payload(uint8_t* data,uint16_t dlen) {
+void dump_payload(const uint8_t* data,uint16_t dlen) {
   uint8_t  tbuf[PKT_MAXPAY+2];
   uint8_t* t = tbuf;
   uint8_t  i;
@@ -1662,7 +1662,7 @@ void dump_sigs(fp_entry *mysig[], int max)
     for (i = 0; i < max; i++){
         if (!mysig[i] || !mysig[i]->os)
             continue;
-        print_sig(mysig[i]);
+        print_sigs(mysig[i]);
     }
 }
 
