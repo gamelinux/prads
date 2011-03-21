@@ -3,14 +3,15 @@
 #include "prads.h"
 #include "cxt.h"
 #include "sys_func.h"
+#include "config.h"
+
+extern globalconfig config;
 
 uint64_t cxtrackerid;
 connection *bucket[BUCKET_SIZE];
-connection *cxtbuffer = NULL;
 
 void cxt_init()
 {
-    cxtbuffer = NULL;
     cxtrackerid = 0;
 }
 
@@ -74,10 +75,11 @@ int connection_tracking(packetinfo *pi)
       ipa = pi->ip4->ip_dst;
       inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
     }
-    printf("conn[%4llu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
-	ip_addr_s, ntohs(pi->s_port),
-        ip_addr_d, ntohs(pi->d_port),
-	pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
+    if(config.cflags & CONFIG_CONNECT)
+        printf("conn[%4llu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
+               ip_addr_s, ntohs(pi->s_port),
+               ip_addr_d, ntohs(pi->d_port),
+               pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
     return 0;
 }
 
