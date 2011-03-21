@@ -22,6 +22,7 @@ typedef struct _globalconfig {
     uint8_t     daemon_flag;
     uint8_t     ctf;                    /* Flags for TCP checks, SYN,RST,FIN.... */
     uint8_t     cof;                    /* Flags for other; icmp,udp,other,.... */
+    uint32_t    payload;                /* dump how much of the payload ?  */
     char        errbuf[PCAP_ERRBUF_SIZE];   /**/
     char        *bpff;                  /**/
     char        *user_filter;           /**/

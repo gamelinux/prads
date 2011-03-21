@@ -1004,7 +1004,7 @@ void dump_payload(uint8_t* data,uint16_t dlen) {
 
   *t = 0;
 
-  plog( "  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
+  plog( "  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "...\n" : "\n");
 }
 
 

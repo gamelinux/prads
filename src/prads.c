@@ -635,7 +635,8 @@ void prepare_tcp (packetinfo *pi)
     pi->d_port = pi->tcph->dst_port;
     connection_tracking(pi);
     //cx_track_simd_ipv4(pi);
-    //if(config.payload) dump_payload(pi->payload, (config.payload<tmplen)?config.payload:tmplen);
+    if(config.payload)
+       dump_payload(pi->payload, (config.payload < pi->plen)?config.payload:pi->plen);
     return; 
 }
 
@@ -730,6 +731,8 @@ void prepare_udp (packetinfo *pi)
     pi->d_port = pi->udph->dst_port;
     connection_tracking(pi);
     //cx_track_simd_ipv4(pi);
+    if(config.payload)
+       dump_payload(pi->payload, (config.payload < pi->plen)?config.payload:pi->plen);
     return;
 }
 
@@ -1100,11 +1103,12 @@ static void usage()
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
     olog(" -f <FIFO>       Log assets to <FIFO>");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
-    olog(" -h              This help message.\n");
-    olog(" -v              Verbose output - repeat for more verbosity.\n");
-    olog(" -q              Quiet - try harder not to produce output.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
     olog(" -UTIL           Service checks: U:UDP, T:TCP-server, I:ICMP, L:TCP-cLient\n");
+    olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
+    olog(" -v              Verbose output - repeat for more verbosity.\n");
+    olog(" -q              Quiet - try harder not to produce output.\n");
+    olog(" -h              This help message.\n");
 }
 
 
@@ -1134,7 +1138,7 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qXFRMSAKUTIL"
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qs:XFRMSAKUTIL"
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
@@ -1213,6 +1217,9 @@ int main(int argc, char *argv[])
             break;
         case 'f':
             config.fifo = strdup(optarg);
+            break;
+        case 's':
+            config.payload = strtol(optarg, NULL, 0);
             break;
         case 'q':
             config.cflags |= CONFIG_QUIET;
