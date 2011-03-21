@@ -1171,7 +1171,10 @@ int main(int argc, char *argv[])
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'a':
-            config.s_net = strdup(optarg);
+            if(strlen(optarg) == 0)
+                config.s_net = DEFAULT_NETS;
+            else
+                config.s_net = strdup(optarg);
             break;
         case 'c':
             pconfile = bfromcstr(optarg);

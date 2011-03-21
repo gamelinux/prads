@@ -9,6 +9,8 @@
 #define CONFIG_CONNECT 0x10
 #define CONFIG_CXWRITE 0x20
 
+#define DEFAULT_NETS "0.0.0.0/0,::/0"
+
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
     struct pcap_stat    ps;             /* libpcap stats */

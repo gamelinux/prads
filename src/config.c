@@ -86,7 +86,7 @@ void set_default_config_options()
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config.fifo    = NULL;
     // default source net owns everything
-    config.s_net   = "0.0.0.0/0,::/0";
+    config.s_net   = DEFAULT_NETS ;
     config.errbuf[0] = '\0';
     config.configpath = CONFDIR "";
     // files should be relative to configpath somehow
