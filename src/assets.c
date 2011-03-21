@@ -722,19 +722,26 @@ void clear_asset_list()
     olog("asset memory has been cleared\n");
 }
 
+/* update_asset_list()
+ ** iterates over all assets,
+ **** all services
+ **** all OS matches
+ ** and expires old (service, os, asset) since CHECK_TIMEOUT
+ ** optionally printing assets updated since ASSET_TIMEOUT
+ * */
 void update_asset_list()
 {
     extern time_t tstamp;
     asset *rec = NULL;
     int akey;
+    serv_asset *tmp_sa = NULL;
+    os_asset *tmp_oa = NULL;
 
     for (akey = 0; akey < BUCKET_SIZE; akey++) {
         rec = passet[akey];
         while (rec != NULL) {
             /* Checks if something has been updated in the asset since last time */
             if (tstamp - rec->last_seen <= CHECK_TIMEOUT) {
-                serv_asset *tmp_sa = NULL;
-                os_asset *tmp_oa = NULL;
                 tmp_sa = rec->services;
                 tmp_oa = rec->os;
                 if (config.print_updates) log_asset_arp(rec);
