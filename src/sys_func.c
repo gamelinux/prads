@@ -6,7 +6,7 @@
 #include "servicefp/servicefp.h"
 #include "config.h"
 #include "sig.h"
-#include "output-plugins/log_init.h"
+#include "output-plugins/log.h"
 
 void free_queue(); // util-cxt.c
 extern globalconfig config;
@@ -15,7 +15,9 @@ const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
 {
     if (af == AF_INET) {
         if (!inet_ntop
-            (AF_INET, &ip_addr.s6_addr32[0], dest, INET_ADDRSTRLEN + 1)) {
+            (AF_INET, 
+	     &IP4ADDR(&ip_addr),
+		 dest, INET_ADDRSTRLEN + 1)) {
             perror("Something died in inet_ntop");
             return NULL;
         }
@@ -39,8 +41,6 @@ uint8_t normalize_ttl (uint8_t ttl)
 void bucket_keys_NULL()
 {
     int cxkey;
-    extern connection *bucket[BUCKET_SIZE];
-
     for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
         bucket[cxkey] = NULL;
     }
@@ -82,19 +82,19 @@ void set_end_sessions()
 
 void unload_tcp_sigs()
 {
-    if(config.ctf & CO_SYN){
+    if(config.ctf & CO_SYN && config.sig_syn){
         unload_sigs(config.sig_syn, config.sig_hashsize);
     }
-    if(config.ctf & CO_SYNACK){
+    if(config.ctf & CO_SYNACK && config.sig_synack){
         unload_sigs(config.sig_synack, config.sig_hashsize);
     }
-    if(config.ctf & CO_ACK){
+    if(config.ctf & CO_ACK && config.sig_ack){
         unload_sigs(config.sig_ack, config.sig_hashsize);
     }
-    if(config.ctf & CO_RST){
+    if(config.ctf & CO_RST && config.sig_rst){
         unload_sigs(config.sig_rst, config.sig_hashsize);
     }    
-    if(config.ctf & CO_FIN){
+    if(config.ctf & CO_FIN && config.sig_fin){
         unload_sigs(config.sig_fin, config.sig_hashsize);
     }
 }
@@ -242,13 +242,17 @@ int drop_privs(void)
         do_setgid = 1;
         if (isdigit(config.user_name[0]) == 0) {
             pw = getpwnam(config.user_name);
-            userid = pw->pw_uid;
+            if (pw != NULL) {
+                userid = pw->pw_uid;
+            } else {
+                printf("[E] User %s not found!\n", config.user_name);
+            }
         } else {
             userid = strtoul(config.user_name, &endptr, 10);
             pw = getpwuid(userid);
         }
 
-        if (config.group_name == NULL) {
+        if (config.group_name == NULL && pw != NULL) {
             groupid = pw->pw_gid;
         }
     }
@@ -394,4 +398,17 @@ int daemonize()
 
     return SUCCESS;
 }
+
+char *hex2mac(const uint8_t *mac)
+{
+
+    static char buf[32];
+
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+             (mac[0] & 0xFF), (mac[1] & 0xFF), (mac[2] & 0xFF),
+             (mac[3] & 0xFF), (mac[4] & 0xFF), (mac[5] & 0xFF));
+
+    return buf;
+}
+
 

@@ -3,6 +3,7 @@
 **
 ** Copyright (C) 2009, Redpill Linpro
 ** Copyright (C) 2009, Edward Fjellskål <edward.fjellskaal@redpill-linpro.com>
+** Copyright (C) 2011, Kacper Wysocki <kacper.wysocki@redpill-linpro.com>
 **
 ** This program is free software; you can redistribute it and/or modify
 ** it under the terms of the GNU General Public License as published by
@@ -19,28 +20,13 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 **
 */
-
-/*  I N C L U D E S  *********************************************************/
-#include "../prads.h"
-#include "../sys_func.h"
-#include "../sig.h"
-//#include "../ipfp/ipfp.h"
-#include "log_init.h"
-#include <stdio.h>
-
-/*  D A T A  S T R U C T U R E S  *********************************************/
-typedef struct _log_file_conf
-{
-    FILE *file;         /* File Reference */
-    bstring filename;   /* File's OS name */
-}   log_file_conf;
-
 /*  P R O T O T Y P E S  ******************************************************/
-int init_output_log_file (bstring filename);
-void read_report_file (void);
+output_plugin *init_log_file();
+int init_output_log_file (output_plugin *p, const char *c, int flags);
+void read_report_file (output_plugin *p);
 int parse_raw_report (bstring line);
-void file_os(asset *main, os_asset *os);
-void file_service(asset *main, serv_asset *service);
-void file_arp(asset *main);
-int end_output_log_file (void);
+void file_os(output_plugin*,asset *main, os_asset *os);
+void file_service(output_plugin*,asset *main, serv_asset *service);
+void file_arp(output_plugin*, asset *main);
+int end_output_log_file (output_plugin*);
 

@@ -151,6 +151,7 @@
 
 0:64:0:40:.:A:Ascend:TAOS or BayTech (dropped 2)
 
+# too generic, may be win XP
 *:255:0:40:.:QA:Cisco:LocalDirector (dropped 2)
 
 0:64:1:40:.:A:Hasbani:WindWeb (dropped 2)
@@ -199,7 +200,7 @@ S2:64:1:*:.:KA:Linux:2.6 (dropped, lame) (UC)
 0:64:0:40:.:KQ0:BayTech:RPC-3 telnet host (dropped, lame)
 
 #*:128:1:*:E:KPA!:Windows:support.microsoft.com
-0:128:1:40:.:KA:Windows:Win2K (UC)
+0:128:1:40:.:KA:Windows:Win2K (UC)/Win7/2008R2
 
 #############################################
 # Connection dropped / timeout - extra data #
@@ -215,3 +216,5 @@ S2:64:1:*:.:KA:Linux:2.6 (dropped, lame) (UC)
 *:64:1:*:.:KAD:FreeBSD:4.8 + data (dropped, lame)
 0:64:1:40:.:K0A:Solaris:Sun OpenStorage 7310
 
+# xnih13
+92:64:1:52:N,N,T:KAT:Netgear:Netgear WNR3500

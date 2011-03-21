@@ -74,7 +74,7 @@ int load_servicefp_file(int storage, char *sigfile)
     /*
      * Open Signature File 
      */
-    if ((fp = fopen((char *)bdata(filename), "r")) == NULL) {
+    if ((fp = fopen(bdata(filename), "r")) == NULL) {
         printf("Unable to open signature file - %s\n", bdata(filename));
         return 1;
     }
@@ -351,7 +351,7 @@ bstring get_app_name(signature * sig,
      * Create Application string using the values in signature[i].title.  
      */
     if (sig->title.app != NULL) {
-        strncpy(app, (char *)bdata(sig->title.app), MAX_APP);
+        strncpy(app, bdata(sig->title.app), MAX_APP);
     }
     if (sig->title.ver != NULL) {
         if (sig->title.ver->slen > 0) {

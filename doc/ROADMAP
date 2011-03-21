@@ -1,51 +1,78 @@
-### PRADS ROADMAP
+===============
+ PRADS ROADMAP
+===============
 
-Point Release 0.1 - Reached 19 May 2009
- * SYN/ACK
- * Persistant local DB (SQLite)
- * Database (SQL via DBI)
- * Text File Log via tee
- * MAC sig matching
+Features as of version 0.2.1
+ - parse pcaps/realtime with BPF
+ - TCP SYN/SYNACK/StrayACK/RST/FIN
+ - ICMP (rudimentary)
+ - UDP (rudimentary)
+ - connection tracking
+ - tos, mtu
+ - vlan support
+ - logfile output
+ - network filtering
+ - arp discovery
+ - ANSI + libpcap/pcre, runs on
+   * BSD
+   * OSX (with fink)
+   * Linux ia32 and amd64, mipsel
+   * any platform where dependencies compile!
+ - installable via .debs
 
-Point Release 0.2
- * UDP asset detection
- * UDP os fingerprinting
- * ICMP os fingerprinting
- * Text File Log (default, not stdout)
- * prads.deb and prads.rpm package 
+Features in prads.pl missing as yet in C:
+ - database injector (SQLite,ODBC,..)
+ - mac sig matching
+ - UDP fingerprinting
+ - ICMP fingerprinting
+ - ??? 
 
-Point Release 0.3
- * udp-service fingerprinting and detection
- * tcp-service detection
- * Client application Fingerprinting 
+Features wanted in 2011 the year of the Rabbit.
+ - cxtracker output.
+ - sguil output fifo
+ - scripting with lua
+ - shared memory log
+ - plugin API
+ - MAC,ARP,DNS,mDNS,passiveDNS,DHCP
+ - RPM packages
+ - push into Debian archive
+ - switch and router discovery (OSPF, RIP, STP etc)
+ - useragent/etc OS matching
+ - asset datastructure that can track changes..
+ - graphical mapping output (a la squert/snoGE)
+ - realtime dynamic mapping...
+ - ARP timing (conntrack + timing fingerprints)
+ - SIMD, OpenCL and CUDA optimizations
+ - use PF_RING or other capture library
+ - filter generic signatures
+ - fuzzy matches
 
-Point Release 0.4
- * Switch discover?
- * Router discover?
- * hops
- * NAT
- (* prads2sguil.pl script)
+What follows is a rudimentary release plan. Releases are made "when it's ready"
+and may include other features, fixes,
+furthermore, features may come in a different order, but these are our priorities:
 
-Point Release 0.4
- * Graphic display of network topology
+Point release 0.3.0
+ - MAC lookup
+ - cxtracker output
+ - sguil output
 
+Point release 0.3.5
+ - merge in file tracker
+ - feature complete compared to prads.pl
 
-Passive DNS : Only on the answer from the DNS SERVER
-TIMESTAMP,DNS-SERVER-IP,QUERY-TYPE,QUERY-CLASS,QUERY-DATA,RESURSE-TYPE,RESURSE-CLASS,RESURSE-DATA,MISC
- TIMESTAMP: unixtimestamp
- DNS-SERVER-IP: The ip of the dns server responding
- MISC: Other data in the answer
- foreach additional record $UDP-DNS-PAYLOAD {
-  TIMESTAMP,DNS-SERVER-IP,QUERY-TYPE,QUERY-CLASS,QUERY-DATA,RESURSE-TYPE,RESURSE-CLASS,RESURSE-DATA,MISC
- }
+Point release 0.4.0
+ - DNS, mDNS, passiveDNS
+ - DHCP
 
+Point release 0.5.0
+ - versioned shared memory {asset,cxtracker}
 
+Point release 0.6.0
+ - graphical mapping
+ - ARP timings
 
-.
-.
-.
-.
-
+Point release BBQ
+ - OMFG!#@!!!11
 
 Point Release 1.0
  * When we are satisfied with:
@@ -53,8 +80,6 @@ Point Release 1.0
    - output
    - functionality
 
-
 Point Release 2.0
- * If performance is an issue ? C/C++ ?
- * CVE coorolation on services, not in prads, but prads GUI ?
+ * CVE correlation on services, not in prads, but prads GUI ?
 

@@ -768,6 +768,11 @@ S4:64:1:60:W0,N,S,T,M1460:.:FortiNet:FortiGate 50
 
 #S4:64:1:72:M1460,S,T,N,W6,?76:.:Riverbed:RiOS 5.x
 
+# ----------- Iron Port (Cisco) -------------
+
+16384:64:1:48:M1380,S,E,E:P:Cisco:AsyncOS phoebe 7.1.2 (Iron Port)
+16384:254:1:44:M536:.:Cisco:IOS 15.0 (loopback) UC
+
 # ------- Switches and other stuff ----------
 
 4128:255:0:44:M*:Z:Cisco:7200, Catalyst 3500, etc

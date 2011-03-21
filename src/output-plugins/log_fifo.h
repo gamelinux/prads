@@ -20,11 +20,12 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 **
 */
-/*  P R O T O T Y P E S  ******************************************************/
 
-output_plugin *init_log_stdout();
-void stdout_init (output_plugin*, const char*, int);
-void stdout_arp (output_plugin*, asset *main);
-void stdout_os (output_plugin*, asset *main, os_asset *os);
-void stdout_service (output_plugin*, asset *main, serv_asset *service);
-int end_log_stdout(output_plugin *p);
+/*  P R O T O T Y P E S  ******************************************************/
+output_plugin *init_log_fifo(void);
+int init_output_fifo (output_plugin *p, const char *path, int flags);
+/* void fifo_asset (output_plugin *, asset *main); */
+void fifo_arp (output_plugin *, asset *main);
+void fifo_service (output_plugin *, asset *main, serv_asset *service);
+void fifo_stat (output_plugin *,asset *main, os_asset *os);
+int fifo_end (output_plugin *);

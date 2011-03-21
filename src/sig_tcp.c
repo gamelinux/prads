@@ -68,8 +68,6 @@ extern globalconfig config;
 #define SIGHASH(tsize,optcnt,q,df) \
 	( ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) )
 	//( ((wsize) << 3) ^ ((tsize) << 2) ^ ((optcnt) << 1) ^ (df) ^ (q) )
-#define debug(x...)	fprintf(stderr,x)
-#define fatal(x...)	do { debug("[-] ERROR: " x); exit(1); } while (0)
 
 uint32_t packet_count;
 uint8_t operating_mode;
@@ -745,8 +743,8 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
     while ((p = fgets(buf, sizeof(buf), f))) {
         uint32_t l;
 
-        char obuf[MAXLINE], genre[MAXLINE], desc[MAXLINE],
-            quirks[MAXLINE];
+        char obuf[MAXLINE], genre[MAXLINE], desc[MAXLINE];
+        uint8_t quirks[MAXLINE];
         char w[MAXLINE], sb[MAXLINE];
         char *gptr = genre;
         uint32_t t, d, s;
@@ -842,7 +840,7 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
     }
 
     fclose(f);
-#ifdef DUMP_HASH
+#ifdef DUMP_SIG_HASH
     {
         int i;
         for (i = 0; i < sigcnt; i++) {
@@ -896,10 +894,11 @@ void unload_sigs(fp_entry **sigp, int size)
 
 
 
+/* a dns cache of one? */
 #define MY_MAXDNS 32
 
 #include <netdb.h>
-static inline char* grab_name(char* a) {
+static inline char* grab_name(uint8_t* a) {
   struct hostent* r;
   static char rbuf[MY_MAXDNS+6] = "/";
   uint32_t j;
@@ -924,7 +923,7 @@ static inline char* grab_name(char* a) {
 
 
 
-uint8_t* lookup_link(uint16_t mss,uint8_t txt) {
+char* lookup_link(uint16_t mss, char txt) {
   uint32_t i;
   static char tmp[32];
 
@@ -945,7 +944,7 @@ unknown:
 }
 
 
-static uint8_t* lookup_tos(uint8_t t) {
+static char* lookup_tos(uint8_t t) {
   uint32_t i;
 
   if (!t) return 0;
@@ -1184,7 +1183,7 @@ fp_entry *find_match(
   uint8_t  nat=0;
   fp_entry* p;
   uint8_t  orig_df  = e->df;
-  uint8_t* tos_desc = 0;
+  char* tos_desc = 0;
 
   fp_entry* fuzzy = 0;
   uint8_t fuzzy_now = 0;
@@ -1249,8 +1248,9 @@ re_lookup:
 
     /* Numbers agree. Let's check options */
 
-    for (j=0;j<e->optcnt;j++)
+    for (j=0;j<e->optcnt;j++){
       if (p->opt[j] ^ e->opt[j]) goto continue_search;
+    }
 
     /* Check TTLs last because we might want to go fuzzy. */
     if (p->ttl < e->ttl) {
@@ -1260,12 +1260,13 @@ re_lookup:
     }
 
     /* Naah... can't happen ;-) */
-    if (!p->no_detail)
+    if (!p->no_detail){
       if (p->ttl - e->ttl > MAXDIST) { 
         if (use_fuzzy) fuzzy = p;
         p = p->next; 
         continue; 
       }
+    }
 
 continue_fuzzy:    
     
@@ -1282,69 +1283,70 @@ continue_fuzzy:
     if (!no_known) {
 
       // What about IPv6?
-      a=(uint8_t*)& PI_IP4SRC(pi);
-
-      if(*a){
-          dlog("\n"); //edward
-          dlog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
-                 PI_TCP_SP(pi),p->os);
-      }else{
-          dlog("ipv6 packet __FIXME__");
-      }
-
-      if (!no_osdesc) dlog("%s ",p->desc);
 
       // copy in the os/desc pointers. These are not to be free()d!
       e->os = p->os;
       e->desc = p->desc;
 
-      if (nat == 1){
-          dlog("(NAT!) ");
-       } else {
-        if (nat == 2) dlog("(NAT2!) ");
-       }
 
-      if (PI_ECN(pi)) dlog("(ECN) ");
-      if (orig_df ^ e->df) dlog("(firewall!) ");
+      if( ISSET_CONFIG_VERBOSE(&config) ){
+         a=(uint8_t*)& PI_IP4SRC(pi);
 
-      if (PI_TOS(pi)) {
-        if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",PI_TOS(pi));
+         if(*a){
+            olog("\n"); //edward
+            olog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
+                 PI_TCP_SP(pi),p->os);
+         }else{
+            olog("ipv6 packet __FIXME__");
+         }
+
+         if (!no_osdesc) olog("%s ",p->desc);
+         if (nat == 1){
+            olog("(NAT!) ");
+         } else {
+            if (nat == 2) olog("(NAT2!) ");
+         }
+
+         if (PI_ECN(pi)) olog("(ECN) ");
+         if (orig_df ^ e->df) olog("(firewall!) ");
+
+         if (PI_TOS(pi)) {
+            if (tos_desc) olog("[%s] ",tos_desc); else olog("[tos %d] ",PI_TOS(pi));
+         }
+         if (p->no_detail) olog("* "); else
+            if (tstamp) olog("(up: %d hrs) ",tstamp/360000);
+
+         if (always_sig || (p->generic && !no_unknown)) {
+
+            if (!mode_oneline) olog("\n  ");
+            olog("Signature: [");
+
+            //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
+
+            if (p->generic)
+               olog(":%s:?] ",p->os);
+            else
+               olog("] ");
+
+         }
+         if (!no_extra && !p->no_detail) {
+            a=(uint8_t*)& PI_IP4DST(pi);
+            if (!mode_oneline) olog("\n  ");
+
+
+            if (fuzzy_now) 
+               olog("-> %d.%d.%d.%d%s:%d (link: %s)",
+                    a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),
+                    lookup_link(e->mss,1));
+            else
+               olog("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
+                    a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),p->ttl - e->ttl,
+                    lookup_link(e->mss,1));
+         }
+         if (p->generic) olog("[GENERIC] ");
+         if (fuzzy_now) olog("[FUZZY] ");
+
       }
-
-      if (p->generic) dlog("[GENERIC] ");
-      if (fuzzy_now) dlog("[FUZZY] ");
-
-      if (p->no_detail) dlog("* "); else
-        if (tstamp) dlog("(up: %d hrs) ",tstamp/360000);
-
-      if (always_sig || (p->generic && !no_unknown)) {
-
-        if (!mode_oneline) dlog("\n  ");
-        dlog("Signature: [");
-
-        //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
-
-        if (p->generic)
-          dlog(":%s:?] ",p->os);
-        else
-          dlog("] ");
-
-      }
-
-      if (!no_extra && !p->no_detail) {
-          a=(uint8_t*)& PI_IP4DST(pi);
-        if (!mode_oneline) dlog("\n  ");
-
-        if (fuzzy_now) 
-          dlog("-> %d.%d.%d.%d%s:%d (link: %s)",
-               a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),
-               lookup_link(e->mss,1));
-        else
-          dlog("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
-                 a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),p->ttl - e->ttl,
-                 lookup_link(e->mss,1));
-      }
-
       if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
 
       //putchar('\n'); //edward
@@ -1352,7 +1354,7 @@ continue_fuzzy:
 
     }
 
-/*
+/* find masquerade code... where is the sauce?
    if (find_masq && !p->userland) {
      int16_t sc = p0f_findmasq(src,p->os,(p->no_detail || fuzzy_now) ? -1 : 
                             (p->ttl - e->ttl), e->mss, nat, orig_df ^ e->df,p-sig,
@@ -1617,37 +1619,11 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
         match = find_match(sig,
                            config.sig_hashsize,
                            &e,
-                           pi,
+                           pi, // pass all packet characteristics
                            tstamp,
                            end_ptr - (uint8_t *) pi->ip4,
                            payload
                           );
-        /*
-        match = find_match(
-                sig,
-               config.sig_hashsize,
-               e.size,
-               e.df,
-               e.ttl,
-               e.wsize,
-               pi->ip_src.s6_addr32[0],
-               pi->ip_dst.s6_addr32[0], //ip_dst,
-               ntohs(pi->tcph->src_port),
-               ntohs(pi->tcph->dst_port),
-               e.optcnt,
-               e.opt,
-               e.mss,
-               e.wsc,
-               tstamp,
-               pi->ip4->ip_tos,
-               e.quirks,
-               pi->tcph->t_flags & (TF_ECE|TF_CWR), //ECN
-               (uint8_t*) pi->ip4,
-               end_ptr - (uint8_t *) pi->ip4,
-               payload
-               // pts, // *not used
-               );
-        */
     }
 
     //if (match->os != NULL) memcpy(&e.next->os, match->os, MAXLINE);
