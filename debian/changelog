@@ -1,3 +1,9 @@
+prads (0.2.3-1) UNRELEASED; urgency=low
+
+  * New upstream release
+
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Mon, 21 Mar 2011 15:53:17 +0100
+
 prads (0.2.1-1) UNRELEASED; urgency=low
 
   [ Kacper Wysocki ]
