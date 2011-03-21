@@ -56,9 +56,7 @@ typedef struct _globalconfig {
     char        *chroot_dir;            /* Directory to chroot to */
     char        *group_name;            /* Groupe to drop privileges too */
     char        *user_name;             /* User to drop privileges too */
-    char        *true_pid_name;         /* Pid name */
     char        *pidfile;               /* pidfile */
-    char        *pidpath;               /* Path to pidfile */
     char        *configpath;            /* Path to config dir */
     char        *s_net;                 /* Nets to collect assets for */
     uint32_t     sig_hashsize;          /* size of signature hash */

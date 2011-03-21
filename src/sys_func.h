@@ -25,7 +25,7 @@ void bucket_keys_NULL();
 int set_chroot(void);
 int drop_privs(void);
 int is_valid_path(const char *path);
-int create_pid_file(const char *path, const char *filename);
+int create_pid_file(const char *path);
 void game_over();
 void end_all_sessions();
 void del_assets(int ctime);

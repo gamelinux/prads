@@ -82,8 +82,7 @@ void set_default_config_options()
     config.dev     = strdup("eth0");
     config.bpff    = strdup("");
     config.dpath   = "/tmp";
-    config.pidfile = strdup("prads.pid");
-    config.pidpath = strdup("/var/run");
+    config.pidfile = strdup("/var/run/prads.pid");
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config.fifo    = NULL;
     // default source net owns everything

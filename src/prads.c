@@ -1100,8 +1100,7 @@ static void usage()
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     olog(" -D              Enables daemon mode.\n");
     //olog(" -d            to logdir\n");
-    olog(" -p <pidfile>    Name of pidfile\n");
-    olog(" -P <path>       Pid lives in <path>\n");
+    olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
     olog(" -f <FIFO>       Log assets to <FIFO>");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
@@ -1212,9 +1211,6 @@ int main(int argc, char *argv[])
             break;
         case 'p':
             config.pidfile = strdup(optarg);
-            break;
-        case 'P':
-            config.pidpath = strdup(optarg);
             break;
         case 'l':
             config.assetlog = strdup(optarg);
@@ -1408,9 +1404,8 @@ int main(int argc, char *argv[])
         }
 
         if (config.daemon_flag) {
-            if (!is_valid_path(config.pidpath))
-                elog
-                    ("[*] PID path \"%s\" is bad, check privilege.", config.pidpath);
+            if (!is_valid_path(config.pidfile))
+                elog("[*] Unable to create pidfile '%s'\n", config.pidfile);
             openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
             olog("[*] Daemonizing...\n\n");
             daemonize(NULL);

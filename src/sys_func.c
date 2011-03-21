@@ -8,6 +8,8 @@
 #include "sig.h"
 #include "output-plugins/log.h"
 
+#include <libgen.h> // dirname()
+
 void free_queue(); // util-cxt.c
 extern globalconfig config;
 
@@ -70,6 +72,7 @@ void print_pcap_stats()
     if (config.handle == NULL) return;
     if (pcap_stats(config.handle, &config.ps) == -1) {
         pcap_perror(config.handle, "pcap_stats");
+        return;
     }
     olog("-- libpcap:\n");
     olog("-- Total packets received                 :%12u\n",config.ps.ps_recv);
@@ -192,53 +195,40 @@ int drop_privs(void)
 
 int is_valid_path(const char *path)
 {
+    char dir[STDBUF];
     struct stat st;
 
     if (path == NULL) {
         return 0;
     }
-    if (stat(path, &st) != 0) {
+
+    memcpy(dir, path, strnlen(path, STDBUF));
+    dirname(dir);
+
+    if (stat(dir, &st) != 0) {
         return 0;
     }
-    if (!S_ISDIR(st.st_mode) || access(path, W_OK) == -1) {
+    if (!S_ISDIR(st.st_mode) || access(dir, W_OK) == -1) {
         return 0;
     }
     return 1;
 }
 
-int create_pid_file(const char *path, const char *filename)
+int create_pid_file(const char *path)
 {
-    char filepath[STDBUF];
-    const char *fp = NULL;
-    const char *fn = NULL;
     char pid_buffer[12];
     struct flock lock;
     int rval;
     int fd;
 
-    memset(filepath, 0, STDBUF);
-
-    if (!filename) {
-        fn = config.pidfile;
-    } else {
-        fn = filename;
-    }
-
     if (!path) {
-        fp = config.pidpath;
-    } else {
-        fp = path;
+        path = config.pidfile;
+    }
+    if (!is_valid_path(path)) {
+        printf("PID path \"%s\" aint writable", path);
     }
 
-    if (is_valid_path(fp)) {
-        snprintf(filepath, STDBUF - 1, "%s/%s", fp, fn);
-    } else {
-        printf("PID path \"%s\" isn't a writeable directory!", fp);
-    }
-
-    config.true_pid_name = strdup(filename);
-
-    if ((fd = open(filepath, O_CREAT | O_WRONLY,
+    if ((fd = open(path, O_CREAT | O_WRONLY,
                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
         return ERROR;
     }
@@ -304,7 +294,7 @@ int daemonize()
     }
 
     if (config.pidfile) {
-        return create_pid_file(config.pidpath, config.pidfile);
+        return create_pid_file(config.pidfile);
     }
 
     return SUCCESS;
