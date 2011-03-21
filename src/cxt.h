@@ -22,6 +22,7 @@
  ) % BUCKET_SIZE)
 #endif
 
+enum { CX_NONE, CX_HUMAN, CX_NEW, CX_ENDED, CX_EXPIRE };
 void end_sessions();
 void cxt_init();
 int cx_track(packetinfo *pi);
@@ -30,6 +31,8 @@ int cx_track(packetinfo *pi);
              uint16_t p_bytes, uint8_t tcpflags, time_t tstamp, int af);
 */
 void del_connection(connection *, connection **);
+void cxt_write(connection *, FILE *fd, int human);
+void cxt_write_all();
 
 int connection_tracking(packetinfo *pi);
 #endif // CXT_H

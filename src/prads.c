@@ -1001,6 +1001,7 @@ void game_over()
 {
 
     if (inpacket == 0) {
+        cxt_write_all();
         clear_asset_list();
         end_all_sessions();
         del_known_services();
@@ -1108,6 +1109,8 @@ static void usage()
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
+    olog(" -t              Connection [T]racking output - per-packet!\n");
+    olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
     olog(" -h              This help message.\n");
 }
 
@@ -1138,7 +1141,7 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qs:XFRMSAKUTIL"
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:XFRMSAKUTIL"
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
@@ -1223,6 +1226,12 @@ int main(int argc, char *argv[])
             break;
         case 'q':
             config.cflags |= CONFIG_QUIET;
+            break;
+        case 't':
+            config.cflags |= CONFIG_CONNECT;
+            break;
+        case 'x':
+            config.cflags |= CONFIG_CXWRITE;
             break;
         case 'X':
             config.ctf = 0;

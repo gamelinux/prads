@@ -6,6 +6,8 @@
 #define CONFIG_UPDATES 0x02
 #define CONFIG_SYSLOG  0x04
 #define CONFIG_QUIET   0x08
+#define CONFIG_CONNECT 0x10
+#define CONFIG_CXWRITE 0x20
 
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
