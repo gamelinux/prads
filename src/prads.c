@@ -1298,43 +1298,30 @@ int main(int argc, char *argv[])
        parse_nets(config.s_net, network);
     }
     olog("[*] Loading fingerprints:\n");
-    if (IS_CSSET(&config,CS_MAC)) {
-        olog("   %8s %s\n", "MAC", config.sig_file_mac);
-        rc = load_mac(config.sig_file_mac, &config.sig_mac, 0);
-        if(rc) perror("mac loadage failed!");
-    }
-
 /* helper macro to avoid duplicate code */
-#define load_foo(func, conf, flag, file, hash, len) \
+#define load_foo(func, conf, flag, file, hash, len, dump) \
     if(config. conf & flag) { \
         int _rc; \
-        olog("   %8s %s\n", # flag, (config. file)); \
+        olog("  %-11s %s\n", # flag, (config. file)); \
         _rc = func (config. file, & config. hash, config. len); \
         if(_rc) perror( #flag " load failed!"); \
-        if(config.verbose > 1) { \
+        else if(config.verbose > 1) { \
             printf("[*] Dumping " #flag " signatures:\n"); \
-            dump_sigs(config.sig_syn, config.sig_hashsize); \
+            dump (config. hash, config. len); \
             printf("[*] " #flag " signature dump ends.\n"); \
         } \
     }
-    load_foo(load_sigs, ctf, CO_SYN, sig_file_syn, sig_syn, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_SYNACK, sig_file_synack, sig_synack, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize);
 
-    if (IS_CSSET(&config,CS_TCP_SERVER)){
-        olog("   %8s %s\n", "TCP-service", config.sig_file_serv_tcp);
-        load_servicefp_file(config.sig_file_serv_tcp, &config.sig_serv_tcp);
-    }
-    if (IS_CSSET(&config,CS_UDP_SERVICES)){
-        olog("   %8s %s\n", "TCP-service", config.sig_file_serv_udp);
-        load_servicefp_file(config.sig_file_serv_udp, &config.sig_serv_udp);
-    }
-    if (IS_CSSET(&config,CS_TCP_CLIENT)){
-        olog("   %8s %s\n", "TCP-service", config.sig_file_cli_tcp);
-        load_servicefp_file(config.sig_file_cli_tcp, &config.sig_client_tcp);
-    }
+    load_foo(load_mac , cof, CS_MAC, sig_file_mac, sig_mac, mac_hashsize, dump_macs);
+    load_foo(load_sigs, ctf, CO_SYN, sig_file_syn, sig_syn, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_SYNACK, sig_file_synack, sig_synack, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize, dump_sigs);
+
+    load_foo(load_servicefp_file, cof, CS_TCP_SERVER, sig_file_serv_tcp, sig_serv_tcp, sig_hashsize, dump_sig_service);
+    load_foo(load_servicefp_file, cof, CS_UDP_SERVICES, sig_file_serv_udp, sig_serv_udp, sig_hashsize, dump_sig_service);
+    load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);
     init_services();
 
     olog("\n[*] Running prads %s\n", VERSION);

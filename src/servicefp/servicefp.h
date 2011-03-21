@@ -2,7 +2,7 @@
 #define SERVIDEFP_H
 
 void arp_check(char *eth_hdr, time_t tstamp);
-int load_servicefp_file(char *sigfile, signature **db);
+int load_servicefp_file(char *sigfile, signature **db, int);
 int parse_raw_signature(bstring line, int lineno, signature **dbp);
 bstring get_app_name(signature * sig, const uint8_t *payload, int *ovector,
                      int rc);

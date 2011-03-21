@@ -22,6 +22,7 @@
 */
 
 /* signature interface */
+#define SIG_HASHSIZE 241
 
 // the print_ and display_ functions need to be refactored
 // and folded into gen_fp - to return a string for printing / storing

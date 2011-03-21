@@ -82,6 +82,17 @@ void print_mac_entries(mac_entry *e) {
       print_mac_entries(e->next);
 }
 
+void dump_macs(mac_entry **sig, int len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        if(sig[i]){
+            printf("%d: ", i);
+            print_mac_entries(sig[i]);
+        }
+    }
+}
+
 /* match mac with vendor list
  * most specific match first.
  * 
@@ -289,17 +300,6 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
     }
 
     fclose(f);
-#ifdef DUMP_HASH
-    {
-        int i;
-        for (i = 0; i < MAC_HASHSIZE; i++) {
-            if(sig[i]){
-               printf("%d: ", i);
-               print_mac_entries(sig[i]);
-            }
-        }
-    }
-#endif
 #ifdef DEBUG_HASH
     {
         int i,max;

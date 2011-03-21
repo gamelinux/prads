@@ -30,4 +30,5 @@ static inline uint32_t hash_mac(const uint8_t mac[], const uint8_t octets)
 int load_mac(const char *file, mac_entry **sigp[], int hashsize);
 mac_entry *match_mac(mac_entry **db, const uint8_t mac[], uint8_t mask);
 void print_mac(const uint8_t *mac);
+void dump_macs(mac_entry **db, int len);
 #endif /* ! _HAVE_MAC_H */
