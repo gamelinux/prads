@@ -12,6 +12,9 @@ endif
 ifneq (${EXTRADEBUG},)
 CFLAGS+= -DDUMP_HASH -DDEBUG_HASH -DDEBUG=2 -DDEBUG=2
 endif
+ifneq (${DEBUG_PACKET},)
+CFLAGS+= -DDEBUG_PACKET
+endif
 
 BUILD=gnu
 ifeq (${BUILD},osx)
