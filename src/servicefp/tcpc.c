@@ -83,7 +83,7 @@ void client_tcp6(packetinfo *pi, signature* sig_client_tcp)
                        ovector, 15);
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
-            printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
+            //printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
             update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_CLIENT_DONT_CHECK;
             bdestroy(app);

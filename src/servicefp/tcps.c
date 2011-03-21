@@ -46,7 +46,7 @@ void service_tcp4(packetinfo *pi, signature* sig_serv_tcp)
                        ovector, 15);
         if (rc >= 0) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
-            printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
+            //printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
             update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
