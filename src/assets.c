@@ -752,7 +752,7 @@ void update_asset_list()
                         log_asset_service(rec,tmp_sa);
                     }
                     /* If the asset is getting too old - delete it */
-                    if (config.print_updates && tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
+                    if (tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
                         serv_asset *stmp = tmp_sa;
                         tmp_sa = tmp_sa->next;
                         del_serv_asset(&rec->services, stmp);
