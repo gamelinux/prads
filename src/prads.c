@@ -1106,11 +1106,11 @@ static void usage()
     olog(" -f <FIFO>       Log assets to <FIFO>");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
-    olog(" -UTIL           Service checks: U:UDP, T:TCP-server, I:ICMP, L:TCP-cLient\n");
+    olog(" -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient\n");
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
-    olog(" -t              Connection [T]racking output - per-packet!\n");
+    olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
     olog(" -h              This help message.\n");
 }
@@ -1142,7 +1142,7 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:XFRMSAKUTIL"
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIt"
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
@@ -1228,7 +1228,7 @@ int main(int argc, char *argv[])
         case 'q':
             config.cflags |= CONFIG_QUIET;
             break;
-        case 't':
+        case 'O':
             config.cflags |= CONFIG_CONNECT;
             break;
         case 'x':
@@ -1266,7 +1266,7 @@ int main(int argc, char *argv[])
         case 'I':
             config.cof |= CS_ICMP;
             break;
-        case 'L':
+        case 't':
             config.cof |= CS_TCP_CLIENT;
             break;
         case '?':
