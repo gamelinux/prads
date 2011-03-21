@@ -21,6 +21,7 @@ typedef struct _cxtbucket {
 extern connection *bucket[];
 
 /* prototypes */
+void cxt_queue_init();
 inline void cxt_update (packetinfo *);
 connection *connection_alloc(void);
 void cxt_update_dst (connection *cxt, packetinfo *pi);

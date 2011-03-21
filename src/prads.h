@@ -31,7 +31,7 @@
 
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.2.2"
+#define VERSION                       "0.2.3"
 #define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
@@ -519,8 +519,6 @@ typedef struct _mac_entry {
 typedef struct _connection {
     struct   _connection *prev;
     struct   _connection *next;
-    struct   _connection *hprev;  /* Hash bucket list */
-    struct   _connection *hnext;
     time_t   start_time;          /* connection start time */
     time_t   last_pkt_time;       /* last seen packet time */
     uint64_t cxid;                /* connection id */
@@ -540,7 +538,6 @@ typedef struct _connection {
     uint8_t  check;               /* Flags spesifying checking */
     struct   _asset *c_asset;     /* pointer to src asset */
     struct   _asset *s_asset;     /* pointer to server asset */
-    struct   _cxtbucket *cb;      /* pointer to resource in connection track bucket */
 } connection;
 #define CXT_DONT_CHECK_SERVER     0x01  /* Dont check server packets */
 #define CXT_DONT_CHECK_CLIENT     0x02  /* Dont check client packets */
@@ -651,9 +648,6 @@ typedef struct _connection {
     (cxt)->af = 0; \
     (cxt)->proto = 0; \
     (cxt)->cxid = 0; \
-    (cxt)->hnext = NULL; \
-    (cxt)->hprev = NULL; \
-    (cxt)->cb = NULL; \
 }
 
 
@@ -687,7 +681,7 @@ typedef struct _packetinfo {
     gre_header      *greh;          /* GRE header struct pointer */
     uint16_t        gre_hlen;       /* Length of dynamic GRE header length */
     const uint8_t   *end_ptr;       /* Paranoid end pointer of packet */
-    const char      *payload;       /* char pointer to transport payload */
+    const uint8_t   *payload;       /* char pointer to transport payload */
     uint32_t        plen;           /* transport payload length */
     uint32_t        our;            /* Is the asset in our defined network */
     uint8_t         up;             /* Set if the asset has been updated */
@@ -713,8 +707,8 @@ typedef struct _packetinfo {
 #define PI_TCP_DP(pi) ( ntohs((pi)->tcph->dst_port))
 // and more to come
 
-#define SC_SERVER                 0x01  /* pi for this session is client */
-#define SC_CLIENT                 0x02  /* pi for this session is server */
+#define SC_CLIENT                 0x01  /* pi for this session is client */
+#define SC_SERVER                 0x02  /* pi for this session is server */
 
 typedef struct _serv_asset {
     struct _serv_asset *prev;   /* Prev serv_asset structure */

@@ -34,22 +34,22 @@ extern globalconfig config;
 /* F U N C T I O N S  ********************************************************/
 void display_config()
 {
-    printf("[*] OS checks enabled:");
-    if (IS_COSET(&config,CO_SYN))    printf (" SYN");
-    if (IS_COSET(&config,CO_SYNACK)) printf (" SYNACK");
-    if (IS_COSET(&config,CO_RST))    printf (" RST");
-    if (IS_COSET(&config,CO_FIN))    printf (" FIN");
-    if (IS_COSET(&config,CO_ACK))    printf (" ACK");
-    printf("\n");
+    olog("[*] OS checks enabled:");
+    if (IS_COSET(&config,CO_SYN))    olog (" SYN");
+    if (IS_COSET(&config,CO_SYNACK)) olog (" SYNACK");
+    if (IS_COSET(&config,CO_RST))    olog (" RST");
+    if (IS_COSET(&config,CO_FIN))    olog (" FIN");
+    if (IS_COSET(&config,CO_ACK))    olog (" ACK");
+    olog("\n");
     
-    printf("[*] Service checks enabled:");
-    if (IS_CSSET(&config,CS_TCP_SERVER))    printf (" TCP-SERVER");
-    if (IS_CSSET(&config,CS_TCP_CLIENT))    printf (" TCP-CLIENT");
-    if (IS_CSSET(&config,CS_UDP_SERVICES))  printf (" UDP-SERVICES");
-    if (IS_CSSET(&config,CS_ICMP))          printf (" ICMP");
-    if (IS_CSSET(&config,CS_ARP))           printf (" ARP");
-    if (IS_CSSET(&config,CS_MAC))           printf (" MAC");
-    printf("\n");
+    olog("[*] Service checks enabled:");
+    if (IS_CSSET(&config,CS_TCP_SERVER))    olog (" TCP-SERVER");
+    if (IS_CSSET(&config,CS_TCP_CLIENT))    olog (" TCP-CLIENT");
+    if (IS_CSSET(&config,CS_UDP_SERVICES))  olog (" UDP-SERVICES");
+    if (IS_CSSET(&config,CS_ICMP))          olog (" ICMP");
+    if (IS_CSSET(&config,CS_ARP))           olog (" ARP");
+    if (IS_CSSET(&config,CS_MAC))           olog (" MAC");
+    olog("\n");
 
     return;
 }
@@ -82,8 +82,7 @@ void set_default_config_options()
     config.dev     = strdup("eth0");
     config.bpff    = strdup("");
     config.dpath   = "/tmp";
-    config.pidfile = strdup("prads.pid");
-    config.pidpath = strdup("/var/run");
+    config.pidfile = strdup("/var/run/prads.pid");
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config.fifo    = NULL;
     // default source net owns everything
@@ -97,6 +96,9 @@ void set_default_config_options()
     config.sig_file_fin = CONFDIR "tcp-fin.fp";
     config.sig_file_rst = CONFDIR "tcp-rst.fp";
     config.sig_file_mac = CONFDIR "mac.sig";
+    config.sig_file_serv_tcp = CONFDIR "tcp-service.sig";
+    config.sig_file_serv_udp = CONFDIR "udp-service.sig";
+    config.sig_file_cli_tcp = CONFDIR "tcp-clients.sig";
     config.sig_syn = NULL;
     config.sig_synack = NULL;
     config.sig_ack = NULL;
@@ -268,16 +270,16 @@ void parse_line (bstring line)
         config.fifo = bstr2cstr (value, '-');
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
-        config.sig_file_serv_tcp = bstrcpy(value);
+        config.sig_file_serv_tcp = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "sig_file_cli_tcp")) == 1) {
         /* SIGNATURE FILE */
-        config.sig_file_cli_tcp = bstrcpy(value);
+        config.sig_file_cli_tcp =  bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "sig_file_serv_udp")) == 1) {
         /* SIGNATURE FILE */
-        config.sig_file_serv_udp = bstrcpy(value);
+        config.sig_file_serv_udp = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "sig_file_cli_udp")) == 1) {
         /* SIGNATURE FILE */
-        config.sig_file_cli_udp = bstrcpy(value);
+        config.sig_file_cli_udp =  bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "mac_file")) == 1) {
         /* MAC / VENDOR RESOLUTION FILE */
         config.sig_file_mac = bstr2cstr(value, '-');

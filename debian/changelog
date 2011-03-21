@@ -1,10 +1,21 @@
-prads (0.2.1-1) unstable; urgency=low
+prads (0.2.3-1) UNRELEASED; urgency=low
 
+  * New upstream release
+
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Mon, 21 Mar 2011 15:53:17 +0100
+
+prads (0.2.1-1) UNRELEASED; urgency=low
+
+  [ Kacper Wysocki ]
   * unhide new cool options (-l file, -p pid, -P path, -C chroot)
   * prads2snort --skip
   * file output plugin
 
- -- Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>  Wed, 24 Nov 2010 19:31:53 +0000
+  [ Stig Sandbeck Mathisen ]
+  * Bump standards version
+  * Build depend on newer debhelper
+
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Thu, 17 Mar 2011 10:49:20 +0100
 
 prads (0.2.0-3) UNRELEASED; urgency=low
 

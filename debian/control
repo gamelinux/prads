@@ -3,8 +3,8 @@ Section: utils
 Priority: extra
 Maintainer: Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>
 Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>
-Build-Depends: debhelper (>= 7), libpcap-dev, libpcre3-dev, python-docutils (>= 0.6)
-Standards-Version: 3.8.4
+Build-Depends: debhelper (>= 7.0.50~), libpcap-dev, libpcre3-dev, python-docutils (>= 0.6)
+Standards-Version: 3.9.1
 Homepage: http://gamelinux.github.com/prads/
 Vcs-Git: git://github.com/gamelinux/prads.git
 Vcs-Browser: http://github.com/gamelinux/prads/tree/master
@@ -13,13 +13,21 @@ Package: prads
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libpcap0.8, libpcre3
 Description: Passive Real-time Asset Detection System
- prads is a "Passive Real-time Asset Detection System".  It passively
- listen to network traffic and gathers information on hosts and
- services it sees on the network.
+ PRADS is a Passive Real-time Asset Detection System.
  .
- This information can be used to map your network, letting you know
- what services and hosts are alive/used, or can be used together with
- your favorite IDS/IPS setup for "event to host/service" correlation.
+ PRADS employs digital fingerprints to recognize services on the wire,
+ and can be used to map your network and monitor for changes in real
+ time.
  .
- Prads is inspired by passive.sourceforge.net,
- lcamtuf.coredump.cx/p0f and others.
+ Real-time passive traffic analysis will also let you detect assets
+ that are just connected to the network for a short period of time,
+ since PRADS can glean useful information from every packet.
+ .
+ PRADS aims to be the one-stop-shop for passive asset detection, and
+ currently does MAC lookups, TCP and UDP OS fingerprinting as well as
+ client and service application matching and a connection state table.
+ Various output plugins include logfile and FIFO and make PRADS a
+ useful replacement for p0f, pads and sancp.
+ .
+ PRADS was built from the ground up for a small footprint and modern
+ networks with IPv6 and gigabits of throughput.

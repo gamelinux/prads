@@ -22,19 +22,17 @@
 #include "../sys_func.h"
 #include "../assets.h"
 #include "servicefp.h"
-
 extern bstring UNKNOWN;
 
-void client_tcp4(packetinfo *pi)
+void client_tcp4(packetinfo *pi, signature* sig_client_tcp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
     int tmplen;
-    extern signature *sig_client_tcp;
     signature *tmpsig;
     bstring app, service_name;
 
-    if (pi->plen < 10) return; // if almost no payload - skip
+    if (pi->plen < PAYLOAD_MIN) return; // if almost no payload - skip
     /* should make a config.tcp_client_flowdept etc
      * a range between 500-1000 should be good!
      */
@@ -64,12 +62,11 @@ void client_tcp4(packetinfo *pi)
     }
 }
 
-void client_tcp6(packetinfo *pi)
+void client_tcp6(packetinfo *pi, signature* sig_client_tcp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
     int tmplen;
-    extern signature *sig_client_tcp;
     signature *tmpsig;
     bstring app, service_name;
 
@@ -86,7 +83,7 @@ void client_tcp6(packetinfo *pi)
                        ovector, 15);
         if (rc != -1) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
-            //printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
+            printf("[*] - MATCH CLIENT IPv6/TCP: %s\n",(char *)bdata(app));
             update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_CLIENT_DONT_CHECK;
             bdestroy(app);

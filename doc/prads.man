@@ -6,14 +6,13 @@
 Passive Real-time Asset Detection System
 ---------------------------------------------
 
-:Author: edwardfjellskaal@gmail.com
+:Author: Edward Bjarte Fjellskål <edwardfjellskaal@gmail.com>
+:Author: Kacper Wysocki <comotion@users.sf.net>
 :Date:   2010-06-17
 :Copyright: GPL
 :Version: 0.2
 :Manual section: 1
 :Manual group: networking
-
-.. TODO: authors and author with name <email>
 
 SYNOPSIS
 ========
@@ -25,37 +24,43 @@ DESCRIPTION
 
 PRADS is a Passive Real-time Asset Detection System.
 
-It passively listen to network traffic and gathers information
-on hosts and services it sees on the network. This information
-can be used to map your network, letting you know what services
-and hosts are alive/used, or can be used together with your
-favorite IDS/IPS setup for "event to host/service" correlation.
+PRADS employs digital fingerprints to recognize services on the wire, 
+and can be used to map your network and monitor for changes in real time.
 
-Gathering info about your hosts in real-time, will also let you
-detect assets that are just connected to the network for a short
-period of time, where a active network scan (nmap etc.) would take
-long time, and not common to run continually, hence missing the asset. 
+Real-time passive traffic analysis will also let you detect assets that 
+are just connected to the network for a short period of time, since PRADS
+can glean useful information from every packet.
 
-The initial goal of implementing PRADS, was to make the
-host_attribute_table.xml for Snort (automatically) and to add more
-info into the Sguil application. The list of useful stuff that
-PRADS can be used for is growing all the time. PRADS aims to be the
-one-stop-shop for passive asset detection. If you can detect it
-passively, PRADS should have it implemented! 
+PRADS aims to be the one-stop-shop for passive asset detection, and currently
+does MAC lookups, TCP and UDP OS fingerprinting as well as client and service
+application matching and a connection state table. Various output plugins
+include logfile and FIFO and make PRADS a useful replacement for p0f, pads and sancp.
+
+PRADS was built from the ground up for a small footprint and modern networks with IPv6 and gigabits of throughput.
 
 OPTIONS
 =======
 
--i <iface>              Network device <iface> (default: eth0).
--r <file>               Read pcap <file>.
--c <file>               Read config from <file>.
--b <filter>             Apply Berkeley packet filter <filter>.
--u <user>               Run as user <user>.
--g <group>              Run as group <group>.
--a <nets>               Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').
--D                      Enables daemon mode.
--h                      This help message.
--v                      Verbose.
+ -i <iface>      Network device <iface> (default: eth0).
+ -r <file>       Read pcap <file>.
+ -c <file>       Read config from <file>
+ -b <filter>     Apply Berkeley packet filter <filter>.
+ -u <user>       Run as user <user>.
+ -g <group>      Run as group <group>.
+ -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').
+ -D              Enables daemon mode.
+ -p <pidfile>    Name of pidfile - inside chroot
+ -l <file>       Log assets to <file> (default: '/var/log/prads-asset.log')
+ -f <FIFO>       Log assets to <FIFO> -C <dir>        Chroot into <dir> before dropping privs.
+ -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK
+ -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient
+ -s <snaplen>    Dump <snaplen> bytes of each payload.
+ -v              Verbose output - repeat for more verbosity.
+ -q              Quiet - try harder not to produce output.
+ -O              Connection tracking [O]utput - per-packet!
+ -x              Conne[x]ion tracking output  - New, expired and ended.
+ -h              This help message.
+
 
 PROBLEMS
 ========

@@ -100,6 +100,7 @@ mac_entry *match_mac(mac_entry **db, const uint8_t mac[], uint8_t mask)
       print_mac(mac);
       printf("/%d match\n", mask);
    } */
+   if(db == NULL) return NULL; // database not loaded!
 
 
    if(mask == 0)
@@ -172,7 +173,7 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
     mac_entry **sig; // output
     uint32_t ln = 0;
     uint32_t sigcnt = 0; 
-    debug("opening %s\n", file);
+    //debug("opening %s\n", file);
     FILE *f = fopen(file, "r");
     char buf[MAXLINE];
     char *p;

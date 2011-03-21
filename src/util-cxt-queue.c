@@ -38,8 +38,8 @@ connection *cxt_dequeue (cxtqueue *q) {
         return NULL;
 
     /* more connection trackers in queue */
-    if (q->bot->prev != NULL) {
-        q->bot = q->bot->prev;
+    if (cxt->prev != NULL) {
+        q->bot = cxt->prev;
         q->bot->next = NULL;
     /* just the one we remove, so now empty */
     } else {

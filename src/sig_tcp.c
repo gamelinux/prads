@@ -36,6 +36,9 @@
 
     update_asset_os(pi, de, fp, tstamp?tstamp:0);
 
+  - prepare_tcp()
+  - parse_tcp()
+
 
  */
 
@@ -53,7 +56,7 @@ extern globalconfig config;
 #define SIG_HASHSIZE 1024
 #define MAXDIST 512
 #define PKT_DLEN 16
-#define PKT_MAXPAY 45
+#define PKT_MAXPAY 145
 
 // in open mode, how many options to parse
 #define TCPOPT_LIMIT 3
@@ -245,10 +248,10 @@ void print_sig(fp_entry * e)
     // meaning that e->zero_stamp is wrong!
     bstring b = gen_fp_tcp(e, e->zero_stamp, 0);
     char *c = bstr2cstr(b, '-');
-    printf("%s", c);
+    printf("[%s", c);
     bcstrfree(c);
 
-    printf("],[%s:%s", e->os, e->desc);
+    printf("],%s:%s\n", e->os, e->desc);
 }
 void print_sigs(fp_entry * e)
 {
@@ -721,7 +724,7 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
 {
     fp_entry **sig; // output
     uint32_t ln = 0;
-    debug("opening %s\n", file);
+    //debug("opening %s\n", file);
     FILE *f = fopen(file, "r");
     char buf[MAXLINE];
     char *p;
@@ -959,7 +962,7 @@ static char* lookup_tos(uint8_t t) {
 }
 
 
-static void dump_packet(uint8_t* pkt,uint16_t plen) {
+void dump_packet(const uint8_t* pkt,uint16_t plen) {
   uint32_t i;
   uint8_t  tbuf[PKT_DLEN+1];
   uint8_t* t = tbuf;
@@ -984,7 +987,7 @@ static void dump_packet(uint8_t* pkt,uint16_t plen) {
 }
 
 
-static void dump_payload(uint8_t* data,uint16_t dlen) {
+void dump_payload(const uint8_t* data,uint16_t dlen) {
   uint8_t  tbuf[PKT_MAXPAY+2];
   uint8_t* t = tbuf;
   uint8_t  i;
@@ -1001,8 +1004,7 @@ static void dump_payload(uint8_t* data,uint16_t dlen) {
 
   *t = 0;
 
-  if (!mode_oneline) putchar('\n');
-  dlog("  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "..." : "");
+  plog( "  # Payload: \"%s\"%s",tbuf,dlen > PKT_MAXPAY ? "...\n" : "\n");
 }
 
 
@@ -1289,13 +1291,11 @@ continue_fuzzy:
       e->desc = p->desc;
 
 
-      if( ISSET_CONFIG_VERBOSE(&config) ){
+      if( config.verbose > 1 ){
          a=(uint8_t*)& PI_IP4SRC(pi);
 
          if(*a){
-            olog("\n"); //edward
-            olog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a),
-                 PI_TCP_SP(pi),p->os);
+            olog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a), PI_TCP_SP(pi),p->os);
          }else{
             olog("ipv6 packet __FIXME__");
          }
@@ -1349,7 +1349,6 @@ continue_fuzzy:
       }
       if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
 
-      //putchar('\n'); //edward
       if (full_dump) dump_packet((uint8_t*)PI_IP4(pi),plen);
 
     }
@@ -1406,11 +1405,9 @@ continue_search:
 
   if (!no_unknown) { 
     a=(uint8_t*)& PI_IP4SRC(pi);
-    dlog("\n%d.%d.%d.%d%s:%d - UNKNOWN [",a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_SP(pi));
+    vlog(2,"%d.%d.%d.%d%s:%d - UNKNOWN [:?:?]",a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_SP(pi));
 
     //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
-
-    dlog(":?:?] ");
 
     if (rst_mode) {
 
@@ -1420,55 +1417,55 @@ continue_search:
 
         /* RST+ACK, SEQ=0, ACK=0 */
         case QUIRK_RSTACK | QUIRK_SEQ0:
-          dlog("(invalid-K0) "); break;
+          vlog(2, "(invalid-K0) "); break;
 
         /* RST+ACK, SEQ=0, ACK=n */
         case QUIRK_RSTACK | QUIRK_ACK | QUIRK_SEQ0: 
-          dlog("(refused) "); break;
+          vlog(2, "(refused) "); break;
  
         /* RST+ACK, SEQ=n, ACK=0 */
         case QUIRK_RSTACK: 
-          dlog("(invalid-K) "); break;
+          vlog(2, "(invalid-K) "); break;
 
         /* RST+ACK, SEQ=n, ACK=n */
         case QUIRK_RSTACK | QUIRK_ACK: 
-          dlog("(invalid-KA) "); break; 
+          vlog(2, "(invalid-KA) "); break; 
 
         /* RST, SEQ=n, ACK=0 */
         case 0:
-          dlog("(dropped) "); break;
+          vlog(2, "(dropped) "); break;
 
         /* RST, SEQ=m, ACK=n */
         case QUIRK_ACK: 
-          dlog("(dropped 2) "); break;
+          vlog(2, "(dropped 2) "); break;
  
         /* RST, SEQ=0, ACK=0 */
         case QUIRK_SEQ0: 
-          dlog("(invalid-0) "); break;
+          vlog(2, "(invalid-0) "); break;
 
         /* RST, SEQ=0, ACK=n */
         case QUIRK_ACK | QUIRK_SEQ0: 
-          dlog("(invalid-0A) "); break; 
+          vlog(2, "(invalid-0A) "); break; 
 
       }
 
     }
 
-    if (nat == 1) dlog("(NAT!) ");
-      else if (nat == 2) dlog("(NAT2!) ");
+    if (nat == 1) vlog(2, "(NAT!) ");
+      else if (nat == 2) vlog(2, "(NAT2!) ");
 
-    if (PI_ECN(pi)) dlog("(ECN) ");
+    if (PI_ECN(pi)) vlog(2, "(ECN) ");
 
     if (PI_TOS(pi)) {
-      if (tos_desc) dlog("[%s] ",tos_desc); else dlog("[tos %d] ",PI_TOS(pi));
+      if (tos_desc) vlog(2, "[%s] ",tos_desc); else vlog(2, "[tos %d] ",PI_TOS(pi));
     }
 
-    if (tstamp) dlog("(up: %d hrs) ",tstamp/360000);
+    if (tstamp) vlog(2, "(up: %d hrs) ",tstamp/360000);
 
     if (!no_extra) {
       a=(uint8_t*)& PI_IP4DST(pi);
-      if (!mode_oneline) dlog("\n  ");
-      dlog("-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
+      //if (!mode_oneline) dlog("\n  ");
+      vlog(2, "-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
 	       grab_name(a),PI_TCP_DP(pi),lookup_link(e->mss,1));
     }
 
@@ -1479,6 +1476,7 @@ continue_search:
                    ,e->mss,(uint32_t)-1,
                    tstamp ? tstamp / 360000 : -1);
       */
+    vlog(2, "\n");
 
     if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
     //putchar('\n'); //edward
@@ -1664,7 +1662,7 @@ void dump_sigs(fp_entry *mysig[], int max)
     for (i = 0; i < max; i++){
         if (!mysig[i] || !mysig[i]->os)
             continue;
-        print_sig(mysig[i]);
+        print_sigs(mysig[i]);
     }
 }
 
