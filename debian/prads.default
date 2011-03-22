@@ -20,17 +20,15 @@
 # PIDFILE: Path to pidfile - must be under $RUNDIR to work under chroot
 # PIDFILE=$RUNDIR/$NAME.pid
 
-# UID: UID to drop privileges.
-# - NOTE: UID and GID must be numeric if chrooting.
-# - Fun fact: the uid does not have to exist on this system.
-# UID=6005
-#
-# GID: GID to drop privileges.
-# GID=6005 
+# USER: username for dropping privileges
+# USER=prads
+
+# GROUP: group for dropping privileges
+# GROUP=prads
 
 # INTERFACE: Interface to listen on.  Default is to autodetect a capture source.
 # INTERFACE="eth0"
 #
 # DAEMON_OPTS: The options that our daemon runs with. NOTE: PIDNAME is relative to rundir.
-# DAEMON_OPTS="-D -u $UID -g $GID -C $RUNDIR -l $LOGFILE -a $HOME_NETS -p PIDNAME"
+# DAEMON_OPTS="-D -u $(id -u $USER) -g $(id -g $GROUP) -C $RUNDIR -l $LOGFILE -a $HOME_NETS -p PIDNAME"
 
