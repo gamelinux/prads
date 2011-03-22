@@ -26,8 +26,6 @@ LOGFILE=/var/log/prads.log
 RUNDIR=/var/run/prads
 PIDFILE=$RUNDIR/$NAME.pid
 HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
-UID=$(id -n $USER)
-GID=$(id -n $GROUP)
 PIDNAME=$(echo $PIDFILE|sed "s@^$RUNDIR@@")
 
 test -x $DAEMON || exit 0
@@ -40,7 +38,8 @@ chmod g+w $RUNDIR
 if [ -f /etc/default/prads ] ; then
 	. /etc/default/prads
 fi
-DAEMON_OPTS=${DAEMON_OPTS:--D -u $UID -g $GID -C $RUNDIR -l $LOGFILE -a $HOME_NETS -p $PIDNAME}
+DAEMON_OPTS=${DAEMON_OPTS:--D -u $(id -u $USER) -g $(id -g $GROUP) -C $RUNDIR -l $LOGFILE -a $HOME_NETS -p $PIDNAME}
+
 if [ -n "$INTERFACE" ]
     then
     DAEMON_OPTS="$DAEMON_OPTS -i $INTERFACE"
