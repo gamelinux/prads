@@ -19,19 +19,21 @@ NAME=prads
 DESC="Passive Realtime Asset Detection System"
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
+USER=prads
+GROUP=prads
 DAEMON=/usr/bin/prads
 LOGFILE=/var/log/prads.log
 RUNDIR=/var/run/prads
 PIDFILE=$RUNDIR/$NAME.pid
 HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
-UID=6005
-GID=6005
+UID=$(id -n $USER)
+GID=$(id -n $GROUP)
 PIDNAME=$(echo $PIDFILE|sed "s@^$RUNDIR@@")
 
 test -x $DAEMON || exit 0
 
 mkdir -p $RUNDIR
-chgrp 6005 $RUNDIR
+chgrp $GROUP $RUNDIR
 chmod g+w $RUNDIR
 
 # Include prads defaults if available
