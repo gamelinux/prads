@@ -322,78 +322,64 @@ void end_sessions()
     uint32_t curcxt = 0;
     uint32_t expired = 0;
     
-    int iter = 0;
-    for(cxt = bucket[iter++]; iter < BUCKET_SIZE; iter++) while (cxt) {
-        ended = 0;
-        curcxt++;
-        /** TCP */
-        if (cxt->proto == IP_PROTO_TCP) {
-            /* * FIN from both sides */
-            if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
+    int iter;
+    for (iter = 0; iter < BUCKET_SIZE; iter++) {
+        cxt = bucket[iter];
+        while (cxt != NULL) {
+            ended = 0;
+            curcxt++;
+            /* TCP */
+            if (cxt->proto == IP_PROTO_TCP) {
+                /* * FIN from both sides */
+                if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
                     && (check_time - cxt->last_pkt_time) > 5) {
-                ended = 1;
-            } /* * RST from either side */
-            else if ((cxt->s_tcpFlags & TF_RST
-                    || cxt->d_tcpFlags & TF_RST)
-                    && (check_time - cxt->last_pkt_time) > 5) {
+                    ended = 1;
+                } /* * RST from either side */
+                else if ((cxt->s_tcpFlags & TF_RST
+                          || cxt->d_tcpFlags & TF_RST)
+                          && (check_time - cxt->last_pkt_time) > 5) {
+                    ended = 1;
+                }
+                else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
+                    ended = 1;
+                }
+            }
+            /* UDP */
+            else if (cxt->proto == IP_PROTO_UDP
+                     && (check_time - cxt->last_pkt_time) > 60) {
                 ended = 1;
             }
-            // Commented out, since &TF_SYNACK is wrong!
-                /*
-                 * if not a complete TCP 3-way handshake 
-                 */
-                //else if ( !cxt->s_tcpFlags&TF_SYNACK || !cxt->d_tcpFlags&TF_SYNACK && (check_time - cxt->last_pkt_time) > 10) {
-                //   ended = 1;
-                //}
-                /*
-                 * Ongoing timout 
-                 */
-                //else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
-                //   ended = 1;
-                //}
+            /* ICMP */
+            else if (cxt->proto == IP_PROTO_ICMP
+                     || cxt->proto == IP6_PROTO_ICMP) {
+                if ((check_time - cxt->last_pkt_time) > 60) {
+                     ended = 1;
+                }
+            }
+            /* All Other protocols */
             else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
                 ended = 1;
             }
-        }            /*
-             * UDP 
-             */
-        else if (cxt->proto == IP_PROTO_UDP
-                && (check_time - cxt->last_pkt_time) > 60) {
-            ended = 1;
-        }            /*
-             * ICMP 
-             */
-        else if (cxt->proto == IP_PROTO_ICMP
-                || cxt->proto == IP6_PROTO_ICMP) {
-            if ((check_time - cxt->last_pkt_time) > 60) {
-                ended = 1;
+
+            if (ended == 1) {
+                expired++;
+                ended = 0;
+                /* remove from the hash */
+                if (cxt->prev)
+                    cxt->prev->next = cxt->next;
+                if (cxt->next)
+                    cxt->next->prev = cxt->prev;
+                connection *tmp = cxt;
+
+                if(config.cflags & CONFIG_CXWRITE)
+                    cxt_write(cxt, stdout, CX_EXPIRE);
+
+                cxt = cxt->prev;
+
+                CLEAR_CXT(tmp);
+            } else {
+                cxt = cxt->prev;
             }
-        }            /*
-             * All Other protocols 
-             */
-        else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-            ended = 1;
-        }
-
-        if (ended == 1) {
-            expired++;
-            ended = 0;
-            /* remove from the hash */
-            if (cxt->prev)
-                cxt->prev->next = cxt->next;
-            if (cxt->next)
-                cxt->next->prev = cxt->prev;
-            connection *tmp = cxt;
-
-            if(config.cflags & CONFIG_CXWRITE)
-                cxt_write(cxt, stdout, CX_EXPIRE);
-
-            cxt = cxt->prev;
-
-            CLEAR_CXT(tmp);
-            //printf("[*] connection deleted!!!\n");
-        } else {
-            cxt = cxt->prev;
         }
     }
 }
