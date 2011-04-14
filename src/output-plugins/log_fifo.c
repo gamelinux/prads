@@ -143,12 +143,12 @@ void fifo_arp (output_plugin *p, asset *main)
     if (main->macentry != NULL) {
         /* prads_agent.tcl process each line until it receivs a dot by itself */
         fprintf(fd, "02\n%s\n%u\n%s\n%s\n%lu\n.\n", ip_addr_s,
-                IP4ADDR(&main->ip_addr), main->macentry->vendor,
+                htonl(IP4ADDR(&main->ip_addr)), main->macentry->vendor,
                 hex2mac(main->mac_addr), main->last_seen);
     } else {
         /* prads_agent.tcl process each line until it receivs a dot by itself */
         fprintf(fd, "02\n%s\n%u\nunknown\n%s\n%lu\n.\n", ip_addr_s,
-                IP4ADDR(&main->ip_addr), hex2mac(main->mac_addr), main->last_seen);
+                htonl(IP4ADDR(&main->ip_addr)), hex2mac(main->mac_addr), main->last_seen);
     }
     fflush(fd);
 }
@@ -178,16 +178,18 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service)
     
     if ( service->role == SC_SERVER ) { /* SERVER ASSET */
     fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
-            "0.0.0.0", 0,
-            sip, IP4ADDR(&main->ip_addr), 
-            0, ntohs(service->port), service->proto, 
+            /* srcip == dstip - dirty trick for sguil :( */
+            sip, htonl(IP4ADDR(&main->ip_addr)),
+            sip, htonl(IP4ADDR(&main->ip_addr)), 
+            ntohs(service->port), ntohs(service->port), service->proto, 
             bdata(service->service), bdata(service->application), 
             main->first_seen, "505241445320534552564552" ); /* PRADS SERVER */
     } else { /* CLIENT ASSET */
     fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
-            sip, IP4ADDR(&main->ip_addr),        
-            "0.0.0.0", 0,
-            0, ntohs(service->port), service->proto, 
+            /* srcip == dstip - dirty trick for sguil :( */
+            sip, htonl(IP4ADDR(&main->ip_addr)),
+            sip, htonl(IP4ADDR(&main->ip_addr)),        
+            ntohs(service->port), ntohs(service->port), service->proto, 
             bdata(service->service), bdata(service->application), 
             main->first_seen, "505241445320434C49454E54" ); /* PRADS CLIENT */
     }
@@ -200,6 +202,8 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service)
  * INPUT    : 0 - IP Address
  *          : 1 - Port
  *          : 2 - Protocol
+ * Example  : ID \n IP \n NumIP \n PORT \n PROTO \n timestamp \n . \n
+ *            03\n10.10.10.83\n168430163\n22\n6\n1100847309\n.\n
  * ---------------------------------------------------------- */
 void fifo_stat (output_plugin *p, asset *rec, os_asset *os)
 {
@@ -210,8 +214,8 @@ void fifo_stat (output_plugin *p, asset *rec, os_asset *os)
     }
     /* pads_agent.tcl process each line until it receivs a dot by itself */
     u_ntop(rec->ip_addr, rec->af, ip_addr_s);
-    fprintf((FILE*)p->data, "03\n%s\n%d\n%d\n%ld\n.\n",
-              ip_addr_s, ntohs(os->port), 0 /*proto*/, rec->last_seen);
+    fprintf((FILE*)p->data, "03\n%s\n%u\n%d\n%d\n%ld\n.\n",
+              ip_addr_s, htonl(IP4ADDR(&rec->ip_addr)), ntohs(os->port), 6 /*just for now*/, rec->last_seen);
     fflush((FILE*) p->data);
 }
 
