@@ -41,6 +41,7 @@
 #include "sig.h"
 #include "mac.h"
 #include "tcp.h"
+#include "dump_dns.h"
 //#include "output-plugins/log_init.h"
 #include "output-plugins/log.h"
 
@@ -510,6 +511,7 @@ void prepare_greip (packetinfo *pi)
         return;
     }
 }
+
 void prepare_ip4ip (packetinfo *pi)
 {
     packetinfo pipi;
@@ -743,6 +745,13 @@ void parse_udp (packetinfo *pi)
     //if (is_set_guess_upd_direction(config)) {
     udp_guess_direction(pi); // fix DNS server transfers?
     // Check for Passive DNS
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    u_ntop_src(pi, ip_addr_s);
+    if ( ntohs(pi->s_port) == 53 ) {
+        // For now - Proof of Concept! - Fix output way
+        if(config.cflags & CONFIG_PDNS)
+            dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
+    }
     // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
     if (IS_CSSET(&config,CS_UDP_SERVICES)) {
@@ -1112,6 +1121,7 @@ static void usage()
     olog(" -q              Quiet - try harder not to produce output.\n");
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
+    olog(" -Z              Passive DNS (Experimental).\n");
     olog(" -h              This help message.\n");
 }
 
@@ -1142,7 +1152,7 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIt"
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIZt"
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
@@ -1230,6 +1240,9 @@ int main(int argc, char *argv[])
             break;
         case 'O':
             config.cflags |= CONFIG_CONNECT;
+            break;
+        case 'Z':
+            config.cflags |= CONFIG_PDNS;
             break;
         case 'x':
             config.cflags |= CONFIG_CXWRITE;

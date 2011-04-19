@@ -471,6 +471,7 @@ void add_asset(packetinfo *pi)
 #ifdef DEBUGG
     /* verbose info for sanity checking */
     static char ip_addr_s[INET6_ADDRSTRLEN];
+    // pi->ip_src does not exist!
     u_ntop(pi->ip_src, pi->af, ip_addr_s);
     dlog("[*] asset added: %s\n",ip_addr_s);
 #endif
