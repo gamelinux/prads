@@ -30,7 +30,7 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.2.3"
+#define VERSION                       "0.2.4"
 #define SIG_ALRM                      60        /* Time between sig alrm i called */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
