@@ -29,7 +29,6 @@
 #include <netinet/in.h>
 #include <pcre.h>
 
-
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.2.3"
 #define SIG_ALRM                      60        /* Time between sig alrm i called */

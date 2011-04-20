@@ -127,7 +127,6 @@ int cxt_update_server(connection *cxt, packetinfo *pi)
  * now returns 0, SC_CLIENT(=1), SC_SERVER(=2)
  */
 
-
 int cx_track(packetinfo *pi) {
     struct in6_addr *ip_src;
     struct in6_addr *ip_dst;
