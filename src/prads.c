@@ -1011,7 +1011,8 @@ void game_over()
 {
 
     if (inpacket == 0) {
-        cxt_write_all();
+        end_sessions(); /* Need to have correct human output when reading -r pcap */
+        //cxt_write_all(); /* redundant ? see end_all_sessions(); */
         clear_asset_list();
         end_all_sessions();
         del_known_services();
@@ -1058,7 +1059,7 @@ void set_end_sessions()
         /* if (log_assets == 1) update_asset_list(); */
         update_asset_list();
         intr_flag = 0;
-        alarm(CHECK_TIMEOUT);
+        alarm(SIG_ALRM);
     }
 }
 
@@ -1392,7 +1393,7 @@ int main(int argc, char *argv[])
     }
  
     bucket_keys_NULL();
-    alarm(CHECK_TIMEOUT);
+    alarm(SIG_ALRM);
 
     /** segfaults on empty pcap! */
     if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {

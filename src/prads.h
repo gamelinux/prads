@@ -32,7 +32,7 @@
 
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.2.3"
-#define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */
+#define SIG_ALRM                      60        /* Time between sig alrm i called */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
 #define BUCKET_SIZE                   1669

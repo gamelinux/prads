@@ -721,8 +721,8 @@ void clear_asset_list()
  ** iterates over all assets,
  **** all services
  **** all OS matches
- ** and expires old (service, os, asset) since CHECK_TIMEOUT
- ** optionally printing assets updated since ASSET_TIMEOUT
+ ** and expires old (service, os, asset) since ASSET_TIMEOUT
+ ** optionally printing assets updated since last SIG_ALRM check
  * */
 void update_asset_list()
 {
@@ -736,14 +736,14 @@ void update_asset_list()
         rec = passet[akey];
         while (rec != NULL) {
             /* Checks if something has been updated in the asset since last time */
-            if (tstamp - rec->last_seen <= CHECK_TIMEOUT) {
+            if (tstamp - rec->last_seen <= SIG_ALRM) {
                 tmp_sa = rec->services;
                 tmp_oa = rec->os;
                 if (config.print_updates) log_asset_arp(rec);
 
                 while (tmp_sa != NULL) {
                     /* Just print out the asset if it is updated since lasttime */
-                    if (config.print_updates && tstamp - tmp_sa->last_seen <= CHECK_TIMEOUT) {
+                    if (config.print_updates && tstamp - tmp_sa->last_seen <= SIG_ALRM) {
                         log_asset_service(rec,tmp_sa);
                     }
                     /* If the asset is getting too old - delete it */
@@ -758,7 +758,7 @@ void update_asset_list()
 
                 while (tmp_oa != NULL) {
                     /* Just print out the asset if it is updated since lasttime */
-                    if (config.print_updates && tstamp - tmp_oa->last_seen <= CHECK_TIMEOUT) {
+                    if (config.print_updates && tstamp - tmp_oa->last_seen <= SIG_ALRM) {
                         log_asset_os(rec, tmp_oa);
                     }
                     /* If the asset is getting too old - delete it */
