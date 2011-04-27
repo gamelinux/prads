@@ -127,7 +127,6 @@ int cxt_update_server(connection *cxt, packetinfo *pi)
  * now returns 0, SC_CLIENT(=1), SC_SERVER(=2)
  */
 
-
 int cx_track(packetinfo *pi) {
     struct in6_addr *ip_src;
     struct in6_addr *ip_dst;
@@ -318,9 +317,8 @@ void end_sessions()
     connection *cxt;
     time_t check_time;
     check_time = time(NULL);
-    int ended;
+    int ended, expired = 0;
     uint32_t curcxt = 0;
-    uint32_t expired = 0;
     
     int iter;
     for (iter = 0; iter < BUCKET_SIZE; iter++) {
@@ -341,29 +339,27 @@ void end_sessions()
                     ended = 1;
                 }
                 else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-                    ended = 1;
+                    expired = 1;
                 }
             }
             /* UDP */
             else if (cxt->proto == IP_PROTO_UDP
                      && (check_time - cxt->last_pkt_time) > 60) {
-                ended = 1;
+                expired = 1;
             }
             /* ICMP */
             else if (cxt->proto == IP_PROTO_ICMP
                      || cxt->proto == IP6_PROTO_ICMP) {
                 if ((check_time - cxt->last_pkt_time) > 60) {
-                     ended = 1;
+                     expired = 1;
                 }
             }
             /* All Other protocols */
             else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-                ended = 1;
+                expired = 1;
             }
 
-            if (ended == 1) {
-                expired++;
-                ended = 0;
+            if (ended == 1 || expired == 1) {
                 /* remove from the hash */
                 if (cxt->prev)
                     cxt->prev->next = cxt->next;
@@ -371,12 +367,21 @@ void end_sessions()
                     cxt->next->prev = cxt->prev;
                 connection *tmp = cxt;
 
-                if(config.cflags & CONFIG_CXWRITE)
-                    cxt_write(cxt, stdout, CX_EXPIRE);
+                if (config.cflags & CONFIG_CXWRITE) {
+                    if (expired == 1)
+                        cxt_write(cxt, stdout, CX_EXPIRE);
+                    else if (ended == 1)
+                        cxt_write(cxt, stdout, CX_ENDED);
+                }
+                ended = expired = 0;
 
                 cxt = cxt->prev;
 
-                CLEAR_CXT(tmp);
+                //CLEAR_CXT(tmp);
+                del_connection(tmp, &bucket[iter]);
+                if (cxt == NULL) {
+                    bucket[iter] = NULL;
+                }
             } else {
                 cxt = cxt->prev;
             }
@@ -430,12 +435,10 @@ void end_all_sessions()
 {
     connection *cxt;
     int cxkey;
-    int expired = 0;
 
     for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
         cxt = bucket[cxkey];
         while (cxt != NULL) {
-            expired++;
             connection *tmp = cxt;
 
             if(config.cflags & CONFIG_CXWRITE)

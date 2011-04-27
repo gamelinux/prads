@@ -41,6 +41,7 @@
 #include "sig.h"
 #include "mac.h"
 #include "tcp.h"
+#include "dump_dns.h"
 //#include "output-plugins/log_init.h"
 #include "output-plugins/log.h"
 
@@ -510,6 +511,7 @@ void prepare_greip (packetinfo *pi)
         return;
     }
 }
+
 void prepare_ip4ip (packetinfo *pi)
 {
     packetinfo pipi;
@@ -743,6 +745,13 @@ void parse_udp (packetinfo *pi)
     //if (is_set_guess_upd_direction(config)) {
     udp_guess_direction(pi); // fix DNS server transfers?
     // Check for Passive DNS
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    u_ntop_src(pi, ip_addr_s);
+    if ( ntohs(pi->s_port) == 53 ) {
+        // For now - Proof of Concept! - Fix output way
+        if(config.cflags & CONFIG_PDNS)
+            dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
+    }
     // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
     if (IS_CSSET(&config,CS_UDP_SERVICES)) {
@@ -1002,7 +1011,8 @@ void game_over()
 {
 
     if (inpacket == 0) {
-        cxt_write_all();
+        end_sessions(); /* Need to have correct human output when reading -r pcap */
+        //cxt_write_all(); /* redundant ? see end_all_sessions(); */
         clear_asset_list();
         end_all_sessions();
         del_known_services();
@@ -1049,7 +1059,7 @@ void set_end_sessions()
         /* if (log_assets == 1) update_asset_list(); */
         update_asset_list();
         intr_flag = 0;
-        alarm(CHECK_TIMEOUT);
+        alarm(SIG_ALRM);
     }
 }
 
@@ -1112,6 +1122,7 @@ static void usage()
     olog(" -q              Quiet - try harder not to produce output.\n");
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
+    olog(" -Z              Passive DNS (Experimental).\n");
     olog(" -h              This help message.\n");
 }
 
@@ -1142,7 +1153,7 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIt"
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIZt"
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
@@ -1230,6 +1241,9 @@ int main(int argc, char *argv[])
             break;
         case 'O':
             config.cflags |= CONFIG_CONNECT;
+            break;
+        case 'Z':
+            config.cflags |= CONFIG_PDNS;
             break;
         case 'x':
             config.cflags |= CONFIG_CXWRITE;
@@ -1379,7 +1393,7 @@ int main(int argc, char *argv[])
     }
  
     bucket_keys_NULL();
-    alarm(CHECK_TIMEOUT);
+    alarm(SIG_ALRM);
 
     /** segfaults on empty pcap! */
     if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {

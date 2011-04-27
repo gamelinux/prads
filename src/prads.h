@@ -29,7 +29,6 @@
 #include <netinet/in.h>
 #include <pcre.h>
 
-
 /*  D E F I N E S  ************************************************************/
 #define VERSION                       "0.2.4"
 #define CHECK_TIMEOUT                 600       /* Time between cxt and asset cleaning/printing */

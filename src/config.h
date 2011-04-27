@@ -8,6 +8,7 @@
 #define CONFIG_QUIET   0x08
 #define CONFIG_CONNECT 0x10
 #define CONFIG_CXWRITE 0x20
+#define CONFIG_PDNS    0x40
 
 #define DEFAULT_NETS "0.0.0.0/0,::/0"
 
