@@ -10,8 +10,8 @@ typedef struct _output_plugin {
    int flags;
    int (*init)(struct _output_plugin*, const char*, int);
    void (*arp)(struct _output_plugin*, asset *);                   /* call on arp */
-   void (*os)(struct _output_plugin*, asset *, os_asset *os);      /* call on os */
-   void (*service)(struct _output_plugin*, asset*, serv_asset *);  /* call on service */
+   void (*os)(struct _output_plugin*, asset *, os_asset *os, connection *cxt);      /* call on os */
+   void (*service)(struct _output_plugin*, asset*, serv_asset *, connection *cxt);  /* call on service */
    int (*denit)(struct _output_plugin*);                          /* deinitialize */
    const char *path;                                           /* file, socket etc */
    void *data;                                                 /* anything else */
@@ -21,7 +21,11 @@ enum { LOG_ASCII, LOG_STDOUT, LOG_FILE, LOG_FIFO, LOG_UNIFIED, LOG_MAX} log_type
 enum { VERBOSE = 0x01, FLAGS } log_flags;
 
 void log_asset_arp (asset *main);
-void log_asset_os (asset *main, os_asset *os);
-void log_asset_service (asset *main, serv_asset *service);
+void log_asset_os (asset *main, os_asset *os, connection *cxt);
+void log_asset_service (asset *main, serv_asset *service, connection *cxt);
 int init_logging(int type, const char *path, int flags);
 void end_logging();
+
+// connection tracking logging function
+void log_connection(connection *cxt, FILE *fd, int outputmode);
+

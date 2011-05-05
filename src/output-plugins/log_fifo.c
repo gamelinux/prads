@@ -120,7 +120,7 @@ int init_output_fifo (output_plugin *p, const char* fifo_file, int flags)
         return e;
     }
     p->data = (void *) fp;
-    return 0;
+   return 0;
 }
 
 /* ----------------------------------------------------------
@@ -163,10 +163,19 @@ void fifo_arp (output_plugin *p, asset *main)
  *          : 4 - Application
  *          : 5 - Discovered
  * ---------------------------------------------------------- */
-void fifo_service (output_plugin *p, asset *main, serv_asset *service)
+// base64-encoded payloads for squil happiness
+#define B64_PRADS_CLIENT "505241445320434C49454E54"
+#define B64_PRADS_SERVER "505241445320534552564552"
+static connection NULL_CXT;
+void fifo_service (output_plugin *p, asset *main, serv_asset *service, connection *cxt)
 {
     FILE *fd;
     static char sip[INET6_ADDRSTRLEN];
+    static char dip[INET6_ADDRSTRLEN];
+    char *role = B64_PRADS_CLIENT;
+    if(!cxt)
+        cxt = &NULL_CXT;
+
     /* Print to FIFO */
     if (p->data == NULL) {
         elog("[!] ERROR:  File handle not open!\n");
@@ -175,24 +184,18 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service)
     fd = (FILE *)p->data;
     /* prads_agent.tcl process each line until it receivs a dot by itself */
     u_ntop(main->ip_addr, main->af, sip);
+    u_ntop(cxt->d_ip, cxt->af, dip);
     
     if ( service->role == SC_SERVER ) { /* SERVER ASSET */
-    fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
-            /* srcip == dstip - dirty trick for sguil :( */
-            sip, htonl(IP4ADDR(&main->ip_addr)),
-            sip, htonl(IP4ADDR(&main->ip_addr)), 
-            ntohs(service->port), ntohs(service->port), service->proto, 
-            bdata(service->service), bdata(service->application), 
-            main->first_seen, "505241445320534552564552" ); /* PRADS SERVER */
-    } else { /* CLIENT ASSET */
-    fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
-            /* srcip == dstip - dirty trick for sguil :( */
-            sip, htonl(IP4ADDR(&main->ip_addr)),
-            sip, htonl(IP4ADDR(&main->ip_addr)),        
-            ntohs(service->port), ntohs(service->port), service->proto, 
-            bdata(service->service), bdata(service->application), 
-            main->first_seen, "505241445320434C49454E54" ); /* PRADS CLIENT */
+        role = B64_PRADS_SERVER;
     }
+    fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
+            /* srcip == dstip - dirty trick for sguil :( */
+            sip, htonl(IP4ADDR(&main->ip_addr)),
+            dip, htonl(IP4ADDR(&cxt->d_ip)), 
+            ntohs(service->port), ntohs(cxt->d_port), service->proto, 
+            bdata(service->service), bdata(service->application), 
+            main->first_seen, role);
     fflush(fd);
 }
 
@@ -205,8 +208,9 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service)
  * Example  : ID \n IP \n NumIP \n PORT \n PROTO \n timestamp \n . \n
  *            03\n10.10.10.83\n168430163\n22\n6\n1100847309\n.\n
  * ---------------------------------------------------------- */
-void fifo_stat (output_plugin *p, asset *rec, os_asset *os)
+void fifo_stat (output_plugin *p, asset *rec, os_asset *os, connection *cxt)
 {
+    (cxt); /* UNUSED */
     static char ip_addr_s[INET6_ADDRSTRLEN];
     if (p->data == NULL) {
         elog("[!] ERROR:  File handle not open!\n");
