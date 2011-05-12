@@ -19,6 +19,7 @@ void add_known_services(uint8_t proto, uint16_t port, bstring service_name);
 void del_known_services();
 bstring check_known_port(uint8_t proto, uint16_t port);
 void init_services();
+void dump_sig_service(signature *sig, int len);
 
 enum {SRV_NONE, SRV_TCP_SERVER=1, SRV_UDP_SERVER, SRV_TCP_CLIENT, SRV_UDP_CLIENT };
 

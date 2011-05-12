@@ -739,6 +739,8 @@ void prepare_udp (packetinfo *pi)
     return;
 }
 
+// can't declare in sys_func.h because it does not include prads.h!
+void u_ntop_src(packetinfo *pi, char* dest);
 void parse_udp (packetinfo *pi)
 {
     update_asset(pi);

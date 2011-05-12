@@ -4,6 +4,7 @@
 #include "cxt.h"
 #include "sys_func.h"
 #include "config.h"
+#include "output-plugins/log.h"
 
 extern globalconfig config;
 

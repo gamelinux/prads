@@ -210,7 +210,7 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service, connectio
  * ---------------------------------------------------------- */
 void fifo_stat (output_plugin *p, asset *rec, os_asset *os, /*UNUSED*/ connection *cxt)
 {
-    (cxt); /* UNUSED */
+    (void)(cxt); /* UNUSED */
     static char ip_addr_s[INET6_ADDRSTRLEN];
     if (p->data == NULL) {
         elog("[!] ERROR:  File handle not open!\n");
