@@ -185,7 +185,7 @@ int cx_track(packetinfo *pi) {
     // bucket turned upside down didn't yeild anything. new connection
     cxt = cxt_new(pi);
     if(config.cflags & CONFIG_CXWRITE)
-        cxt_write(cxt, stdout, CX_NEW);
+        log_connection(cxt, stdout, CX_NEW);
 
     /* * New connections are pushed on to the head of bucket[s_hash] */
     cxt->next = head;
@@ -308,9 +308,9 @@ void end_sessions()
 
                 if (config.cflags & CONFIG_CXWRITE) {
                     if (expired == 1)
-                        cxt_write(cxt, stdout, CX_EXPIRE);
+                        log_connection(cxt, stdout, CX_EXPIRE);
                     else if (ended == 1)
-                        cxt_write(cxt, stdout, CX_ENDED);
+                        log_connection(cxt, stdout, CX_ENDED);
                 }
                 ended = expired = 0;
 
@@ -328,7 +328,7 @@ void end_sessions()
     }
 }
 
-void cxt_write_all()
+void log_connection_all()
 {
     int i;
     connection *cxt;
@@ -337,7 +337,7 @@ void cxt_write_all()
     for(i = 0; i < BUCKET_SIZE; i++) {
         cxt = bucket[i];
         while(cxt) {
-            cxt_write(cxt, stdout, CX_HUMAN);
+            log_connection(cxt, stdout, CX_HUMAN);
             cxt = cxt->next;
         }
     }
@@ -381,7 +381,7 @@ void end_all_sessions()
             connection *tmp = cxt;
 
             if(config.cflags & CONFIG_CXWRITE)
-                cxt_write(cxt, stdout, CX_ENDED);
+                log_connection(cxt, stdout, CX_ENDED);
 
             cxt = cxt->next;
             del_connection(tmp, &bucket[cxkey]);
