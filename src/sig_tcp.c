@@ -1456,7 +1456,7 @@ continue_search:
 
     if (PI_ECN(pi)) vlog(2, "(ECN) ");
 
-    if (PI_TOS(pi)) {
+    if (pi->ip4 && PI_TOS(pi)) {
       if (tos_desc) vlog(2, "[%s] ",tos_desc); else vlog(2, "[tos %d] ",PI_TOS(pi));
     }
 
