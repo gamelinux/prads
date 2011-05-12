@@ -73,10 +73,10 @@ void end_logging()
 
 void log_asset_arp (asset *masset)
 {
-#ifdef DEBUG
-    //static char ip_addr_s[INET6_ADDRSTRLEN];
-    //inet_ntop(AF_INET, &masset->ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
-    //dlog("[*] added mac address to asset: %s\n",ip_addr_s);
+#ifdef DEBUG_LOG
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET, &masset->ip_addr.s6_addr32[0], ip_addr_s, INET_ADDRSTRLEN + 1 );
+    dlog("[*] added mac address to asset: %s\n",ip_addr_s);
 #endif
     log_foo(arp, log_output, n_outputs, masset);
 }
@@ -86,8 +86,10 @@ void log_asset_os (asset *main, os_asset *os, connection *cxt)
 #ifdef DEBUG
     static char ip_addr_s[INET6_ADDRSTRLEN];
     u_ntop(main->ip_addr, main->af, ip_addr_s);
-    //dlog("[%lu] Incoming asset, %s: %s:%u [%s]\n",
-    //os->last_seen, (char*)bdata(os->detection),ip_addr_s,ntohs(os->port),(char*)bdata(os->raw_fp));
+#ifdef DEBUG_LOG
+    dlog("[%lu] Incoming asset, %s: %s:%u [%s]\n",
+    os->last_seen, (char*)bdata(os->detection),ip_addr_s,ntohs(os->port),(char*)bdata(os->raw_fp));
+#endif
 #endif
     log_foo(os, log_output, n_outputs, main, os, cxt);
 }

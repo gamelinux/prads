@@ -208,7 +208,7 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service, connectio
  * Example  : ID \n IP \n NumIP \n PORT \n PROTO \n timestamp \n . \n
  *            03\n10.10.10.83\n168430163\n22\n6\n1100847309\n.\n
  * ---------------------------------------------------------- */
-void fifo_stat (output_plugin *p, asset *rec, os_asset *os, connection *cxt)
+void fifo_stat (output_plugin *p, asset *rec, os_asset *os, /*UNUSED*/ connection *cxt)
 {
     (cxt); /* UNUSED */
     static char ip_addr_s[INET6_ADDRSTRLEN];
