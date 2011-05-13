@@ -1181,7 +1181,6 @@ fp_entry *find_match(
 {
 
   uint32_t j;
-  uint8_t* a;
   uint8_t  nat=0;
   fp_entry* p;
   uint8_t  orig_df  = e->df;
@@ -1189,6 +1188,7 @@ fp_entry *find_match(
 
   fp_entry* fuzzy = 0;
   uint8_t fuzzy_now = 0;
+  char outbuf[INET_ADDRSTRLEN+1];
 
   //if ( sig == config.sig_ack ) e->optcnt = 3;
 
@@ -1291,14 +1291,11 @@ continue_fuzzy:
       e->desc = p->desc;
 
 
+      /* TODO:many verbose checks could be made into os fields */
       if( config.verbose > 1 ){
-         a=(uint8_t*)& PI_IP4SRC(pi);
+         u_ntop_src(pi, outbuf);
 
-         if(*a){
-            olog("%d.%d.%d.%d%s:%d - %s ",a[0],a[1],a[2],a[3],grab_name(a), PI_TCP_SP(pi),p->os);
-         }else{
-            olog("ipv6 packet __FIXME__");
-         }
+         olog("%s:%d - %s ",outbuf, PI_TCP_SP(pi),p->os);
 
          if (!no_osdesc) olog("%s ",p->desc);
          if (nat == 1){
@@ -1330,21 +1327,22 @@ continue_fuzzy:
 
          }
          if (!no_extra && !p->no_detail) {
-            a=(uint8_t*)& PI_IP4DST(pi);
             if (!mode_oneline) olog("\n  ");
+
+            u_ntop_dst(pi, outbuf);
 
 
             if (fuzzy_now) 
-               olog("-> %d.%d.%d.%d%s:%d (link: %s)",
-                    a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),
+               olog("-> %s:%d (link: %s)",outbuf, PI_TCP_DP(pi),
                     lookup_link(e->mss,1));
             else
-               olog("-> %d.%d.%d.%d%s:%d (distance %d, link: %s)",
-                    a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_DP(pi),p->ttl - e->ttl,
+               olog("-> %s:%d (distance %d, link: %s)",outbuf, PI_TCP_DP(pi),
+                    p->ttl - e->ttl,
                     lookup_link(e->mss,1));
          }
          if (p->generic) olog("[GENERIC] ");
          if (fuzzy_now) olog("[FUZZY] ");
+         olog("\n");
 
       }
       if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
@@ -1404,8 +1402,8 @@ continue_search:
   }
 
   if (!no_unknown) { 
-    a=(uint8_t*)& PI_IP4SRC(pi);
-    vlog(2,"%d.%d.%d.%d%s:%d - UNKNOWN [:?:?]",a[0],a[1],a[2],a[3],grab_name(a),PI_TCP_SP(pi));
+     u_ntop_src(pi, outbuf);
+     vlog(2,"%s:%d - UNKNOWN [:?:?]",outbuf,PI_TCP_SP(pi));
 
     //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
@@ -1463,10 +1461,10 @@ continue_search:
     if (tstamp) vlog(2, "(up: %d hrs) ",tstamp/360000);
 
     if (!no_extra) {
-      a=(uint8_t*)& PI_IP4DST(pi);
+       u_ntop_dst(pi, outbuf);
       //if (!mode_oneline) dlog("\n  ");
-      vlog(2, "-> %d.%d.%d.%d%s:%d (link: %s)",a[0],a[1],a[2],a[3],
-	       grab_name(a),PI_TCP_DP(pi),lookup_link(e->mss,1));
+       vlog(2, "-> %s:%d (link: %s)", outbuf,
+            PI_TCP_DP(pi),lookup_link(e->mss,1));
     }
 
     /*
