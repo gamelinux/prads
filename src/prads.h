@@ -854,14 +854,18 @@ struct fmask {
     union {
         v4si mask_v;
         struct in6_addr mask;
-        uint64_t addr64[2];
+        uint64_t mask64[2];
     };
-};
+} fmask;
 
+#endif
 
 #define IS_COSET(config, flags) (((config)->ctf & (flags)) == (flags))
 #define IS_CSSET(config, flags) (((config)->cof & (flags)) == (flags))
 
 /*  P R O T O T Y P E S  ******************************************************/
 void free_config();
+// can't declare in sys_func.h because it does not include prads.h!
+const char *u_ntop_src(packetinfo *pi, char* dest);
+const char *u_ntop_dst(packetinfo *pi, char* dest);
 #endif                          // PRADS_H
