@@ -159,7 +159,7 @@ check_match:
 
    if(!match) {
       while(ditch++ < 0xFF) {
-         match = db[index +ditch];
+         match = db[index +ditch %MAC_HASHSIZE];
          if(match)
             goto check_match;
       }

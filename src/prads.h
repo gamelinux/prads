@@ -30,7 +30,7 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.2.4"
+#define VERSION                       "0.2.5"
 #define SIG_ALRM                      60       /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
@@ -802,11 +802,6 @@ typedef struct _port_t {
     struct _port_t *next;       /* Next port_t structure */
 } port_t;
 
-typedef struct _fmask {
-    int type;
-    struct in6_addr addr;
-    struct in6_addr mask;
-} fmask;
 
 typedef struct _prads_stat {
     uint32_t got_packets;   /* number of packets received by prads */
@@ -835,6 +830,13 @@ typedef struct _prads_stat {
 } prads_stat;
 
 
+#ifdef NO_VECTOR_TYPES
+typedef struct _fmask {
+    int type;
+    struct in6_addr addr;
+    struct in6_addr mask;
+} fmask;
+#else
 // vector types :-)
 typedef int v4si __attribute__((vector_size(16)));
 typedef union _i4vector {
@@ -844,7 +846,7 @@ typedef union _i4vector {
     uint32_t w[4];
     uint16_t s[8];
 } ip6v;
-struct fmask { 
+typedef struct _fmask { 
     int type;
     union {
         v4si addr_v;
@@ -854,14 +856,18 @@ struct fmask {
     union {
         v4si mask_v;
         struct in6_addr mask;
-        uint64_t addr64[2];
+        uint64_t mask64[2];
     };
-};
+} fmask;
 
+#endif
 
 #define IS_COSET(config, flags) (((config)->ctf & (flags)) == (flags))
 #define IS_CSSET(config, flags) (((config)->cof & (flags)) == (flags))
 
 /*  P R O T O T Y P E S  ******************************************************/
 void free_config();
+// can't declare in sys_func.h because it does not include prads.h!
+const char *u_ntop_src(packetinfo *pi, char* dest);
+const char *u_ntop_dst(packetinfo *pi, char* dest);
 #endif                          // PRADS_H
