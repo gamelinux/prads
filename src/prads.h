@@ -802,11 +802,6 @@ typedef struct _port_t {
     struct _port_t *next;       /* Next port_t structure */
 } port_t;
 
-typedef struct _fmask {
-    int type;
-    struct in6_addr addr;
-    struct in6_addr mask;
-} fmask;
 
 typedef struct _prads_stat {
     uint32_t got_packets;   /* number of packets received by prads */
@@ -835,6 +830,13 @@ typedef struct _prads_stat {
 } prads_stat;
 
 
+#ifdef NO_VECTOR_TYPES
+typedef struct _fmask {
+    int type;
+    struct in6_addr addr;
+    struct in6_addr mask;
+} fmask;
+#else
 // vector types :-)
 typedef int v4si __attribute__((vector_size(16)));
 typedef union _i4vector {
@@ -844,7 +846,7 @@ typedef union _i4vector {
     uint32_t w[4];
     uint16_t s[8];
 } ip6v;
-struct fmask { 
+typedef struct _fmask { 
     int type;
     union {
         v4si addr_v;
