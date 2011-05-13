@@ -32,6 +32,25 @@ const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest)
     return dest;
 }
 
+const char *u_ntop_src(packetinfo *pi, char *dest)
+{
+    if (pi->af == AF_INET) {
+        if (!inet_ntop
+            (AF_INET,
+             &pi->ip4->ip_src,
+                 dest, INET_ADDRSTRLEN + 1)) {
+            perror("Something died in inet_ntop");
+            return NULL;
+        }
+    } else if (pi->af == AF_INET6) {
+        if (!inet_ntop(AF_INET6, &pi->ip6->ip_src, dest, INET6_ADDRSTRLEN + 1)) {
+            perror("Something died in inet_ntop");
+            return NULL;
+        }
+    }
+    return dest;
+}
+
 uint8_t normalize_ttl (uint8_t ttl)
 {
     if (ttl > 128) return 255;

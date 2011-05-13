@@ -41,6 +41,7 @@
 #include "sig.h"
 #include "mac.h"
 #include "tcp.h"
+#include "dump_dns.h"
 //#include "output-plugins/log_init.h"
 #include "output-plugins/log.h"
 
@@ -160,9 +161,9 @@ inline int filter_packet(const int af, void *ipptr)
                 if (network[i].type != AF_INET)
                     continue;
 #ifdef DEBUG_PACKET
-                inet_ntop(af, &network[i].addr.__u6_addr.__u6_addr32[0], output, MAX_NETS);
+                inet_ntop(af, &network[i].addr.s6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "Filter: %s\n", output);
-                inet_ntop(af, &network[i].mask.__u6_addr.__u6_addr32[0], output, MAX_NETS);
+                inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
                 vlog(0x2, "mask: %s\n", output);
                 inet_ntop(af, ip, output, MAX_NETS);
                 vlog(0x2, "ip: %s\n", output);
@@ -192,7 +193,7 @@ inline int filter_packet(const int af, void *ipptr)
                 dlog("net:  %s\n", output);
                 inet_ntop(af, &network[i].mask, output, MAX_NETS);
                 dlog("mask: %s\n", output);
-                inet_ntop(af, &PI_IP6SRC(pi), output, MAX_NETS);
+                inet_ntop(af, ipptr, output, MAX_NETS);
                 dlog("ip: %s\n", output);
 #endif
                 if (network[i].type == AF_INET6) {
@@ -510,6 +511,7 @@ void prepare_greip (packetinfo *pi)
         return;
     }
 }
+
 void prepare_ip4ip (packetinfo *pi)
 {
     packetinfo pipi;
@@ -737,12 +739,21 @@ void prepare_udp (packetinfo *pi)
     return;
 }
 
+// can't declare in sys_func.h because it does not include prads.h!
+void u_ntop_src(packetinfo *pi, char* dest);
 void parse_udp (packetinfo *pi)
 {
     update_asset(pi);
     //if (is_set_guess_upd_direction(config)) {
     udp_guess_direction(pi); // fix DNS server transfers?
     // Check for Passive DNS
+    static char ip_addr_s[INET6_ADDRSTRLEN];
+    u_ntop_src(pi, ip_addr_s);
+    if ( ntohs(pi->s_port) == 53 ) {
+        // For now - Proof of Concept! - Fix output way
+        if(config.cflags & CONFIG_PDNS)
+            dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
+    }
     // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
     if (IS_CSSET(&config,CS_UDP_SERVICES)) {
@@ -1002,7 +1013,8 @@ void game_over()
 {
 
     if (inpacket == 0) {
-        cxt_write_all();
+        end_sessions(); /* Need to have correct human output when reading -r pcap */
+        //cxt_write_all(); /* redundant ? see end_all_sessions(); */
         clear_asset_list();
         end_all_sessions();
         del_known_services();
@@ -1049,7 +1061,7 @@ void set_end_sessions()
         /* if (log_assets == 1) update_asset_list(); */
         update_asset_list();
         intr_flag = 0;
-        alarm(CHECK_TIMEOUT);
+        alarm(SIG_ALRM);
     }
 }
 
@@ -1103,7 +1115,7 @@ static void usage()
     //olog(" -d            to logdir\n");
     olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
-    olog(" -f <FIFO>       Log assets to <FIFO>");
+    olog(" -f <FIFO>       Log assets to <FIFO>\n");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
     olog(" -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient\n");
@@ -1112,6 +1124,7 @@ static void usage()
     olog(" -q              Quiet - try harder not to produce output.\n");
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
+    olog(" -Z              Passive DNS (Experimental).\n");
     olog(" -h              This help message.\n");
 }
 
@@ -1142,7 +1155,7 @@ int main(int argc, char *argv[])
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIt"
+#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIZt"
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
@@ -1171,7 +1184,10 @@ int main(int argc, char *argv[])
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'a':
-            config.s_net = strdup(optarg);
+            if(strlen(optarg) == 0)
+                config.s_net = DEFAULT_NETS;
+            else
+                config.s_net = strdup(optarg);
             break;
         case 'c':
             pconfile = bfromcstr(optarg);
@@ -1227,6 +1243,9 @@ int main(int argc, char *argv[])
             break;
         case 'O':
             config.cflags |= CONFIG_CONNECT;
+            break;
+        case 'Z':
+            config.cflags |= CONFIG_PDNS;
             break;
         case 'x':
             config.cflags |= CONFIG_CXWRITE;
@@ -1295,43 +1314,30 @@ int main(int argc, char *argv[])
        parse_nets(config.s_net, network);
     }
     olog("[*] Loading fingerprints:\n");
-    if (IS_CSSET(&config,CS_MAC)) {
-        olog("   %8s %s\n", "MAC", config.sig_file_mac);
-        rc = load_mac(config.sig_file_mac, &config.sig_mac, 0);
-        if(rc) perror("mac loadage failed!");
-    }
-
 /* helper macro to avoid duplicate code */
-#define load_foo(func, conf, flag, file, hash, len) \
+#define load_foo(func, conf, flag, file, hash, len, dump) \
     if(config. conf & flag) { \
         int _rc; \
-        olog("   %8s %s\n", # flag, (config. file)); \
+        olog("  %-11s %s\n", # flag, (config. file)); \
         _rc = func (config. file, & config. hash, config. len); \
         if(_rc) perror( #flag " load failed!"); \
-        if(config.verbose > 1) { \
+        else if(config.verbose > 1) { \
             printf("[*] Dumping " #flag " signatures:\n"); \
-            dump_sigs(config.sig_syn, config.sig_hashsize); \
+            dump (config. hash, config. len); \
             printf("[*] " #flag " signature dump ends.\n"); \
         } \
     }
-    load_foo(load_sigs, ctf, CO_SYN, sig_file_syn, sig_syn, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_SYNACK, sig_file_synack, sig_synack, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize);
-    load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize);
 
-    if (IS_CSSET(&config,CS_TCP_SERVER)){
-        olog("   %8s %s\n", "TCP-service", config.sig_file_serv_tcp);
-        load_servicefp_file(config.sig_file_serv_tcp, &config.sig_serv_tcp);
-    }
-    if (IS_CSSET(&config,CS_UDP_SERVICES)){
-        olog("   %8s %s\n", "TCP-service", config.sig_file_serv_udp);
-        load_servicefp_file(config.sig_file_serv_udp, &config.sig_serv_udp);
-    }
-    if (IS_CSSET(&config,CS_TCP_CLIENT)){
-        olog("   %8s %s\n", "TCP-service", config.sig_file_cli_tcp);
-        load_servicefp_file(config.sig_file_cli_tcp, &config.sig_client_tcp);
-    }
+    load_foo(load_mac , cof, CS_MAC, sig_file_mac, sig_mac, mac_hashsize, dump_macs);
+    load_foo(load_sigs, ctf, CO_SYN, sig_file_syn, sig_syn, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_SYNACK, sig_file_synack, sig_synack, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize, dump_sigs);
+    load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize, dump_sigs);
+
+    load_foo(load_servicefp_file, cof, CS_TCP_SERVER, sig_file_serv_tcp, sig_serv_tcp, sig_hashsize, dump_sig_service);
+    load_foo(load_servicefp_file, cof, CS_UDP_SERVICES, sig_file_serv_udp, sig_serv_udp, sig_hashsize, dump_sig_service);
+    load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);
     init_services();
 
     olog("\n[*] Running prads %s\n", VERSION);
@@ -1389,7 +1395,7 @@ int main(int argc, char *argv[])
     }
  
     bucket_keys_NULL();
-    alarm(CHECK_TIMEOUT);
+    alarm(SIG_ALRM);
 
     /** segfaults on empty pcap! */
     if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {

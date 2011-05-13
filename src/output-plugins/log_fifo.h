@@ -26,6 +26,6 @@ output_plugin *init_log_fifo(void);
 int init_output_fifo (output_plugin *p, const char *path, int flags);
 /* void fifo_asset (output_plugin *, asset *main); */
 void fifo_arp (output_plugin *, asset *main);
-void fifo_service (output_plugin *, asset *main, serv_asset *service);
-void fifo_stat (output_plugin *,asset *main, os_asset *os);
+void fifo_service (output_plugin *, asset *main, serv_asset *service, connection *cxt);
+void fifo_stat (output_plugin *,asset *main, os_asset *os, connection *cxt);
 int fifo_end (output_plugin *);

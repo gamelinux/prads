@@ -303,7 +303,7 @@ os_update:
         new_oa->prev = NULL;
         pi->asset->os = new_oa;
 
-        log_asset_os(pi->asset,new_oa);
+        log_asset_os(pi->asset,new_oa, pi->cxt);
         return SUCCESS;
     }
     return ERROR;
@@ -373,7 +373,7 @@ service_update:
                 tmp_sa->application = bstrcpy(application);
                 tmp_sa->last_seen = pi->pheader->ts.tv_sec;
 
-                log_asset_service(pi->asset,tmp_sa);
+                log_asset_service(pi->asset,tmp_sa, pi->cxt);
                 return SUCCESS;
 
             } else if (!(biseq(application, tmp_sa->application) == 1)) {
@@ -385,7 +385,7 @@ service_update:
                     tmp_sa->application = bstrcpy(application);
                     tmp_sa->last_seen = pi->pheader->ts.tv_sec;
 
-                    log_asset_service(pi->asset,tmp_sa);
+                    log_asset_service(pi->asset,tmp_sa, pi->cxt);
                     return SUCCESS;
 
                 } else {
@@ -420,7 +420,7 @@ service_update:
         new_sa->prev = NULL;
         pi->asset->services = new_sa;
 
-        log_asset_service(pi->asset, new_sa);
+        log_asset_service(pi->asset, new_sa, pi->cxt);
         return SUCCESS;
     }
     return ERROR;
@@ -471,6 +471,7 @@ void add_asset(packetinfo *pi)
 #ifdef DEBUGG
     /* verbose info for sanity checking */
     static char ip_addr_s[INET6_ADDRSTRLEN];
+    // pi->ip_src does not exist!
     u_ntop(pi->ip_src, pi->af, ip_addr_s);
     dlog("[*] asset added: %s\n",ip_addr_s);
 #endif
@@ -720,8 +721,8 @@ void clear_asset_list()
  ** iterates over all assets,
  **** all services
  **** all OS matches
- ** and expires old (service, os, asset) since CHECK_TIMEOUT
- ** optionally printing assets updated since ASSET_TIMEOUT
+ ** and expires old (service, os, asset) since ASSET_TIMEOUT
+ ** optionally printing assets updated since last SIG_ALRM check
  * */
 void update_asset_list()
 {
@@ -735,15 +736,15 @@ void update_asset_list()
         rec = passet[akey];
         while (rec != NULL) {
             /* Checks if something has been updated in the asset since last time */
-            if (tstamp - rec->last_seen <= CHECK_TIMEOUT) {
+            if (tstamp - rec->last_seen <= SIG_ALRM) {
                 tmp_sa = rec->services;
                 tmp_oa = rec->os;
                 if (config.print_updates) log_asset_arp(rec);
 
                 while (tmp_sa != NULL) {
                     /* Just print out the asset if it is updated since lasttime */
-                    if (config.print_updates && tstamp - tmp_sa->last_seen <= CHECK_TIMEOUT) {
-                        log_asset_service(rec,tmp_sa);
+                    if (config.print_updates && tstamp - tmp_sa->last_seen <= SIG_ALRM) {
+                        log_asset_service(rec,tmp_sa, NULL);
                     }
                     /* If the asset is getting too old - delete it */
                     if (tstamp - tmp_sa->last_seen >= ASSET_TIMEOUT) {
@@ -757,8 +758,8 @@ void update_asset_list()
 
                 while (tmp_oa != NULL) {
                     /* Just print out the asset if it is updated since lasttime */
-                    if (config.print_updates && tstamp - tmp_oa->last_seen <= CHECK_TIMEOUT) {
-                        log_asset_os(rec, tmp_oa);
+                    if (config.print_updates && tstamp - tmp_oa->last_seen <= SIG_ALRM) {
+                        log_asset_os(rec, tmp_oa, NULL);
                     }
                     /* If the asset is getting too old - delete it */
                     if (tstamp - tmp_oa->last_seen >= ASSET_TIMEOUT) {

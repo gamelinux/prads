@@ -27,6 +27,8 @@
 #include "prads.h"
 #include "sys_func.h"
 #include "config.h"
+#include "mac.h"
+#include "sig.h"
 
 /*  G L O B A L E S  *********************************************************/
 extern globalconfig config;
@@ -86,7 +88,7 @@ void set_default_config_options()
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config.fifo    = NULL;
     // default source net owns everything
-    config.s_net   = "0.0.0.0/0,::/0";
+    config.s_net   = DEFAULT_NETS ;
     config.errbuf[0] = '\0';
     config.configpath = CONFDIR "";
     // files should be relative to configpath somehow
@@ -105,7 +107,8 @@ void set_default_config_options()
     config.sig_fin = NULL;
     config.sig_rst = NULL;
     config.sig_mac = NULL;
-    config.sig_hashsize = 241;
+    config.sig_hashsize = SIG_HASHSIZE;
+    config.mac_hashsize = MAC_HASHSIZE;
     // don't chroot by default
     config.chroot_dir = NULL;
 }

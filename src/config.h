@@ -8,6 +8,9 @@
 #define CONFIG_QUIET   0x08
 #define CONFIG_CONNECT 0x10
 #define CONFIG_CXWRITE 0x20
+#define CONFIG_PDNS    0x40
+
+#define DEFAULT_NETS "0.0.0.0/0,::/0"
 
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
@@ -60,6 +63,7 @@ typedef struct _globalconfig {
     char        *configpath;            /* Path to config dir */
     char        *s_net;                 /* Nets to collect assets for */
     uint32_t     sig_hashsize;          /* size of signature hash */
+    uint32_t     mac_hashsize;          /* size of mac hash */
     fp_entry   **sig_syn;               /* SYN signature hash */
     fp_entry   **sig_synack;            /* SYNACK signature hash */
     fp_entry   **sig_ack;               /* Stray-ACK signature hash */

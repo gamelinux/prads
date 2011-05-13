@@ -57,7 +57,7 @@ servicelist *services[MAX_PORTS];
  * RETURN       : -1 - Error
  *              : 0 - Normal Return
  * ---------------------------------------------------------- */
-int load_servicefp_file(char *sigfile, signature **db)
+int load_servicefp_file(char *sigfile, signature **db, int len)
 {
 
     FILE *fp;
@@ -65,6 +65,7 @@ int load_servicefp_file(char *sigfile, signature **db)
     bstring filedata;
     struct bstrList *lines;
     int i;
+    (void)(len); // doesn't matter
 
     /*
      * Check for a PADS_SIGNATURE_LIST file within the current directory.  
@@ -104,6 +105,18 @@ int load_servicefp_file(char *sigfile, signature **db)
 
     return 0;
 }
+
+void dump_sig_service(signature *sig, int len)
+{
+    (void)(len); // it's a linked list, not important.
+    while(sig) {
+        // the actual regex is compiled and not available here.
+        printf("%s,v/%s/%s/%s/\n", bdata(sig->service),
+            bdata(sig->title.app), bdata(sig->title.ver), bdata(sig->title.misc));
+        sig = sig->next;
+    }
+}
+
 
 /* ----------------------------------------------------------
  * FUNCTION     : parse_raw_signature
@@ -288,7 +301,7 @@ void del_signature_lists()
  * RETURN       : processed app name
  * ---------------------------------------------------------- */
 bstring get_app_name(signature * sig,
-                     const char *payload, int *ovector, int rc)
+                     const uint8_t *payload, int *ovector, int rc)
 {
     char sub[100];
     char app[5000];
@@ -333,7 +346,7 @@ bstring get_app_name(signature * sig,
             i++;
             n = atoi(&app[i]);
 
-            pcre_copy_substring(payload, ovector, rc, n, expr,
+            pcre_copy_substring((const char*)payload, ovector, rc, n, expr,
                                 sizeof(expr));
             x = 0;
             while (expr[x] != '\0' && z < (sizeof(sub) - 1)) {

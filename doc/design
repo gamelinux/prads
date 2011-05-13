@@ -1,0 +1,30 @@
+          ====================
+             PRADS :: design
+          ====================
+    +-------+
+    |       |<-----{config
+    | prads |<-----{arguments
+    |       |<-----{signatures
+    +-------+
+        | (init, drop privs, chroot, daemonize..)
+        V
+    +---------
+    | packet |--> (source:port destination:port)-->[connection]-->{output
+    +---------                                         ^
+        |                                              |
+        v                                              |
+     +-------+                                         v
+     |dissect|<--> (vlan eth arp ip tcp udp) ---> [packet info]
+     +-------+                                        /
+        |       _____________________________________/
+        v      /                                       ______________
+    +-------- /                                       /__standard out
+    | asset |/                                       /__file
+    +-------+----------------------->{output plugins/_fifo
+       |     \                                      \__graphviz(?)
+       v      \                                      \__your plugin here
+     +--+      +----------+                           \_______________-k
+     |os|      | services |
+     +--+      ------------
+
+

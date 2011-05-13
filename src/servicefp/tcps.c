@@ -42,11 +42,11 @@ void service_tcp4(packetinfo *pi, signature* sig_serv_tcp)
 
     tmpsig = sig_serv_tcp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, (const char *)pi->payload, tmplen, 0, 0,
                        ovector, 15);
         if (rc >= 0) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);
-            printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
+            //printf("[*] - MATCH SERVICE IPv4/TCP: %s\n",(char *)bdata(app));
             update_asset_service(pi, tmpsig->service, app);
             pi->cxt->check |= CXT_SERVICE_DONT_CHECK;
             bdestroy(app);
@@ -87,7 +87,7 @@ void service_tcp6(packetinfo *pi, signature* sig_serv_tcp)
 
     tmpsig = sig_serv_tcp;
     while (tmpsig != NULL) {
-        rc = pcre_exec(tmpsig->regex, tmpsig->study, pi->payload, tmplen, 0, 0,
+        rc = pcre_exec(tmpsig->regex, tmpsig->study, (const char *) pi->payload, tmplen, 0, 0,
                        ovector, 15);
         if (rc >= 0) {
             app = get_app_name(tmpsig, pi->payload, ovector, rc);

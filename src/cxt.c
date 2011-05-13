@@ -4,6 +4,7 @@
 #include "cxt.h"
 #include "sys_func.h"
 #include "config.h"
+#include "output-plugins/log.h"
 
 extern globalconfig config;
 
@@ -76,7 +77,7 @@ int connection_tracking(packetinfo *pi)
       inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
     }
     if(config.cflags & CONFIG_CONNECT)
-        printf("conn[%4llu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
+        printf("conn[%4lu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
                ip_addr_s, ntohs(pi->s_port),
                ip_addr_d, ntohs(pi->d_port),
                pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
@@ -126,7 +127,6 @@ int cxt_update_server(connection *cxt, packetinfo *pi)
  *** USED TO BE: 0 = dont check, 1 = client, 2 = server
  * now returns 0, SC_CLIENT(=1), SC_SERVER(=2)
  */
-
 
 int cx_track(packetinfo *pi) {
     struct in6_addr *ip_src;
@@ -186,7 +186,7 @@ int cx_track(packetinfo *pi) {
     // bucket turned upside down didn't yeild anything. new connection
     cxt = cxt_new(pi);
     if(config.cflags & CONFIG_CXWRITE)
-        cxt_write(cxt, stdout, CX_NEW);
+        log_connection(cxt, stdout, CX_NEW);
 
     /* * New connections are pushed on to the head of bucket[s_hash] */
     cxt->next = head;
@@ -245,67 +245,6 @@ void reverse_pi_cxt(packetinfo *pi)
        pi->sc = SC_CLIENT;
 }
 
-//asprintf(&cxtfname, "%s/stats.%s.%ld", dpath, dev, tstamp);
-//cxtFile = fopen(cxtfname, "w");
-/* cxt_write(cxt, fd): write cxt to fd, with the following format:
- ** startsec|id|start time|end time|total time|proto|src|sport|dst|dport|s_packets|s_bytes|d_packets|d_bytes|s_flags|d_flags
- *
- * question is only whether to dump ip address as int or human readable
- */
-void cxt_write(connection *cxt, FILE* fd, int human)
-{
-    char stime[80], ltime[80];
-    time_t tot_time;
-    uint32_t s_ip_t, d_ip_t;
-    static char src_s[INET6_ADDRSTRLEN];
-    static char dst_s[INET6_ADDRSTRLEN];
-    strftime(stime, 80, "%F %H:%M:%S", gmtime(&cxt->start_time));
-    strftime(ltime, 80, "%F %H:%M:%S", gmtime(&cxt->last_pkt_time));
-
-    tot_time = cxt->last_pkt_time - cxt->start_time;
-    if ( cxt->af == AF_INET ) {
-        s_ip_t = ntohl(cxt->s_ip.s6_addr32[0]);
-        d_ip_t = ntohl(cxt->d_ip.s6_addr32[0]);
-    }
-
-    fprintf(fd, "%ld%09ju|%s|%s|%ld|%u|",
-            cxt->start_time, cxt->cxid, stime, ltime, tot_time,
-            cxt->proto);
-    if(human || cxt->af == AF_INET6) {
-        if(!inet_ntop(cxt->af, (cxt->af == AF_INET6? (void*) &cxt->s_ip : (void*) cxt->s_ip.s6_addr32), src_s, INET6_ADDRSTRLEN))
-            perror("inet_ntop");
-        if(!inet_ntop(cxt->af, (cxt->af == AF_INET6? (void*) &cxt->d_ip : (void*) cxt->d_ip.s6_addr32), dst_s, INET6_ADDRSTRLEN))
-            perror("inet_ntop");
-        fprintf(fd, "%s|%u|%s|%u|",
-                src_s, ntohs(cxt->s_port),
-                dst_s, ntohs(cxt->d_port));
-    } else {
-        fprintf(fd, "%lu|%u|%lu|%u|",
-                s_ip_t, ntohs(cxt->s_port),
-                d_ip_t, ntohs(cxt->d_port));
-    }
-    fprintf(fd, "%ju|%ju|", 
-            cxt->s_total_pkts, cxt->s_total_bytes);
-    fprintf(fd, "%ju|%ju|%u|%u",
-            cxt->d_total_pkts, cxt->d_total_bytes,
-            cxt->s_tcpFlags, cxt->d_tcpFlags);
-    // hack to distinguish output paths
-    char *o = NULL;
-    switch (human) {
-        case CX_EXPIRE:
-            o="[expired.]";
-            break;
-        case CX_ENDED:
-            o="[ended.]";
-            break;
-        case CX_NEW:
-            o="[New]";
-            break;
-    }
-    if(o) fprintf(fd, "|%s", o);
-    fprintf(fd, "\n");
-}
-
 /*
  This sub marks sessions as ENDED on different criterias:
 
@@ -318,87 +257,79 @@ void end_sessions()
     connection *cxt;
     time_t check_time;
     check_time = time(NULL);
-    int ended;
+    int ended, expired = 0;
     uint32_t curcxt = 0;
-    uint32_t expired = 0;
     
-    int iter = 0;
-    for(cxt = bucket[iter++]; iter < BUCKET_SIZE; iter++) while (cxt) {
-        ended = 0;
-        curcxt++;
-        /** TCP */
-        if (cxt->proto == IP_PROTO_TCP) {
-            /* * FIN from both sides */
-            if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
-                    && (check_time - cxt->last_pkt_time) > 5) {
-                ended = 1;
-            } /* * RST from either side */
-            else if ((cxt->s_tcpFlags & TF_RST
-                    || cxt->d_tcpFlags & TF_RST)
-                    && (check_time - cxt->last_pkt_time) > 5) {
-                ended = 1;
-            }
-            // Commented out, since &TF_SYNACK is wrong!
-                /*
-                 * if not a complete TCP 3-way handshake 
-                 */
-                //else if ( !cxt->s_tcpFlags&TF_SYNACK || !cxt->d_tcpFlags&TF_SYNACK && (check_time - cxt->last_pkt_time) > 10) {
-                //   ended = 1;
-                //}
-                /*
-                 * Ongoing timout 
-                 */
-                //else if ( (cxt->s_tcpFlags&TF_SYNACK || cxt->d_tcpFlags&TF_SYNACK) && ((check_time - cxt->last_pkt_time) > 120)) {
-                //   ended = 1;
-                //}
-            else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-                ended = 1;
-            }
-        }            /*
-             * UDP 
-             */
-        else if (cxt->proto == IP_PROTO_UDP
-                && (check_time - cxt->last_pkt_time) > 60) {
-            ended = 1;
-        }            /*
-             * ICMP 
-             */
-        else if (cxt->proto == IP_PROTO_ICMP
-                || cxt->proto == IP6_PROTO_ICMP) {
-            if ((check_time - cxt->last_pkt_time) > 60) {
-                ended = 1;
-            }
-        }            /*
-             * All Other protocols 
-             */
-        else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-            ended = 1;
-        }
-
-        if (ended == 1) {
-            expired++;
+    int iter;
+    for (iter = 0; iter < BUCKET_SIZE; iter++) {
+        cxt = bucket[iter];
+        while (cxt != NULL) {
             ended = 0;
-            /* remove from the hash */
-            if (cxt->prev)
-                cxt->prev->next = cxt->next;
-            if (cxt->next)
-                cxt->next->prev = cxt->prev;
-            connection *tmp = cxt;
+            curcxt++;
+            /* TCP */
+            if (cxt->proto == IP_PROTO_TCP) {
+                /* * FIN from both sides */
+                if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
+                    && (check_time - cxt->last_pkt_time) > 5) {
+                    ended = 1;
+                } /* * RST from either side */
+                else if ((cxt->s_tcpFlags & TF_RST
+                          || cxt->d_tcpFlags & TF_RST)
+                          && (check_time - cxt->last_pkt_time) > 5) {
+                    ended = 1;
+                }
+                else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
+                    expired = 1;
+                }
+            }
+            /* UDP */
+            else if (cxt->proto == IP_PROTO_UDP
+                     && (check_time - cxt->last_pkt_time) > 60) {
+                expired = 1;
+            }
+            /* ICMP */
+            else if (cxt->proto == IP_PROTO_ICMP
+                     || cxt->proto == IP6_PROTO_ICMP) {
+                if ((check_time - cxt->last_pkt_time) > 60) {
+                     expired = 1;
+                }
+            }
+            /* All Other protocols */
+            else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
+                expired = 1;
+            }
 
-            if(config.cflags & CONFIG_CXWRITE)
-                cxt_write(cxt, stdout, CX_EXPIRE);
+            if (ended == 1 || expired == 1) {
+                /* remove from the hash */
+                if (cxt->prev)
+                    cxt->prev->next = cxt->next;
+                if (cxt->next)
+                    cxt->next->prev = cxt->prev;
+                connection *tmp = cxt;
 
-            cxt = cxt->prev;
+                if (config.cflags & CONFIG_CXWRITE) {
+                    if (expired == 1)
+                        log_connection(cxt, stdout, CX_EXPIRE);
+                    else if (ended == 1)
+                        log_connection(cxt, stdout, CX_ENDED);
+                }
+                ended = expired = 0;
 
-            CLEAR_CXT(tmp);
-            //printf("[*] connection deleted!!!\n");
-        } else {
-            cxt = cxt->prev;
+                cxt = cxt->prev;
+
+                //CLEAR_CXT(tmp);
+                del_connection(tmp, &bucket[iter]);
+                if (cxt == NULL) {
+                    bucket[iter] = NULL;
+                }
+            } else {
+                cxt = cxt->prev;
+            }
         }
     }
 }
 
-void cxt_write_all()
+void log_connection_all()
 {
     int i;
     connection *cxt;
@@ -407,7 +338,7 @@ void cxt_write_all()
     for(i = 0; i < BUCKET_SIZE; i++) {
         cxt = bucket[i];
         while(cxt) {
-            cxt_write(cxt, stdout, CX_HUMAN);
+            log_connection(cxt, stdout, CX_HUMAN);
             cxt = cxt->next;
         }
     }
@@ -444,16 +375,14 @@ void end_all_sessions()
 {
     connection *cxt;
     int cxkey;
-    int expired = 0;
 
     for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
         cxt = bucket[cxkey];
         while (cxt != NULL) {
-            expired++;
             connection *tmp = cxt;
 
             if(config.cflags & CONFIG_CXWRITE)
-                cxt_write(cxt, stdout, CX_ENDED);
+                log_connection(cxt, stdout, CX_ENDED);
 
             cxt = cxt->next;
             del_connection(tmp, &bucket[cxkey]);

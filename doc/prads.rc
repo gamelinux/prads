@@ -19,28 +19,41 @@ NAME=prads
 DESC="Passive Realtime Asset Detection System"
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
+USER=prads
+GROUP=prads
 DAEMON=/usr/bin/prads
+LOGFILE=/var/log/prads.log
 RUNDIR=/var/run/prads
 PIDFILE=$RUNDIR/$NAME.pid
-LOGFILE=/var/log/prads.log
-DAEMON_OPTS="-u 6005 -g 6005 -D -C $RUNDIR -l $LOGFILE -p $NAME.pid"
+HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
+PIDNAME=$(echo $PIDFILE|sed "s@^$RUNDIR@@")
 
-mkdir $RUNDIR
 test -x $DAEMON || exit 0
+
+mkdir -p $RUNDIR
+chgrp $GROUP $RUNDIR
+chmod g+w $RUNDIR
 
 # Include prads defaults if available
 if [ -f /etc/default/prads ] ; then
-        . /etc/default/prads
+	. /etc/default/prads
 fi
+DAEMON_OPTS=${DAEMON_OPTS:--D -u $(id -u $USER) -g $(id -g $GROUP) -C $RUNDIR -l $LOGFILE -a $HOME_NETS -p $PIDNAME}
+
+if [ -n "$INTERFACE" ]
+    then
+    DAEMON_OPTS="$DAEMON_OPTS -i $INTERFACE"
+fi
+
 
 case "$1" in
 	start)
 		output=$(/bin/tempfile -s.prads)
 		log_daemon_msg "Starting $DESC" 
 		log_progress_msg $NAME
-                if start-stop-daemon \
-		   --start --quiet --pidfile ${PIDFILE} --exec ${DAEMON} -- \
-                   -P ${PIDFILE} ${DAEMON_OPTS} > ${output} 2>&1; then
+		if start-stop-daemon \
+			--start --quiet --pidfile ${PIDFILE} --exec ${DAEMON} -- \
+			${DAEMON_OPTS} > ${output} 2>&1; then
 			log_end_msg 0
 		else
 			log_end_msg 1
@@ -77,8 +90,8 @@ case "$1" in
 		$0 start
         	;;
 	*)
-        	log_success_msg "Usage: $0 {start|stop|restart|force-reload}"
-        	exit 1
+		log_success_msg "Usage: $0 {start|stop|restart|force-reload}"
+		exit 1
         ;;
 esac
 

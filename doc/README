@@ -9,7 +9,7 @@
 #
 
 # Baut'
-Is a `Passive Real-time Asset Detection System`. It passively listen to network traffic and gathers information on hosts and services it sees on the network. This information can be used to map your network, letting you know what services and hosts are alive/used, or can be used together with your favorite IDS/IPS setup for "event to host/service" correlation etc. 
+Is a `Passive Real-time Asset Detection System`. It passively listen to network traffic and gathers information on hosts and services it sees on the network. This information can be used to map your network, letting you know what services and hosts are active, and can be used together with your favorite IDS/IPS setup for "event to application" correlation.
 
 # As is!
 This program is served 'as is'. We take no responsabuility for anything :)
@@ -21,52 +21,40 @@ GPL v2 or better? See LICENSE
 See INSTALL
 
 # USE
-There are several ways to use PRADS. May it sniff your network for a while,
-and then you can run $ sqlite3 prads.db "select * from asset;"
-to dump the database of assets.
+There are several ways to use PRADS.
+PRADS has many commandline options, see the prads(1) man page.
 
-Examples of gamelinux.org:
-$ sqlite3 prads.db "select * from asset;"|grep SYN|grep ^87.238.45.168
-87.238.45.168|SYN|1242806866|S4:64:1:60:M1460,S,T,N,W4:.||@Linux|2.6 (Generic dfrag+)|"ethernet/modem" |7|equador
-87.238.45.168|SYNACK|1242634479|5792:64:1:60:M1460,S,T,N,W4:ZA||Linux|2.6 (newer, 4)|"ethernet/modem" |7|equador
-87.238.45.168|SYNACK|1242647505|S4:64:1:44:M1460:ZA||Linux|recent 2.4 (2)|"ethernet/modem" |8|equador
-87.238.45.168|SYNACK|1242647509|5792:64:1:60:M1460,N,N,T,N,W4:ZA||UNKNOWN|UNKNOWN|"ethernet/modem" |8|equador
+# Example
+  prads -i eth0 -l prads.log
 
-$ sqlite3 prads.db "select * from asset;"|grep SER|grep ^87.238.45.168
-87.238.45.168|SERVICE|1242634479|80||Apache|Debian|2.2.3|1|equador
-87.238.45.168|SERVICE|1242800627|87.238.45.168:25||Postfix SMTP|bolivia.pronix.no; |SERVICE|1|bolivia.pronix.no
+If you run the prads service, the assets it sees will be dumped into /var/log/prads.log and look like this:
 
-# Database tables:
-ip|service|time|fingerprint|mac|os|details|link|distance|reporting
+10.43.2.181,0,54354,6,SYN,[65535:64:1:64:M1460,N,W2,N,N,T,S,E,E:P:MacOS:iPhone OS 3.1.3 (UC):link:ethernet/modem:uptime:1574hrs],0,1300882012
+10.43.2.181,0,0,0,ARP (Apple),C8:BC:C8:48:65:CA,0,1300882017
 
-ip          = The ip address of the asset
+This information can be further processed, inserted into an SQL database etc.
+
+the general format fo this data is:
+asset,vlan,port,proto,service,[service-info],distance,discovered
+
+asset       = The ip address of the asset.
+vlan        = The virtual lan tag of the asset.
+port        = The port number of the detected service.
+proto       = The protocol number of the matching fingerprint.
 service     = The "Service" detected, like: TCP-SERVICE, UDP-SERVICE, SYN, SYNACK,MAC,.....
-time        = The timestamp when the data was collected
-fingerprint = The fingerprint that the match was done on
-mac         = The MAC address of the asset (service = ARP)
-os          = The Operating System (OS) matched (service = SYN/SYNACK)
-              The MAC vendor that is matched (service = ARP)
-details     = More details on OS (service = SYN/SYNACK)
-              More details on MAC vendor (service = ARP)
-              More details on Service (service = SERVICE)
-link        = Linktype guessed (service = SYN/SYNACK)
+service-info= The fingerprint that the match was done on, with info.
 distance    = Distance based on guessed initial TTL (service = SYN/SYNACK)
-reporting   = Hostname of host running PRADS (For multi-prads environments)
+discovered  = The timestamp when the data was collected
 
-# SNORT (snort.org) / Sguil (sguil.net)
-In the future, it should be possible to generate the Snort XML for the "Host Attribute Table" which was introdused in 2.8.1:
+May it sniff your network for a while and you will be able to do anomaly detection.
+
+# SNORT (snort.org)
+The prads2snort script may be used to convert the prads log into a hosts_attribute.xml file that can be used by snort to decide fragmentation policies, for better event detection. 
  http://snort.org/docs/snort_manual/node189.html
-This would be a better way then generating it by hand each time :)
 
-# WebGUI
-There will be a webgui to the database, for easy browsing of your network etc.
+# Sguil (sguil.net)
+You can feed events from PRADS straight into sguil replacing pads by using the sguil pads agent. PRADS supports the -f fifo argument and the 'fifo: /path/to/fifo' configuration option to feed events into a FIFO.
 
-# Interesting stuff:
-
-Grouped count of UNKNOWN SYNACK sigs 
-$ sqlite3 prads.db "select * from asset;"|grep "SYNACK|"|grep UNKNOWN|awk -F\| '{print $4}'| sort | uniq -c |sort -g
-
-Grouped count of UNKNOWN SYN sigs
-$ sqlite3 prads.db "select * from asset;"|grep "SYN|"|grep UNKNOWN|awk -F\| '{print $4}'| sort | uniq -c |sort -g
-
+# SQL database, WebGUI etc.
+This is on the agenda. There will be a webgui to the database, for easy browsing of your network. 
 
