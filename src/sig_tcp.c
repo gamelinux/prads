@@ -1310,7 +1310,7 @@ continue_fuzzy:
          if (PI_ECN(pi)) olog("(ECN) ");
          if (orig_df ^ e->df) olog("(firewall!) ");
 
-         if (PI_TOS(pi)) {
+         if (pi->ip4 && PI_TOS(pi)) {
             if (tos_desc) olog("[%s] ",tos_desc); else olog("[tos %d] ",PI_TOS(pi));
          }
          if (p->no_detail) olog("* "); else
