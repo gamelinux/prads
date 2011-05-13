@@ -168,11 +168,16 @@ inline int filter_packet(const int af, void *ipptr)
             u_ntop(*ip, af, output);
             dlog("ip: %s\n", output);
 #endif
-                if((*ip & IP4ADDR(&network[i].mask))
-                    == IP4ADDR(&network[i].addr)){
+                if((IP4ADDR(ip) & IP4ADDR(&network[i].mask))
+                    == (IP4ADDR(&network[i].addr) & IP4ADDR(&network[i].mask)) ){
                     our = 1;
                     break;
                 }
+#ifdef DEBUG_PACKET
+                else {
+                    dlog("%8x %8x %8x\n", IP4ADDR(ip) & IP4ADDR(&network[i].mask), IP4ADDR(&network[i].addr) & IP4ADDR(&network[i].mask), IP4ADDR(&network[i].mask));
+                }
+#endif
             }
         }
         break;
