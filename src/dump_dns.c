@@ -98,9 +98,10 @@ dump_dns(const u_char *payload, size_t paylen,
 	u_int opcode, rcode, id;
 	const char *sep;
 	ns_msg msg;
+   const char *host = "host";
 
 	/*fprintf(trace, "%sdns ", endline);*/
-        fprintf(trace,"%ld||hostname||%s||",ts,src_ip);
+   fprintf(trace,"%ld||%s||%s||",ts,host, src_ip);
 	if (ns_initparse(payload, paylen, &msg) < 0) {
 		fputs(strerror(errno), trace);
 		return;
@@ -124,11 +125,16 @@ dump_dns(const u_char *payload, size_t paylen,
 	FLAG("cd", ns_f_cd);
 #undef FLAG 
 
-	dump_dns_sect(&msg, ns_s_qd, trace, endline);
-	dump_dns_sect(&msg, ns_s_an, trace, endline);
+	//if(ns_o_query == opcode && ns_msg_getflag(msg,ns_f_qr)){
+   // question? 
+   dump_dns_sect(&msg, ns_s_qd, trace, endline);
+   // answer?
+   dump_dns_sect(&msg, ns_s_an, trace, endline);
+   // name servers?
 	dump_dns_sect(&msg, ns_s_ns, trace, endline);
+   // additional records?
 	dump_dns_sect(&msg, ns_s_ar, trace, endline);
-        fprintf(trace, "\n");
+   fprintf(trace, "\n");
 }
 
 static void
@@ -137,15 +143,15 @@ dump_dns_sect(ns_msg *msg, ns_sect sect, FILE *trace, const char *endline) {
 	const char *sep;
 	ns_rr rr;
 
-        fprintf(trace, "||");
+   fprintf(trace, "||");
 	rrmax = ns_msg_count(*msg, sect);
 	if (rrmax == 0) {
 		fputs("0", trace);
 		return;
 	}
-        fprintf(trace, "%d",rrmax);
+   fprintf(trace, "%d",rrmax);
 	//fprintf(trace, "%s%d", endline, rrmax);
-        //fprintf(trace, "%s", endline);
+   //fprintf(trace, "%s", endline);
 	sep = "";
 	for (rrnum = 0; rrnum < rrmax; rrnum++) {
 		if (ns_parserr(msg, sect, rrnum, &rr)) {
@@ -211,8 +217,8 @@ dump_dns_rr(ns_msg *msg, ns_rr *rr, ns_sect sect, FILE *trace) {
 		MY_GET16(mx, rd);
 		fprintf(trace, ",%u", mx);
 		/* FALLTHROUGH */
-	case ns_t_ns:
-        case ns_t_txt:
+   case ns_t_ns:
+   case ns_t_txt:
 	case ns_t_ptr:
 	case ns_t_cname:
 		n = ns_name_uncompress(ns_msg_base(*msg), ns_msg_end(*msg),
