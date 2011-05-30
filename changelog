@@ -1,3 +1,8 @@
+2011-05-30 0.2.6: dev will make rye
+
+    * bugfix: lame stack smasher
+    * bugfix: payload ipv6 packets too
+
 2011-05-13 0.2.5: mori moment
 
     * setcap: the capabilities needed to run prads non-root
