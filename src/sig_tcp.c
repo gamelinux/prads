@@ -1188,7 +1188,7 @@ fp_entry *find_match(
 
   fp_entry* fuzzy = 0;
   uint8_t fuzzy_now = 0;
-  char outbuf[INET_ADDRSTRLEN+1];
+  char outbuf[INET6_ADDRSTRLEN+1];
 
   //if ( sig == config.sig_ack ) e->optcnt = 3;
 
