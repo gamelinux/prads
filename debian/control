@@ -13,7 +13,8 @@ DM-Upload-Allowed: yes
 
 Package: prads
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libpcap0.8, libpcre3
+Depends: ${shlibs:Depends}, ${misc:Depends}, libpcap0.8, libpcre3,
+ adduser
 Description: Passive Real-time Asset Detection System
  PRADS is a Passive Real-time Asset Detection System.
  .

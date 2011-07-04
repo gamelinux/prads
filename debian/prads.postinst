@@ -7,7 +7,7 @@ set -e
 set -u
 
 setup_user() {
-    if ! getent passwd $1 2>&1 >/dev/null; then
+    if ! getent passwd prads 2>&1 >/dev/null; then
         adduser --quiet --system --no-create-home --group prads
     fi
 }
