@@ -1,8 +1,9 @@
 Source: prads
 Section: utils
 Priority: extra
-Maintainer: Kacper Wysocki (Redpill-Linpro) <kwy@redpill-linpro.com>
-Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>
+Maintainer: Prads package developers <prads-devel@projects.linpro.no>
+Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>,
+           Kacper Wysocki <comotion@krutt.org>
 Build-Depends: debhelper (>= 7.0.50~), libpcap-dev, libpcre3-dev, python-docutils (>= 0.6)
 Standards-Version: 3.9.1
 Homepage: http://gamelinux.github.com/prads/
