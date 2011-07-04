@@ -1,3 +1,11 @@
+prads (0.2.6-1) UNRELEASED; urgency=low
+
+  * New upstream release
+  * bugfix: lame stack smasher
+  * bugfix: payload ipv6 packets too
+
+ -- Kacper Wysocki <comotion@krutt.org>  Mon, 04 Jul 2011 12:36:58 +0200
+
 prads (0.2.5-1) UNRELEASED; urgency=low
 
   * New upstream release
