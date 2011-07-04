@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Postinst script for prads.
+# Stig Sandbeck Mathisen <ssm@debian.org>
+
+set -e
+set -u
+
+setup_user() {
+    if ! getent passwd $1 2>&1 >/dev/null; then
+        adduser --quiet --system --no-create-home --group prads
+    fi
+}
+
+case ${1:-} in
+    configure)
+        setup_user
+        ;;
+esac
+
+#DEBHELPER#

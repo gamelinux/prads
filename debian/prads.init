@@ -15,14 +15,16 @@
 # Author:       Stig Sandbeck Mathisen <ssm@debian.org>
 #
 
-
 DESC="Prads Realtime Asset Detection System"
 NAME="prads"
 DAEMON="/usr/bin/${NAME}"
 CONFIG="/etc/{$NAME}/{$NAME}.conf"
-OPTIONS="-D"
+USER="prads"
+GROUP="prads"
+CHROOT="/var/run/prads"
+PIDFILE="prads.pid"
 
-HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
+DAEMON_OPTS="-D -u $(id -u $USER) -g $(id -g $GROUP) -C $CHROOT -p $PIDFILE"
 
 test -f $DAEMON || exit 0
 
@@ -35,9 +37,14 @@ then
     . /etc/default/$NAME
 fi
 
+create_chroot() {
+    install -o $USER -g $GROUP -d $CHROOT
+}
+
 start_service() {
     log_begin_msg "Starting $DESC..."
-    start-stop-daemon --start --quiet --exec $DAEMON -- $OPTIONS \
+    start-stop-daemon --start --quiet --pidfile $CHROOT/$PIDFILE \
+        --exec $DAEMON -- $DAEMON_OPTS \
         ${INTERFACE:+-i "${INTERFACE}"} \
         ${HOME_NETS:+-a "${HOME_NETS}"} \
         2>&1 | logger -p daemon.info -t prads

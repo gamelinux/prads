@@ -2,12 +2,13 @@
 
 # HOME_NET: Networks we consider "ours", only log assets on these networks.
 #
-# The debian default contains all rc1918 networks, and the ipv6 link local
-# network.  This is set in the init file, but may be overridden here.
-#
-# HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
-#
-# Alternatively, set HOME_NETS to "" to log all traffic, which is the builtin default.
+# The debian default contains all rc1918 networks, and the ipv6 link
+# local network. The Debian defaults is set here.
+
+HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
+
+# Alternatively, set HOME_NETS to "" to log all traffic, which is the
+# builtin default.
 #
 # HOME_NETS=""
 # 
