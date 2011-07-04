@@ -1,4 +1,4 @@
-prads (0.2.6-1) UNRELEASED; urgency=low
+prads (0.2.6-1) UNSTABLE; urgency=low
 
   * New upstream release
   * bugfix: lame stack smasher
