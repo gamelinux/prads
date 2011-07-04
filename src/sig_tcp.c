@@ -1188,7 +1188,14 @@ fp_entry *find_match(
 
   fp_entry* fuzzy = 0;
   uint8_t fuzzy_now = 0;
-  char outbuf[INET_ADDRSTRLEN+1];
+  char outbuf[INET6_ADDRSTRLEN+1];
+
+  uint8_t *payhead = 0x0;
+  if(pi->ip4) {
+      payhead = (uint8_t*) pi->ip4;
+  }else if(pi->ip6) {
+      payhead = (uint8_t*) pi->ip6;
+  } // elsewise null
 
   //if ( sig == config.sig_ack ) e->optcnt = 3;
 
@@ -1345,9 +1352,11 @@ continue_fuzzy:
          olog("\n");
 
       }
-      if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
+      if(payhead) {
+          if (pay && payload_dump) dump_payload(pay,plen - (pay - payhead));
 
-      if (full_dump) dump_packet((uint8_t*)PI_IP4(pi),plen);
+          if (full_dump) dump_packet(payhead,plen);
+      }
 
     }
 
@@ -1476,9 +1485,11 @@ continue_search:
       */
     vlog(2, "\n");
 
-    if (pay && payload_dump) dump_payload(pay,plen - (pay - (uint8_t*)PI_IP4(pi)));
-    //putchar('\n'); //edward
-    if (full_dump) dump_packet((uint8_t*)PI_IP4(pi),plen);
+    if(payhead) {
+        if (pay && payload_dump) dump_payload(pay,plen - (pay - payhead));
+
+        if (full_dump) dump_packet(payhead,plen);
+    }
     fflush(0);
 
   }
