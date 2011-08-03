@@ -185,11 +185,13 @@ inline int filter_packet(const int af, void *ipptr)
         {
             /* 32-bit comparison of ipv6 nets.
              * can do better here by using 64-bit or SIMD instructions
+             * this code needs more thought and work
              *
              *
              * PS: use same code for ipv4 - 0 bytes and SIMD doesnt care*/
 
-            ip_vec.ip6 = *((struct in6_addr *)ipptr);
+            // copy the in6_addr pointed to by ipptr into the vector. grr!
+            memcpy(&ip_vec.ip6,ipptr, sizeof(struct in6_addr));
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
