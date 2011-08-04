@@ -390,7 +390,8 @@ S4:64:1:60:M*,S,T,N,W5:.:Linux:2.6 (newer, 5)
 S4:64:1:60:M*,S,T,N,W6:Z:Linux:2.6 (newer, 6)
 S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6)
 
-# added -kwy
+# 
+S4:64:1:40:M*,S,T,N,W5:Z:Linux:2.6 (newer, 5) IPv6
 S2:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6 loopback)
 S4:64:1:60:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7 fedora12)
 S4:64:1:40:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7) IPv6
@@ -907,8 +908,17 @@ S23:64:1:64:N,W1,N,N,T,N,N,S,M1380:.:@Mysterious:GPRS gateway (?)
 S4:64:1:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag+)
 S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
 
+# Big-name Linuxez
 S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 
+# Spiders
+S4:44:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
+S4:51:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)
+S4:52:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)
+S4:47:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
+
+# xsserver.eu Dedicated Servers
+8192:123:1:40:.:.:Linux:2.6 (newer, 7)
 
 ###########################
 # PRADS EXPERIMENTAL SIGS #

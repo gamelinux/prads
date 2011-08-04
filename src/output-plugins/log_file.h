@@ -25,8 +25,8 @@ output_plugin *init_log_file();
 int init_output_log_file (output_plugin *p, const char *c, int flags);
 void read_report_file (output_plugin *p);
 int parse_raw_report (bstring line);
-void file_os(output_plugin*,asset *main, os_asset *os);
-void file_service(output_plugin*,asset *main, serv_asset *service);
+void file_os(output_plugin*,asset *main, os_asset *os, connection*);
+void file_service(output_plugin*,asset *main, serv_asset *service, connection*);
 void file_arp(output_plugin*, asset *main);
 int end_output_log_file (output_plugin*);
 

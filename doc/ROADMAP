@@ -28,8 +28,8 @@ Features in prads.pl missing as yet in C:
  - ??? 
 
 Features wanted in 2011 the year of the Rabbit.
- - cxtracker output.
- - sguil output fifo
+ - [v] cxtracker output.
+ - [v] sguil output fifo
  - scripting with lua
  - shared memory log
  - plugin API

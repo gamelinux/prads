@@ -20,5 +20,6 @@
 #include <syslog.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <syslog.h>
 
 #endif

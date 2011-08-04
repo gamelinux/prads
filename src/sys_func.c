@@ -179,7 +179,7 @@ int drop_privs(void)
                     elog("ERROR: you have chrootetd and must set numeric group ID.\n");
                     exit(1);
                 }else{
-                    elog("ERROR: couldn't get ID for group %s, group does not exist.", config.group_name)
+                    elog("ERROR: couldn't get ID for group %s, group does not exist.", config.group_name);
                     exit(1);
                 }
             }
@@ -308,7 +308,6 @@ int daemonize()
         exit(0);                /* parent */
     }
 
-    config.use_syslog = 1;
     if (pid < 0) {
         return ERROR;
     }

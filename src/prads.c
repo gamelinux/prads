@@ -185,11 +185,13 @@ inline int filter_packet(const int af, void *ipptr)
         {
             /* 32-bit comparison of ipv6 nets.
              * can do better here by using 64-bit or SIMD instructions
+             * this code needs more thought and work
              *
              *
              * PS: use same code for ipv4 - 0 bytes and SIMD doesnt care*/
 
-            ip_vec.ip6 = *((struct in6_addr *)ipptr);
+            // copy the in6_addr pointed to by ipptr into the vector. grr!
+            memcpy(&ip_vec.ip6,ipptr, sizeof(struct in6_addr));
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
@@ -1030,6 +1032,7 @@ void game_over()
                print_pcap_stats();
         }
         if (config.handle != NULL) pcap_close(config.handle);
+        if (ISSET_CONFIG_SYSLOG(config)) closelog();
         free_config();
         olog("\n[*] prads ended.\n");
         exit(0);
@@ -1199,7 +1202,7 @@ int main(int argc, char *argv[])
             config.chroot_dir = strdup(optarg);
             break;
         case 'i':
-            config.dev = strdup(optarg);
+            config.dev = optarg;
             break;
         case 'r':
             config.pcap_file = strdup(optarg);
@@ -1220,6 +1223,7 @@ int main(int argc, char *argv[])
             break;
         case 'D':
             config.daemon_flag = 1;
+            config.cflags |= CONFIG_SYSLOG;
             break;
         case 'u':
             config.user_name = strdup(optarg);
@@ -1298,6 +1302,14 @@ int main(int argc, char *argv[])
     bdestroy (pconfile);
     // we're done parsing configs - now initialize prads
 
+    if(ISSET_CONFIG_SYSLOG(config)) {
+        openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
+    }
+    olog("\n[*] Running prads %s\n", VERSION);
+    olog("    Using %s\n", pcap_lib_version());
+    olog("    Using PCRE version %s\n", pcre_version());
+
+
     if(config.verbose){
         rc = init_logging(LOG_STDOUT, NULL, config.verbose);
         if(rc) perror("Logging to standard out failed!");
@@ -1343,10 +1355,6 @@ int main(int argc, char *argv[])
     load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);
     init_services();
 
-    olog("\n[*] Running prads %s\n", VERSION);
-    olog("    Using %s\n", pcap_lib_version());
-    olog("    Using PCRE version %s\n", pcre_version());
-
     //if (config.verbose) display_config();
     display_config();
 
@@ -1362,10 +1370,17 @@ int main(int argc, char *argv[])
         /* * look up an available device if non specified */
         if (config.dev == 0x0)
             config.dev = pcap_lookupdev(config.errbuf);
+        if (config.dev){
+            *config.errbuf = 0;
+        }else{
+            elog("[*] Error looking up device: '%s', try setting device with -i flag.\n", config.errbuf);
+            exit(1);
+        }
+
         olog("[*] Device: %s\n", config.dev);
     
         if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
-            olog("[*] Error pcap_open_live: %s \n", config.errbuf);
+            elog("[!] Error pcap_open_live: %s \n", config.errbuf);
             exit(1);
         }
         /* * B0rk if we see an error... */
@@ -1390,7 +1405,6 @@ int main(int argc, char *argv[])
         if (config.daemon_flag) {
             if (!is_valid_path(config.pidfile))
                 elog("[*] Unable to create pidfile '%s'\n", config.pidfile);
-            openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
             olog("[*] Daemonizing...\n\n");
             daemonize(NULL);
         }

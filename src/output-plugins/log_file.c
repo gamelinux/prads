@@ -272,7 +272,7 @@ void file_arp (output_plugin *log, asset *main)
  *          : 1 - Serice asset
  * ---------------------------------------------------------- */
 void
-file_service (output_plugin* log,asset *main, serv_asset *service)
+file_service (output_plugin* log,asset *main, serv_asset *service, connection *cxt)
 {
     if ((FILE*)log->data != NULL) {
         uint8_t tmp_ttl;
@@ -309,7 +309,7 @@ file_service (output_plugin* log,asset *main, serv_asset *service)
  * RETURN   : VOID
  * ---------------------------------------------------------- */
 void
-file_os (output_plugin *log, asset *main, os_asset *os)
+file_os (output_plugin *log, asset *main, os_asset *os, connection *cxt)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;
