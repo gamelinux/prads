@@ -40,6 +40,9 @@ S4:64:1:*:.:AFDN:Linux:2.6 arm
 
 #54:64:1:*:N,N,T:ATFDN:Linux:Nagios
 
+313:64:1:32:N,N,T:ZATFN:Linux:2.6 (Newer 5) IPv6
+82:64:1:32:N,N,T:ZATFN:Linux:2.6 (Newer 7) IPv6
+70:64:1:32:N,N,T:ZATFN:Linux:2.6 (Newer 7) IPv6
 
 ## Freebsd
 8326:64:1:52:N,N,T:ATFN!:Freebsd:freebsd.org

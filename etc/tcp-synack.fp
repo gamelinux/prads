@@ -70,16 +70,23 @@ S4:64:1:52:M*,N,N,S,N,W0:ZA:Linux:2.6 or 2.4 w/o timestamps
 5792:64:1:60:M*,S,T,N,W1:ZAT:Linux:2.6 (newer, 1)
 5792:64:1:60:M*,S,T,N,W2:ZAT:Linux:2.6 (newer, 2)
 5792:64:1:60:M*,S,T,N,W2:ZAT!:Linux:2.6 (arm, newer2)
+5712:64:1:40:M*,S,T,N,W2:ZAT:Linux:2.6 (newer, 2) IPv6
 5792:64:1:60:M*,S,T,N,W3:ZAT:Linux:2.6 (newer, 3)
+5712:64:1:40:M*,S,T,N,W3:ZAT:Linux:2.6 (newer, 3) IPv6
 5792:64:1:60:M*,S,T,N,W4:ZAT:Linux:2.6 (newer, 4)
+5712:64:1:40:M*,S,T,N,W4:ZAT:Linux:2.6 (newer, 4) IPv6
 5792:64:1:60:M*,S,T,N,W5:ZAT:Linux:2.6 (newer, 5)
+5712:64:1:40:M*,S,T,N,W5:ZAT:Linux:2.6 (newer, 5) IPv6
 5792:64:1:60:M*,S,T,N,W6:ZAT:Linux:2.6 (newer, 6)
 5696:64:1:60:S,T,M*,N,W6:ZAT:Linux:2.6 (newer, 6) IPSec
+5712:64:1:40:M*,S,T,N,W6:ZAT:Linux:2.6 (newer, 6) IPv6
 5792:64:1:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
 5712:64:1:40:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7) IPv6
 5792:64:0:60:M*,S,T,N,W7:ZAT:Linux:2.6 (newer, 7)
 5792:64:1:60:M*,S,T,N,W8:ZAT:Linux:2.6 (newer, 8)
+5712:64:1:40:M*,S,T,N,W8:ZAT:Linux:2.6 (newer, 8) IPv6
 5792:64:1:60:M*,S,T,N,W9:ZAT:Linux:2.6 (newer, 9)
+5712:64:1:40:M*,S,T,N,W9:ZAT:Linux:2.6 (newer, 9) IPv6
 5792:128:1:60:M*,S,T,N,W9:ZAT:Linux:2.6 (newer, 10)
 
 # Different response when Windows talk to Linux:
