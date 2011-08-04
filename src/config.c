@@ -58,7 +58,6 @@ void display_config()
 
 void free_config()
 {
-    if (config.dev != NULL) free (config.dev);
     if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
 // Grr - no nice way to tell if the settings comes from configfile or not :/
     if (config.pidfile != NULL) free(config.pidfile);
@@ -81,7 +80,7 @@ void set_default_config_options()
     config.cof    |= CS_TCP_CLIENT;
     config.cof    |= CS_UDP_SERVICES;
     config.cof    |= CS_MAC;
-    config.dev     = strdup("eth0");
+    config.dev     = 0x0; // default is to lookup device
     config.bpff    = strdup("");
     config.dpath   = "/tmp";
     config.pidfile = strdup("/var/run/prads.pid");
@@ -297,7 +296,6 @@ void parse_line (bstring line)
         config.group_name = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "interface")) == 1) {
         /* INTERFACE */
-        free(config.dev);
         config.dev = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "bpfilter")) == 1) {
         /* FILTER */

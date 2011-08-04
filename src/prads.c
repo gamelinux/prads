@@ -1202,7 +1202,7 @@ int main(int argc, char *argv[])
             config.chroot_dir = strdup(optarg);
             break;
         case 'i':
-            config.dev = strdup(optarg);
+            config.dev = optarg;
             break;
         case 'r':
             config.pcap_file = strdup(optarg);
@@ -1370,10 +1370,17 @@ int main(int argc, char *argv[])
         /* * look up an available device if non specified */
         if (config.dev == 0x0)
             config.dev = pcap_lookupdev(config.errbuf);
+        if (config.dev){
+            *config.errbuf = 0;
+        }else{
+            elog("[*] Error looking up device: '%s', try setting device with -i flag.\n", config.errbuf);
+            exit(1);
+        }
+
         olog("[*] Device: %s\n", config.dev);
     
         if ((config.handle = pcap_open_live(config.dev, SNAPLENGTH, 1, 500, config.errbuf)) == NULL) {
-            olog("[*] Error pcap_open_live: %s \n", config.errbuf);
+            elog("[!] Error pcap_open_live: %s \n", config.errbuf);
             exit(1);
         }
         /* * B0rk if we see an error... */
