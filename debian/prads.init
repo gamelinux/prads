@@ -43,6 +43,7 @@ create_chroot() {
 
 start_service() {
     log_begin_msg "Starting $DESC..."
+    [ ! -d $CHROOT ] && create_chroot
     start-stop-daemon --start --quiet --pidfile $CHROOT/$PIDFILE \
         --exec $DAEMON -- $DAEMON_OPTS \
         ${INTERFACE:+-i "${INTERFACE}"} \
