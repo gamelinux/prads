@@ -1,0 +1,65 @@
+2011-05-30 0.2.6: dev will make rye
+
+    * bugfix: lame stack smasher
+    * bugfix: payload ipv6 packets too
+
+2011-05-13 0.2.5: mori moment
+
+    * setcap: the capabilities needed to run prads non-root
+    * bugfix: avoid crashing in the ditch mac
+    * bugfix: fmask now compiles on gcc 4.6
+    * bugfix: ip4 network filtering reliability
+    * bugfix: another TOS IP4 hack
+
+2011-05-12 0.2.4: memento mori
+
+    * added connections to output plugins
+    * asset output now contains src:dst combo for flow tracking
+    * default to monitor all nets when called with empty -a argument
+    * better SGUIL compatability
+    * sanitized prads.rc init script (take note packagers)
+    * argument -Z: PassiveDNS output (experimental)
+    * bugfix: IPv6 TOS check
+    * bugfix: make prads forget
+    * bugfix: end_sessions() logic error
+    * code and debug cleanups
+
+2011-03-21 0.2.3: the weekend hack
+
+    * argument -O outputs new, expired and ended connections
+    * argument -x dumps per-packet connection updates
+    * argument -s <len> dumps len bytes of payload
+    * arguments -XFRMSAKUTtI for specifying fingerprinting methods on the cli
+    * argument -q gives really quiet while -v for console verbosity, -vv etc..
+    * code cleanup: drastically reduce the amount of globals, copypastitis, complexity
+    * updated man page
+    * cleanup and sanitize output (thanks ssm)
+    * argument -P pidpath removed. -p pidfile sufficient
+    * more sguil-friendly fifo output
+    * bugfix: matching mac when mac db is not loaded
+    * bugfix: expire services even if !print_updates
+    * bugfix: connection tracking regression
+    * bugfix: service matching regression
+
+2011-03-17 0.2.2: "the bump"
+
+    * output plugins, featuring sguil fifo
+    * mac vendor database lookups
+    * chroot to rundir and daemonize by default (initscript)
+    * OSX port and massive cleanups
+    * fix regressions and some bugfixes
+    * logs cxtracking
+    * closes issue 1 (github) segfault with b0gus user
+
+2010-11-24 0.2.1: a point of fact
+
+    * chroot prads
+    * bugfixes
+
+2010-06-21 0.2.0: our two cents
+
+    * Rewrite in C
+
+2009-11-02 0.2: Last perl version
+
+2009-05-19 0.1: Initial version

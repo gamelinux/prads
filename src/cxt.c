@@ -4,6 +4,7 @@
 #include "cxt.h"
 #include "sys_func.h"
 #include "config.h"
+#include "output-plugins/log.h"
 
 extern globalconfig config;
 
@@ -185,7 +186,7 @@ int cx_track(packetinfo *pi) {
     // bucket turned upside down didn't yeild anything. new connection
     cxt = cxt_new(pi);
     if(config.cflags & CONFIG_CXWRITE)
-        cxt_write(cxt, stdout, CX_NEW);
+        log_connection(cxt, stdout, CX_NEW);
 
     /* * New connections are pushed on to the head of bucket[s_hash] */
     cxt->next = head;
@@ -242,67 +243,6 @@ void reverse_pi_cxt(packetinfo *pi)
        pi->sc = SC_SERVER;
     else
        pi->sc = SC_CLIENT;
-}
-
-//asprintf(&cxtfname, "%s/stats.%s.%ld", dpath, dev, tstamp);
-//cxtFile = fopen(cxtfname, "w");
-/* cxt_write(cxt, fd): write cxt to fd, with the following format:
- ** startsec|id|start time|end time|total time|proto|src|sport|dst|dport|s_packets|s_bytes|d_packets|d_bytes|s_flags|d_flags
- *
- * question is only whether to dump ip address as int or human readable
- */
-void cxt_write(connection *cxt, FILE* fd, int human)
-{
-    char stime[80], ltime[80];
-    time_t tot_time;
-    uint32_t s_ip_t, d_ip_t;
-    static char src_s[INET6_ADDRSTRLEN];
-    static char dst_s[INET6_ADDRSTRLEN];
-    strftime(stime, 80, "%F %H:%M:%S", gmtime(&cxt->start_time));
-    strftime(ltime, 80, "%F %H:%M:%S", gmtime(&cxt->last_pkt_time));
-
-    tot_time = cxt->last_pkt_time - cxt->start_time;
-    if ( cxt->af == AF_INET ) {
-        s_ip_t = ntohl(cxt->s_ip.s6_addr32[0]);
-        d_ip_t = ntohl(cxt->d_ip.s6_addr32[0]);
-    }
-
-    fprintf(fd, "%ld%09ju|%s|%s|%ld|%u|",
-            cxt->start_time, cxt->cxid, stime, ltime, tot_time,
-            cxt->proto);
-    if(human || cxt->af == AF_INET6) {
-        if(!inet_ntop(cxt->af, (cxt->af == AF_INET6? (void*) &cxt->s_ip : (void*) cxt->s_ip.s6_addr32), src_s, INET6_ADDRSTRLEN))
-            perror("inet_ntop");
-        if(!inet_ntop(cxt->af, (cxt->af == AF_INET6? (void*) &cxt->d_ip : (void*) cxt->d_ip.s6_addr32), dst_s, INET6_ADDRSTRLEN))
-            perror("inet_ntop");
-        fprintf(fd, "%s|%u|%s|%u|",
-                src_s, ntohs(cxt->s_port),
-                dst_s, ntohs(cxt->d_port));
-    } else {
-        fprintf(fd, "%u|%u|%u|%u|",
-                s_ip_t, ntohs(cxt->s_port),
-                d_ip_t, ntohs(cxt->d_port));
-    }
-    fprintf(fd, "%ju|%ju|", 
-            cxt->s_total_pkts, cxt->s_total_bytes);
-    fprintf(fd, "%ju|%ju|%u|%u",
-            cxt->d_total_pkts, cxt->d_total_bytes,
-            cxt->s_tcpFlags, cxt->d_tcpFlags);
-    // hack to distinguish output paths
-    char *o = NULL;
-    switch (human) {
-        case CX_EXPIRE:
-            o="[expired.]";
-            break;
-        case CX_ENDED:
-            o="[ended.]";
-            break;
-        case CX_NEW:
-            o="[New]";
-            break;
-    }
-    if(o) fprintf(fd, "|%s", o);
-    fprintf(fd, "\n");
 }
 
 /*
@@ -369,9 +309,9 @@ void end_sessions()
 
                 if (config.cflags & CONFIG_CXWRITE) {
                     if (expired == 1)
-                        cxt_write(cxt, stdout, CX_EXPIRE);
+                        log_connection(cxt, stdout, CX_EXPIRE);
                     else if (ended == 1)
-                        cxt_write(cxt, stdout, CX_ENDED);
+                        log_connection(cxt, stdout, CX_ENDED);
                 }
                 ended = expired = 0;
 
@@ -389,7 +329,7 @@ void end_sessions()
     }
 }
 
-void cxt_write_all()
+void log_connection_all()
 {
     int i;
     connection *cxt;
@@ -398,7 +338,7 @@ void cxt_write_all()
     for(i = 0; i < BUCKET_SIZE; i++) {
         cxt = bucket[i];
         while(cxt) {
-            cxt_write(cxt, stdout, CX_HUMAN);
+            log_connection(cxt, stdout, CX_HUMAN);
             cxt = cxt->next;
         }
     }
@@ -442,7 +382,7 @@ void end_all_sessions()
             connection *tmp = cxt;
 
             if(config.cflags & CONFIG_CXWRITE)
-                cxt_write(cxt, stdout, CX_ENDED);
+                log_connection(cxt, stdout, CX_ENDED);
 
             cxt = cxt->next;
             del_connection(tmp, &bucket[cxkey]);

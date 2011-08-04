@@ -56,7 +56,7 @@ servicelist *services[MAX_PORTS];
 int inpacket, gameover, intr_flag;
 int nets = 1;
 
-struct fmask network[MAX_NETS];
+fmask network[MAX_NETS];
 
 // static strings for comparison
 // - this is lame and should be a flag!
@@ -88,7 +88,7 @@ void parse_other (packetinfo *pi);
 void parse_arp (packetinfo *pi);
 int  parse_network (char *net_s, struct in6_addr *network);
 int  parse_netmask (char *f, int type, struct in6_addr *netmask);
-void parse_nets(const char *s_net, struct fmask *network);
+void parse_nets(const char *s_net, fmask *network);
 
 void udp_guess_direction(packetinfo *pi);
 void set_pkt_end_ptr (packetinfo *pi);
@@ -152,27 +152,32 @@ inline int filter_packet(const int af, void *ipptr)
     ip6v t;
 
     int i, our = 0;
-    char output[MAX_NETS];
+    char output[INET_ADDRSTRLEN + 1];
     switch (af) {
         case AF_INET:
         {
-            uint32_t *ip = (uint32_t *) ipptr;
+            struct in6_addr *ip = (struct in6_addr *) ipptr;
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if (network[i].type != AF_INET)
                     continue;
 #ifdef DEBUG_PACKET
-                inet_ntop(af, &network[i].addr.s6_addr32[0], output, MAX_NETS);
-                vlog(0x2, "Filter: %s\n", output);
-                inet_ntop(af, &network[i].mask.s6_addr32[0], output, MAX_NETS);
-                vlog(0x2, "mask: %s\n", output);
-                inet_ntop(af, ip, output, MAX_NETS);
-                vlog(0x2, "ip: %s\n", output);
+            u_ntop(network[i].addr, af, output);
+            dlog("Filter: %s\n", output);
+            u_ntop(network[i].mask, af, output);
+            dlog("mask: %s\n", output);
+            u_ntop(*ip, af, output);
+            dlog("ip: %s\n", output);
 #endif
-                if((*ip & IP4ADDR(&network[i].mask))
-                    == IP4ADDR(&network[i].addr)){
+                if((IP4ADDR(ip) & IP4ADDR(&network[i].mask))
+                    == (IP4ADDR(&network[i].addr) & IP4ADDR(&network[i].mask)) ){
                     our = 1;
                     break;
                 }
+#ifdef DEBUG_PACKET
+                else {
+                    dlog("%8x %8x %8x\n", IP4ADDR(ip) & IP4ADDR(&network[i].mask), IP4ADDR(&network[i].addr) & IP4ADDR(&network[i].mask), IP4ADDR(&network[i].mask));
+                }
+#endif
             }
         }
         break;
@@ -180,20 +185,22 @@ inline int filter_packet(const int af, void *ipptr)
         {
             /* 32-bit comparison of ipv6 nets.
              * can do better here by using 64-bit or SIMD instructions
+             * this code needs more thought and work
              *
              *
              * PS: use same code for ipv4 - 0 bytes and SIMD doesnt care*/
 
-            ip_vec.ip6 = *((struct in6_addr *)ipptr);
+            // copy the in6_addr pointed to by ipptr into the vector. grr!
+            memcpy(&ip_vec.ip6,ipptr, sizeof(struct in6_addr));
             for (i = 0; i < MAX_NETS && i < nets; i++) {
                 if(network[i].type != AF_INET6)
                     continue;
 #ifdef DEBUG_PACKET
-                inet_ntop(af, &network[i].addr, output, MAX_NETS);
+                u_ntop(network[i].addr, af, output);
                 dlog("net:  %s\n", output);
-                inet_ntop(af, &network[i].mask, output, MAX_NETS);
+                u_ntop(network[i].mask, af, output);
                 dlog("mask: %s\n", output);
-                inet_ntop(af, ipptr, output, MAX_NETS);
+                u_ntop(ip_vec.ip6, af, output);
                 dlog("ip: %s\n", output);
 #endif
                 if (network[i].type == AF_INET6) {
@@ -945,7 +952,7 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
  *
  * an IPv6 address is 8 x 4 hex digits. missing digits are padded with zeroes.
  */
-void parse_nets(const char *s_net, struct fmask *network)
+void parse_nets(const char *s_net, fmask *network)
 {
     /* f -> for processing
      * p -> frob pointer

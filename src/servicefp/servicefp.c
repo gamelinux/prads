@@ -65,7 +65,7 @@ int load_servicefp_file(char *sigfile, signature **db, int len)
     bstring filedata;
     struct bstrList *lines;
     int i;
-    (len); // doesn't matter
+    (void)(len); // doesn't matter
 
     /*
      * Check for a PADS_SIGNATURE_LIST file within the current directory.  
@@ -108,7 +108,7 @@ int load_servicefp_file(char *sigfile, signature **db, int len)
 
 void dump_sig_service(signature *sig, int len)
 {
-    (len); // it's a linked list, not important.
+    (void)(len); // it's a linked list, not important.
     while(sig) {
         // the actual regex is compiled and not available here.
         printf("%s,v/%s/%s/%s/\n", bdata(sig->service),
