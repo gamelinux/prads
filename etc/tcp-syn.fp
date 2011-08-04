@@ -910,7 +910,15 @@ S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
 
 # Big-name Linuxez
 S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
-S4:44:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider)
+
+# Spiders
+S4:44:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
+S4:51:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)
+S4:52:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)
+S4:47:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
+
+# xsserver.eu Dedicated Servers
+8192:123:1:40:.:.:Linux:2.6 (newer, 7)
 
 ###########################
 # PRADS EXPERIMENTAL SIGS #
