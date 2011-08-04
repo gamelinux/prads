@@ -321,6 +321,9 @@ S3:255:1:64:M1460,N,W0,N,N,T,N,N,S:A:Omniture:DC/1.2
 #S3:255:1:64:M1460,N,W0,N,N,T,S,E,E:PAT:Microsoft:Bing.com
 S3:255:1:64:M1460,N,W0,N,N,T,S,E:PAT:Microsoft:Bing.com
 
+# Spiders
+S4:50:1:60:M1452,S,N,N,N,N,N,N,N,N,N,N,N,N,N:A!:Baidu:2.0 (baiduspider)
+
 ###################
 # PRADS TEST SIGS #
 ###################
