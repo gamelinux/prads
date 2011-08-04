@@ -279,7 +279,8 @@ S6:64:1:60:M1460,N,W0,N,N,T:AT:BSD/OS:4.0.x
 ###########################################
 
 16384:64:1:44:M1460:A:F5:BigIP LB 4.1.x (sometimes FreeBSD)
-S3:255:1:60:M1380,N,W0,N,N,T:A:F5:Big-IP X
+S3:250:1:64:M1460,N,W0,N,N,T,S,E,E:PAT:F5:BigIP
+S3:255:1:60:M1380,N,W0,N,N,T:A:F5:BigIP
 S12:64:1:60:M1460,N,W4,N,N,T:A:F5:BigIP Link Controller
 4128:255:0:44:M*:ZA:Cisco:Catalyst 2900 12.0(5)
 4096:60:0:44:M*:A:Brother:HL-1270N
@@ -320,6 +321,9 @@ S3:255:1:64:M1460,N,W0,N,N,T,N,N,S:A:Omniture:DC/1.2
 # Bing.com
 #S3:255:1:64:M1460,N,W0,N,N,T,S,E,E:PAT:Microsoft:Bing.com
 S3:255:1:64:M1460,N,W0,N,N,T,S,E:PAT:Microsoft:Bing.com
+
+# Spiders
+S4:50:1:60:M1452,S,N,N,N,N,N,N,N,N,N,N,N,N,N:A!:Baidu:2.0 (baiduspider)
 
 ###################
 # PRADS TEST SIGS #
