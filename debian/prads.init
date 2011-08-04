@@ -47,8 +47,7 @@ start_service() {
     start-stop-daemon --start --quiet --pidfile $CHROOT/$PIDFILE \
         --exec $DAEMON -- $DAEMON_OPTS \
         ${INTERFACE:+-i "${INTERFACE}"} \
-        ${HOME_NETS:+-a "${HOME_NETS}"} \
-        2>&1 | logger -p daemon.info -t prads
+        ${HOME_NETS:+-a "${HOME_NETS}"} 2>&1
     log_end_msg $?
 }
 
