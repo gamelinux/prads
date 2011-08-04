@@ -21,7 +21,6 @@ typedef struct _globalconfig {
     uint8_t     cflags;                 /* config flags */
     uint8_t     verbose;                /* Verbose or not */
     uint8_t     print_updates;          /* Prints updates */
-    uint8_t     use_syslog;             /* Use syslog or not */
     uint8_t     setfilter;
     uint8_t     drop_privs_flag;
     uint8_t     daemon_flag;

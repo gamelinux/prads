@@ -1032,6 +1032,7 @@ void game_over()
                print_pcap_stats();
         }
         if (config.handle != NULL) pcap_close(config.handle);
+        if (ISSET_CONFIG_SYSLOG(config)) closelog();
         free_config();
         olog("\n[*] prads ended.\n");
         exit(0);
@@ -1222,6 +1223,7 @@ int main(int argc, char *argv[])
             break;
         case 'D':
             config.daemon_flag = 1;
+            config.cflags |= CONFIG_SYSLOG;
             break;
         case 'u':
             config.user_name = strdup(optarg);
@@ -1300,6 +1302,14 @@ int main(int argc, char *argv[])
     bdestroy (pconfile);
     // we're done parsing configs - now initialize prads
 
+    if(ISSET_CONFIG_SYSLOG(config)) {
+        openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
+    }
+    olog("\n[*] Running prads %s\n", VERSION);
+    olog("    Using %s\n", pcap_lib_version());
+    olog("    Using PCRE version %s\n", pcre_version());
+
+
     if(config.verbose){
         rc = init_logging(LOG_STDOUT, NULL, config.verbose);
         if(rc) perror("Logging to standard out failed!");
@@ -1345,10 +1355,6 @@ int main(int argc, char *argv[])
     load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);
     init_services();
 
-    olog("\n[*] Running prads %s\n", VERSION);
-    olog("    Using %s\n", pcap_lib_version());
-    olog("    Using PCRE version %s\n", pcre_version());
-
     //if (config.verbose) display_config();
     display_config();
 
@@ -1392,7 +1398,6 @@ int main(int argc, char *argv[])
         if (config.daemon_flag) {
             if (!is_valid_path(config.pidfile))
                 elog("[*] Unable to create pidfile '%s'\n", config.pidfile);
-            openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
             olog("[*] Daemonizing...\n\n");
             daemonize(NULL);
         }
