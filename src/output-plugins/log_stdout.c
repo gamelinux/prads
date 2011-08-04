@@ -40,7 +40,7 @@ void stdout_arp (output_plugin *unused, asset *main)
     fflush(0);
 }
 
-void stdout_os (output_plugin *unused, asset *main, os_asset *os)
+void stdout_os (output_plugin *unused, asset *main, os_asset *os, connection* c)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;
@@ -84,7 +84,7 @@ void stdout_os (output_plugin *unused, asset *main, os_asset *os)
     fflush(0);
 }
 
-void stdout_service (output_plugin* unused, asset *main, serv_asset *service)
+void stdout_service (output_plugin* unused, asset *main, serv_asset *service, connection *c)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     uint8_t tmp_ttl;
