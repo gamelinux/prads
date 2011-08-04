@@ -1034,7 +1034,7 @@ void game_over()
         if (config.handle != NULL) pcap_close(config.handle);
         if (ISSET_CONFIG_SYSLOG(config)) closelog();
         free_config();
-        olog("\n[*] prads ended.\n");
+        olog("[*] prads ended.\n");
         exit(0);
     }
     intr_flag = 1;
@@ -1305,7 +1305,7 @@ int main(int argc, char *argv[])
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-    olog("\n[*] Running prads %s\n", VERSION);
+    olog("[*] Running prads %s\n", VERSION);
     olog("    Using %s\n", pcap_lib_version());
     olog("    Using PCRE version %s\n", pcre_version());
 
@@ -1405,7 +1405,7 @@ int main(int argc, char *argv[])
         if (config.daemon_flag) {
             if (!is_valid_path(config.pidfile))
                 elog("[*] Unable to create pidfile '%s'\n", config.pidfile);
-            olog("[*] Daemonizing...\n\n");
+            olog("[*] Daemonizing...\n");
             daemonize(NULL);
         }
     
@@ -1425,7 +1425,7 @@ int main(int argc, char *argv[])
     }
 
     cxt_init();
-    olog("[*] Sniffing...\n\n");
+    olog("[*] Sniffing...\n");
     pcap_loop(config.handle, -1, got_packet, NULL);
 
     game_over();
