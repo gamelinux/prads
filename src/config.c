@@ -68,6 +68,7 @@ void free_config()
 
 void set_default_config_options()
 {
+    config.file    = CONFDIR "prads.conf";
     config.ctf    |= CO_SYN;
     config.ctf    |= CO_RST;
     config.ctf    |= CO_FIN;
@@ -112,7 +113,7 @@ void set_default_config_options()
     config.chroot_dir = NULL;
 }
 
-void parse_config_file(bstring fname)
+void parse_config_file(const char* fname)
 {
     FILE *fp;
     bstring filedata;
@@ -120,8 +121,8 @@ void parse_config_file(bstring fname)
     int i;
     vlog(0x3, "config - Processing '%s'.", bdata(fname));
 
-    if ((fp = fopen((char *)bdata(fname), "r")) == NULL) {
-        elog("Unable to open configuration file - %s\n", bdata(fname));
+    if ((fp = fopen(fname, "r")) == NULL) {
+        elog("Unable to open configuration file - %s\n", fname);
         return;
     }
 

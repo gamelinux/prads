@@ -1040,6 +1040,17 @@ void game_over()
     intr_flag = 1;
 }
 
+void reparse_conf()
+{
+    if(inpacket == 0) {
+        olog("Reparsing config file...");
+        parse_config_file(config.file);
+        intr_flag = 0;
+        return;
+    }
+    intr_flag = 4;
+}
+
 void check_interrupt()
 {
 
@@ -1049,6 +1060,8 @@ void check_interrupt()
         update_asset_list();
     } else if (intr_flag == 3) {
         set_end_sessions();
+    } else if (intr_flag == 4) {
+        reparse_conf();
     } else {
         intr_flag = 0;
     }
@@ -1147,9 +1160,6 @@ int main(int argc, char *argv[])
 
     memset(&config, 0, sizeof(globalconfig));
     set_default_config_options();
-    bstring pconfile = bfromcstr(CONFDIR "prads.conf");
-    //parse_config_file(pconfile);
-    //bdestroy (pconfile);
 
     inpacket = gameover = intr_flag = 0;
 
@@ -1157,6 +1167,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, game_over);
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
+    signal(SIGHUP, reparse_conf);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting
 
     // do first-pass args parse for commandline-passed config file
@@ -1165,7 +1176,7 @@ int main(int argc, char *argv[])
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
-            pconfile = bfromcstr(optarg);
+            config.file = optarg;
             break;
         case 'v':
             config.verbose++;
@@ -1180,7 +1191,7 @@ int main(int argc, char *argv[])
     if(config.verbose)
         verbose_already = 1;
 
-    parse_config_file(pconfile);
+    parse_config_file(config.file);
 
     // reset verbosity before 2nd coming, but only if set on cli
     if(verbose_already)
@@ -1196,7 +1207,8 @@ int main(int argc, char *argv[])
                 config.s_net = strdup(optarg);
             break;
         case 'c':
-            pconfile = bfromcstr(optarg);
+            // too late at this point
+            config.file = optarg; 
             break;
         case 'C':
             config.chroot_dir = strdup(optarg);
@@ -1299,7 +1311,6 @@ int main(int argc, char *argv[])
             elog("Did not recognize argument '%c'\n", ch);
         }
 
-    bdestroy (pconfile);
     // we're done parsing configs - now initialize prads
 
     if(ISSET_CONFIG_SYSLOG(config)) {
