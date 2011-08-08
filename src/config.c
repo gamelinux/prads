@@ -83,7 +83,6 @@ void set_default_config_options()
     config.cof    |= CS_MAC;
     config.dev     = 0x0; // default is to lookup device
     config.bpff    = strdup("");
-    config.dpath   = "/tmp";
     config.pidfile = strdup("/var/run/prads.pid");
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config.fifo    = NULL;

@@ -1226,9 +1226,6 @@ int main(int argc, char *argv[])
             config.verbose++;
             config.cflags |= CONFIG_VERBOSE;
             break;
-        case 'd':
-            config.dpath = strdup(optarg);
-            break;
         case 'h':
             usage();
             exit(0);
