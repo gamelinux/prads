@@ -83,7 +83,7 @@ void set_default_config_options()
     config.cof    |= CS_MAC;
     config.dev     = 0x0; // default is to lookup device
     config.bpff    = strdup("");
-    config.pidfile = strdup("/var/run/prads.pid");
+    //config.pidfile = strdup("/var/run/prads.pid");
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config.fifo    = NULL;
     // default source net owns everything
@@ -110,6 +110,7 @@ void set_default_config_options()
     config.mac_hashsize = MAC_HASHSIZE;
     // don't chroot by default
     config.chroot_dir = NULL;
+    config.daemon_flag = 0;
 }
 
 void parse_config_file(const char* fname)
