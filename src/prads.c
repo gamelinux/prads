@@ -1380,19 +1380,24 @@ int main(int argc, char *argv[])
     } else {
        int uid, gid;
        if(config.drop_privs_flag) {
-          /* getting numerical ids before chroot call */
-          gid = get_gid(config.group_name);
-          uid = get_uid(config.user_name, &gid);
-          if(!gid){
-             elog("[!] Problem finding user %s group %s\n", config.user_name, config.group_name);
-             exit(ENOENT);
+          if(getuid() != 0) {
+             config.drop_privs_flag = 0;
+             elog("[!] Can't drop privileges, not root.\n");
+          } else {
+             /* getting numerical ids before chroot call */
+             gid = get_gid(config.group_name);
+             uid = get_uid(config.user_name, &gid);
+             if(!gid){
+                elog("[!] Problem finding user %s group %s\n", config.user_name, config.group_name);
+                exit(ENOENT);
+             }
+             if (gid && getuid() == 0 && initgroups(config.user_name, gid) < 0) {
+                elog("[!] Unable to init group names (%s/%lu)\n", config.user_name, gid);
+             }
+             /* gotta create/chown pidfile before dropping privs */
+             if(config.pidfile)
+                touch_pid_file(config.pidfile, uid, gid);
           }
-          if (gid && getuid() == 0 && initgroups(config.user_name, gid) < 0) {
-             elog("[!] Unable to init group names (%s/%lu)\n", config.user_name, gid);
-          }
-          /* gotta create/chown pidfile before dropping privs */
-          if(config.pidfile)
-             touch_pid_file(config.pidfile, uid, gid);
        }
 
         /* * look up an available device if non specified */

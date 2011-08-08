@@ -164,7 +164,7 @@ int drop_privs(long userid, long groupid)
     int i;
 
     if ((i = setgid(groupid)) < 0) {
-       elog("[!] Unable to set group ID: %s", strerror(i));
+       elog("[!] Unable to set group ID: %s\n", strerror(i));
        exit(i);
     }
 
