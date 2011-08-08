@@ -1418,6 +1418,7 @@ int main(int argc, char *argv[])
         }
 
         if(config.chroot_dir){
+
             olog("[*] Chrooting to dir '%s'..\n", config.chroot_dir);
             if(set_chroot()){
                 elog("[!] failed to chroot\n");
@@ -1425,17 +1426,26 @@ int main(int argc, char *argv[])
             }
         }
     
-        if (config.drop_privs_flag) {
-            olog("[*] Dropping privs...\n");
-            drop_privs();
+        if (config.drop_privs_flag && ( uid || gid)) {
+            olog("[*] Dropping privileges to %s:%s...\n", 
+               config.user_name?config.user_name:"", config.group_name?config.group_name:"");
+            drop_privs(uid, gid);
         }
 
-        if (config.daemon_flag) {
-            if (!is_valid_path(config.pidfile))
+       if(config.pidfile){
+            if (!is_valid_path(config.pidfile)){
                 elog("[*] Unable to create pidfile '%s'\n", config.pidfile);
+                exit(ENOENT);
+            }
+       }
+        if (config.daemon_flag) {
             olog("[*] Daemonizing...\n");
             daemonize(NULL);
         }
+        if (config.pidfile) {
+           create_pid_file(config.pidfile);
+    }
+
     
     }
  

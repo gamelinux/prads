@@ -108,7 +108,12 @@ void set_default_config_options()
     config.sig_mac = NULL;
     config.sig_hashsize = SIG_HASHSIZE;
     config.mac_hashsize = MAC_HASHSIZE;
-    // don't chroot by default
+    // drop privileges by default
+    config.user_name = strdup("1");
+    config.group_name = strdup("1");
+
+    config.drop_privs_flag = 1;
+    // don't chroot or daemonize by default
     config.chroot_dir = NULL;
     config.daemon_flag = 0;
 }
