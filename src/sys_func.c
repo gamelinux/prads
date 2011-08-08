@@ -272,6 +272,42 @@ int touch_pid_file(const char *path, long uid, long gid)
    return 0;
 }
 
+long get_gid(const char *group_name)
+{
+   char *endptr;
+   struct group *gr;
+   struct passwd *pw;
+
+   if(!group_name) return 0;
+   if (!isdigit(group_name[0])) {
+      gr = getgrnam(group_name);
+      if(!gr){
+         elog("ERROR: couldn't get ID for group %s, group does not exist.\n", group_name);
+         return 0;
+      }
+      return gr->gr_gid;
+   }
+   return strtoul(group_name, &endptr, 10);
+}
+
+long get_uid(const char *user_name, int *out_gid)
+{
+   char *endptr;
+   struct passwd *pw;
+   if(!user_name) return 0;
+   if (isdigit(user_name[0]) == 0) {
+      pw = getpwnam(user_name);
+      if (pw != NULL) {
+         if (out_gid) 
+            if(*out_gid == 0)
+               *out_gid = pw->pw_gid;
+         return pw->pw_uid;
+      }
+   }
+
+   return strtoul(config.user_name, &endptr, 10);
+}
+
 int create_pid_file(const char *path)
 {
     char pid_buffer[12];

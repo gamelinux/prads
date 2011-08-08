@@ -1129,6 +1129,7 @@ static void usage()
     olog(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
     olog(" -u <user>       Run as user <user>.\n");
     olog(" -g <group>      Run as group <group>.\n");
+    olog(" -d              Do not drop privileges.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     olog(" -D              Enables daemon mode.\n");
     //olog(" -d            to logdir\n");
@@ -1241,6 +1242,9 @@ int main(int argc, char *argv[])
         case 'g':
             config.group_name = strdup(optarg);
             config.drop_privs_flag = 1;
+            break;
+        case 'd':
+            config.drop_privs_flag = 0;
             break;
         case 'p':
             config.pidfile = strdup(optarg);
@@ -1374,6 +1378,22 @@ int main(int argc, char *argv[])
         } 
 
     } else {
+       int uid, gid;
+       if(config.drop_privs_flag) {
+          /* getting numerical ids before chroot call */
+          gid = get_gid(config.group_name);
+          uid = get_uid(config.user_name, &gid);
+          if(!gid){
+             elog("[!] Problem finding user %s group %s\n", config.user_name, config.group_name);
+             exit(ENOENT);
+          }
+          if (gid && getuid() == 0 && initgroups(config.user_name, gid) < 0) {
+             elog("[!] Unable to init group names (%s/%lu)\n", config.user_name, gid);
+          }
+          /* gotta create/chown pidfile before dropping privs */
+          if(config.pidfile)
+             touch_pid_file(config.pidfile, uid, gid);
+       }
 
         /* * look up an available device if non specified */
         if (config.dev == 0x0)
