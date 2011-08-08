@@ -238,6 +238,13 @@ int is_valid_path(const char *path)
     if (path == NULL) {
         return 0;
     }
+    if (stat(path, &st) != 0) {
+        return 0;
+    }
+
+    if (S_ISREG(st.st_mode) && access(path, W_OK) != -1) {
+        return 1;
+    }
 
     memcpy(dir, path, strnlen(path, STDBUF));
     dirname(dir);
@@ -249,6 +256,20 @@ int is_valid_path(const char *path)
         return 0;
     }
     return 1;
+}
+
+int touch_pid_file(const char *path, long uid, long gid)
+{ 
+   int fd, rc;
+   fd = open(path, O_CREAT, 0664);
+   if(fd)
+      rc = fchown(fd, uid, gid);
+      close(fd);
+   if(rc || !fd) {
+      elog("Failed to create pid file '%s', %d\n", path,rc);
+      return 666;
+   }
+   return 0;
 }
 
 int create_pid_file(const char *path)
