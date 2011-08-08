@@ -118,7 +118,7 @@ void parse_config_file(const char* fname)
     bstring filedata;
     struct bstrList *lines;
     int i;
-    vlog(0x3, "config - Processing '%s'.", bdata(fname));
+    vlog(0x3, "config - Processing '%s'.", fname);
 
     if ((fp = fopen(fname, "r")) == NULL) {
         elog("Unable to open configuration file - %s\n", fname);
@@ -258,10 +258,13 @@ void parse_line (bstring line)
             config.ctf |= CO_FIN;
         else
             config.ctf &= ~CO_FIN;
-
+   } else if ((biseqcstr(param, "chroot_dir")) == 1) {
+        /* CHROOT DIRECTORY */
+        if(config.chroot_dir) free(config.chroot_dir);
+        config.chroot_dir = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "pid_file")) == 1) {
         /* PID FILE */
-        free(config.pidfile);
+        if(config.pidfile) free(config.pidfile);
         config.pidfile = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "asset_log")) == 1) {
         /* PRADS ASSET LOG */
@@ -291,9 +294,11 @@ void parse_line (bstring line)
     } else if ((biseqcstr(param, "user")) == 1) {
         /* USER */
         config.user_name = bstr2cstr(value, '-');
+        config.drop_privs_flag = 1;
     } else if ((biseqcstr(param, "group")) == 1) {
         /* GROUP */
         config.group_name = bstr2cstr(value, '-');
+        config.drop_privs_flag = 1;
     } else if ((biseqcstr(param, "interface")) == 1) {
         /* INTERFACE */
         config.dev = bstr2cstr(value, '-');
