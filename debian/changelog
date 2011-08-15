@@ -1,3 +1,10 @@
+prads (0.3.0-rc1) unstable; urgency=low
+
+  * New upstream release
+  * Init script chroots by default
+
+ -- Kacper Wysocki <comotion@krutt.org>  Mon, 15 Aug 2011 14:16:39 +0200
+
 prads (0.2.6-1) unstable; urgency=low
 
   * New upstream release
