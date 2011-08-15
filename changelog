@@ -1,3 +1,11 @@
+2011-08-15 0.3.0-rc1: real chaos one
+    * prads daemon now logs to syslog
+    * experimental SIGHUP support
+    * cleanup default conf file
+    * drop privileges by default
+    * bugfix: sniff device lookup
+    * bugfix: compiler vector optimizing bug
+
 2011-05-30 0.2.6: dev will make rye
 
     * bugfix: lame stack smasher
