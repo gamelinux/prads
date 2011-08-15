@@ -35,6 +35,7 @@ typedef struct _globalconfig {
     connection  *cxtbuffer;             /* Pointer to list of expired connections */
     asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
     port_t      *lports[MAX_IP_PROTO];  /* Pointer to list of known ports */
+    char       *file;                   /* config file location, if known */
     char       *assetlog;               /* Filename of prads-asset.log */
     char       *fifo;                   /* Path to FIFO output */
     char       *pcap_file;              /* Filename to pcap too read */
@@ -54,7 +55,6 @@ typedef struct _globalconfig {
     signature   *sig_client_udp;        /* Pointer to list of udp client signatures */
     fmask       *network[MAX_NETS];     /* Struct for fmask */
     char        *dev;                   /* Device name to use for sniffing */
-    char        *dpath;                 /* ... ??? seriously ???... */
     char        *chroot_dir;            /* Directory to chroot to */
     char        *group_name;            /* Groupe to drop privileges too */
     char        *user_name;             /* User to drop privileges too */
@@ -78,7 +78,7 @@ typedef struct _globalconfig {
 void display_config();
 void set_default_config_options();
 void parse_line (bstring line);
-void parse_config_file(bstring fname);
+void parse_config_file(const char *fname);
 int brtrim (bstring string);
 int bltrim (bstring string);
 void free_config();

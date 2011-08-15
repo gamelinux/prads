@@ -25,6 +25,6 @@
 output_plugin *init_log_stdout();
 void stdout_init (output_plugin*, const char*, int);
 void stdout_arp (output_plugin*, asset *main);
-void stdout_os (output_plugin*, asset *main, os_asset *os);
-void stdout_service (output_plugin*, asset *main, serv_asset *service);
+void stdout_os (output_plugin*, asset *main, os_asset *os, connection*);
+void stdout_service (output_plugin*, asset *main, serv_asset *service, connection*);
 int end_log_stdout(output_plugin *p);

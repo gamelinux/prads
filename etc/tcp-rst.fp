@@ -124,7 +124,7 @@
 0:255:0:40:.:K0A:Linux:2.0/2.2 (refused)
 0:64:1:40:.:K0A:FreeBSD:4.8 (refused)
 0:64:1:40:.:K0ZA:Linux:recent 2.4/2.6 (refused)
-
+0:64:1:*:.:K0ZA:Linux:2.6 (refused)
 0:128:0:40:.:K0A:Windows:XP/2000 (refused)
 0:128:0:40:.:K0UA:-Windows:XP/2000 while browsing (refused)
 

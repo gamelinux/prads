@@ -1034,10 +1034,21 @@ void game_over()
         if (config.handle != NULL) pcap_close(config.handle);
         if (ISSET_CONFIG_SYSLOG(config)) closelog();
         free_config();
-        olog("\n[*] prads ended.\n");
+        olog("[*] prads ended.\n");
         exit(0);
     }
     intr_flag = 1;
+}
+
+void reparse_conf()
+{
+    if(inpacket == 0) {
+        olog("Reparsing config file...");
+        parse_config_file(config.file);
+        intr_flag = 0;
+        return;
+    }
+    intr_flag = 4;
 }
 
 void check_interrupt()
@@ -1049,6 +1060,8 @@ void check_interrupt()
         update_asset_list();
     } else if (intr_flag == 3) {
         set_end_sessions();
+    } else if (intr_flag == 4) {
+        reparse_conf();
     } else {
         intr_flag = 0;
     }
@@ -1116,6 +1129,7 @@ static void usage()
     olog(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
     olog(" -u <user>       Run as user <user>.\n");
     olog(" -g <group>      Run as group <group>.\n");
+    olog(" -d              Do not drop privileges.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     olog(" -D              Enables daemon mode.\n");
     //olog(" -d            to logdir\n");
@@ -1147,9 +1161,6 @@ int main(int argc, char *argv[])
 
     memset(&config, 0, sizeof(globalconfig));
     set_default_config_options();
-    bstring pconfile = bfromcstr(CONFDIR "prads.conf");
-    //parse_config_file(pconfile);
-    //bdestroy (pconfile);
 
     inpacket = gameover = intr_flag = 0;
 
@@ -1157,6 +1168,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, game_over);
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
+    signal(SIGHUP, reparse_conf);
     //signal(SIGALRM, game_over); // Use this to debug segfault when exiting
 
     // do first-pass args parse for commandline-passed config file
@@ -1165,7 +1177,7 @@ int main(int argc, char *argv[])
     while ((ch = getopt(argc, argv, ARGS)) != -1)
         switch (ch) {
         case 'c':
-            pconfile = bfromcstr(optarg);
+            config.file = optarg;
             break;
         case 'v':
             config.verbose++;
@@ -1180,7 +1192,7 @@ int main(int argc, char *argv[])
     if(config.verbose)
         verbose_already = 1;
 
-    parse_config_file(pconfile);
+    parse_config_file(config.file);
 
     // reset verbosity before 2nd coming, but only if set on cli
     if(verbose_already)
@@ -1196,7 +1208,8 @@ int main(int argc, char *argv[])
                 config.s_net = strdup(optarg);
             break;
         case 'c':
-            pconfile = bfromcstr(optarg);
+            // too late at this point
+            config.file = optarg; 
             break;
         case 'C':
             config.chroot_dir = strdup(optarg);
@@ -1214,9 +1227,6 @@ int main(int argc, char *argv[])
             config.verbose++;
             config.cflags |= CONFIG_VERBOSE;
             break;
-        case 'd':
-            config.dpath = strdup(optarg);
-            break;
         case 'h':
             usage();
             exit(0);
@@ -1232,6 +1242,9 @@ int main(int argc, char *argv[])
         case 'g':
             config.group_name = strdup(optarg);
             config.drop_privs_flag = 1;
+            break;
+        case 'd':
+            config.drop_privs_flag = 0;
             break;
         case 'p':
             config.pidfile = strdup(optarg);
@@ -1299,13 +1312,12 @@ int main(int argc, char *argv[])
             elog("Did not recognize argument '%c'\n", ch);
         }
 
-    bdestroy (pconfile);
     // we're done parsing configs - now initialize prads
 
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-    olog("\n[*] Running prads %s\n", VERSION);
+    olog("[*] Running prads %s\n", VERSION);
     olog("    Using %s\n", pcap_lib_version());
     olog("    Using PCRE version %s\n", pcre_version());
 
@@ -1366,6 +1378,27 @@ int main(int argc, char *argv[])
         } 
 
     } else {
+       int uid, gid;
+       if(config.drop_privs_flag) {
+          if(getuid() != 0) {
+             config.drop_privs_flag = 0;
+             elog("[!] Can't drop privileges, not root.\n");
+          } else {
+             /* getting numerical ids before chroot call */
+             gid = get_gid(config.group_name);
+             uid = get_uid(config.user_name, &gid);
+             if(!gid){
+                elog("[!] Problem finding user %s group %s\n", config.user_name, config.group_name);
+                exit(ENOENT);
+             }
+             if (gid && getuid() == 0 && initgroups(config.user_name, gid) < 0) {
+                elog("[!] Unable to init group names (%s/%lu)\n", config.user_name, gid);
+             }
+             /* gotta create/chown pidfile before dropping privs */
+             if(config.pidfile)
+                touch_pid_file(config.pidfile, uid, gid);
+          }
+       }
 
         /* * look up an available device if non specified */
         if (config.dev == 0x0)
@@ -1390,6 +1423,7 @@ int main(int argc, char *argv[])
         }
 
         if(config.chroot_dir){
+
             olog("[*] Chrooting to dir '%s'..\n", config.chroot_dir);
             if(set_chroot()){
                 elog("[!] failed to chroot\n");
@@ -1397,17 +1431,26 @@ int main(int argc, char *argv[])
             }
         }
     
-        if (config.drop_privs_flag) {
-            olog("[*] Dropping privs...\n");
-            drop_privs();
+        if (config.drop_privs_flag && ( uid || gid)) {
+            olog("[*] Dropping privileges to %s:%s...\n", 
+               config.user_name?config.user_name:"", config.group_name?config.group_name:"");
+            drop_privs(uid, gid);
         }
 
-        if (config.daemon_flag) {
-            if (!is_valid_path(config.pidfile))
+       if(config.pidfile){
+            if (!is_valid_path(config.pidfile)){
                 elog("[*] Unable to create pidfile '%s'\n", config.pidfile);
-            olog("[*] Daemonizing...\n\n");
+                exit(ENOENT);
+            }
+       }
+        if (config.daemon_flag) {
+            olog("[*] Daemonizing...\n");
             daemonize(NULL);
         }
+        if (config.pidfile) {
+           create_pid_file(config.pidfile);
+    }
+
     
     }
  
@@ -1425,7 +1468,7 @@ int main(int argc, char *argv[])
     }
 
     cxt_init();
-    olog("[*] Sniffing...\n\n");
+    olog("[*] Sniffing...\n");
     pcap_loop(config.handle, -1, got_packet, NULL);
 
     game_over();

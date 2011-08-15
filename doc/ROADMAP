@@ -2,15 +2,17 @@
  PRADS ROADMAP
 ===============
 
-Features as of version 0.2.1
+Features as of version 0.2.6
  - parse pcaps/realtime with BPF
  - TCP SYN/SYNACK/StrayACK/RST/FIN
+ - mac sig matching
  - ICMP (rudimentary)
  - UDP (rudimentary)
  - connection tracking
  - tos, mtu
  - vlan support
  - logfile output
+ - sguil/fifo output
  - network filtering
  - arp discovery
  - ANSI + libpcap/pcre, runs on
@@ -18,11 +20,11 @@ Features as of version 0.2.1
    * OSX (with fink)
    * Linux ia32 and amd64, mipsel
    * any platform where dependencies compile!
+ - reload config on the fly [ limited ]
  - installable via .debs
 
 Features in prads.pl missing as yet in C:
  - database injector (SQLite,ODBC,..)
- - mac sig matching
  - UDP fingerprinting
  - ICMP fingerprinting
  - ??? 
@@ -33,7 +35,8 @@ Features wanted in 2011 the year of the Rabbit.
  - scripting with lua
  - shared memory log
  - plugin API
- - MAC,ARP,DNS,mDNS,passiveDNS,DHCP
+ - [v] MAC,ARP,DNS
+ - mDNS,passiveDNS,DHCP
  - RPM packages
  - push into Debian archive
  - switch and router discovery (OSPF, RIP, STP etc)
@@ -57,8 +60,13 @@ Point release 0.3.0
  - sguil output
 
 Point release 0.3.5
- - merge in file tracker
+ - merge in file tracker [nftracker]
  - feature complete compared to prads.pl
+ that means:
+   -sql insertion
+   -better icmp
+   -better udp
+   -cleaner tcp fingerprinting
 
 Point release 0.4.0
  - DNS, mDNS, passiveDNS
@@ -66,6 +74,7 @@ Point release 0.4.0
 
 Point release 0.5.0
  - versioned shared memory {asset,cxtracker}
+ - lua?
 
 Point release 0.6.0
  - graphical mapping

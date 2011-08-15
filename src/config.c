@@ -68,6 +68,7 @@ void free_config()
 
 void set_default_config_options()
 {
+    config.file    = CONFDIR "prads.conf";
     config.ctf    |= CO_SYN;
     config.ctf    |= CO_RST;
     config.ctf    |= CO_FIN;
@@ -82,8 +83,7 @@ void set_default_config_options()
     config.cof    |= CS_MAC;
     config.dev     = 0x0; // default is to lookup device
     config.bpff    = strdup("");
-    config.dpath   = "/tmp";
-    config.pidfile = strdup("/var/run/prads.pid");
+    //config.pidfile = strdup("/var/run/prads.pid");
     config.assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config.fifo    = NULL;
     // default source net owns everything
@@ -108,20 +108,26 @@ void set_default_config_options()
     config.sig_mac = NULL;
     config.sig_hashsize = SIG_HASHSIZE;
     config.mac_hashsize = MAC_HASHSIZE;
-    // don't chroot by default
+    // drop privileges by default
+    config.user_name = strdup("1");
+    config.group_name = strdup("1");
+
+    config.drop_privs_flag = 1;
+    // don't chroot or daemonize by default
     config.chroot_dir = NULL;
+    config.daemon_flag = 0;
 }
 
-void parse_config_file(bstring fname)
+void parse_config_file(const char* fname)
 {
     FILE *fp;
     bstring filedata;
     struct bstrList *lines;
     int i;
-    vlog(0x3, "config - Processing '%s'.", bdata(fname));
+    vlog(0x3, "config - Processing '%s'.", fname);
 
-    if ((fp = fopen((char *)bdata(fname), "r")) == NULL) {
-        elog("Unable to open configuration file - %s\n", bdata(fname));
+    if ((fp = fopen(fname, "r")) == NULL) {
+        elog("Unable to open configuration file - %s\n", fname);
         return;
     }
 
@@ -258,10 +264,13 @@ void parse_line (bstring line)
             config.ctf |= CO_FIN;
         else
             config.ctf &= ~CO_FIN;
-
+   } else if ((biseqcstr(param, "chroot_dir")) == 1) {
+        /* CHROOT DIRECTORY */
+        if(config.chroot_dir) free(config.chroot_dir);
+        config.chroot_dir = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "pid_file")) == 1) {
         /* PID FILE */
-        free(config.pidfile);
+        if(config.pidfile) free(config.pidfile);
         config.pidfile = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "asset_log")) == 1) {
         /* PRADS ASSET LOG */
@@ -291,9 +300,11 @@ void parse_line (bstring line)
     } else if ((biseqcstr(param, "user")) == 1) {
         /* USER */
         config.user_name = bstr2cstr(value, '-');
+        config.drop_privs_flag = 1;
     } else if ((biseqcstr(param, "group")) == 1) {
         /* GROUP */
         config.group_name = bstr2cstr(value, '-');
+        config.drop_privs_flag = 1;
     } else if ((biseqcstr(param, "interface")) == 1) {
         /* INTERFACE */
         config.dev = bstr2cstr(value, '-');

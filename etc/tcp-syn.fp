@@ -393,11 +393,14 @@ S4:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6)
 # 
 S4:64:1:40:M*,S,T,N,W5:Z:Linux:2.6 (newer, 5) IPv6
 S2:64:1:60:M*,S,T,N,W6:.:Linux:2.6 (newer, 6 loopback)
+S4:64:1:40:M*,S,T,N,W6:Z:Linux:2.6 (newer, 6) IPv6
 S4:64:1:60:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7 fedora12)
 S4:64:1:40:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7) IPv6
 S4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 7)
 T4:64:1:60:M*,S,T,N,W7:.:Linux:2.6 (newer, 7)
 S4:64:1:60:M*,S,T,N,W8:.:Linux:2.6 (newer, 8)
+S4:64:1:40:M*,S,T,N,W8:Z:Linux:2.6 (newer, 8) IPv6
+
 #T4:64:1:60:M*,S,T,N,W8:.:Linux:2.6 (newer, 5)
 
 S20:64:1:60:M*,S,T,N,W0:.:Linux:2.2 (1)

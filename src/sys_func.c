@@ -159,72 +159,22 @@ int set_chroot(void)
     return 0;
 }
 
-int drop_privs(void)
+int drop_privs(long userid, long groupid)
 {
-    struct group *gr;
-    struct passwd *pw;
-    char *endptr;
     int i;
-    int do_setuid = 0;
-    int do_setgid = 0;
-    unsigned long groupid = 0;
-    unsigned long userid = 0;
 
-    if (config.group_name != NULL) {
-        do_setgid = 1;
-        if (!isdigit(config.group_name[0])) {
-            gr = getgrnam(config.group_name);
-            if(!gr){
-                if(config.chroot_dir){
-                    elog("ERROR: you have chrootetd and must set numeric group ID.\n");
-                    exit(1);
-                }else{
-                    elog("ERROR: couldn't get ID for group %s, group does not exist.", config.group_name);
-                    exit(1);
-                }
-            }
-            groupid = gr->gr_gid;
-        } else {
-            groupid = strtoul(config.group_name, &endptr, 10);
-        }
-    }
-
-    if (config.user_name != NULL) {
-        do_setuid = 1;
-        do_setgid = 1;
-        if (isdigit(config.user_name[0]) == 0) {
-            pw = getpwnam(config.user_name);
-            if (pw != NULL) {
-                userid = pw->pw_uid;
-            } else {
-                printf("[E] User %s not found!\n", config.user_name);
-            }
-        } else {
-            userid = strtoul(config.user_name, &endptr, 10);
-            pw = getpwuid(userid);
-        }
-
-        if (config.group_name == NULL && pw != NULL) {
-            groupid = pw->pw_gid;
-        }
-    }
-
-    if (do_setgid) {
-        if ((i = setgid(groupid)) < 0) {
-            printf("Unable to set group ID: %s", strerror(i));
-        }
+    if ((i = setgid(groupid)) < 0) {
+       elog("[!] Unable to set group ID: %s\n", strerror(i));
+       exit(i);
     }
 
     endgrent();
     endpwent();
 
-    if (do_setuid) {
-        if (getuid() == 0 && initgroups(config.user_name, groupid) < 0) {
-            printf("Unable to init group names (%s/%lu)", config.user_name,
-                   groupid);
-        }
+    if (userid) {
         if ((i = setuid(userid)) < 0) {
-            printf("Unable to set user ID: %s\n", strerror(i));
+            elog("[!] Unable to set user ID: %s\n", strerror(i));
+            exit(i);
         }
     }
     return 0;
@@ -238,6 +188,13 @@ int is_valid_path(const char *path)
     if (path == NULL) {
         return 0;
     }
+    if (stat(path, &st) != 0) {
+        return 0;
+    }
+
+    if (S_ISREG(st.st_mode) && access(path, W_OK) != -1) {
+        return 1;
+    }
 
     memcpy(dir, path, strnlen(path, STDBUF));
     dirname(dir);
@@ -249,6 +206,56 @@ int is_valid_path(const char *path)
         return 0;
     }
     return 1;
+}
+
+int touch_pid_file(const char *path, long uid, long gid)
+{ 
+   int fd, rc;
+   fd = open(path, O_CREAT, 0664);
+   if(fd)
+      rc = fchown(fd, uid, gid);
+      close(fd);
+   if(rc || !fd) {
+      elog("Failed to create pid file '%s', %d\n", path,rc);
+      return 666;
+   }
+   return 0;
+}
+
+long get_gid(const char *group_name)
+{
+   char *endptr;
+   struct group *gr;
+   struct passwd *pw;
+
+   if(!group_name) return 0;
+   if (!isdigit(group_name[0])) {
+      gr = getgrnam(group_name);
+      if(!gr){
+         elog("ERROR: couldn't get ID for group %s, group does not exist.\n", group_name);
+         return 0;
+      }
+      return gr->gr_gid;
+   }
+   return strtoul(group_name, &endptr, 10);
+}
+
+long get_uid(const char *user_name, int *out_gid)
+{
+   char *endptr;
+   struct passwd *pw;
+   if(!user_name) return 0;
+   if (isdigit(user_name[0]) == 0) {
+      pw = getpwnam(user_name);
+      if (pw != NULL) {
+         if (out_gid) 
+            if(*out_gid == 0)
+               *out_gid = pw->pw_gid;
+         return pw->pw_uid;
+      }
+   }
+
+   return strtoul(config.user_name, &endptr, 10);
 }
 
 int create_pid_file(const char *path)
@@ -327,10 +334,6 @@ int daemonize()
         if (fd > 2) {
             close(fd);
         }
-    }
-
-    if (config.pidfile) {
-        return create_pid_file(config.pidfile);
     }
 
     return SUCCESS;
