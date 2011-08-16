@@ -1439,7 +1439,7 @@ int main(int argc, char *argv[])
 
        if(config.pidfile){
             if (!is_valid_path(config.pidfile)){
-                elog("[*] Unable to create pidfile '%s'\n", config.pidfile);
+                elog("[!] Pidfile '%s' is not writable.\n", config.pidfile);
                 exit(ENOENT);
             }
        }
@@ -1448,7 +1448,11 @@ int main(int argc, char *argv[])
             daemonize(NULL);
         }
         if (config.pidfile) {
-           create_pid_file(config.pidfile);
+           int rc;
+           if((rc=create_pid_file(config.pidfile))) {
+               elog("[!] pidfile error, wrong permissions or prads already running? %s: %s\n", config.pidfile, strerror(rc));
+               exit(ENOENT);
+           }
     }
 
     
