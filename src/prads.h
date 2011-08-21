@@ -599,21 +599,12 @@ typedef struct _connection {
        CMP_PORT((cxt1)->s_port, (sp)) && CMP_PORT((cxt1)->d_port, (dp))))
 
 /* clear the address structure by setting all fields to 0 */
-#ifdef OSX
-#define CLEAR_ADDR(a) { \
-    (a)->__u6_addr.__u6_addr32[0] = 0; \
-    (a)->__u6_addr.__u6_addr32[1] = 0; \
-    (a)->__u6_addr.__u6_addr32[2] = 0; \
-    (a)->__u6_addr.__u6_addr32[3] = 0; \
-}
-#else
 #define CLEAR_ADDR(a) { \
     (a)->s6_addr32[0] = 0; \
     (a)->s6_addr32[1] = 0; \
     (a)->s6_addr32[2] = 0; \
     (a)->s6_addr32[3] = 0; \
 }
-#endif
 
 /* clears the cxt parts */
 #define CLEAR_CXT(cxt) { \
