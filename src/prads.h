@@ -553,25 +553,10 @@ typedef struct _connection {
 #define ISSET_CLIENT_UNKNOWN(pi)         (pi->cxt->check & CXT_CLIENT_UNKNOWN_SET)
 // good comparison to optimize
 // XXX: TODO: comotion: use filter_network 64bit instructions
-#ifdef OSX
-// sidds darwin ports
-#define IP4ADDR(ip) (ip)->__u6_addr.__u6_addr32[0]
+#ifdef __APPLE__
+#define s6_addr32 __u6_addr.__u6_addr32
+#endif
 
-#define CMP_ADDR6(a1,a2) \
-    (((a1)->__u6_addr.__u6_addr32[3] == (a2)->__u6_addr.__u6_addr32[3] && \
-      (a1)->__u6_addr.__u6_addr32[2] == (a2)->__u6_addr.__u6_addr32[2] && \
-      (a1)->__u6_addr.__u6_addr32[1] == (a2)->__u6_addr.__u6_addr32[1] && \
-      (a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
-
-// the reason why we can't get rid of pi->s6_addr32
-#define CMP_ADDR4(a1,a2) \
-    (((a1)->__u6_addr.__u6_addr32[0] ==  (a2)))
-#define CMP_ADDRA(a1,a2) \
-    (((a1)->__u6_addr.__u6_addr32[0] == (a2)->__u6_addr.__u6_addr32[0]))
-
-#define CMP_PORT(p1,p2) \
-    ((p1 == p2))
-#else
 #define IP6ADDR0(ip) ((ip)->s6_addr32[0])
 #define IP6ADDR1(ip) ((ip)->s6_addr32[1])
 #define IP6ADDR2(ip) ((ip)->s6_addr32[2])
@@ -596,7 +581,7 @@ typedef struct _connection {
     (((apple)->s6_addr32[0] ==  (orange)))
 #define CMP_PORT(p1,p2) \
     ((p1 == p2))
-#endif // OSX
+
 
 /* Since two or more connections can have the same hash key, we need to
  * compare the connections with the current hash key. */
