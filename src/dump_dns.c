@@ -73,6 +73,13 @@ void dump_payload(u_char * xdata, uint16_t dlen);
 char *fasthex(u_char * xdata, u_int16_t length);
 void printchars(char buf[NS_MAXDNAME], u_char * cdata, u_int16_t dlen);
 
+#ifndef INT16SZ
+#define INT16SZ (2)
+#endif
+#ifndef INT32SZ
+#define INT32SZ (4)
+#endif
+
 #define MY_GET16(s, cp) do { \
 	register const u_char *t_cp = (const u_char *)(cp); \
 	(s) = ((u_int16_t)t_cp[0] << 8) \
