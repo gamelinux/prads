@@ -62,7 +62,9 @@
 
 extern const char *_res_opcodes[];
 extern const char *_res_sectioncodes[];
+#ifndef __APPLE__
 #define p_rcode __p_rcode
+#endif
 extern const char *p_rcode(int rcode);
 
 static void dump_dns_sect(ns_msg *, ns_sect, FILE *, const char *);
