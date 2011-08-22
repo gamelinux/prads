@@ -260,7 +260,7 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
            /* chomp it first */
            p++;
            SKIP_SPACES(p);
-           lp = strnlen(p, MAXLINE - (p - buf) - 1);
+           lp = strlen(p);
 
            while (lp && isspace(*(p + lp - 1)))
               *(p + (lp--) - 1) = 0;

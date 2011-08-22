@@ -22,7 +22,7 @@
 */
 
 /*  I N C L U D E S  *********************************************************/
-#ifdef OSX
+#ifdef __APPLE__
 #include <sys/malloc.h>
 #else
 #include <malloc.h>

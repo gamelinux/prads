@@ -195,7 +195,7 @@ int is_valid_path(const char *path)
         }
     }
 
-    memcpy(dir, path, strnlen(path, STDBUF));
+    strcpy(dir, path);
     dirname(dir);
 
     if (stat(dir, &st) != 0) {
