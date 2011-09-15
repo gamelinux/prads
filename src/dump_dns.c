@@ -100,19 +100,46 @@ void printchars(char buf[NS_MAXDNAME], u_char * cdata, u_int16_t dlen);
 
 //#include "dump_dns.h"
 
-void
-dump_dns(const u_char * payload, size_t paylen,
+void parse_dns(packetinfo *pi) 
+{
+    ns_msg msg;
+    unsigned char *p = pi->payload;
+    size_t paylen = pi->plen;
+    time_t ts = pi->pheader->ts.tv_sec;
+    int i;
+    if(ns_initparse(p, paylen, &msg) < 0) {
+        fputs(strerror(errno), trace);
+        return;
+    }
+    uint16_t qr = ns_msg_get_flag(msg, ns_f_qr);
+    if(qr == 0)
+        return;
+    int sect = ns_s_qd;
+    int rcount = ns_msg_count(msg, sect);
+    ns_rr record;
+    for(i = 0;i < rcount; i++){
+        if(ns_parserr(msg,sect, rcount, &record))
+           fprintf(stderr, "tragisk tragisk. %d\n", i);
+        
+    }
+
+}
+
+    
+
+(void) pi->payload, pi->plen, ip_addr_s, ip_addr_d, pi->pheader->ts.tv_sec;
+
+void dump_dns(const u_char * payload, size_t paylen,
          FILE * trace, const char *endline, const char *src_ip, time_t ts)
 {
     u_int opcode, rcode, id;
     const char *sep;
-    ns_msg msg;
+    mns_msg msg;
     const char *host = "host";
-
     /*fprintf(trace, "%sdns ", endline); */
     fprintf(trace, "%ld||%s||%s||", ts, host, src_ip);
     if(ns_initparse(payload, paylen, &msg) < 0) {
-        fputs(strerror(errno), trace);
+        fprintf(stderr, "dnserror %s\n", strerror(errno));
         return;
     }
     opcode = ns_msg_getflag(msg, ns_f_opcode);
