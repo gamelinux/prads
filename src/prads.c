@@ -48,11 +48,12 @@
 #ifndef CONFDIR
 #define CONFDIR "/etc/prads/"
 #endif
+
 #define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIZt"
-extern int optind, opterr, optopt; // getopt()
 
 /*  G L O B A L S  *** (or candidates for refactoring, as we say)***********/
 globalconfig config;
+extern int optind, opterr, optopt; // getopt()
 
 time_t tstamp;
 servicelist *services[MAX_PORTS];
@@ -105,8 +106,6 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     config.pr_s.got_packets++;
     packetinfo pstruct = {0};
     packetinfo *pi = &pstruct;
-    // memset(&pi, 0, sizeof(packetinfo));
-    //pi = (packetinfo *) calloc(1, sizeof(packetinfo));
     pi->our = 1;
     pi->packet = packet;
     pi->pheader = pheader;
@@ -139,7 +138,6 @@ void got_packet(u_char * useless, const struct pcap_pkthdr *pheader,
     if (!pi->our) vlog(0x3, "Not our network packet. Tracked, but not logged.\n");
 #endif
     inpacket = 0;
-    //free(pi);
     return;
 }
 
@@ -1177,9 +1175,6 @@ int prads_initialize(globalconfig *conf)
                 if (gid && getuid() == 0 && initgroups(conf->user_name, gid) < 0) {
                     elog("[!] Unable to init group names (%s/%lu)\n", conf->user_name, gid);
                 }
-                /* gotta create/chown pidfile before dropping privs */
-                if(conf->pidfile)
-                    touch_pid_file(conf->pidfile, uid, gid);
             }
         }
 
@@ -1213,6 +1208,9 @@ int prads_initialize(globalconfig *conf)
                 exit(1);
             }
         }
+        /* gotta create/chown pidfile before dropping privs */
+        if(conf->pidfile)
+            touch_pid_file(conf->pidfile, uid, gid);
     
         if (conf->drop_privs_flag && ( uid || gid)) {
             olog("[*] Dropping privileges to %s:%s...\n", 
@@ -1259,7 +1257,6 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
     signal(SIGHUP, reparse_conf);
-    //signal(SIGALRM, game_over); // Use this to debug segfault when exiting
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
@@ -1347,7 +1344,6 @@ int main(int argc, char *argv[])
     load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);
     init_services();
 
-    //if (config.verbose) display_config();
     display_config(&config);
 
     prads_initialize(&config);
@@ -1370,12 +1366,6 @@ int main(int argc, char *argv[])
     pcap_loop(config.handle, -1, got_packet, NULL);
 
     game_over();
-    //pcap_close(config.handle);
     return (0);
 }
 
-//void free_config()
-//{
-//    if (config.dev != NULL) free (config.dev);
-//    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
-//}
