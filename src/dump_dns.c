@@ -62,7 +62,9 @@
 
 extern const char *_res_opcodes[];
 extern const char *_res_sectioncodes[];
+#ifndef __APPLE__
 #define p_rcode __p_rcode
+#endif
 extern const char *p_rcode(int rcode);
 
 static void dump_dns_sect(ns_msg *, ns_sect, FILE *, const char *);
@@ -70,6 +72,13 @@ static void dump_dns_rr(ns_msg *, ns_rr *, ns_sect, FILE *);
 void dump_payload(u_char * xdata, uint16_t dlen);
 char *fasthex(u_char * xdata, u_int16_t length);
 void printchars(char buf[NS_MAXDNAME], u_char * cdata, u_int16_t dlen);
+
+#ifndef INT16SZ
+#define INT16SZ (2)
+#endif
+#ifndef INT32SZ
+#define INT32SZ (4)
+#endif
 
 #define MY_GET16(s, cp) do { \
 	register const u_char *t_cp = (const u_char *)(cp); \

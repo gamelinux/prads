@@ -1,3 +1,8 @@
+2011-09-21 0.3.0-rc2: are we there yet?
+    * bugfix: pid file creation on chroot (ssm)
+    * refactor initialization
+    * better OSX compatibility
+
 2011-08-15 0.3.0-rc1: real chaos one
     * prads daemon now logs to syslog
     * experimental SIGHUP support
