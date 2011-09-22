@@ -267,39 +267,13 @@ int create_pid_file(const char *path)
     if (!path) {
         path = config.pidfile;
     }
-    if ((fd = open(path, O_CREAT | O_EXCL | O_WRONLY,
-                   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
-        if(errno == EEXIST){
-            /* file exists! */
-            ssize_t rbyte;
-            pid_t pid;
-            char spid[6] = {0};
+    if (!is_valid_path(path)) {
+        printf("PID path \"%s\" aint writable", path);
+    }
 
-            fd = open(path, O_RDWR);
-            if(fd == -1){
-                elog("OPEN\n");
-                return errno;
-            }
-            rbyte = read(fd, spid, 5);
-            if(rbyte != 5){
-                elog("READ\n");
-                return errno;
-            }
-
-            rbyte = sscanf(spid, "%d\n", &pid);
-            if(rbyte <= 0){
-                elog("SCAN\n");
-                return -1;
-            }
-            elog("KILL %d\n",pid);
-            if(kill(pid, 0) == 0){
-                elog("KILL %d\n",pid);
-                return EEXIST;
-            }
-        }
-    } else if ((fd = open(path, O_CREAT | O_WRONLY,
+    if ((fd = open(path, O_CREAT | O_WRONLY,
                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
-        return errno;
+        return ERROR;
     }
 
     /*
