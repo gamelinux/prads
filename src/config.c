@@ -72,7 +72,7 @@ void set_default_config_options(globalconfig *config)
     config->ctf    |= CO_SYN;
     config->ctf    |= CO_RST;
     config->ctf    |= CO_FIN;
-    config->ctf    |= CO_ACK;
+    //config->ctf    |= CO_ACK;
     config->ctf    |= CO_SYNACK;
     //config->ctf    |= CO_ICMP;
     //config->ctf    |= CO_UDP;
