@@ -1,4 +1,10 @@
-prads (0.3.0-rc1) unstable; urgency=low
+prads (0.3.0~rc2-1) UNRELEASED; urgency=low
+
+  * New upstream release candidate
+
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Thu, 22 Sep 2011 14:57:14 +0200
+
+prads (0.3.0~rc1-1) unstable; urgency=low
 
   * New upstream release
   * Init script chroots by default
