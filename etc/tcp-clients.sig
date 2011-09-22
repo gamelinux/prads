@@ -81,6 +81,7 @@ http,v/$1///,User-Agent\x3a (.*)\n
 # SSH
 ssh,v/OpenSSH/$2/Protocol $1/,SSH-([.\d]+)-OpenSSH[_-](\S+)
 ssh,v/libssh/$2/Protocol $1/,SSH-([.\d]+)-libssh-(\S+)
+ssh,v/PuTTY/$2/Protocol $1/,SSH-([.\d]+)-PuTTY_(\S+)
 ####### SSH Section END ####################################################
 
 ####### TLS/SSL Section START ##############################################

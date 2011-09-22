@@ -188,15 +188,14 @@ int is_valid_path(const char *path)
     if (path == NULL) {
         return 0;
     }
-    if (stat(path, &st) != 0) {
-        return 0;
+    if (stat(path, &st) == 0) {
+        // path already exists. is it regular and writable?
+        if (!S_ISREG(st.st_mode) || access(path, W_OK) != -1) {
+            return 1;
+        }
     }
 
-    if (S_ISREG(st.st_mode) && access(path, W_OK) != -1) {
-        return 1;
-    }
-
-    memcpy(dir, path, strnlen(path, STDBUF));
+    strcpy(dir, path);
     dirname(dir);
 
     if (stat(dir, &st) != 0) {
@@ -287,7 +286,7 @@ int create_pid_file(const char *path)
 
     if (fcntl(fd, F_SETLK, &lock) == -1) {
         if (errno == EACCES || errno == EAGAIN) {
-            rval = ERROR;
+            rval = errno;
         } else {
             rval = ERROR;
         }
@@ -296,10 +295,10 @@ int create_pid_file(const char *path)
     }
     snprintf(pid_buffer, sizeof(pid_buffer), "%d\n", (int)getpid());
     if (ftruncate(fd, 0) != 0) {
-        return ERROR;
+        return errno;
     }
-    if (write(fd, pid_buffer, strlen(pid_buffer)) != 0) {
-        return ERROR;
+    if (write(fd, pid_buffer, strlen(pid_buffer)) == -1) {
+        return errno;
     }
     return SUCCESS;
 }

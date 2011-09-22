@@ -75,10 +75,11 @@ typedef struct _globalconfig {
 #define ISSET_CONFIG_SYSLOG(config)     ((config).cflags & CONFIG_SYSLOG)
 #define ISSET_CONFIG_QUIET(config)      ((config).cflags & CONFIG_QUIET)
 
-void display_config();
-void set_default_config_options();
-void parse_line (bstring line);
+void display_config(globalconfig *conf);
+void set_default_config_options(globalconfig *conf);
+void parse_line (globalconfig *conf, bstring line);
 void parse_config_file(const char *fname);
+int parse_args(globalconfig *conf, int argc, char *argv[], char *args);
 int brtrim (bstring string);
 int bltrim (bstring string);
 void free_config();
