@@ -54,7 +54,8 @@ start_service() {
 
 stop_service() {
     log_begin_msg "Stopping $DESC..."
-    start-stop-daemon --stop --quiet --oknodo --exec $DAEMON
+    start-stop-daemon --stop --quiet --oknodo --retry 60 \
+        --pidfile $CHROOT/$PIDFILE
     log_end_msg $?
 }
 
