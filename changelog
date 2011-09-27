@@ -1,3 +1,9 @@
+2011-09-27 0.3.0: all good things are three
+    * No changes since rc3.
+
+2011-09-22 0.3.0-rc3: nothing good comes to those who wait
+    * Disable ACK fingerprinting by default
+
 2011-09-21 0.3.0-rc2: are we there yet?
     * bugfix: pid file creation on chroot (ssm)
     * refactor initialization
