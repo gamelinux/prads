@@ -1,3 +1,9 @@
+prads (0.3.0-1) UNRELEASED; urgency=low
+
+  * New upstream release
+
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Sun, 02 Oct 2011 11:30:52 +0200
+
 prads (0.3.0~rc3-2) UNRELEASED; urgency=low
 
   * debian/prads.init: fix "stop" action
