@@ -8,3 +8,11 @@ $ git clone git://github.com/gamelinux/prads.git
 $ sudo ln -s $PWD/prads/etc /etc/prads
 $ sudo perl prads/sbin/prads.pl --help
 
+# On a FreeBSD system (C version)
+$ pkg_add -r pcre git gmake
+$ git clone git://github.com/gamelinux/prads.git
+$ cd prads
+$ gmake
+
+*Note: Installer doesn't work on FreeBSD, so manually copy, or symlink, the binary and config files.
+
