@@ -24,7 +24,7 @@
 /*  I N C L U D E S  *********************************************************/
 #ifdef __APPLE__
 #include <sys/malloc.h>
-#else
+#elseif !defined(__FreeBSD__)
 #include <malloc.h>
 #endif
 
