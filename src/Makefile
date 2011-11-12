@@ -1,5 +1,6 @@
 #Makefile
 #CC=gcc
+UNAME := $(shell uname -s)
 LDFLAGS=-lpcap -lpcre -lresolv
 CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
 
@@ -14,6 +15,10 @@ CFLAGS+= -DDUMP_HASH -DDEBUG_HASH -DDEBUG=2 -DDEBUG=2
 endif
 ifneq (${DEBUG_PACKET},)
 CFLAGS+= -DDEBUG_PACKET
+endif
+ifeq ($(UNAME), FreeBSD)
+LDFLAGS= -L/usr/local/lib -lpcre -lpcap
+CPPFLAGS= -I/usr/local/include
 endif
 
 BUILD=gnu

@@ -98,6 +98,27 @@ void printchars(char buf[NS_MAXDNAME], u_char * cdata, u_int16_t dlen);
 	(cp) += INT32SZ; \
 } while (0)
 
+#ifdef __FreeBSD__
+const char *_res_opcodes[] = {
+        "QUERY",
+        "IQUERY",
+        "CQUERYM",
+        "CQUERYU",      /* experimental */
+        "NOTIFY",       /* experimental */
+        "UPDATE",
+        "6",
+        "7",
+        "8",
+        "UPDATEA",
+        "UPDATED",
+        "UPDATEDA",
+        "UPDATEM",
+        "UPDATEMA",
+        "ZONEINIT",
+        "ZONEREF",
+};
+#endif /* __FreeBSD__ */
+
 //#include "dump_dns.h"
 
 void
