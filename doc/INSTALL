@@ -9,7 +9,7 @@ $ sudo ln -s $PWD/prads/etc /etc/prads
 $ sudo perl prads/sbin/prads.pl --help
 
 # On a FreeBSD system (C version)
-$ pkg_add -r pcre git gmake
+$ pkg_add -r pcre git gmake py26-docutils
 $ git clone git://github.com/gamelinux/prads.git
 $ cd prads
 $ gmake
