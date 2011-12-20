@@ -64,7 +64,7 @@ S4:64:1:*:.:AFDN:Linux:2.6 arm
 32806:64:1:52:N,N,T:ATFN:Solaris:Sun OpenStorage 7310
 
 # Cisco Iron Port
-16560:64:1:40:.:AFN:Cisco:AsyncOS phoebe 7.1.2 (Iron Port)
+16560:64:1:40:.:AFN:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
 
 # signatures from Eric Kollmann
 64292:128:1:40:.:AFN:Windows:Windows XP
