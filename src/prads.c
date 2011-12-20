@@ -42,6 +42,7 @@
 #include "mac.h"
 #include "tcp.h"
 #include "dump_dns.h"
+#include "dhcp.h"
 //#include "output-plugins/log_init.h"
 #include "output-plugins/log.h"
 
@@ -759,6 +760,9 @@ void parse_udp (packetinfo *pi)
         // For now - Proof of Concept! - Fix output way
         if(config.cflags & CONFIG_PDNS)
             dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
+    }
+    if (ntohs(pi->s_port) == 68 && ntohs(pi->d_port) == 67) {
+        //dhcp_fingerprint(pi); /* comment out to see basic DHCP parsing*/
     }
     // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
