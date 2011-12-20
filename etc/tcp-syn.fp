@@ -774,7 +774,8 @@ S4:64:1:60:W0,N,S,T,M1460:.:FortiNet:FortiGate 50
 
 # ----------- Iron Port (Cisco) -------------
 
-16384:64:1:48:M1380,S,E,E:P:Cisco:AsyncOS phoebe 7.1.2 (Iron Port)
+16384:64:1:48:M1380,S,E,E:P:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
+16384:64:1:48:M1380,S,E,E:PZ:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
 16384:254:1:44:M536:.:Cisco:IOS 15.0 (loopback) UC
 
 # ------- Switches and other stuff ----------
@@ -915,6 +916,7 @@ S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
 S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 
 # Spiders
+S4:52:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider)
 S4:44:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
 S4:51:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)
 S4:52:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)

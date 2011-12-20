@@ -78,3 +78,6 @@ S4:64:1:0:.:A:Linux:2.6
 92:64:1:0:N,N,T:A:Netgear:Netgear WNR3500
 65535:128:1:0:N,N,?5:A:Windows:Windows XP
 32451:128:1:0:N,N,?5:A:Windows:Windows 7/2008 R2
+
+# IronPort
+16560:64:1:0:.:A:Cisco:AsyncOS phoebe 7.1.x (Iron Port)

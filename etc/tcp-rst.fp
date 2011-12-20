@@ -143,8 +143,10 @@
 0:32:0:40:.:.:Xylan:OmniSwitch / Linksys WAP11 AP (dropped)
 0:64:1:40:.:U:NetIron:load balancer (dropped)
 
+0:64:1:40:.:A:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
+
 0:128:1:40:.:QA:Windows:XP/2000 (dropped 2)
-0:128:1:40:.:A:-Windows:XP/2000 while browsing (1) (dropped 2)
+0:128:1:40:.:A:Windows:XP/2000 while browsing (1) (dropped 2)
 0:128:1:40:.:QUA:-Windows:XP/2000 while browsing (2) (dropped 2)
 0:128:1:40:.:UA:-Windows:XP/2000 while browsing a lot (dropped 2)
 0:128:1:40:.:.:@Windows:98 (?) (dropped)
@@ -201,6 +203,8 @@ S2:64:1:*:.:KA:Linux:2.6 (dropped, lame) (UC)
 
 #*:128:1:*:E:KPA!:Windows:support.microsoft.com
 0:128:1:40:.:KA:Windows:Win2K (UC)/Win7/2008R2
+
+16560:64:1:40:.:KA:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
 
 #############################################
 # Connection dropped / timeout - extra data #
