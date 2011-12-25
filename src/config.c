@@ -76,7 +76,7 @@ void set_default_config_options(globalconfig *config)
     config->ctf    |= CO_SYNACK;
     //config->ctf    |= CO_ICMP;
     //config->ctf    |= CO_UDP;
-    //config->ctf    |= CO_OTHER;
+    config->ctf    |= CO_DHCP;
     config->cof    |= CS_TCP_SERVER;
     config->cof    |= CS_TCP_CLIENT;
     config->cof    |= CS_UDP_SERVICES;
@@ -97,6 +97,7 @@ void set_default_config_options(globalconfig *config)
     config->sig_file_fin = CONFDIR "tcp-fin.fp";
     config->sig_file_rst = CONFDIR "tcp-rst.fp";
     config->sig_file_mac = CONFDIR "mac.sig";
+    config->sig_file_dhcp = CONFDIR "dhcp.fp";
     config->sig_file_serv_tcp = CONFDIR "tcp-service.sig";
     config->sig_file_serv_udp = CONFDIR "udp-service.sig";
     config->sig_file_cli_tcp = CONFDIR "tcp-clients.sig";
@@ -106,6 +107,7 @@ void set_default_config_options(globalconfig *config)
     config->sig_fin = NULL;
     config->sig_rst = NULL;
     config->sig_mac = NULL;
+    config->sig_dhcp = NULL;
     config->sig_hashsize = SIG_HASHSIZE;
     config->mac_hashsize = MAC_HASHSIZE;
     // drop privileges by default

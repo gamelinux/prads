@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 #include "common.h"
+#include "dhcp.h"
 
 #define CONFIG_VERBOSE 0x01
 #define CONFIG_UPDATES 0x02
@@ -45,6 +46,7 @@ typedef struct _globalconfig {
     char       *sig_file_fin;           /* Filename of TCP FIN sig file */
     char       *sig_file_rst;           /* Filename of TCP RST sig file */
     char       *sig_file_mac;           /* Filename of MAC signature file */
+    char       *sig_file_dhcp;          /* Filename of DHCP signature file */
     char       *sig_file_serv_tcp;      /* Filename of tcp server sig file */
     char       *sig_file_cli_tcp;       /* Filename of tcp client sig file */
     char       *sig_file_serv_udp;      /* Filename of udp server sig file */
@@ -69,6 +71,7 @@ typedef struct _globalconfig {
     fp_entry   **sig_fin;               /* FIN signature hash */
     fp_entry   **sig_rst;               /* RST signature hash */
     mac_entry  **sig_mac;               /* Pointer to hash of mac signatures */
+    dhcp_fp_entry **sig_dhcp;           /* DHCP signature hash */
 } globalconfig;
 #define ISSET_CONFIG_VERBOSE(config)    ((config).cflags & CONFIG_VERBOSE)
 #define ISSET_CONFIG_UPDATES(config)    ((config).cflags & CONFIG_UPDATES)

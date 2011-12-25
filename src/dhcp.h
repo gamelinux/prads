@@ -1,8 +1,18 @@
+#ifndef DHCP_H
+#define DHCP_H
 
 #define DHCP_CLIENT_IP           "0.0.0.0"
 #define DHCP_CLIENT_PORT               68
 #define DHCP_SERVER_IP   "255.255.255.255"
 #define DHCP_SERVER_PORT               67
+
+#define MAXLINE 1024
+#define MAXDHCPOPTS 20
+#define DHCP_SIG_HASHSIZE 1024
+
+/* SIGHASH(type, asig.optcnt, asig.optreqcnt) */
+#define DHCP_SIGHASH(type,optcnt) \
+        ( (type) * (optcnt) )
 
 #define DHCP_OPTION_PAD                 0
 #define BOOTP_OPTION_NETMASK            1  // RFC 2132, 3.3
@@ -90,6 +100,31 @@ typedef struct _dhcp_header {
  * = END_OPTION shall signify the end of the option message
 */
 
+/* DHCP Fingerprint / Signature entry */
+typedef struct _dhcp_fp_entry {
+    char *os;                   /* OS genre */
+    char *desc;                 /* OS description */
+    char *vc;                   /* Vender Code */
+    uint8_t type;               /* DHCP type */
+    uint8_t ttl;                /* IP TTL */
+    uint8_t optcnt;             /* option count */
+    uint8_t opt[MAXOPT];        /* DHCP Options */
+    uint8_t optreqcnt;          /* request option counter (53) */
+    uint8_t optreq[MAXOPT];     /* request option counter  */
+    uint32_t line;              /* config file line */
+    struct _dhcp_fp_entry *next;
+} dhcp_fp_entry;
+
 
 void dhcp_fingerprint(packetinfo *pi);
 void print_data(const uint8_t* data, uint16_t dlen);
+static int parse_dhcp_sig_opts(dhcp_fp_entry *sig, char* p);
+static int parse_dhcp_sig_optreq(dhcp_fp_entry *sig, char* p);
+static dhcp_fp_entry *alloc_dhcp_sig(dhcp_fp_entry *e);
+static void free_dhcp_sigs(dhcp_fp_entry *e);
+void print_dhcp_sig(dhcp_fp_entry * e);
+void dump_dhcp_sigs(dhcp_fp_entry *mysig[], int max);
+void dump_dhcp_sigs(dhcp_fp_entry *mysig[], int max);
+dhcp_fp_entry *find_dhcp_match(dhcp_fp_entry *dhcpfp, packetinfo *pi);
+
+#endif

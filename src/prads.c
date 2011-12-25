@@ -1342,7 +1342,8 @@ int main(int argc, char *argv[])
     load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize, dump_sigs);
     load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize, dump_sigs);
     load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize, dump_sigs);
-
+    /* Using CO_SYN for testing of DHCP */
+    //load_foo(load_dhcp_sigs, ctf, CO_SYN, sig_file_dhcp, sig_dhcp, sig_hashsize, dump_dhcp_sigs);
     load_foo(load_servicefp_file, cof, CS_TCP_SERVER, sig_file_serv_tcp, sig_serv_tcp, sig_hashsize, dump_sig_service);
     load_foo(load_servicefp_file, cof, CS_UDP_SERVICES, sig_file_serv_udp, sig_serv_udp, sig_hashsize, dump_sig_service);
     load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);
