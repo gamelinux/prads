@@ -363,6 +363,7 @@ void print_dhcp_sig(dhcp_fp_entry * e)
         plog("%d",e->optreq[j]);
         if ((j+1) < (e->optreqcnt)) plog(",");
     }
+    if (e->optreqcnt==0) plog(".");
     plog(":");
     if (e->vc == NULL) {
         plog(".");
