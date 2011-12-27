@@ -254,7 +254,7 @@ void file_arp (output_plugin *log, asset *main)
     if (main->macentry != NULL) {
         /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
         /* XXX: vendor info breaks csv niceness */
-        fprintf((FILE*)log->data, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
+        fprintf((FILE*)log->data, "%s,%u,0,0,ARP,[(%s),%s],0,%lu\n", ip_addr_s,
             main->vlan ? ntohs(main->vlan) : 0,main->macentry->vendor,
             hex2mac(main->mac_addr), main->last_seen);
     } else {
