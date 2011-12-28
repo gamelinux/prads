@@ -190,7 +190,8 @@ sub put_asset_to_db {
     # 208.115.111.68,0,44163,6,SYN,[S4:56:1:60:M1460,S,T,N,W7:.:Linux:2.6 (newer, 7):link:ethernet/modem:uptime:1597hrs],8,1320426783
     my ($ip, $vlan, $port, $proto, $service, $meta, $dist, $ts) = @_;
     my $quoted_meta = $dbh->quote($meta);
-    $meta  =~ s/(')/\\$1/;
+    $meta =~ s/(')/\\$1/;
+    $meta =~ s/:uptime:\d+hrs//; # removes the uptime which changes
     my ($sql, $sth);
 
     eval{
