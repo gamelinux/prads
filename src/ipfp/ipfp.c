@@ -21,6 +21,7 @@
 #include "../common.h"
 #include "../prads.h"
 #include "../assets.h"
+#include "../config.h"
 #include "ipfp.h"
 
 /* ripped out gen_fp_tcp, sorry */

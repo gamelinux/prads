@@ -1,7 +1,5 @@
 #ifndef CONFIG_H
 #define CONFIG_H
-#include "common.h"
-#include "dhcp.h"
 
 #define CONFIG_VERBOSE 0x01
 #define CONFIG_UPDATES 0x02
@@ -12,6 +10,31 @@
 #define CONFIG_PDNS    0x40
 
 #define DEFAULT_NETS "0.0.0.0/0,::/0"
+
+/* Flags to set for enabling different OS Fingerprinting checks.
+ * Make these compatible with TCP flags!*/
+#define CO_FIN                        0x01      /* Check FIN packets */
+#define CO_SYN                        0x02      /* Check SYN packets */
+#define CO_RST                        0x04      /* Check RST packets */
+// push                               0x08
+#define CO_SYNACK                     0x08      /* Check SYNACK packets */
+#define CO_ACK                        0x10      /* Check Stray-ACK packets */
+// urg                                0x20
+// ece                                0x40
+// cwr                                0x80
+#define CO_ICMP                       0x20      /* Check ICMP Packets */
+#define CO_UDP                        0x40      /* Check UDP Packets */
+#define CO_DHCP                       0x80      /* Check DHCP Packets */
+#define CO_OTHER                      0x7f      /* Check Other Packets - need a flag! */
+
+/* Flags to set for enabling different service/client checks */
+#define CS_TCP_SERVER                 0x01
+#define CS_TCP_CLIENT                 0x02
+#define CS_UDP_SERVICES               0x04  /* Currently implying server+client*/
+#define CS_UDP_CLIENT                 0x08
+#define CS_MAC                        0x10
+#define CS_ICMP                       0x20
+#define CS_ARP                        0x80
 
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */

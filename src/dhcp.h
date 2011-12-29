@@ -100,21 +100,6 @@ typedef struct _dhcp_header {
  * = END_OPTION shall signify the end of the option message
 */
 
-/* DHCP Fingerprint / Signature entry */
-typedef struct _dhcp_fp_entry {
-    char *os;                   /* OS genre */
-    char *desc;                 /* OS description */
-    char *vc;                   /* Vender Code */
-    uint8_t type;               /* DHCP type */
-    uint8_t ttl;                /* IP TTL */
-    uint8_t optcnt;             /* option count */
-    uint8_t opt[MAXOPT];        /* DHCP Options */
-    uint8_t optreqcnt;          /* request option counter (53) */
-    uint8_t optreq[MAXOPT];     /* request option counter  */
-    uint32_t line;              /* config file line */
-    struct _dhcp_fp_entry *next;
-} dhcp_fp_entry;
-
 
 void dhcp_fingerprint(packetinfo *pi);
 void print_data(const uint8_t* data, uint16_t dlen);
