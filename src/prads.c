@@ -1150,7 +1150,7 @@ static void usage()
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
     olog(" -Z              Passive DNS (Experimental).\n");
-    olog(" -P              DHCP fingerprinting (Expermiental).\n");
+    olog(" -H              DHCP fingerprinting (Expermiental).\n");
     olog(" -h              This help message.\n");
 }
 
