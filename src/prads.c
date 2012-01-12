@@ -50,7 +50,7 @@
 #define CONFDIR "/etc/prads/"
 #endif
 
-#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:f:qtxs:OXFRMSAKUTIZtHP"
+#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:L:f:qtxs:OXFRMSAKUTIZtHP"
 
 /*  G L O B A L S  *** (or candidates for refactoring, as we say)***********/
 globalconfig config;
@@ -1147,6 +1147,7 @@ static void usage()
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
+    olog(" -L <dir>        log cxtracker type output to <dir>.\n");
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
     olog(" -Z              Passive DNS (Experimental).\n");

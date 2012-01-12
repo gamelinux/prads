@@ -119,6 +119,8 @@ void set_default_config_options(globalconfig *config)
     // don't chroot or daemonize by default
     config->chroot_dir = NULL;
     config->daemon_flag = 0;
+    config->cxtlogdir[0] = '\0';
+    config->cxtfname[0] = '\0';
 }
 
 void parse_config_file(const char* fname)
@@ -503,6 +505,9 @@ int parse_args(globalconfig *conf, int argc, char *argv[], char *args)
         case 'H':
             olog("DHCP!!\n");
             conf->ctf |= CO_DHCP;
+            break;
+        case 'L':
+            strcpy(conf->cxtlogdir,optarg);
             break;
         case '?':
             elog("unrecognized argument: '%c'\n", optopt);

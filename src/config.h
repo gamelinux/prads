@@ -59,6 +59,8 @@ typedef struct _globalconfig {
     connection  *cxtbuffer;             /* Pointer to list of expired connections */
     asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
     port_t      *lports[MAX_IP_PROTO];  /* Pointer to list of known ports */
+    char        cxtfname[4096];         /* cxtracker/sancp like output file */
+    char        cxtlogdir[2048];        /* log dir for sancp/cxtracker output */
     char       *file;                   /* config file location, if known */
     char       *assetlog;               /* Filename of prads-asset.log */
     char       *fifo;                   /* Path to FIFO output */
