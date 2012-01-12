@@ -31,7 +31,7 @@ use DBI;
 
 =head1 VERSION
 
-0.1
+0.2.0
 
 =head1 SYNOPSIS
 
@@ -98,8 +98,9 @@ if ( $DAEMON ) {
    open (STDERR, ">&STDOUT");
 }
 
-warn "[*] Connecting to database...\n";
-my $dbh = DBI->connect($DBI,$DB_USERNAME,$DB_PASSWORD, {RaiseError => 1}) or die "$DBI::errstr";
+our $dbh;
+# Connect to the DB
+connect_db();
 # Setup the prads table, if not exist
 setup_db();
 
@@ -189,8 +190,8 @@ sub parseLogfile {
 sub put_asset_to_db {
     # 208.115.111.68,0,44163,6,SYN,[S4:56:1:60:M1460,S,T,N,W7:.:Linux:2.6 (newer, 7):link:ethernet/modem:uptime:1597hrs],8,1320426783
     my ($ip, $vlan, $port, $proto, $service, $meta, $dist, $ts) = @_;
-    my $quoted_meta = $dbh->quote($meta);
-    $meta =~ s/(')/\\$1/;
+    #my $quoted_meta = $dbh->quote($meta);
+    $meta =~ s/(')/\\$1/g;
     $meta =~ s/:uptime:\d+hrs//; # removes the uptime which changes
     my ($sql, $sth);
 
@@ -203,6 +204,9 @@ sub put_asset_to_db {
              ) ON DUPLICATE KEY UPDATE LAST_SEEN=FROM_UNIXTIME($ts)
              ];
       warn "$sql\n" if $DEBUG;
+
+      connect_db();
+
       $sth = $dbh->prepare($sql);
       $sth->execute;
       $sth->finish;
@@ -213,6 +217,19 @@ sub put_asset_to_db {
       return 1;
    }
    return 0;
+}
+
+sub connect_db {
+    while (not defined $dbh) {
+      print "[*] Connecting to database...\n";
+      if ($dbh = DBI->connect($DBI,$DB_USERNAME,$DB_PASSWORD, {RaiseError => 0})) {
+          print "[*] Re-connection to DB OK...\n";
+      } else {
+          print "[E] $DBI::errstr\n"; 
+          print "[*] Sleeping for 60sec\n";
+          sleep 60;
+      }
+    }
 }
 
 sub new_table {
