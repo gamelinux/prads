@@ -444,6 +444,7 @@ S4:64:1:52:M*,N,N,S,N,W1:.:Linux:2.6 OpenWRT (UC) Kacper confirm
 
 16384:64:1:44:M*:.:FreeBSD:2.0-4.2
 16384:64:1:60:M*,N,W0,N,N,T:.:FreeBSD:4.4 (1)
+16384:64:1:60:M*,N,W0,N,N,T:Z:FreeBSD:4.4
 
 1024:64:1:60:M*,N,W0,N,N,T:.:FreeBSD:4.4 (2)
 
