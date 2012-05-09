@@ -1,0 +1,3 @@
+version=3
+opts="uversionmangle=s/_/~/" \
+  http://githubredir.debian.net/github/gamelinux/prads (?:\/)(\d.+).tar.gz
