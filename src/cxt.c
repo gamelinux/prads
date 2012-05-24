@@ -259,6 +259,15 @@ void end_sessions()
     check_time = time(NULL);
     int ended, expired = 0;
     uint32_t curcxt = 0;
+    FILE *cxtFile = NULL;
+
+    if (config.cxtlogdir[0] != '\0') {
+        if (config.dev == 0x00) {
+            sprintf(config.cxtfname, "%sstats.pcap.%ld", config.cxtlogdir, check_time); // True?
+        } else {
+            sprintf(config.cxtfname, "%sstats.%s.%ld", config.cxtlogdir, config.dev, check_time);
+        }
+    }
     
     int iter;
     for (iter = 0; iter < BUCKET_SIZE; iter++) {
@@ -307,6 +316,17 @@ void end_sessions()
                     cxt->next->prev = cxt->prev;
                 connection *tmp = cxt;
 
+                if (config.cxtfname[0] != '\0' ) {
+                    if (cxtFile == NULL) {
+                        cxtFile = fopen(config.cxtfname, "w");
+                        dlog("Opened file: %s\n",config.cxtfname);
+                    }
+                    if (cxtFile == NULL) {
+                        dlog("[*] ERROR: Cant open file %s\n",config.cxtfname);
+                    } else {
+                        log_connection(cxt, cxtFile, CX_NONE);
+                    }
+                }
                 if (config.cflags & CONFIG_CXWRITE) {
                     if (expired == 1)
                         log_connection(cxt, stdout, CX_EXPIRE);
@@ -326,6 +346,9 @@ void end_sessions()
                 cxt = cxt->prev;
             }
         }
+    }
+    if (cxtFile != NULL) {
+        fclose(cxtFile);
     }
 }
 
@@ -375,11 +398,32 @@ void end_all_sessions()
 {
     connection *cxt;
     int cxkey;
+    FILE *cxtFile = NULL;
+
+    if (config.cxtlogdir[0] != '\0') {
+        if (config.dev == 0x00) {
+            sprintf(config.cxtfname, "%sstats.pcap.%ld", config.cxtlogdir, time(NULL)); // True?
+        } else {
+            sprintf(config.cxtfname, "%sstats.%s.%ld", config.cxtlogdir, config.dev, time(NULL));
+        }
+    }
 
     for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
         cxt = bucket[cxkey];
         while (cxt != NULL) {
             connection *tmp = cxt;
+
+            if (config.cxtfname[0] != '\0' ) {
+                if (cxtFile == NULL) {
+                    cxtFile = fopen(config.cxtfname, "w");
+                    dlog("Opened file: %s\n",config.cxtfname);
+                }
+                if (cxtFile == NULL) {
+                    dlog("[*] ERROR: Cant open file %s\n",config.cxtfname);
+                } else {
+                    log_connection(cxt, cxtFile, CX_NONE);
+                }
+            }
 
             if(config.cflags & CONFIG_CXWRITE)
                 log_connection(cxt, stdout, CX_ENDED);
@@ -390,6 +434,9 @@ void end_all_sessions()
                 bucket[cxkey] = NULL;
             }
         }
+    }
+    if (cxtFile != NULL) {
+        fclose(cxtFile);
     }
 }
 

@@ -44,6 +44,7 @@
 
 #include "common.h"
 #include "prads.h"
+#include "dhcp.h"
 #include "sys_func.h"
 #include "mtu.h"
 #include "tos.h"

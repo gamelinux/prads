@@ -50,7 +50,7 @@
 #define CONFDIR "/etc/prads/"
 #endif
 
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIZt"
+#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:L:f:qtxs:OXFRMSAKUTIZtHP"
 
 /*  G L O B A L S  *** (or candidates for refactoring, as we say)***********/
 globalconfig config;
@@ -756,13 +756,13 @@ void parse_udp (packetinfo *pi)
     // Check for Passive DNS
     static char ip_addr_s[INET6_ADDRSTRLEN];
     u_ntop_src(pi, ip_addr_s);
-    if ( ntohs(pi->s_port) == 53 ) {
+    if ( ntohs(pi->s_port) == 53 ||  ntohs(pi->s_port) == 5353 ) {
         // For now - Proof of Concept! - Fix output way
         if(config.cflags & CONFIG_PDNS)
             dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
     }
-    if (ntohs(pi->s_port) == 68 && ntohs(pi->d_port) == 67) {
-        //dhcp_fingerprint(pi); /* comment out to see basic DHCP parsing*/
+    if (IS_COSET(&config, CO_DHCP) && ntohs(pi->s_port) == 68 && ntohs(pi->d_port) == 67) {
+        dhcp_fingerprint(pi); /* basic DHCP parsing*/
     }
     // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
@@ -1147,9 +1147,11 @@ static void usage()
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
+    olog(" -L <dir>        log cxtracker type output to <dir>.\n");
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
     olog(" -Z              Passive DNS (Experimental).\n");
+    olog(" -H              DHCP fingerprinting (Expermiental).\n");
     olog(" -h              This help message.\n");
 }
 
@@ -1342,8 +1344,7 @@ int main(int argc, char *argv[])
     load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize, dump_sigs);
     load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize, dump_sigs);
     load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize, dump_sigs);
-    /* Using CO_SYN for testing of DHCP */
-//    load_foo(load_dhcp_sigs, ctf, CO_SYN, sig_file_dhcp, sig_dhcp, sig_hashsize, dump_dhcp_sigs);
+    load_foo(load_dhcp_sigs, ctf, CO_DHCP, sig_file_dhcp, sig_dhcp, sig_hashsize, dump_dhcp_sigs);
     load_foo(load_servicefp_file, cof, CS_TCP_SERVER, sig_file_serv_tcp, sig_serv_tcp, sig_hashsize, dump_sig_service);
     load_foo(load_servicefp_file, cof, CS_UDP_SERVICES, sig_file_serv_udp, sig_serv_udp, sig_hashsize, dump_sig_service);
     load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);

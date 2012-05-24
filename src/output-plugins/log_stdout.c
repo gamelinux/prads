@@ -1,6 +1,7 @@
 #include "../prads.h"
 #include "../sys_func.h"
 #include "../sig.h"
+#include "../config.h"
 #include "log.h"
 #include "log_stdout.h"
 

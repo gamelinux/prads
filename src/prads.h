@@ -45,31 +45,6 @@
 #define ASSET_TYPE_OS                 0x02
 #define ASSET_TYPE_SERVICE            0x04
 
-/* Flags to set for enabling different OS Fingerprinting checks.
- * Make these compatible with TCP flags!*/
-#define CO_FIN                        0x01      /* Check FIN packets */
-#define CO_SYN                        0x02      /* Check SYN packets */
-#define CO_RST                        0x04      /* Check RST packets */
-// push                               0x08
-#define CO_SYNACK                     0x08      /* Check SYNACK packets */
-#define CO_ACK                        0x10      /* Check Stray-ACK packets */
-// urg                                0x20
-// ece                                0x40
-// cwr                                0x80
-#define CO_ICMP                       0x20      /* Check ICMP Packets */
-#define CO_UDP                        0x40      /* Check UDP Packets */
-#define CO_DHCP                       0x80      /* Check DHCP Packets */
-#define CO_OTHER                      0x7f      /* Check Other Packets - need a flag! */
-
-/* Flags to set for enabling different service/client checks */
-#define CS_TCP_SERVER                 0x01
-#define CS_TCP_CLIENT                 0x02
-#define CS_UDP_SERVICES               0x04  /* Currently implying server+client*/
-#define CS_UDP_CLIENT                 0x08
-#define CS_MAC                        0x10
-#define CS_ICMP                       0x20
-#define CS_ARP                        0x80
-
 #define ETHERNET_TYPE_IP              0x0800
 #define ETHERNET_TYPE_ARP             0x0806
 #define ETHERNET_TYPE_IPV6            0x86dd
@@ -510,6 +485,21 @@ typedef struct _mac_entry {
   struct _mac_entry *next;
 } mac_entry;
 
+
+/* DHCP Fingerprint / Signature entry */
+typedef struct _dhcp_fp_entry {
+    char *os;                   /* OS genre */
+    char *desc;                 /* OS description */
+    char *vc;                   /* Vender Code */
+    uint8_t type;               /* DHCP type */
+    uint8_t ttl;                /* IP TTL */
+    uint8_t optcnt;             /* option count */
+    uint8_t opt[MAXOPT];        /* DHCP Options */
+    uint8_t optreqcnt;          /* request option counter (53) */
+    uint8_t optreq[MAXOPT];     /* request option counter  */
+    uint32_t line;              /* config file line */
+    struct _dhcp_fp_entry *next;
+} dhcp_fp_entry;
 
 /*
  * Structure for connections

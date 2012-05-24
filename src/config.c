@@ -26,6 +26,7 @@
 #include "common.h"
 #include "prads.h"
 #include "sys_func.h"
+#include "dhcp.h"
 #include "config.h"
 #include "mac.h"
 #include "sig.h"
@@ -76,7 +77,7 @@ void set_default_config_options(globalconfig *config)
     config->ctf    |= CO_SYNACK;
     //config->ctf    |= CO_ICMP;
     //config->ctf    |= CO_UDP;
-    config->ctf    |= CO_DHCP;
+    //config->ctf    |= CO_DHCP;
     config->cof    |= CS_TCP_SERVER;
     config->cof    |= CS_TCP_CLIENT;
     config->cof    |= CS_UDP_SERVICES;
@@ -118,6 +119,8 @@ void set_default_config_options(globalconfig *config)
     // don't chroot or daemonize by default
     config->chroot_dir = NULL;
     config->daemon_flag = 0;
+    config->cxtlogdir[0] = '\0';
+    config->cxtfname[0] = '\0';
 }
 
 void parse_config_file(const char* fname)
@@ -497,6 +500,14 @@ int parse_args(globalconfig *conf, int argc, char *argv[], char *args)
             break;
         case 't':
             conf->cof |= CS_TCP_CLIENT;
+            break;
+        case 'P':
+        case 'H':
+            olog("DHCP!!\n");
+            conf->ctf |= CO_DHCP;
+            break;
+        case 'L':
+            strcpy(conf->cxtlogdir,optarg);
             break;
         case '?':
             elog("unrecognized argument: '%c'\n", optopt);
