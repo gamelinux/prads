@@ -4,7 +4,7 @@
 #define CXT_HASH4(src,dst,sp,dp,pr) \
    ((src + dst + sp + dp + pr) % BUCKET_SIZE)
 
-#define CXT_HASH6(src,dst) \
+#define CXT_HASH6(src,dst,sp,dp,pr) \
  (( \
   (src)->s6_addr32[0] + (src)->s6_addr32[1] + \
   (src)->s6_addr32[2] + (src)->s6_addr32[3] + \
