@@ -1,16 +1,16 @@
 #ifndef CXT_H
 #define CXT_H
 
-#define CXT_HASH4(src,dst) \
-   ((src + dst) % BUCKET_SIZE)
+#define CXT_HASH4(src,dst,sp,dp,pr) \
+   ((src + dst + sp + dp + pr) % BUCKET_SIZE)
 
 #define CXT_HASH6(src,dst) \
  (( \
   (src)->s6_addr32[0] + (src)->s6_addr32[1] + \
   (src)->s6_addr32[2] + (src)->s6_addr32[3] + \
   (dst)->s6_addr32[0] + (dst)->s6_addr32[1] + \
-  (dst)->s6_addr32[2] + (dst)->s6_addr32[3] \
- ) % BUCKET_SIZE)
+  (dst)->s6_addr32[2] + (dst)->s6_addr32[3] + \
+  sp + dp + pr ) % BUCKET_SIZE)
 
 enum { CX_NONE, CX_HUMAN, CX_NEW, CX_ENDED, CX_EXPIRE };
 void end_sessions();
