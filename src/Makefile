@@ -1,8 +1,18 @@
 #Makefile
 #CC=gcc
 UNAME := $(shell uname -s)
-LDFLAGS=-lpcap -lpcre -lresolv
-CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
+CFLAGS=-O3
+
+#STATIC=y
+ifeq (${STATIC},)
+LDFLAGS+=-lpcap -lpcre -lresolv
+CFLAGS+=-DCONFDIR='"${CONFDIR}/"'
+else
+
+CFLAGS+=-DCONFDIR='"prads/"'
+LDFLAGS=-Llibpcap-1.1.1/ -lpcap
+LDFLAGS+=/usr/lib/libpcre.a /usr/lib/libresolv.a 
+endif
 
 ifneq (${DEBUG},)
 CFLAGS = -g -DDEBUG -Wall -DCONFDIR='"${CONFDIR}/"'
