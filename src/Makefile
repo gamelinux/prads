@@ -6,7 +6,7 @@ CFLAGS=-O3
 #STATIC=y
 ifeq (${STATIC},)
 LDFLAGS+=-lpcap -lpcre -lresolv
-CFLAGS+=-DCONFDIR='"${CONFDIR}/"'
+CFLAGS+=-DCONFDIR='"${CONFDIR}/"' -DRELEASE='"$(shell git describe | cut -f2- -d_ | sed 's/^\(.\)/-\1/')"'
 else
 
 CFLAGS+=-DCONFDIR='"prads/"'

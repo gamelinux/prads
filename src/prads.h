@@ -30,7 +30,10 @@
 #include <pcre.h>
 
 /*  D E F I N E S  ************************************************************/
-#define VERSION                       "0.3.1-rc1"
+#ifndef RELEASE
+#define RELEASE
+#endif
+#define VERSION                       "0.3.1"RELEASE
 #define SIG_ALRM                      60        /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
