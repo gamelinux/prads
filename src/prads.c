@@ -1245,6 +1245,13 @@ int prads_initialize(globalconfig *conf)
     return 0;
 }
 
+void prads_version(void)
+{
+    olog("[*] prads %s\n", VERSION);
+    olog("    Using %s\n", pcap_lib_version());
+    olog("    Using PCRE version %s\n", pcre_version());
+}
+
 /* magic main */
 int main(int argc, char *argv[])
 {
@@ -1300,9 +1307,7 @@ int main(int argc, char *argv[])
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-    olog("[*] Running prads %s\n", VERSION);
-    olog("    Using %s\n", pcap_lib_version());
-    olog("    Using PCRE version %s\n", pcre_version());
+    prads_version();
 
 
     if(config.verbose){
