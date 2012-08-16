@@ -754,10 +754,10 @@ void parse_udp (packetinfo *pi)
     //if (is_set_guess_upd_direction(config)) {
     udp_guess_direction(pi); // fix DNS server transfers?
     // Check for Passive DNS
-    static char ip_addr_s[INET6_ADDRSTRLEN];
     if ( ntohs(pi->s_port) == 53 ||  ntohs(pi->s_port) == 5353 ) {
         // For now - Proof of Concept! - Fix output way
-        if(config.cflags & CONFIG_PDNS){
+        if(config.cflags & CONFIG_PDNS) {
+            static char ip_addr_s[INET6_ADDRSTRLEN];
             u_ntop_src(pi, ip_addr_s);
             dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
         }
@@ -1274,6 +1274,9 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
     signal(SIGHUP, reparse_conf);
+#ifdef DEBUG
+    signal(SIGUSR1, cxt_log_buckets);
+#endif
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;

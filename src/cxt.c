@@ -441,6 +441,32 @@ void end_all_sessions()
     }
 }
 
+void cxt_log_buckets(int dummy)
+{
+    connection *cxt = NULL;
+    FILE *logfile = NULL;
+    int i;
+    int len;
+
+    logfile = fopen("/tmp/prads-buckets.log", "w");
+    if (!logfile)
+        return;
+
+    dlog("Recieved SIGUSR1 - Dumping bucketlist to logfile\n");
+    for (i = 0; i < BUCKET_SIZE; i++) {
+        len = 0;
+        for (cxt = bucket[i]; cxt; cxt = cxt->next)
+            len++;
+        if (len > 0)
+            fprintf(logfile, "%d in bucket[%5d]\n", len, i);
+    }
+
+    fflush(logfile);
+    fclose(logfile);
+}
+
+
+
 /* vector comparisons to speed up cx tracking.
  * meaning, compare source:port and dest:port at the same time.
  *
