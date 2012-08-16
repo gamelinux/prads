@@ -756,7 +756,7 @@ void parse_udp (packetinfo *pi)
     // Check for Passive DNS
     static char ip_addr_s[INET6_ADDRSTRLEN];
     u_ntop_src(pi, ip_addr_s);
-    if ( ntohs(pi->s_port) == 53 ) {
+    if ( ntohs(pi->s_port) == 53 ||  ntohs(pi->s_port) == 5353 ) {
         // For now - Proof of Concept! - Fix output way
         if(config.cflags & CONFIG_PDNS)
             dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
@@ -1136,7 +1136,7 @@ static void usage()
     olog(" -g <group>      Run as group <group>.\n");
     olog(" -d              Do not drop privileges.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
-    olog(" -D              Enables daemon mode.\n");
+    olog(" -D              Daemonize.\n");
     //olog(" -d            to logdir\n");
     olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
@@ -1144,6 +1144,7 @@ static void usage()
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
     olog(" -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient\n");
+    olog(" -P              DHCP fingerprinting.\n");
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
@@ -1245,6 +1246,13 @@ int prads_initialize(globalconfig *conf)
     return 0;
 }
 
+void prads_version(void)
+{
+    olog("[*] prads %s\n", VERSION);
+    olog("    Using %s\n", pcap_lib_version());
+    olog("    Using PCRE version %s\n", pcre_version());
+}
+
 /* magic main */
 int main(int argc, char *argv[])
 {
@@ -1300,9 +1308,7 @@ int main(int argc, char *argv[])
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-    olog("[*] Running prads %s\n", VERSION);
-    olog("    Using %s\n", pcap_lib_version());
-    olog("    Using PCRE version %s\n", pcre_version());
+    prads_version();
 
 
     if(config.verbose){

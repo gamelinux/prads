@@ -503,7 +503,6 @@ int parse_args(globalconfig *conf, int argc, char *argv[], char *args)
             break;
         case 'P':
         case 'H':
-            olog("DHCP!!\n");
             conf->ctf |= CO_DHCP;
             break;
         case 'L':

@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/sh 
 
 ### BEGIN INIT INFO
 # Provides:          prads
@@ -11,6 +11,10 @@
 #                    passive host and service detecion system
 #                    in a chroot environment
 ### END INIT INFO
+#remember, for this to work out:
+# groupadd -g 5505 prads
+# useradd -g 5505 -u 5505 prads -h /var/run/prads -s /bin/false
+# useradd -g 5505 -u 5505 prads -d /var/run/prads -s /bin/false
 
 # Source function library
 . /lib/lsb/init-functions
@@ -22,7 +26,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 USER=prads
 GROUP=prads
 DAEMON=/usr/bin/prads
-LOGFILE=/var/log/prads.log
+LOGFILE=/var/log/prads-asset.log
 RUNDIR=/var/run/prads
 PIDFILE=$RUNDIR/$NAME.pid
 HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
