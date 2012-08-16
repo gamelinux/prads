@@ -972,3 +972,8 @@ S4:47:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
 #65535:64:0:60:M1460,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N:.:UNKNOWN:UNKNOWN
 #S43:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN (ip:79.175.198.172)
 
+# for comparison
+#S4:64:1:60:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7 fedora12)
+S10:57:1:60:M1460,S,T,N,W7:.:Linux:2.6 (Ubuntu 11.04 huayra)
+S10:56:1:60:M1452,S,T,N,W6:.:Linux:2.6 (Backtrack 5 rooty)
+S10:57:1:60:M1460,S,T,N,W6:.:Linux:3.2 (Debian Wheezy amaeth)
