@@ -9,9 +9,41 @@ static const unsigned char vendcookie[] = { 99, 130, 83, 99 };
 #define BOOTP_COOKIE_SIZE 4
 #define PKT_MAXPAY 16
 
+void print_dhcp_header(dhcp_header *dhcph)
+{
+    plog("OP:%d\n",dhcph->op);
+    plog("HTYPE:%d\n",dhcph->htype);
+    plog("HLEN:%d\n",dhcph->hlen);
+    plog("HOPS:%d\n",dhcph->hops);
+    plog("XID:%d\n",dhcph->xid);
+    plog("SECS:%d\n",dhcph->secs);
+    plog("FLAGS:%d\n",dhcph->flags);
+
+    char dest[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET,&(dhcph->ciaddr),dest,INET_ADDRSTRLEN + 1);
+    plog("CIP:%s\n",dest);
+    inet_ntop(AF_INET,&(dhcph->yiaddr),dest,INET_ADDRSTRLEN + 1);
+    plog("YIP:%s\n",dest);
+    inet_ntop(AF_INET,&(dhcph->siaddr),dest,INET_ADDRSTRLEN + 1);
+    plog("SIP:%s\n",dest);
+    inet_ntop(AF_INET,&(dhcph->giaddr),dest,INET_ADDRSTRLEN + 1);
+    plog("GIP:%s\n",dest);
+    plog("CHADDR:");
+    uint8_t i;
+    for(i = 0; i < 6; i++){
+        printf("%02hhx", dhcph->chaddr[i]);
+        if (i != dhcph->hlen-1)
+            printf(":");
+    }
+    plog("\n");
+    plog("SNAME:%s\n",dhcph->sname);
+    plog("FILE:%s\n",dhcph->file);
+}
+
+
 void dhcp_fingerprint(packetinfo *pi)
 {
-    plog("Got DHCP packet: ");
+    plog("Got DHCP packet:\n");
     config.pr_s.dhcp_os_assets++;
 
     uint8_t dhcp_header_length;
@@ -35,6 +67,8 @@ void dhcp_fingerprint(packetinfo *pi)
 
     dhcp_fp_entry dhcpfp = {0}; //guarantee it's empty this sig
     dhcpfp.ttl = pi->ip4->ip_ttl;
+
+    //print_dhcp_header(dhcph);
 
     uint8_t optcnt = 0;
     
