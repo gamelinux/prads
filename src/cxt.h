@@ -23,6 +23,7 @@ int cx_track(packetinfo *pi);
 void del_connection(connection *, connection **);
 void cxt_write(connection *, FILE *fd, int human);
 void cxt_write_all();
+void cxt_log_buckets(int dummy);
 
 int connection_tracking(packetinfo *pi);
 #endif // CXT_H
