@@ -756,7 +756,7 @@ void parse_udp (packetinfo *pi)
     // Check for Passive DNS
     static char ip_addr_s[INET6_ADDRSTRLEN];
     u_ntop_src(pi, ip_addr_s);
-    if ( ntohs(pi->s_port) == 53 ) {
+    if ( ntohs(pi->s_port) == 53 ||  ntohs(pi->s_port) == 5353 ) {
         // For now - Proof of Concept! - Fix output way
         if(config.cflags & CONFIG_PDNS)
             dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);

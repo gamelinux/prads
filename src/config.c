@@ -317,6 +317,10 @@ void parse_line (globalconfig * conf, bstring line)
         /* FILTER */
         free(conf->bpff);
         conf->bpff = bstr2cstr(value, '-');
+    } else if ((biseqcstr(param, "home_nets")) == 1) {
+        /* FILTER */
+        //free(conf->s_net);
+        conf->s_net = bstr2cstr(value, '-');
 
 //    } else if ((biseqcstr(param, "network")) == 1) {
 //        /* NETWORK */
