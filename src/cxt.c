@@ -67,20 +67,21 @@ int connection_tracking(packetinfo *pi)
     struct in_addr *ipa; 
     cx_track(pi);
 
-    if(pi->af == AF_INET6) {
-      u_ntop(pi->ip6->ip_src, pi->af, ip_addr_s);
-      u_ntop(pi->ip6->ip_dst, pi->af, ip_addr_d);
-    } else {
-      ipa = pi->ip4->ip_src;
-      inet_ntop(pi->af, &ipa, ip_addr_s, INET6_ADDRSTRLEN);
-      ipa = pi->ip4->ip_dst;
-      inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
-    }
-    if(config.cflags & CONFIG_CONNECT)
+    if(config.cflags & CONFIG_CONNECT){
+        if(pi->af == AF_INET6) {
+            u_ntop(pi->ip6->ip_src, pi->af, ip_addr_s);
+            u_ntop(pi->ip6->ip_dst, pi->af, ip_addr_d);
+        } else {
+            ipa = pi->ip4->ip_src;
+            inet_ntop(pi->af, &ipa, ip_addr_s, INET6_ADDRSTRLEN);
+            ipa = pi->ip4->ip_dst;
+            inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
+        }
         printf("conn[%4lu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
                ip_addr_s, ntohs(pi->s_port),
                ip_addr_d, ntohs(pi->d_port),
                pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
+    }
     return 0;
 }
 

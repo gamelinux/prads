@@ -755,11 +755,12 @@ void parse_udp (packetinfo *pi)
     udp_guess_direction(pi); // fix DNS server transfers?
     // Check for Passive DNS
     static char ip_addr_s[INET6_ADDRSTRLEN];
-    u_ntop_src(pi, ip_addr_s);
     if ( ntohs(pi->s_port) == 53 ||  ntohs(pi->s_port) == 5353 ) {
         // For now - Proof of Concept! - Fix output way
-        if(config.cflags & CONFIG_PDNS)
+        if(config.cflags & CONFIG_PDNS){
+            u_ntop_src(pi, ip_addr_s);
             dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
+        }
     }
     if (IS_COSET(&config, CO_DHCP) && ntohs(pi->s_port) == 68 && ntohs(pi->d_port) == 67) {
         dhcp_fingerprint(pi); /* basic DHCP parsing*/
@@ -938,8 +939,10 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             if (mask > 0) {
                 netmask->s6_addr[j] = -1 << (8 - mask);
             }
+#ifdef DEBUG
             inet_ntop(type, &IP4ADDR(netmask), output, MAX_NETS);
             dlog("mask: %s\n", output);
+#endif
             // pcap packets are in host order.
             IP6ADDR0(netmask) = ntohl(IP6ADDR0(netmask));
             IP6ADDR1(netmask) = ntohl(IP6ADDR1(netmask));
