@@ -1136,7 +1136,7 @@ static void usage()
     olog(" -g <group>      Run as group <group>.\n");
     olog(" -d              Do not drop privileges.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
-    olog(" -D              Enables daemon mode.\n");
+    olog(" -D              Daemonize.\n");
     //olog(" -d            to logdir\n");
     olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
@@ -1144,6 +1144,7 @@ static void usage()
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
     olog(" -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient\n");
+    olog(" -P              DHCP fingerprinting.\n");
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
