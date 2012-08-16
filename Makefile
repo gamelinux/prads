@@ -49,19 +49,19 @@ install: man
 	install -m 644 -o root -g ${INSTALLGROUP} etc/tcp-rst.fp ${DESTDIR}${CONFDIR}/
 	install -m 644 -o root -g ${INSTALLGROUP} etc/tcp-stray-ack.fp ${DESTDIR}${CONFDIR}/
 	# signatures
-	install -m 644 -o root -g ${INSTALLGROUP} etc/eth.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/icmp-data.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/mac.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/mtu.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/os.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/tcp-clients.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/tcp-service.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/udp-service.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/service-string.sig ${DESTDIR}${CONFDIR}/
-	install -m 644 -o root -g ${INSTALLGROUP} etc/web-application.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/eth.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/icmp-data.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/mac.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/mtu.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/os.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/tcp-clients.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/tcp-service.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/udp-service.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/service-string.sig ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/web-application.sig ${DESTDIR}${CONFDIR}/
 	# ports 
 	install -d ${DESTDIR}${CONFDIR}
-	install -m 644 -o root -g ${INSTALLGROUP} etc/udp.ports ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/udp.ports ${DESTDIR}${CONFDIR}/
 	install -d ${DESTDIR}${CONFDIR}/init.d
 	install -m 755 -o root -g ${INSTALLGROUP} doc/prads.rc ${DESTDIR}${CONFDIR}/init.d/
 	# man pages
