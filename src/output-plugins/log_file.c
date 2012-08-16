@@ -353,6 +353,8 @@ file_os (output_plugin *log, asset *main, os_asset *os, connection *cxt)
             // 58 is ICMPv6
             fprintf((FILE*)log->data, "1,ICMP");
             break;
+        case CO_DHCP:
+            fprintf((FILE*)log->data, "17,DHCP");
 
         default:
         fprintf(stderr,

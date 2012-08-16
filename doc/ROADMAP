@@ -35,10 +35,11 @@ Features wanted in 2011 the year of the Rabbit.
  - scripting with lua
  - shared memory log
  - plugin API
- - [v] MAC,ARP,DNS
- - mDNS,passiveDNS,DHCP
+ - [v] MAC,ARP
+ - DNS of assets, mDNS, passiveDNS
+ - DHCP
  - RPM packages
- - push into Debian archive
+ - [v] push into Debian archive
  - switch and router discovery (OSPF, RIP, STP etc)
  - useragent/etc OS matching
  - asset datastructure that can track changes..
@@ -60,17 +61,16 @@ Point release 0.3.0
  - sguil output
 
 Point release 0.3.5
- - merge in file tracker [nftracker]
  - feature complete compared to prads.pl
  that means:
-   -sql insertion
+   -sql insertion (done in prads2db.pl)
    -better icmp
    -better udp
    -cleaner tcp fingerprinting
 
 Point release 0.4.0
- - DNS, mDNS, passiveDNS
- - DHCP
+ - DNS, mDNS, passiveDNS (work started)
+ - DHCP                  (work started)
 
 Point release 0.5.0
  - versioned shared memory {asset,cxtracker}
