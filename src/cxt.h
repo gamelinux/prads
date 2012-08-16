@@ -2,7 +2,7 @@
 #define CXT_H
 
 #define CXT_HASH4(src,dst,sp,dp,pr) \
-   ((src + dst + sp + dp + pr) % BUCKET_SIZE)
+   (( (src * 59) ^ dst ^ (sp << 16) ^ dp ^ pr) % BUCKET_SIZE)
 
 #define CXT_HASH6(src,dst,sp,dp,pr) \
  (( \
