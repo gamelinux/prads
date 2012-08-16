@@ -38,7 +38,7 @@ install: man
 	install -m 755 -o root -g ${INSTALLGROUP} tools/prads2snort ${DESTDIR}${BINDIR}/prads2snort
 	# config
 	install -d ${DESTDIR}${CONFDIR}
-	install -m 644 -o root -g ${INSTALLGROUP} etc/prads.conf ${DESTDIR}${CONFDIR}/
+	install -C -m 644 -o root -g ${INSTALLGROUP} etc/prads.conf ${DESTDIR}${CONFDIR}/
 	# fingerprints
 	#install -m 644 -o root -g ${INSTALLGROUP} etc/osi.fp ${DESTDIR}${CONFDIR}/
 	#install -m 644 -o root -g ${INSTALLGROUP} etc/oso.fp ${DESTDIR}${CONFDIR}/
