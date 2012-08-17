@@ -5,6 +5,11 @@
 
 extern globalconfig config;
 
+static int parse_dhcp_sig_opts(dhcp_fp_entry *sig, char* p);
+static int parse_dhcp_sig_optreq(dhcp_fp_entry *sig, char* p);
+static dhcp_fp_entry *alloc_dhcp_sig(dhcp_fp_entry *e);
+static void free_dhcp_sigs(dhcp_fp_entry *e);
+
 static const unsigned char vendcookie[] = { 99, 130, 83, 99 };
 #define BOOTP_COOKIE_SIZE 4
 #define PKT_MAXPAY 16
@@ -41,7 +46,7 @@ void print_dhcp_header(dhcp_header *dhcph)
 }
 
 
-void dhcp_fingerprint(packetinfo *pi)
+dhcp_fp_entry *dhcp_fingerprint(packetinfo *pi)
 {
     plog("Got DHCP packet:\n");
     config.pr_s.dhcp_os_assets++;
@@ -49,12 +54,15 @@ void dhcp_fingerprint(packetinfo *pi)
     uint8_t dhcp_header_length;
     uint8_t *dhcp_mc;
     uint8_t *dhcp_options;
-    dhcp_header *dhcph;
     uint8_t optlen = 0;
     uint8_t dhcp_opt_type = 0;
     uint8_t end_opt_parsing = 0;
 
+    /*
+    dhcp_header *dhcph;
     dhcph = (dhcp_header *) (pi->payload);
+    print_dhcp_header(dhcph);
+    */
     dhcp_header_length = sizeof(dhcp_header);
     dhcp_mc = (uint8_t *) (pi->payload + dhcp_header_length);
 
@@ -68,7 +76,6 @@ void dhcp_fingerprint(packetinfo *pi)
     dhcp_fp_entry dhcpfp = {0}; //guarantee it's empty this sig
     dhcpfp.ttl = pi->ip4->ip_ttl;
 
-    //print_dhcp_header(dhcph);
 
     uint8_t optcnt = 0;
     
@@ -101,7 +108,7 @@ void dhcp_fingerprint(packetinfo *pi)
             case DHCP_OPTION_CLASS_IDENTIFIER: /* 60 */
                 if (optsize > 0) {
                     dhcpfp.vc = calloc(1, optsize + 1);
-                    strncpy(dhcpfp.vc, optdata, optsize);
+                    strncpy(dhcpfp.vc, (char*) optdata, optsize);
                 }
                 break;
             case DHCP_OPTION_PAD: /* 0 */
@@ -131,13 +138,11 @@ void dhcp_fingerprint(packetinfo *pi)
     print_dhcp_sig(&dhcpfp);
     plog("\n");
 
-    dhcp_fp_entry *match = NULL; // Why ?
-
-    match = find_dhcp_match(&dhcpfp, pi);
+    dhcp_fp_entry *match = find_dhcp_match(&dhcpfp, pi);
 
 #define OS_DHCP = 0x01
     //update_asset_os(pi, OS_DHCP, NULL, &dhcpfp, tstamp);
-    return;
+    return match;
 }
 
 dhcp_fp_entry *find_dhcp_match(dhcp_fp_entry *dhcpfp, packetinfo *pi)
@@ -152,7 +157,6 @@ dhcp_fp_entry *find_dhcp_match(dhcp_fp_entry *dhcpfp, packetinfo *pi)
 
     uint32_t index;
     
-re_lookup:
     index = (DHCP_SIGHASH(dhcpfp->type, dhcpfp->optcnt) % 331);
 
     p = config.sig_dhcp[index];
@@ -379,7 +383,7 @@ void dump_dhcp_sigs(dhcp_fp_entry *mysig[], int max)
     for (i = 0; i < max; i++){
         if (!mysig[i] || !mysig[i]->os)
             continue;
-        print_sigs(mysig[i]);
+        print_dhcp_sig(mysig[i]);
     }
 }
 
@@ -434,7 +438,6 @@ static int parse_dhcp_sig_opts(dhcp_fp_entry *sig, char* p)
         p++;
 
     while (*p) {
-        char opt[4];
 
         if (!isdigit(*(p))) {
             fatal("Bogus DHCP value in line %d.\n", sig->line);
@@ -475,7 +478,6 @@ static int parse_dhcp_sig_optreq(dhcp_fp_entry *sig, char* p)
         p++;
 
     while (*p) {
-        char opt[4];
         if (!isdigit(*(p))) {
             fatal("Bogus DHCP value in line %d.\n", sig->line);
         } else {

@@ -101,12 +101,9 @@ typedef struct _dhcp_header {
 */
 
 
-void dhcp_fingerprint(packetinfo *pi);
+int load_dhcp_sigs(const char *file, dhcp_fp_entry **dhcpsp[], int hashsize);
+dhcp_fp_entry *dhcp_fingerprint(packetinfo *pi);
 void print_data(const uint8_t* data, uint16_t dlen);
-static int parse_dhcp_sig_opts(dhcp_fp_entry *sig, char* p);
-static int parse_dhcp_sig_optreq(dhcp_fp_entry *sig, char* p);
-static dhcp_fp_entry *alloc_dhcp_sig(dhcp_fp_entry *e);
-static void free_dhcp_sigs(dhcp_fp_entry *e);
 void print_dhcp_sig(dhcp_fp_entry * e);
 void dump_dhcp_sigs(dhcp_fp_entry *mysig[], int max);
 void dump_dhcp_sigs(dhcp_fp_entry *mysig[], int max);

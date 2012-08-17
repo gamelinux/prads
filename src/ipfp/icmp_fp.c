@@ -75,7 +75,7 @@ void fp_icmp6(packetinfo *pi, ip6_header * ip6, icmp6_header * icpmh,
     uint8_t *opt_ptr;
     //int32_t ilen, olen;
     uint32_t quirks = 0;
-    uint8_t *payload = 0;
+    //uint8_t *payload = 0;
 
     /*
      * If the declared length is shorter than the snapshot (etherleak
@@ -98,7 +98,7 @@ void fp_icmp6(packetinfo *pi, ip6_header * ip6, icmp6_header * icpmh,
 
     if ((uint8_t *) opt_ptr + ip6->len < end_ptr) {
         quirks |= QUIRK_DATA;
-        payload = opt_ptr + ip6->len;
+        //payload = opt_ptr + ip6->len;
     }
     //uint8_t idata = (uint8_t *) end_ptr - payload;
 

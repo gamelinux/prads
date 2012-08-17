@@ -191,14 +191,13 @@ bstring gen_fp_tcp(fp_entry *e, uint32_t tstamp, uint8_t tf)
      */
 {
 
-    uint16_t mss, wss, tot;
+    uint16_t mss, wss;
     uint8_t ttl;
     bstring fp, fpopt, fpquirks;
     //uint8_t q = 0;
 
     mss = e->mss;
     wss = e->wsize;
-    tot = e->size;
     ttl = e->ttl; //normalize_ttl(e->ttl);
     fp = bformat("");
 
@@ -1606,8 +1605,6 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
 
     e.wsize = ntohs(pi->tcph->t_win);
 
-    //if (pi->ip6 != NULL) return NULL; // Fix this when find_match() is IPv6 aware
-
     //  match = find_match(sigs, pi, e);
     //  ---> after match_network but before update_asset
     // find_match(pi, e);
@@ -1638,10 +1635,8 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                           );
     }
 
-    //if (match->os != NULL) memcpy(&e.next->os, match->os, MAXLINE);
-    //if (match->desc != NULL) memcpy(&e.next->desc, match->desc, MAXLINE);
     update_asset_os(pi, ftype, NULL, &e, tstamp);
-    return NULL; // can't return stack-allocated * fp_entry e; 
+    return match;
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),

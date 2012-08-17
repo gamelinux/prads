@@ -1183,7 +1183,7 @@ int prads_initialize(globalconfig *conf)
                     exit(ENOENT);
                 }
                 if (gid && getuid() == 0 && initgroups(conf->user_name, gid) < 0) {
-                    elog("[!] Unable to init group names (%s/%lu)\n", conf->user_name, gid);
+                    elog("[!] Unable to init group names (%s/%u)\n", conf->user_name, gid);
                 }
             }
         }

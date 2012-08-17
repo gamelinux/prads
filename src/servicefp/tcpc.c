@@ -66,7 +66,6 @@ void client_tcp6(packetinfo *pi, signature* sig_client_tcp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
-    int tmplen;
     signature *tmpsig;
     bstring app, service_name;
 
@@ -74,9 +73,6 @@ void client_tcp6(packetinfo *pi, signature* sig_client_tcp)
     /* should make a config.tcp_client_flowdept etc
      * a range between 500-1000 should be good!
      */
-    if (pi->plen > 600) tmplen = 600;
-        else tmplen = pi->plen;
-
     tmpsig = sig_client_tcp;
     while (tmpsig != NULL) {
         rc = pcre_exec(tmpsig->regex, tmpsig->study, (const char*) pi->payload, pi->plen, 0, 0,
