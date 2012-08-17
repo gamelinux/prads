@@ -1,5 +1,6 @@
 2012-08-16 0.3.1-rc1: shut your pie
     * ever more beautiful code
+    * 1000x speed improvement due to leet optimizations
     * argument -P enables DHCP fingerprinting (experimental)
     * argument -L enables cxtracker like output
     * prads2db.pl: asset log to database parser
