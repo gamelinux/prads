@@ -303,9 +303,9 @@ void del_signature_lists()
 bstring get_app_name(signature * sig,
                      const uint8_t *payload, int *ovector, int rc)
 {
-    char sub[100];
+    char sub[512];
     char app[5000];
-    char expr[100];
+    const char *expr;
     bstring retval;
     int i = 0;
     int n = 0;
@@ -346,16 +346,14 @@ bstring get_app_name(signature * sig,
             i++;
             n = atoi(&app[i]);
 
-            pcre_copy_substring((const char*)payload, ovector, rc, n, expr,
-                                sizeof(expr));
+            pcre_get_substring((const char *)payload, ovector, rc, n, &expr);
             x = 0;
             while (expr[x] != '\0' && z < (sizeof(sub) - 1)) {
                 sub[z] = expr[x];
                 z++;
                 x++;
             }
-            for (x = 0; x < sizeof(expr); x++)
-                expr[x] = '\0';
+            expr = NULL;
             i++;
         } else {
             /*
