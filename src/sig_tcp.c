@@ -1412,8 +1412,10 @@ continue_search:
   }
 
   if (!no_unknown) { 
-     u_ntop_src(pi, outbuf);
-     vlog(2,"%s:%d - UNKNOWN [:?:?]",outbuf,PI_TCP_SP(pi));
+     if(DEBUG_ON){
+        u_ntop_src(pi, outbuf);
+        vlog(2,"%s:%d - UNKNOWN [:?:?]",outbuf,PI_TCP_SP(pi));
+     }
 
     //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
@@ -1471,10 +1473,12 @@ continue_search:
     if (tstamp) vlog(2, "(up: %d hrs) ",tstamp/360000);
 
     if (!no_extra) {
-       u_ntop_dst(pi, outbuf);
-      //if (!mode_oneline) dlog("\n  ");
-       vlog(2, "-> %s:%d (link: %s)", outbuf,
-            PI_TCP_DP(pi),lookup_link(e->mss,1));
+       if(DEBUG_ON){
+          u_ntop_dst(pi, outbuf);
+          //if (!mode_oneline) dlog("\n  ");
+          vlog(2, "-> %s:%d (link: %s)", outbuf,
+               PI_TCP_DP(pi),lookup_link(e->mss,1));
+       }
     }
 
     /*
