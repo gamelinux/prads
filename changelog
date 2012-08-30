@@ -1,16 +1,18 @@
 2012-08-16 0.3.1-rc1: shut your pie
     * ever more beautiful code
-    * asset log to database parser
+    * 1000x speed improvement due to leet output and bucket optimizations
+    * feature: argument -P enables DHCP fingerprinting (experimental)
+    * feature: argument -L enables cxtracker like output
+    * feature: support home_nets= in the conf file
+    * prads2db.pl: asset log to database parser
+    * prads.rc: init script now starts with prads-asset.log instead of prads.log
+    * compile: static prads available for those who want it
+    * new signatures (xp, debian, ubuntu, asyncos, openwrt, ++)
     * more MTU-fu (3G/WAN) 
-    * argument -P enables DHCP fingerprinting
-    * argument -L enables cxtracker like output
-    * bigger flow bucket for connection hashing
-    * init script now starts with prads-asset.log instead of prads.log
-    * STATIC prads compile for those who want it
-    * new signatures (xp, debian, ubuntu, asyncos, openwrt,
-    * nicer ARP output in the logfile
-    * ICMP OS fingerprinting
-    * fixed BSD build
+    * nicer ARP output
+    * make install no longer overwrites conf and sig files
+    * bugfix: BSD build was broken
+    * bugfix: large user-agents would make garbage appnames in the asset log
 
 2011-09-27 0.3.0: all good things are three
     * No changes since rc3.

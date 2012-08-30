@@ -33,11 +33,11 @@
 #ifndef RELEASE
 #define RELEASE
 #endif
-#define VERSION                       "0.3.1"RELEASE
+#define VERSION                       "0.3.1-rc1"RELEASE
 #define SIG_ALRM                      60        /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
-#define BUCKET_SIZE                   65536
+#define BUCKET_SIZE                   31337
 #define SNAPLENGTH                    1604
 #define MAX_BYTE_CHECK                500000
 #define MAX_PKT_CHECK                 10

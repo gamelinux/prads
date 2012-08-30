@@ -172,7 +172,6 @@ dump_dns_sect(ns_msg * msg, ns_sect sect, FILE * trace,
               const char *endline)
 {
     int rrnum, rrmax;
-    const char *sep;
     ns_rr rr;
 
     fprintf(trace, "||");
@@ -184,16 +183,13 @@ dump_dns_sect(ns_msg * msg, ns_sect sect, FILE * trace,
     fprintf(trace, "%d", rrmax);
     //fprintf(trace, "%s%d", endline, rrmax);
     //fprintf(trace, "%s", endline);
-    sep = "";
     for(rrnum = 0; rrnum < rrmax; rrnum++) {
         if(ns_parserr(msg, sect, rrnum, &rr)) {
             fputs(strerror(errno), trace);
             return;
         }
-        //fprintf(trace, " %s", sep);
         fprintf(trace, "||");
         dump_dns_rr(msg, &rr, sect, trace);
-        sep = endline;
     }
 }
 
