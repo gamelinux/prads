@@ -138,7 +138,7 @@ void log_connection(connection *cxt, FILE* fd, int outputmode)
     fprintf(fd, "%ld%09ju|%s|%s|%ld|%u|",
             cxt->start_time, cxt->cxid, stime, ltime, tot_time,
             cxt->proto);
-    if(outputmode == CX_NONE || outputmode || cxt->af == AF_INET6) {
+    if(outputmode != CX_NONE || outputmode || cxt->af == AF_INET6) {
         if(!inet_ntop(cxt->af, (cxt->af == AF_INET6? (void*) &cxt->s_ip : (void*) cxt->s_ip.s6_addr32), src_s, INET6_ADDRSTRLEN))
             perror("inet_ntop");
         if(!inet_ntop(cxt->af, (cxt->af == AF_INET6? (void*) &cxt->d_ip : (void*) cxt->d_ip.s6_addr32), dst_s, INET6_ADDRSTRLEN))
