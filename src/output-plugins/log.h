@@ -12,12 +12,13 @@ typedef struct _output_plugin {
    void (*arp)(struct _output_plugin*, asset *);                   /* call on arp */
    void (*os)(struct _output_plugin*, asset *, os_asset *os, connection *cxt);      /* call on os */
    void (*service)(struct _output_plugin*, asset*, serv_asset *, connection *cxt);  /* call on service */
+   void (*connection)(struct _output_plugin*, connection *ctx, int outputmode); /* call on connection */
    int (*denit)(struct _output_plugin*);                          /* deinitialize */
    const char *path;                                           /* file, socket etc */
    void *data;                                                 /* anything else */
 } output_plugin;
 
-enum { LOG_ASCII, LOG_STDOUT, LOG_FILE, LOG_FIFO, LOG_UNIFIED, LOG_MAX} log_types;
+enum { LOG_ASCII, LOG_STDOUT, LOG_FILE, LOG_FIFO, LOG_UNIFIED, LOG_MAX, LOG_RINGBUFFER} log_types;
 enum { VERBOSE = 0x01, FLAGS } log_flags;
 
 void log_asset_arp (asset *main);

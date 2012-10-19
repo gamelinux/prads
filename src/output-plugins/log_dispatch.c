@@ -12,6 +12,7 @@
 #include "log_stdout.h"
 #include "log_file.h"
 #include "log_fifo.h"
+#include "log_ringbuffer.h"
 
 int n_outputs = 0;
 output_plugin *log_output[LOG_MAX];
@@ -31,6 +32,9 @@ int init_logging(int logtype, const char *file, int flags)
          break;
       case LOG_FIFO:
          log_fun = init_log_fifo();
+         break;
+      case LOG_RINGBUFFER:
+         log_fun = init_log_ringbuffer();
          break;
       /* these types are coming !*/
       case LOG_ASCII:
@@ -171,5 +175,7 @@ void log_connection(connection *cxt, FILE* fd, int outputmode)
     }
     if(o) fprintf(fd, "|%s", o);
     fprintf(fd, "\n");
+
+    log_foo(connection, log_output, n_outputs, cxt, outputmode);
 }
 
