@@ -331,17 +331,6 @@ void parse_line (globalconfig * conf, bstring line)
         //free(conf->s_net);
         conf->s_net = bstr2cstr(value, '-');
 
-//    } else if ((biseqcstr(param, "network")) == 1) {
-//        /* NETWORK */
-//        parse_networks((unsigned char *)bdata(value));
-//    } else if ((biseqcstr(param, "hide_unknowns")) == 1) {
-//        /* UNKNOWN */
-//        if (!conf->hide_unknowns) {
-//            if (value->data[0] == '1')
-//                conf->hide_unknowns = 1;
-//            else
-//                conf->hide_unknowns = 0;
-//        }
     }
 
 cleanup:
