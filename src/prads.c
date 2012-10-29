@@ -36,8 +36,6 @@
 #include "cxt.h"
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
-#include "util-cxt.h"
-#include "util-cxt-queue.h"
 #include "sig.h"
 #include "mac.h"
 #include "tcp.h"
@@ -1416,7 +1414,6 @@ int main(int argc, char *argv[])
 
     prads_initialize(&config);
  
-    bucket_keys_NULL();
     alarm(SIG_ALRM);
 
     /** segfaults on empty pcap! */
