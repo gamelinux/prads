@@ -47,14 +47,18 @@ LOG_OBJ = output-plugins/log_dispatch.o output-plugins/log_stdout.o output-plugi
 CXT_OBJ = cxt.o
 MODULES = dhcp.o dump_dns.o mac.o ${SERVICE_OBJ} ${IPFP_OBJ} ${CXT_OBJ} ${LOG_OBJ}
 OBJECTS = bstrlib.o sig_tcp.o config.o sys_func.o assets.o prads.o ${MODULES}
+SHM_CLIENT_OBJECTS = shm-client.o
 
-all: prads
+all: prads shm-client
 
 osx:
 	$(MAKE) BUILD=osx
 
 prads: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
+
+shm-client: $(SHM_CLIENT_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(SHM_CLIENT_OBJECTS) $(LDFLAGS)
 
 static: $(OBJECTS)
 	$(MAKE) CFLAGS+=-static prads
@@ -67,7 +71,7 @@ profile:
 
 clean:
 	-rm -fv $(OBJECTS)
-	-rm -f prads 
+	-rm -f prads
 
 indent:
 	find -type f -name '*.[ch]' | xargs indent -kr -i4 -cdb -sc -sob -ss -ncs -ts8 -nut

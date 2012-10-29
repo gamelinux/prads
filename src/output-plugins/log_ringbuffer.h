@@ -31,6 +31,8 @@ struct log_ringbuffer {
     size_t buffer_size;
 };
 
+#ifdef PRADS_H
 output_plugin *init_log_ringbuffer();
 int destory_log_ringbuffer (output_plugin *plugin);
 void log_ringbuffer_connection (output_plugin *plugin, connection *cxt, int outputmode);
+#endif

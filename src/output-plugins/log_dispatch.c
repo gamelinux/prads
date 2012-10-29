@@ -116,8 +116,6 @@ void log_asset_service (asset *main, serv_asset *service, connection *cxt)
 /* log_connection(cxt, fd): write cxt to fd, with the following format:
  ** startsec|id|start time|end time|total time|proto|src|sport|dst|dport|s_packets|s_bytes|d_packets|d_bytes|s_flags|d_flags
  *
- * TODO: call plugins
- *
  * question is only whether to dump ip address as int or human readable
 
 //asprintf(&cxtfname, "%s/stats.%s.%ld", dpath, dev, tstamp);
