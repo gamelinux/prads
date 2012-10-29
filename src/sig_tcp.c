@@ -191,13 +191,14 @@ bstring gen_fp_tcp(fp_entry *e, uint32_t tstamp, uint8_t tf)
      */
 {
 
-    uint16_t mss, wss;
+    uint16_t mss, wss, tot;
     uint8_t ttl;
     bstring fp, fpopt, fpquirks;
     //uint8_t q = 0;
 
     mss = e->mss;
     wss = e->wsize;
+    tot = e->size;
     ttl = e->ttl; //normalize_ttl(e->ttl);
     fp = bformat("");
 
@@ -1411,10 +1412,10 @@ continue_search:
   }
 
   if (!no_unknown) { 
-     if(DEBUG_ON){
-        u_ntop_src(pi, outbuf);
-        vlog(2,"%s:%d - UNKNOWN [:?:?]",outbuf,PI_TCP_SP(pi));
-     }
+      if (config.verbose) {
+         u_ntop_src(pi, outbuf);
+         vlog(2,"%s:%d - UNKNOWN [:?:?]",outbuf,PI_TCP_SP(pi));
+      }
 
     //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
@@ -1472,12 +1473,10 @@ continue_search:
     if (tstamp) vlog(2, "(up: %d hrs) ",tstamp/360000);
 
     if (!no_extra) {
-       if(DEBUG_ON){
-          u_ntop_dst(pi, outbuf);
-          //if (!mode_oneline) dlog("\n  ");
-          vlog(2, "-> %s:%d (link: %s)", outbuf,
-               PI_TCP_DP(pi),lookup_link(e->mss,1));
-       }
+       u_ntop_dst(pi, outbuf);
+      //if (!mode_oneline) dlog("\n  ");
+       vlog(2, "-> %s:%d (link: %s)", outbuf,
+            PI_TCP_DP(pi),lookup_link(e->mss,1));
     }
 
     /*
@@ -1605,6 +1604,8 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
 
     e.wsize = ntohs(pi->tcph->t_win);
 
+    //if (pi->ip6 != NULL) return NULL; // Fix this when find_match() is IPv6 aware
+
     //  match = find_match(sigs, pi, e);
     //  ---> after match_network but before update_asset
     // find_match(pi, e);
@@ -1635,8 +1636,10 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                           );
     }
 
+    //if (match->os != NULL) memcpy(&e.next->os, match->os, MAXLINE);
+    //if (match->desc != NULL) memcpy(&e.next->desc, match->desc, MAXLINE);
     update_asset_os(pi, ftype, NULL, &e, tstamp);
-    return match;
+    return NULL; // can't return stack-allocated * fp_entry e; 
 /*
 printf("hop:%u, len:%u, ver:%u, class:%u, label:%u|mss:%u, win:%u\n",ip6->hop_lmt,open_mode ? 0 : ntohs(ip6->len),
                                                      IP6_V(ip6),ntohs(IP6_TC(ip6)),

@@ -50,7 +50,7 @@
 #define CONFDIR "/etc/prads/"
 #endif
 
-#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:L:f:qtxs:OXFRMSAKUTIZtHP"
+#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:L:f:qtxs:OXFRMSAKUTIZtHPB"
 
 /*  G L O B A L S  *** (or candidates for refactoring, as we say)***********/
 globalconfig config;
@@ -1144,6 +1144,7 @@ static void usage()
     olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
     olog(" -f <FIFO>       Log assets to <FIFO>\n");
+    olog(" -B              Log connections to ringbuffer\n");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
     olog(" -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient\n");
@@ -1316,6 +1317,11 @@ int main(int argc, char *argv[])
     }
     prads_version();
 
+    if (config.ringbuffer) {
+        rc = init_logging(LOG_RINGBUFFER, NULL, config.verbose);
+        if (rc)
+            perror("Logging to ringbuffer failed!");
+    }
 
     if(config.verbose){
         rc = init_logging(LOG_STDOUT, NULL, config.verbose);
