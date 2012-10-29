@@ -12,6 +12,7 @@
 #include "log_stdout.h"
 #include "log_file.h"
 #include "log_fifo.h"
+#include "log_ringbuffer.h"
 
 int n_outputs = 0;
 output_plugin *log_output[LOG_MAX];
@@ -31,6 +32,9 @@ int init_logging(int logtype, const char *file, int flags)
          break;
       case LOG_FIFO:
          log_fun = init_log_fifo();
+         break;
+      case LOG_RINGBUFFER:
+         log_fun = init_log_ringbuffer();
          break;
       /* these types are coming !*/
       case LOG_ASCII:
@@ -112,8 +116,6 @@ void log_asset_service (asset *main, serv_asset *service, connection *cxt)
 /* log_connection(cxt, fd): write cxt to fd, with the following format:
  ** startsec|id|start time|end time|total time|proto|src|sport|dst|dport|s_packets|s_bytes|d_packets|d_bytes|s_flags|d_flags
  *
- * TODO: call plugins
- *
  * question is only whether to dump ip address as int or human readable
 
 //asprintf(&cxtfname, "%s/stats.%s.%ld", dpath, dev, tstamp);
@@ -171,5 +173,7 @@ void log_connection(connection *cxt, FILE* fd, int outputmode)
     }
     if(o) fprintf(fd, "|%s", o);
     fprintf(fd, "\n");
+
+    log_foo(connection, log_output, n_outputs, cxt, outputmode);
 }
 

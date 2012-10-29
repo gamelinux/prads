@@ -64,6 +64,7 @@ typedef struct _globalconfig {
     char       *file;                   /* config file location, if known */
     char       *assetlog;               /* Filename of prads-asset.log */
     char       *fifo;                   /* Path to FIFO output */
+    uint8_t    ringbuffer;              /* Enable logging to ringbuffer */
     char       *pcap_file;              /* Filename to pcap too read */
     char       *sig_file_syn;           /* Filename of TCP SYN sig file */
     char       *sig_file_synack;        /* Filename of TCP SYNACK sig file */

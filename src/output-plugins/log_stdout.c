@@ -10,6 +10,7 @@ output_plugin p_stdout = {
     .arp = &stdout_arp,
     .os = &stdout_os,
     .service = &stdout_service,
+    .connection = NULL,
     .denit = &end_log_stdout,
     .data = NULL,
 };

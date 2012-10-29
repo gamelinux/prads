@@ -87,6 +87,7 @@ void set_default_config_options(globalconfig *config)
     //config->pidfile = strdup("/var/run/prads.pid");
     config->assetlog= strdup(LOGDIR PRADS_ASSETLOG);
     config->fifo    = NULL;
+    config->ringbuffer = 0;
     // default source net owns everything
     config->s_net   = DEFAULT_NETS ;
     config->errbuf[0] = '\0';
@@ -284,6 +285,10 @@ void parse_line (globalconfig * conf, bstring line)
     } else if ((biseqcstr(param, "fifo")) == 1) {
         /* FIFO path */
         conf->fifo = bstr2cstr (value, '-');
+    } else if ((biseqcstr(param, "ringbuffer")) == 1) {
+        /* Ringbuffer */
+        if (!conf->ringbuffer)
+            conf->ringbuffer = value->data[0] == '1' ? 1 : 0;
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
         conf->sig_file_serv_tcp = bstr2cstr(value, '-');
@@ -454,6 +459,9 @@ int parse_args(globalconfig *conf, int argc, char *argv[], char *args)
             break;
         case 'f':
             conf->fifo = strdup(optarg);
+            break;
+        case 'B':
+            conf->ringbuffer = 1;
             break;
         case 's':
             conf->payload = strtol(optarg, NULL, 0);
