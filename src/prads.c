@@ -1160,8 +1160,48 @@ static void usage()
     olog(" -h              This help message.\n");
 }
 
+int load_bpf(globalconfig* conf, const char* file)
+{
+    int sz;
+    FILE* fs;
+    struct stat statbuf;
+    fs = fopen(file, "r");
+    if(!fs){
+        perror("bpf file");
+        return 1;
+    }
+    conf->bpf_file = strdup(file);
+    if(fstat(fileno(fs), &statbuf)){
+        perror("oh god my eyes!");
+        fclose(fs);
+        return 2;
+    }
+    sz = statbuf.st_size; 
+    if(conf->bpff) free(conf->bpff);
+    if(!(conf->bpff = calloc(sz, 1))){
+        perror("mem alloc");
+        fclose(fs);
+        return 3;
+    }
+    if(sz != fread(conf->bpff, 1, sz, fs)){
+        perror("bpf read");
+        fclose(fs); free(conf->bpff); conf->bpff=NULL;
+        return 4;
+    }
+    fclose(fs);
+    olog("[*] BPF file\t\t %s (%d bytes read)\n", conf->bpf_file, sz);
+    if(config.verbose) olog("BPF: { %s}\n", conf->bpff);
+    return 0;
+}
+
+
 int prads_initialize(globalconfig *conf)
 {
+    if (conf->bpf_file) {
+        if(load_bpf(conf, conf->bpf_file)){
+           elog("[!] Failed to load bpf from file.\n");
+        }
+    }
     if (conf->pcap_file) {
         /* Read from PCAP file specified by '-r' switch. */
         olog("[*] Reading from file %s\n", conf->pcap_file);
@@ -1289,6 +1329,9 @@ int main(int argc, char *argv[])
         case 'v':
             config.verbose++;
             break;
+        case 'q':
+            config.cflags |= CONFIG_QUIET;
+            break;
         case 'h':
             usage();
             exit(0);
@@ -1305,17 +1348,18 @@ int main(int argc, char *argv[])
     if(verbose_already)
         config.verbose = 0;
     optind = 1;
+    prads_version();
 
     if(parse_args(&config, argc, argv, ARGS) != 0){
         usage();
         exit(0);
     }
+
     // we're done parsing configs - now initialize prads
 
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-    prads_version();
 
     if (config.ringbuffer) {
         rc = init_logging(LOG_RINGBUFFER, NULL, config.verbose);

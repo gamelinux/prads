@@ -322,8 +322,12 @@ void parse_line (globalconfig * conf, bstring line)
         /* FILTER */
         free(conf->bpff);
         conf->bpff = bstr2cstr(value, '-');
+    } else if ((biseqcstr(param, "bpf_file")) == 1) {
+        /* FILTER FILE */
+        if(conf->bpf_file) free(conf->bpf_file);
+        conf->bpf_file = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "home_nets")) == 1) {
-        /* FILTER */
+        /* HOME NETS FILTER */
         //free(conf->s_net);
         conf->s_net = bstr2cstr(value, '-');
 
@@ -340,6 +344,7 @@ void parse_line (globalconfig * conf, bstring line)
 //        }
     }
 
+cleanup:
     vlog(0x3,"config - PARAM:  |%s| / VALUE:  |%s|\n", bdata(param), bdata(value));
 
     /* Clean Up */
