@@ -194,7 +194,7 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service, connectio
             dip, htonl(IP4ADDR(&cxt->d_ip)), 
             ntohs(cxt->s_port), ntohs(cxt->d_port), service->proto, 
             bdata(service->service), bdata(service->application), 
-            main->first_seen, role);
+            main->last_seen, role);
     fflush(fd);
 }
 
