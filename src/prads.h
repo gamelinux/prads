@@ -516,6 +516,7 @@ typedef struct _connection {
     uint64_t cxid;                /* connection id */
     uint8_t  reversed;            /* 1 if the connection is reversed */
     uint32_t af;                  /* IP version (4/6) AF_INET */
+    uint16_t hw_proto;            /* layer2 protocol */
     uint8_t  proto;               /* IP protocoll type */
     struct   in6_addr s_ip;       /* source address */
     struct   in6_addr d_ip;       /* destination address */

@@ -51,6 +51,7 @@ connection *cxt_new(packetinfo *pi)
     cxt->s_port = pi->s_port;
     cxt->d_port = pi->d_port;
     cxt->proto = pi->proto;
+    cxt->hw_proto = ntohs(pi->eth_type);
 
     cxt->check = 0x00;
     cxt->c_asset = NULL;
