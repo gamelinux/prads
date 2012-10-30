@@ -1160,15 +1160,15 @@ static void usage()
 
 int load_bpf(globalconfig* conf, const char* file)
 {
-    int sz;
+    int sz, i;
     FILE* fs;
+    char* lineptr;
     struct stat statbuf;
     fs = fopen(file, "r");
     if(!fs){
         perror("bpf file");
         return 1;
     }
-    conf->bpf_file = strdup(file);
     if(fstat(fileno(fs), &statbuf)){
         perror("oh god my eyes!");
         fclose(fs);
@@ -1181,10 +1181,25 @@ int load_bpf(globalconfig* conf, const char* file)
         fclose(fs);
         return 3;
     }
-    if(sz != fread(conf->bpff, 1, sz, fs)){
-        perror("bpf read");
-        fclose(fs); free(conf->bpff); conf->bpff=NULL;
-        return 4;
+    lineptr = conf->bpff;
+    // read file but ignore comments and newlines
+    while(fgets(lineptr, sz-(conf->bpff-lineptr), fs)) {
+        // skip spaces
+        for(i=0;;i++) 
+            if(lineptr[i] != ' ')
+               break;
+        // scan ahead and kill comments
+        for(i=0;lineptr[i];i++)
+            switch(lineptr[i]){
+                case '#':                // comment on the line
+                    lineptr[i] = '\n';   // end line here
+                    lineptr[i+1] = '\0'; // ends outer loop & string
+                case '\n':               // end-of-line
+                case '\0':               // end-of-string
+                    break;
+            }
+        if(i<=1) continue;               // empty line
+        lineptr = lineptr+strlen(lineptr);
     }
     fclose(fs);
     olog("[*] BPF file\t\t %s (%d bytes read)\n", conf->bpf_file, sz);
