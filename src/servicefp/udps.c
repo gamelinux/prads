@@ -20,6 +20,7 @@
 
 #include "../prads.h"
 #include "../assets.h"
+#include "../cxt.h"
 #include "servicefp.h"
 
 extern bstring UNKNOWN;

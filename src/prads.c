@@ -1432,14 +1432,16 @@ int main(int argc, char *argv[])
     alarm(SIG_ALRM);
 
     /** segfaults on empty pcap! */
-    if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
+    struct bpf_program  cfilter;        /**/
+    if ((pcap_compile(config.handle, &cfilter, config.bpff, 1, config.net_mask)) == -1) {
             olog("[*] Error pcap_compile user_filter: %s\n", pcap_geterr(config.handle));
             exit(1);
     }
 
-    if (pcap_setfilter(config.handle, &config.cfilter)) {
+    if (pcap_setfilter(config.handle, &cfilter)) {
             olog("[*] Unable to set pcap filter!  %s", pcap_geterr(config.handle));
     }
+    pcap_freecode(&cfilter);
 
     cxt_init();
     olog("[*] Sniffing...\n");

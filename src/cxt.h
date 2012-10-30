@@ -26,4 +26,6 @@ void cxt_write_all();
 void cxt_log_buckets(int dummy);
 
 int connection_tracking(packetinfo *pi);
+void reverse_pi_cxt(packetinfo *pi);
+
 #endif // CXT_H

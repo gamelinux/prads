@@ -40,7 +40,6 @@ typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
     struct pcap_stat    ps;             /* libpcap stats */
     prads_stat          pr_s;           /* prads stats */
-    struct bpf_program  cfilter;        /**/
     bpf_u_int32         net_mask;       /**/
     uint8_t     cflags;                 /* config flags */
     uint8_t     verbose;                /* Verbose or not */

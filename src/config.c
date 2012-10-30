@@ -59,12 +59,14 @@ void display_config(globalconfig *conf)
 
 void free_config()
 {
-    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
 // Grr - no nice way to tell if the settings comes from configfile or not :/
     if (config.pidfile != NULL) free(config.pidfile);
     if (config.user_name != NULL) free(config.user_name);
     if (config.group_name != NULL) free(config.group_name);
     if (config.bpff != NULL) free(config.bpff);
+    if (config.bpf_file != NULL) free(config.bpf_file);
+    if (config.assetlog != NULL) free(config.assetlog);
+    if (config.pcap_file != NULL) free(config.pcap_file);
 }
 
 void set_default_config_options(globalconfig *conf)
