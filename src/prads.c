@@ -1025,7 +1025,6 @@ void game_over()
 
     if (inpacket == 0) {
         end_sessions(); /* Need to have correct human output when reading -r pcap */
-        //cxt_write_all(); /* redundant ? see end_all_sessions(); */
         clear_asset_list();
         end_all_sessions();
         del_known_services();
@@ -1051,6 +1050,7 @@ void reparse_conf()
     if(inpacket == 0) {
         olog("Reparsing config file...");
         parse_config_file(config.file);
+        end_sessions();
         intr_flag = 0;
         return;
     }
@@ -1216,10 +1216,16 @@ int prads_initialize(globalconfig *conf)
         }
     }
     if (conf->pcap_file) {
+        struct stat sb;
+        if(stat(conf->pcap_file, &sb) || !sb.st_size) {
+           elog("[!] '%s' not a pcap. Bailing.\n", conf->pcap_file);
+           exit(1);
+        }
+
         /* Read from PCAP file specified by '-r' switch. */
         olog("[*] Reading from file %s\n", conf->pcap_file);
         if (!(conf->handle = pcap_open_offline(conf->pcap_file, conf->errbuf))) {
-            olog("[*] Unable to open %s.  (%s)", conf->pcap_file, conf->errbuf);
+            olog("[*] Unable to open %s.  (%s)\n", conf->pcap_file, conf->errbuf);
         } 
 
     } else {
@@ -1328,6 +1334,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
     signal(SIGHUP, reparse_conf);
+    signal(SIGUSR1, set_end_sessions);
 #ifdef DEBUG
     signal(SIGUSR1, cxt_log_buckets);
 #endif
@@ -1374,25 +1381,34 @@ int main(int argc, char *argv[])
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
 
+    if(config.cxtlogdir){
+       char log_prefix[PATH_MAX];
+       snprintf(log_prefix, PATH_MAX, "%sstat.%s", config.cxtlogdir, config.dev?
+                  config.dev : "pcap");
+       rc = init_logging(LOG_SGUIL, log_prefix, 0);
+       if (rc)
+          perror("Logging to sguil output failed!");
+    }
+
     if (config.ringbuffer) {
-        rc = init_logging(LOG_RINGBUFFER, NULL, config.verbose);
+        rc = init_logging(LOG_RINGBUFFER, NULL, config.cflags);
         if (rc)
             perror("Logging to ringbuffer failed!");
     }
 
     if(config.verbose){
-        rc = init_logging(LOG_STDOUT, NULL, config.verbose);
+        rc = init_logging(LOG_STDOUT, NULL, config.cflags);
         if(rc) perror("Logging to standard out failed!");
     }
 
     if(config.assetlog) {
         olog("logging to file '%s'\n", config.assetlog);
-        rc = init_logging(LOG_FILE, config.assetlog, config.verbose);
+        rc = init_logging(LOG_FILE, config.assetlog, config.cflags);
         if(rc) perror("Logging to file failed!");
     }
     if(config.fifo) {
         olog("logging to FIFO '%s'\n", config.fifo);
-        rc = init_logging(LOG_FIFO, config.fifo, config.verbose);
+        rc = init_logging(LOG_FIFO, config.fifo, config.cflags);
         if(rc) perror("Logging to fifo failed!");
     }
     if(config.s_net){

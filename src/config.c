@@ -514,7 +514,7 @@ int parse_args(globalconfig *conf, int argc, char *argv[], char *args)
             conf->ctf |= CO_DHCP;
             break;
         case 'L':
-            strcpy(conf->cxtlogdir,optarg);
+            strcpy(conf->cxtlogdir, optarg);
             break;
         case '?':
             elog("unrecognized argument: '%c'\n", optopt);

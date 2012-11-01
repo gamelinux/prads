@@ -7,11 +7,8 @@
 #include "../prads.h"
 #include "../sys_func.h" // u_ntop
 #include "../cxt.h"
-#include "../config.h"
 #include "log.h"
 #include "log_ringbuffer.h"
-
-extern globalconfig config;
 
 static int shm_id;
 output_plugin p_ringbuffer;
@@ -23,7 +20,6 @@ output_plugin *init_log_ringbuffer()
 
     printf("init_log_ringbuffer\n\n");
 
-    //key = ftok(config.file, 'R');
     key = ftok("/etc/prads/prads.conf", 'R');
     shm_id = shmget(key, sizeof(struct log_ringbuffer), 0640 | IPC_CREAT );
     if (shm_id == -1) {

@@ -12,7 +12,7 @@
   (dst)->s6_addr32[2] + (dst)->s6_addr32[3] + \
   sp + dp + pr ) % BUCKET_SIZE)
 
-enum { CX_NONE, CX_HUMAN, CX_NEW, CX_ENDED, CX_EXPIRE };
+enum { CX_NONE, CX_HUMAN, CX_NEW, CX_ENDED, CX_EXPIRE, CX_EXCESSIVE };
 void end_sessions();
 void cxt_init();
 int cx_track(packetinfo *pi);

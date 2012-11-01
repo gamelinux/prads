@@ -23,8 +23,10 @@
 /*  P R O T O T Y P E S  ******************************************************/
 
 output_plugin *init_log_stdout();
+int init_output_stdout(output_plugin *p, const char *f, int flags);
 void stdout_init (output_plugin*, const char*, int);
 void stdout_arp (output_plugin*, asset *main);
 void stdout_os (output_plugin*, asset *main, os_asset *os, connection*);
 void stdout_service (output_plugin*, asset *main, serv_asset *service, connection*);
 int end_log_stdout(output_plugin *p);
+void stdout_connection (output_plugin *plugin, connection *cxt, int outputmode);
