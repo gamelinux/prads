@@ -1,8 +1,10 @@
 #ifndef CXT_H
 #define CXT_H
 
+/* the connection hash does not care whether you pass src:sp,dst:dp
+ * or dst:dp,src:sp, it returns the same hashvalue! */
 #define CXT_HASH4(src,dst,sp,dp,pr) \
-   (( (src * 59) ^ dst ^ (sp << 16) ^ dp ^ pr) % BUCKET_SIZE)
+   (( src + dst + sp + dp + pr) % BUCKET_SIZE)
 
 #define CXT_HASH6(src,dst,sp,dp,pr) \
  (( \
