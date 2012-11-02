@@ -527,6 +527,7 @@ typedef struct _connection {
     uint64_t d_total_pkts;        /* total destination packets */
     uint64_t d_total_bytes;       /* total destination bytes */
     uint8_t  s_tcpFlags;          /* tcpflags sent by source */
+    uint8_t  __pad__;             /* pads struct to alignment */
     uint8_t  d_tcpFlags;          /* tcpflags sent by destination */
     uint8_t  check;               /* Flags spesifying checking */
     struct   _asset *c_asset;     /* pointer to src asset */
