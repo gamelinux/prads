@@ -1396,7 +1396,7 @@ int main(int argc, char *argv[])
             perror("Logging to ringbuffer failed!");
     }
 
-    if(config.verbose){
+    if (config.cflags & (CONFIG_VERBOSE | CONFIG_CXWRITE | CONFIG_CONNECT)) {
         rc = init_logging(LOG_STDOUT, NULL, config.cflags);
         if(rc) perror("Logging to standard out failed!");
     }

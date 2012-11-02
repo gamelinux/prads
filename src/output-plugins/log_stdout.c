@@ -24,8 +24,14 @@ output_plugin *init_log_stdout()
 
 int init_output_stdout(output_plugin *p, const char *f, int flags)
 {
-    if(flags & (CONFIG_CXWRITE | CONFIG_CONNECT))
+    if(flags & (CONFIG_CXWRITE | CONFIG_CONNECT)){
         p->connection = &stdout_connection;
+        if(!(flags & CONFIG_VERBOSE)){
+            p->arp = NULL;
+            p->os = NULL;
+            p->service = NULL;
+        }
+    }
     return 0;
 }
 
