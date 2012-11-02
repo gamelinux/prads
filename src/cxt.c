@@ -28,7 +28,7 @@ connection *cxt_new(packetinfo *pi)
     cxt->cxid = cxtrackerid;
 
     cxt->af = pi->af;
-    if(pi->tcph) cxt->s_tcpFlags |= pi->tcph->t_flags;
+    if(pi->tcph) cxt->s_tcpFlags = pi->tcph->t_flags;
     //cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);//why??
     //cxt->d_tcpFlags = 0x00;
     cxt->s_total_bytes = pi->packet_bytes;
@@ -40,8 +40,6 @@ connection *cxt_new(packetinfo *pi)
         cxt->s_ip = PI_IP6SRC(pi);
         cxt->d_ip = PI_IP6DST(pi);
     }else {
-        // ugly hack :(
-        // the way we do ip4/6 is DIRTY
         ips.s6_addr32[0] = pi->ip4->ip_src;
         ipd.s6_addr32[0] = pi->ip4->ip_dst;
         cxt->s_ip = ips;
@@ -136,7 +134,6 @@ int cx_track(packetinfo *pi) {
     }else {
         // ugly hack :(
         // the way we do ip4/6 is DIRTY
-        // FIX IT?!!?
         ips.s6_addr32[0] = pi->ip4->ip_src;
         ipd.s6_addr32[0] = pi->ip4->ip_dst;
         ip_src = &ips;
@@ -408,9 +405,7 @@ void cxt_log_buckets(int dummy)
  * meaning, compare source:port and dest:port at the same time.
  *
  * about vectors and potential improvements:
- *
- * all 64bit machines have at least SSE2 instructions
- * *BUT* there is no guarantee we won't loose time on
+ * * all 64bit machines have at least SSE2 instructions * *BUT* there is no guarantee we won't loose time on
  * copying the vectors around.
  * ... indeed, a quick objdump shows us that
  * there is a shitton of mov instructions to align the addresses.
