@@ -1,3 +1,9 @@
+2012-11-05 0.3.2: ya skipped dat one
+    * bugfixes (github #17, #19, #20, #21
+    * bpf_file config param to read BPF filters from file
+    * ever more beautiful code
+    * shared-memory ringbuffer output
+
 2012-08-16 0.3.1-rc1: shut your pie
     * ever more beautiful code
     * 1000x speed improvement due to leet output and bucket optimizations
