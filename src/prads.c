@@ -325,7 +325,7 @@ void prepare_ip4 (packetinfo *pi)
     config.pr_s.ip4_recv++;
     pi->af = AF_INET;
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
-    pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
+    pi->packet_bytes = (ntohs(pi->ip4->ip_len) - (IP_HL(pi->ip4) * 4));
     
     pi->our = filter_packet(pi->af, &PI_IP4SRC(pi));
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
