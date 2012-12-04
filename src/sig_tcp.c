@@ -1563,7 +1563,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                 e.quirks |= QUIRK_ZEROID;
             break;
         case AF_INET:
-            opt_ptr = (uint8_t *) pi->ip4 + ntohs(pi->ip4->ip_len); // fixed from htons
+            opt_ptr = (uint8_t *) pi->ip4 + ntohs(pi->ip4->ip_len);
             if (end_ptr > opt_ptr)
                 end_ptr = opt_ptr;
             if ((uint8_t *) (pi->ip4 + 1) > end_ptr)

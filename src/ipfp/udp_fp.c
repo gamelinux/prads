@@ -27,7 +27,7 @@ void fp_udp4(packetinfo *pi, ip4_header * ip4, udp_header * udph, const uint8_t 
      * If the declared length is shorter than the snapshot (etherleak
      * or such), truncate the package. 
      */
-    opt_ptr = (uint8_t *) ip4 + htons(ip4->ip_len);
+    opt_ptr = (uint8_t *) ip4 + ntohs(ip4->ip_len);
     if (end_ptr > opt_ptr)
         end_ptr = opt_ptr;
 
@@ -57,7 +57,7 @@ void fp_udp4(packetinfo *pi, ip4_header * ip4, udp_header * udph, const uint8_t 
         quirks |= QUIRK_ZEROID;
 
     // Fingerprint format: $fplen,$ttl,$df,$io,$if,$fo
-    gen_fp_udp(ntohs(ip4->ip_len - udph->len), udata, ip4->ip_ttl,
+    gen_fp_udp(ntohs(ip4->ip_len) - ntohs(udph->len), udata, ip4->ip_ttl,
                (ntohs(ip4->ip_off) & IP_DF) != 0, olen, ntohs(ip4->ip_len),
                ip4->ip_off, ip4->ip_tos, quirks, 
                //ip_src, udph->src_port,AF_INET);
