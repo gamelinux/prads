@@ -28,7 +28,7 @@ void fp_icmp4(packetinfo *pi, ip4_header * ip4, icmp_header * icpmh,
      * If the declared length is shorter than the snapshot (etherleak
      * or such), truncate the package. 
      */
-    opt_ptr = (uint8_t *) ip4 + htons(ip4->ip_len);
+    opt_ptr = (uint8_t *) ip4 + ntohs(ip4->ip_len);
     if (end_ptr > opt_ptr)
         end_ptr = opt_ptr;
 
@@ -81,7 +81,7 @@ void fp_icmp6(packetinfo *pi, ip6_header * ip6, icmp6_header * icpmh,
      * If the declared length is shorter than the snapshot (etherleak
      * or such), truncate the package. 
      */
-    opt_ptr = (uint8_t *) ip6 + htons(ip6->len);
+    opt_ptr = (uint8_t *) ip6 + ntohs(ip6->len);
     if (end_ptr > opt_ptr)
         end_ptr = opt_ptr;
 
@@ -96,7 +96,7 @@ void fp_icmp6(packetinfo *pi, ip6_header * ip6, icmp6_header * icpmh,
      */
     //if ((uint8_t *)(ip6 + 1) > end_ptr) return;
 
-    if ((uint8_t *) opt_ptr + ip6->len < end_ptr) {
+    if ((uint8_t *) opt_ptr + ntohs(ip6->len) < end_ptr) {
         quirks |= QUIRK_DATA;
         //payload = opt_ptr + ip6->len;
     }
