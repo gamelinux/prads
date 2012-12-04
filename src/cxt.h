@@ -1,8 +1,10 @@
 #ifndef CXT_H
 #define CXT_H
 
+/* the connection hash does not care whether you pass src:sp,dst:dp
+ * or dst:dp,src:sp, it returns the same hashvalue! */
 #define CXT_HASH4(src,dst,sp,dp,pr) \
-   (( (src * 59) ^ dst ^ (sp << 16) ^ dp ^ pr) % BUCKET_SIZE)
+   (( src + dst + sp + dp + pr) % BUCKET_SIZE)
 
 #define CXT_HASH6(src,dst,sp,dp,pr) \
  (( \
@@ -12,7 +14,7 @@
   (dst)->s6_addr32[2] + (dst)->s6_addr32[3] + \
   sp + dp + pr ) % BUCKET_SIZE)
 
-enum { CX_NONE, CX_HUMAN, CX_NEW, CX_ENDED, CX_EXPIRE };
+enum { CX_NONE, CX_HUMAN, CX_NEW, CX_ENDED, CX_EXPIRE, CX_EXCESSIVE };
 void end_sessions();
 void cxt_init();
 int cx_track(packetinfo *pi);
@@ -26,4 +28,6 @@ void cxt_write_all();
 void cxt_log_buckets(int dummy);
 
 int connection_tracking(packetinfo *pi);
+void reverse_pi_cxt(packetinfo *pi);
+
 #endif // CXT_H

@@ -59,68 +59,71 @@ void display_config(globalconfig *conf)
 
 void free_config()
 {
-    if (config.cfilter.bf_insns != NULL) free (config.cfilter.bf_insns);
 // Grr - no nice way to tell if the settings comes from configfile or not :/
     if (config.pidfile != NULL) free(config.pidfile);
     if (config.user_name != NULL) free(config.user_name);
     if (config.group_name != NULL) free(config.group_name);
     if (config.bpff != NULL) free(config.bpff);
+    if (config.bpf_file != NULL) free(config.bpf_file);
+    if (config.assetlog != NULL) free(config.assetlog);
+    if (config.pcap_file != NULL) free(config.pcap_file);
 }
 
-void set_default_config_options(globalconfig *config)
+void set_default_config_options(globalconfig *conf)
 {
-    config->file    = CONFDIR "prads.conf";
-    config->ctf    |= CO_SYN;
-    config->ctf    |= CO_RST;
-    config->ctf    |= CO_FIN;
-    //config->ctf    |= CO_ACK;
-    config->ctf    |= CO_SYNACK;
-    //config->ctf    |= CO_ICMP;
-    //config->ctf    |= CO_UDP;
-    //config->ctf    |= CO_DHCP;
-    config->cof    |= CS_TCP_SERVER;
-    config->cof    |= CS_TCP_CLIENT;
-    config->cof    |= CS_UDP_SERVICES;
-    config->cof    |= CS_MAC;
-    config->dev     = 0x0; // default is to lookup device
-    config->bpff    = strdup("");
-    //config->pidfile = strdup("/var/run/prads.pid");
-    config->assetlog= strdup(LOGDIR PRADS_ASSETLOG);
-    config->fifo    = NULL;
+    conf->file    = CONFDIR "prads.conf";
+    conf->ctf    |= CO_SYN;
+    conf->ctf    |= CO_RST;
+    conf->ctf    |= CO_FIN;
+    //conf->ctf    |= CO_ACK;
+    conf->ctf    |= CO_SYNACK;
+    //conf->ctf    |= CO_ICMP;
+    //conf->ctf    |= CO_UDP;
+    //conf->ctf    |= CO_DHCP;
+    conf->cof    |= CS_TCP_SERVER;
+    conf->cof    |= CS_TCP_CLIENT;
+    conf->cof    |= CS_UDP_SERVICES;
+    conf->cof    |= CS_MAC;
+    conf->dev     = 0x0; // default is to lookup device
+    conf->bpff    = strdup("");
+    //conf->pidfile = strdup("/var/run/prads.pid");
+    conf->assetlog= strdup(LOGDIR PRADS_ASSETLOG);
+    conf->fifo    = NULL;
+    conf->ringbuffer = 0;
     // default source net owns everything
-    config->s_net   = DEFAULT_NETS ;
-    config->errbuf[0] = '\0';
-    config->configpath = CONFDIR "";
-    // files should be relative to configpath somehow
-    config->sig_file_syn = CONFDIR "tcp-syn.fp";
-    config->sig_file_synack = CONFDIR "tcp-synack.fp";
-    config->sig_file_ack = CONFDIR "tcp-stray-ack.fp";
-    config->sig_file_fin = CONFDIR "tcp-fin.fp";
-    config->sig_file_rst = CONFDIR "tcp-rst.fp";
-    config->sig_file_mac = CONFDIR "mac.sig";
-    config->sig_file_dhcp = CONFDIR "dhcp.fp";
-    config->sig_file_serv_tcp = CONFDIR "tcp-service.sig";
-    config->sig_file_serv_udp = CONFDIR "udp-service.sig";
-    config->sig_file_cli_tcp = CONFDIR "tcp-clients.sig";
-    config->sig_syn = NULL;
-    config->sig_synack = NULL;
-    config->sig_ack = NULL;
-    config->sig_fin = NULL;
-    config->sig_rst = NULL;
-    config->sig_mac = NULL;
-    config->sig_dhcp = NULL;
-    config->sig_hashsize = SIG_HASHSIZE;
-    config->mac_hashsize = MAC_HASHSIZE;
+    conf->s_net   = DEFAULT_NETS ;
+    conf->errbuf[0] = '\0';
+    conf->configpath = CONFDIR "";
+    // files should be relative to confpath somehow
+    conf->sig_file_syn = CONFDIR "tcp-syn.fp";
+    conf->sig_file_synack = CONFDIR "tcp-synack.fp";
+    conf->sig_file_ack = CONFDIR "tcp-stray-ack.fp";
+    conf->sig_file_fin = CONFDIR "tcp-fin.fp";
+    conf->sig_file_rst = CONFDIR "tcp-rst.fp";
+    conf->sig_file_mac = CONFDIR "mac.sig";
+    conf->sig_file_dhcp = CONFDIR "dhcp.fp";
+    conf->sig_file_serv_tcp = CONFDIR "tcp-service.sig";
+    conf->sig_file_serv_udp = CONFDIR "udp-service.sig";
+    conf->sig_file_cli_tcp = CONFDIR "tcp-clients.sig";
+    conf->sig_syn = NULL;
+    conf->sig_synack = NULL;
+    conf->sig_ack = NULL;
+    conf->sig_fin = NULL;
+    conf->sig_rst = NULL;
+    conf->sig_mac = NULL;
+    conf->sig_dhcp = NULL;
+    conf->sig_hashsize = SIG_HASHSIZE;
+    conf->mac_hashsize = MAC_HASHSIZE;
     // drop privileges by default
-    config->user_name = strdup("1");
-    config->group_name = strdup("1");
+    conf->user_name = strdup("1");
+    conf->group_name = strdup("1");
 
-    config->drop_privs_flag = 1;
+    conf->drop_privs_flag = 1;
     // don't chroot or daemonize by default
-    config->chroot_dir = NULL;
-    config->daemon_flag = 0;
-    config->cxtlogdir[0] = '\0';
-    config->cxtfname[0] = '\0';
+    conf->chroot_dir = NULL;
+    conf->daemon_flag = 0;
+    conf->cxtlogdir[0] = '\0';
+    conf->cxtfname[0] = '\0';
 }
 
 void parse_config_file(const char* fname)
@@ -284,6 +287,10 @@ void parse_line (globalconfig * conf, bstring line)
     } else if ((biseqcstr(param, "fifo")) == 1) {
         /* FIFO path */
         conf->fifo = bstr2cstr (value, '-');
+    } else if ((biseqcstr(param, "ringbuffer")) == 1) {
+        /* Ringbuffer */
+        if (!conf->ringbuffer)
+            conf->ringbuffer = value->data[0] == '1' ? 1 : 0;
     } else if ((biseqcstr(param, "sig_file_serv_tcp")) == 1) {
         /* SIGNATURE FILE */
         conf->sig_file_serv_tcp = bstr2cstr(value, '-');
@@ -317,24 +324,18 @@ void parse_line (globalconfig * conf, bstring line)
         /* FILTER */
         free(conf->bpff);
         conf->bpff = bstr2cstr(value, '-');
+    } else if ((biseqcstr(param, "bpf_file")) == 1) {
+        /* FILTER FILE */
+        if(conf->bpf_file) free(conf->bpf_file);
+        conf->bpf_file = bstr2cstr(value, '-');
     } else if ((biseqcstr(param, "home_nets")) == 1) {
-        /* FILTER */
+        /* HOME NETS FILTER */
         //free(conf->s_net);
         conf->s_net = bstr2cstr(value, '-');
 
-//    } else if ((biseqcstr(param, "network")) == 1) {
-//        /* NETWORK */
-//        parse_networks((unsigned char *)bdata(value));
-//    } else if ((biseqcstr(param, "hide_unknowns")) == 1) {
-//        /* UNKNOWN */
-//        if (!conf->hide_unknowns) {
-//            if (value->data[0] == '1')
-//                conf->hide_unknowns = 1;
-//            else
-//                conf->hide_unknowns = 0;
-//        }
     }
 
+cleanup:
     vlog(0x3,"config - PARAM:  |%s| / VALUE:  |%s|\n", bdata(param), bdata(value));
 
     /* Clean Up */
@@ -455,6 +456,9 @@ int parse_args(globalconfig *conf, int argc, char *argv[], char *args)
         case 'f':
             conf->fifo = strdup(optarg);
             break;
+        case 'B':
+            conf->ringbuffer = 1;
+            break;
         case 's':
             conf->payload = strtol(optarg, NULL, 0);
             break;
@@ -510,7 +514,7 @@ int parse_args(globalconfig *conf, int argc, char *argv[], char *args)
             conf->ctf |= CO_DHCP;
             break;
         case 'L':
-            strcpy(conf->cxtlogdir,optarg);
+            strcpy(conf->cxtlogdir, optarg);
             break;
         case '?':
             elog("unrecognized argument: '%c'\n", optopt);

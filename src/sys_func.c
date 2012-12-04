@@ -1,7 +1,6 @@
 #include "common.h"
 #include "prads.h"
 #include "sys_func.h"
-#include "util-cxt.h"
 #include "assets.h"
 #include "servicefp/servicefp.h"
 #include "config.h"
@@ -77,13 +76,6 @@ uint8_t normalize_ttl (uint8_t ttl)
     else  return  32;
 }
 
-void bucket_keys_NULL()
-{
-    int cxkey;
-    for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
-        bucket[cxkey] = NULL;
-    }
-}
 
 void unload_tcp_sigs()
 {

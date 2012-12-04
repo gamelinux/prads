@@ -33,7 +33,7 @@
 #ifndef RELEASE
 #define RELEASE
 #endif
-#define VERSION                       "0.3.1-rc1"RELEASE
+#define VERSION                       "0.3.2-rc1"RELEASE
 #define SIG_ALRM                      60        /* Time between cxt and asset cleaning/printing */
 #define TCP_TIMEOUT                   300       /* When idle IP connections should be timed out */
 #define ASSET_TIMEOUT                 86400     /* Time befor an asset is deleted if no updates */
@@ -516,6 +516,7 @@ typedef struct _connection {
     uint64_t cxid;                /* connection id */
     uint8_t  reversed;            /* 1 if the connection is reversed */
     uint32_t af;                  /* IP version (4/6) AF_INET */
+    uint16_t hw_proto;            /* layer2 protocol */
     uint8_t  proto;               /* IP protocoll type */
     struct   in6_addr s_ip;       /* source address */
     struct   in6_addr d_ip;       /* destination address */
@@ -526,6 +527,7 @@ typedef struct _connection {
     uint64_t d_total_pkts;        /* total destination packets */
     uint64_t d_total_bytes;       /* total destination bytes */
     uint8_t  s_tcpFlags;          /* tcpflags sent by source */
+    uint8_t  __pad__;             /* pads struct to alignment */
     uint8_t  d_tcpFlags;          /* tcpflags sent by destination */
     uint8_t  check;               /* Flags spesifying checking */
     struct   _asset *c_asset;     /* pointer to src asset */

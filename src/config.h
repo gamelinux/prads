@@ -40,7 +40,6 @@ typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
     struct pcap_stat    ps;             /* libpcap stats */
     prads_stat          pr_s;           /* prads stats */
-    struct bpf_program  cfilter;        /**/
     bpf_u_int32         net_mask;       /**/
     uint8_t     cflags;                 /* config flags */
     uint8_t     verbose;                /* Verbose or not */
@@ -64,6 +63,7 @@ typedef struct _globalconfig {
     char       *file;                   /* config file location, if known */
     char       *assetlog;               /* Filename of prads-asset.log */
     char       *fifo;                   /* Path to FIFO output */
+    uint8_t    ringbuffer;              /* Enable logging to ringbuffer */
     char       *pcap_file;              /* Filename to pcap too read */
     char       *sig_file_syn;           /* Filename of TCP SYN sig file */
     char       *sig_file_synack;        /* Filename of TCP SYNACK sig file */
@@ -97,6 +97,7 @@ typedef struct _globalconfig {
     fp_entry   **sig_rst;               /* RST signature hash */
     mac_entry  **sig_mac;               /* Pointer to hash of mac signatures */
     dhcp_fp_entry **sig_dhcp;           /* DHCP signature hash */
+    char        *bpf_file;              /* filename of BPF file to load */
 } globalconfig;
 #define ISSET_CONFIG_VERBOSE(config)    ((config).cflags & CONFIG_VERBOSE)
 #define ISSET_CONFIG_UPDATES(config)    ((config).cflags & CONFIG_UPDATES)

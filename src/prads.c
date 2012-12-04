@@ -36,8 +36,6 @@
 #include "cxt.h"
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
-#include "util-cxt.h"
-#include "util-cxt-queue.h"
 #include "sig.h"
 #include "mac.h"
 #include "tcp.h"
@@ -50,7 +48,7 @@
 #define CONFDIR "/etc/prads/"
 #endif
 
-#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:L:f:qtxs:OXFRMSAKUTIZtHP"
+#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:L:f:qtxs:OXFRMSAKUTIZtHPB"
 
 /*  G L O B A L S  *** (or candidates for refactoring, as we say)***********/
 globalconfig config;
@@ -327,7 +325,7 @@ void prepare_ip4 (packetinfo *pi)
     config.pr_s.ip4_recv++;
     pi->af = AF_INET;
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
-    pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
+    pi->packet_bytes = (ntohs(pi->ip4->ip_len) - (IP_HL(pi->ip4) * 4));
     
     pi->our = filter_packet(pi->af, &PI_IP4SRC(pi));
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
@@ -1027,7 +1025,6 @@ void game_over()
 
     if (inpacket == 0) {
         end_sessions(); /* Need to have correct human output when reading -r pcap */
-        //cxt_write_all(); /* redundant ? see end_all_sessions(); */
         clear_asset_list();
         end_all_sessions();
         del_known_services();
@@ -1053,6 +1050,7 @@ void reparse_conf()
     if(inpacket == 0) {
         olog("Reparsing config file...");
         parse_config_file(config.file);
+        end_sessions();
         intr_flag = 0;
         return;
     }
@@ -1144,6 +1142,7 @@ static void usage()
     olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
     olog(" -f <FIFO>       Log assets to <FIFO>\n");
+    olog(" -B              Log connections to ringbuffer\n");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
     olog(" -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient\n");
@@ -1159,13 +1158,74 @@ static void usage()
     olog(" -h              This help message.\n");
 }
 
+int load_bpf(globalconfig* conf, const char* file)
+{
+    int sz, i;
+    FILE* fs;
+    char* lineptr;
+    struct stat statbuf;
+    fs = fopen(file, "r");
+    if(!fs){
+        perror("bpf file");
+        return 1;
+    }
+    if(fstat(fileno(fs), &statbuf)){
+        perror("oh god my eyes!");
+        fclose(fs);
+        return 2;
+    }
+    sz = statbuf.st_size; 
+    if(conf->bpff) free(conf->bpff);
+    if(!(conf->bpff = calloc(sz, 1))){
+        perror("mem alloc");
+        fclose(fs);
+        return 3;
+    }
+    lineptr = conf->bpff;
+    // read file but ignore comments and newlines
+    while(fgets(lineptr, sz-(conf->bpff-lineptr), fs)) {
+        // skip spaces
+        for(i=0;;i++) 
+            if(lineptr[i] != ' ')
+               break;
+        // scan ahead and kill comments
+        for(i=0;lineptr[i];i++)
+            switch(lineptr[i]){
+                case '#':                // comment on the line
+                    lineptr[i] = '\n';   // end line here
+                    lineptr[i+1] = '\0'; // ends outer loop & string
+                case '\n':               // end-of-line
+                case '\0':               // end-of-string
+                    break;
+            }
+        if(i<=1) continue;               // empty line
+        lineptr = lineptr+strlen(lineptr);
+    }
+    fclose(fs);
+    olog("[*] BPF file\t\t %s (%d bytes read)\n", conf->bpf_file, sz);
+    if(config.verbose) olog("BPF: { %s}\n", conf->bpff);
+    return 0;
+}
+
+
 int prads_initialize(globalconfig *conf)
 {
+    if (conf->bpf_file) {
+        if(load_bpf(conf, conf->bpf_file)){
+           elog("[!] Failed to load bpf from file.\n");
+        }
+    }
     if (conf->pcap_file) {
+        struct stat sb;
+        if(stat(conf->pcap_file, &sb) || !sb.st_size) {
+           elog("[!] '%s' not a pcap. Bailing.\n", conf->pcap_file);
+           exit(1);
+        }
+
         /* Read from PCAP file specified by '-r' switch. */
         olog("[*] Reading from file %s\n", conf->pcap_file);
         if (!(conf->handle = pcap_open_offline(conf->pcap_file, conf->errbuf))) {
-            olog("[*] Unable to open %s.  (%s)", conf->pcap_file, conf->errbuf);
+            olog("[*] Unable to open %s.  (%s)\n", conf->pcap_file, conf->errbuf);
         } 
 
     } else {
@@ -1274,6 +1334,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
     signal(SIGHUP, reparse_conf);
+    signal(SIGUSR1, set_end_sessions);
 #ifdef DEBUG
     signal(SIGUSR1, cxt_log_buckets);
 #endif
@@ -1287,6 +1348,9 @@ int main(int argc, char *argv[])
             break;
         case 'v':
             config.verbose++;
+            break;
+        case 'q':
+            config.cflags |= CONFIG_QUIET;
             break;
         case 'h':
             usage();
@@ -1304,32 +1368,47 @@ int main(int argc, char *argv[])
     if(verbose_already)
         config.verbose = 0;
     optind = 1;
+    prads_version();
 
     if(parse_args(&config, argc, argv, ARGS) != 0){
         usage();
         exit(0);
     }
+
     // we're done parsing configs - now initialize prads
 
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-    prads_version();
 
+    if(config.cxtlogdir){
+       char log_prefix[PATH_MAX];
+       snprintf(log_prefix, PATH_MAX, "%sstat.%s", config.cxtlogdir, config.dev?
+                  config.dev : "pcap");
+       rc = init_logging(LOG_SGUIL, log_prefix, 0);
+       if (rc)
+          perror("Logging to sguil output failed!");
+    }
 
-    if(config.verbose){
-        rc = init_logging(LOG_STDOUT, NULL, config.verbose);
+    if (config.ringbuffer) {
+        rc = init_logging(LOG_RINGBUFFER, NULL, config.cflags);
+        if (rc)
+            perror("Logging to ringbuffer failed!");
+    }
+
+    if (config.cflags & (CONFIG_VERBOSE | CONFIG_CXWRITE | CONFIG_CONNECT)) {
+        rc = init_logging(LOG_STDOUT, NULL, config.cflags);
         if(rc) perror("Logging to standard out failed!");
     }
 
     if(config.assetlog) {
         olog("logging to file '%s'\n", config.assetlog);
-        rc = init_logging(LOG_FILE, config.assetlog, config.verbose);
+        rc = init_logging(LOG_FILE, config.assetlog, config.cflags);
         if(rc) perror("Logging to file failed!");
     }
     if(config.fifo) {
         olog("logging to FIFO '%s'\n", config.fifo);
-        rc = init_logging(LOG_FIFO, config.fifo, config.verbose);
+        rc = init_logging(LOG_FIFO, config.fifo, config.cflags);
         if(rc) perror("Logging to fifo failed!");
     }
     if(config.s_net){
@@ -1366,18 +1445,19 @@ int main(int argc, char *argv[])
 
     prads_initialize(&config);
  
-    bucket_keys_NULL();
     alarm(SIG_ALRM);
 
     /** segfaults on empty pcap! */
-    if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
+    struct bpf_program  cfilter;        /**/
+    if ((pcap_compile(config.handle, &cfilter, config.bpff, 1, config.net_mask)) == -1) {
             olog("[*] Error pcap_compile user_filter: %s\n", pcap_geterr(config.handle));
             exit(1);
     }
 
-    if (pcap_setfilter(config.handle, &config.cfilter)) {
+    if (pcap_setfilter(config.handle, &cfilter)) {
             olog("[*] Unable to set pcap filter!  %s", pcap_geterr(config.handle));
     }
+    pcap_freecode(&cfilter);
 
     cxt_init();
     olog("[*] Sniffing...\n");

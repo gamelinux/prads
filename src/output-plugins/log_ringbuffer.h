@@ -1,9 +1,8 @@
 /*
 ** This file is a part of PRADS.
 **
-** Copyright (C) 2009, Redpill Linpro
-** Copyright (C) 2009, Edward Fjellskål <edward.fjellskaal@redpill-linpro.com>
-** Copyright (C) 2011, Kacper Wysocki <kacper.wysocki@redpill-linpro.com>
+** Copyright (C) 2012, Redpill Linpro
+** Copyright (C) 2012, Torgeir Natvig <torgeir.natvig@redpill-linpro.com>
 **
 ** This program is free software; you can redistribute it and/or modify
 ** it under the terms of the GNU General Public License as published by
@@ -20,13 +19,20 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 **
 */
-/*  P R O T O T Y P E S  ******************************************************/
+#define RINGBUFFER_ITEMS 1024
+struct ring_item {
+    char text[256];
+};
 
-output_plugin *init_log_stdout();
-int init_output_stdout(output_plugin *p, const char *f, int flags);
-void stdout_init (output_plugin*, const char*, int);
-void stdout_arp (output_plugin*, asset *main);
-void stdout_os (output_plugin*, asset *main, os_asset *os, connection*);
-void stdout_service (output_plugin*, asset *main, serv_asset *service, connection*);
-int end_log_stdout(output_plugin *p);
-void stdout_connection (output_plugin *plugin, connection *cxt, int outputmode);
+struct log_ringbuffer {
+    struct ring_item items[RINGBUFFER_ITEMS];
+    unsigned int head;
+    size_t element_size;
+    size_t buffer_size;
+};
+
+#ifdef PRADS_H
+output_plugin *init_log_ringbuffer();
+int destory_log_ringbuffer (output_plugin *plugin);
+void log_ringbuffer_connection (output_plugin *plugin, connection *cxt, int outputmode);
+#endif
