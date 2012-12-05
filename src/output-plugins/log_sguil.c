@@ -12,6 +12,7 @@ output_plugin p_sguil = {
         .service = NULL,
         .connection = &sguil_connection,
         .denit = &sguil_end,
+        .rotate = &sguil_rotate,
         .data = NULL,
 };
 
@@ -37,7 +38,7 @@ int init_output_sguil(output_plugin *p, const char* log_prefix, int check_time)
        return 2;
     }
     dlog("Opened file: %s\n", filename);
-    sguil_data = calloc(1, sizeof(sguil_data));
+    sguil_data = calloc(1, sizeof(*sguil_data));
     sguil_data->prefix = log_prefix;
     sguil_data->filename = filename;
     sguil_data->file = cxtfile;

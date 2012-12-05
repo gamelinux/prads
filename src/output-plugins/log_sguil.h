@@ -8,3 +8,4 @@ output_plugin *init_log_sguil(void);
 int init_output_sguil (output_plugin *p, const char *, int);
 void sguil_connection (output_plugin *, connection *cxt, int);
 int sguil_end (output_plugin *);
+void sguil_rotate(output_plugin *plugin, time_t check_time);

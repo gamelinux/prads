@@ -1088,6 +1088,8 @@ void set_end_sessions()
         intr_flag = 0;
         alarm(SIG_ALRM);
     }
+    // install self again
+    signal(SIGUSR1, set_end_sessions);
 }
 
 void print_prads_stats()
@@ -1382,9 +1384,9 @@ int main(int argc, char *argv[])
     }
 
     if(config.cxtlogdir){
-       char log_prefix[PATH_MAX];
-       snprintf(log_prefix, PATH_MAX, "%sstat.%s", config.cxtlogdir, config.dev?
-                  config.dev : "pcap");
+       static char log_prefix[PATH_MAX];
+       snprintf(log_prefix, PATH_MAX, "%sstats.%s", 
+            config.cxtlogdir, config.dev? config.dev : "pcap");
        rc = init_logging(LOG_SGUIL, log_prefix, 0);
        if (rc)
           perror("Logging to sguil output failed!");
