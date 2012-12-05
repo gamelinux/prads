@@ -543,7 +543,7 @@ void prepare_ip6 (packetinfo *pi)
     config.pr_s.ip6_recv++;
     pi->af = AF_INET6;
     pi->ip6 = (ip6_header *) (pi->packet + pi->eth_hlen);
-    pi->packet_bytes = pi->ip6->len;
+    pi->packet_bytes = ntohs(pi->ip6->len);
     // may be dropped due to macros plus
     //pi->ip_src = PI_IP6SRC(pi);
     //pi->ip_dst = PI_IP6DST(pi);
