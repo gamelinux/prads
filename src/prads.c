@@ -1300,12 +1300,12 @@ int prads_initialize(globalconfig *conf)
               perror("Logging to sguil output failed!");
         }
 
-       if(conf->pidfile){
-            if (!is_valid_path(conf->pidfile)){
-                elog("[!] Pidfile '%s' is not writable.\n", conf->pidfile);
-                exit(ENOENT);
-            }
-       }
+        if(conf->pidfile){
+           if (!is_valid_path(conf->pidfile)){
+              elog("[!] Pidfile '%s' is not writable.\n", conf->pidfile);
+              exit(ENOENT);
+           }
+        }
         if (conf->daemon_flag) {
             olog("[*] Daemonizing...\n");
             daemonize(NULL);
@@ -1386,9 +1386,7 @@ int main(int argc, char *argv[])
         usage();
         exit(0);
     }
-
     // we're done parsing configs - now initialize prads
-
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
@@ -1397,12 +1395,10 @@ int main(int argc, char *argv[])
         if (rc)
             perror("Logging to ringbuffer failed!");
     }
-
     if (config.cflags & (CONFIG_VERBOSE | CONFIG_CXWRITE | CONFIG_CONNECT)) {
         rc = init_logging(LOG_STDOUT, NULL, config.cflags);
         if(rc) perror("Logging to standard out failed!");
     }
-
     if(config.assetlog) {
         olog("logging to file '%s'\n", config.assetlog);
         rc = init_logging(LOG_FILE, config.assetlog, config.cflags);
