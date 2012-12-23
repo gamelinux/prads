@@ -45,8 +45,8 @@ OPTIONS
  -r <file>       Read pcap <file>.
  -c <file>       Read config from <file>
  -b <filter>     Apply Berkeley packet filter <filter>.
- -u <user>       Run as user <user>.
- -g <group>      Run as group <group>.
+ -u <user>       Run as  user <user>  (default is uid 1)
+ -g <group>      Run as group <group> (default is gid 1)
  -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').
  -D              Enables daemon mode.
  -p <pidfile>    Name of pidfile - inside chroot

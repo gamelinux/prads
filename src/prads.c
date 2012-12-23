@@ -1135,8 +1135,8 @@ static void usage()
     olog(" -r <file>       Read pcap <file>.\n");
     olog(" -c <file>       Read config from <file>\n");
     olog(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
-    olog(" -u <user>       Run as user <user>.\n");
-    olog(" -g <group>      Run as group <group>.\n");
+    olog(" -u <user>       Run as user <user>   (Default: uid 1)\n");
+    olog(" -g <group>      Run as group <group> (Default: gid 1)\n");
     olog(" -d              Do not drop privileges.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     olog(" -D              Daemonize.\n");
