@@ -1140,7 +1140,6 @@ static void usage()
     olog(" -d              Do not drop privileges.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
     olog(" -D              Daemonize.\n");
-    //olog(" -d            to logdir\n");
     olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
     olog(" -f <FIFO>       Log assets to <FIFO>\n");
