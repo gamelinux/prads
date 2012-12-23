@@ -1152,7 +1152,7 @@ static void usage()
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
-    olog(" -L <dir>        log cxtracker type output to <dir>.\n");
+    olog(" -L <dir>        log cxtracker type output to <dir> (will be owned by <uid>).\n");
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
     olog(" -Z              Passive DNS (Experimental).\n");
@@ -1289,6 +1289,16 @@ int prads_initialize(globalconfig *conf)
                conf->user_name?conf->user_name:"", conf->group_name?conf->group_name:"");
             drop_privs(uid, gid);
         }
+        /* NOTE: we init sancp-style conntrack-logging after dropping privs,
+         * because the logs need rotation after dropping privs */
+        if(config.cxtlogdir){
+           static char log_prefix[PATH_MAX];
+           snprintf(log_prefix, PATH_MAX, "%sstats.%s", 
+                    config.cxtlogdir, config.dev? config.dev : "pcap");
+           int rc = init_logging(LOG_SGUIL, log_prefix, 0);
+           if (rc)
+              perror("Logging to sguil output failed!");
+        }
 
        if(conf->pidfile){
             if (!is_valid_path(conf->pidfile)){
@@ -1382,16 +1392,6 @@ int main(int argc, char *argv[])
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-
-    if(config.cxtlogdir){
-       static char log_prefix[PATH_MAX];
-       snprintf(log_prefix, PATH_MAX, "%sstats.%s", 
-            config.cxtlogdir, config.dev? config.dev : "pcap");
-       rc = init_logging(LOG_SGUIL, log_prefix, 0);
-       if (rc)
-          perror("Logging to sguil output failed!");
-    }
-
     if (config.ringbuffer) {
         rc = init_logging(LOG_RINGBUFFER, NULL, config.cflags);
         if (rc)
@@ -1413,6 +1413,7 @@ int main(int argc, char *argv[])
         rc = init_logging(LOG_FIFO, config.fifo, config.cflags);
         if(rc) perror("Logging to fifo failed!");
     }
+    /* moved NOTE: cxtlog is inited in prads_initialize, after dropping privs */
     if(config.s_net){
        parse_nets(config.s_net, network);
     }
