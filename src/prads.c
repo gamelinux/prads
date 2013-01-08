@@ -1290,7 +1290,7 @@ int prads_initialize(globalconfig *conf)
         }
         /* NOTE: we init sancp-style conntrack-logging after dropping privs,
          * because the logs need rotation after dropping privs */
-        if(config.cxtlogdir){
+        if(config.cxtlogdir[0] != '\0'){
            static char log_prefix[PATH_MAX];
            snprintf(log_prefix, PATH_MAX, "%sstats.%s", 
                     config.cxtlogdir, config.dev? config.dev : "pcap");
