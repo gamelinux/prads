@@ -353,6 +353,7 @@ bstring get_app_name(signature * sig,
                 z++;
                 x++;
             }
+            pcre_free_substring (expr);
             expr = NULL;
             i++;
         } else {
