@@ -295,14 +295,14 @@ void end_sessions()
                 log_connection(cxt, cxstatus);
                 cxstatus = CX_NONE;
 
-                cxt = cxt->prev;
+                cxt = cxt->next;
 
                 del_connection(tmp, &bucket[iter]);
                 if (cxt == NULL) {
                     bucket[iter] = NULL;
                 }
             } else {
-                cxt = cxt->prev;
+                cxt = cxt->next;
             }
         } // end while cxt
     } // end for buckets
