@@ -240,6 +240,7 @@ int load_dhcp_sigs(const char *file, dhcp_fp_entry **dhcpsp[], int hashsize)
         return errno;
     }
     if(!dhcpsp){
+        fclose(f);
         perror("need a pointer to fill");
         return -1;
     }

@@ -734,6 +734,7 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
         return errno;
     }
     if(!sigp){
+        fclose(f);
         perror("need a pointer to fill");
         return -1;
     }

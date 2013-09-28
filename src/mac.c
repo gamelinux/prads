@@ -193,6 +193,7 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
         return errno;
     }
     if(!sigp){
+        fclose(f);
         perror("need a pointer to fill");
         return -1;
     }
