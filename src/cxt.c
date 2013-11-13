@@ -242,15 +242,12 @@ void end_sessions()
     connection *cxt;
     int iter;
     int cxstatus = CX_NONE;
-    int ended, expired = 0;
-    uint32_t curcxt = 0;
     time_t check_time = time(NULL);
 
     log_rotate(check_time);
     for (iter = 0; iter < BUCKET_SIZE; iter++) {
         cxt = bucket[iter];
         while (cxt != NULL) {
-            curcxt++;
             /* TCP */
             if (cxt->proto == IP_PROTO_TCP) {
                 /* * FIN from both sides */
