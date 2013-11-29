@@ -10,7 +10,7 @@ Build-Depends:
  libpcre3-dev,
  python-docutils (>= 0.6),
  python | python-all | python-dev | python-all-dev,
-Standards-Version: 3.9.2
+Standards-Version: 3.9.5
 Homepage: http://gamelinux.github.com/prads/
 Vcs-Git: git://github.com/gamelinux/prads.git
 Vcs-Browser: http://github.com/gamelinux/prads/tree/master
