@@ -14,7 +14,6 @@ Standards-Version: 3.9.2
 Homepage: http://gamelinux.github.com/prads/
 Vcs-Git: git://github.com/gamelinux/prads.git
 Vcs-Browser: http://github.com/gamelinux/prads/tree/master
-DM-Upload-Allowed: yes
 
 Package: prads
 Architecture: any
