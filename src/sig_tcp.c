@@ -499,6 +499,8 @@ static void collide(uint32_t id)
 static void free_sigs(fp_entry *e){
     if(e->next)
         free_sigs(e->next);
+    free(e->os);
+    free(e->desc);
     free(e);
 }
 
