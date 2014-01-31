@@ -1,6 +1,11 @@
 #### PRADS INSTALL
 
-# TODO : apt-get install prads
+# apt-get install prads
+
+### or, from source
+
+## dependencies
+libpcap0.8 (>= 0.9.8), libpcre3 (>= 8.10), libresolv
 
 # On an Ubuntu system:
 $ sudo apt-get install rst2man
