@@ -196,9 +196,16 @@ inline int filter_packet(const int af, void *ipptr)
                 if(network[i].type != AF_INET6)
                     continue;
 #ifdef DEBUG_PACKET
+                struct in6_addr tmp_netmask;
+
+                IP6ADDR0(&tmp_netmask) = htonl(IP6ADDR0(&network[i].mask));
+                IP6ADDR1(&tmp_netmask) = htonl(IP6ADDR1(&network[i].mask));
+                IP6ADDR2(&tmp_netmask) = htonl(IP6ADDR2(&network[i].mask));
+                IP6ADDR3(&tmp_netmask) = htonl(IP6ADDR3(&network[i].mask));
+
                 u_ntop(network[i].addr, af, output);
                 dlog("net:  %s\n", output);
-                u_ntop(network[i].mask, af, output);
+                u_ntop(tmp_netmask, af, output);
                 dlog("mask: %s\n", output);
                 u_ntop(ip_vec.ip6, af, output);
                 dlog("ip: %s\n", output);
