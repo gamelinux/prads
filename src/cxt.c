@@ -146,11 +146,13 @@ int cx_track(packetinfo *pi) {
     } else if (af == AF_INET6) {
         hash = CXT_HASH6(ip_src,ip_dst,src_port,dst_port,pi->proto);
     }
-    cxt = bucket[hash];
-    head = cxt;
+    head = bucket[hash];
 
     // search through the bucket
-    while (cxt != NULL) {
+    for (cxt = head; cxt != NULL; cxt = cxt->next) {
+        if (af != cxt->af)
+          continue;
+
         // Two-way compare of given connection against connection table
         if (af == AF_INET) {
             if (CMP_CXT4(cxt,IP4ADDR(ip_src),src_port,IP4ADDR(ip_dst),dst_port)){
@@ -167,7 +169,6 @@ int cx_track(packetinfo *pi) {
                 return cxt_update_server(cxt, pi);
             }
         }
-        cxt = cxt->next;
     }
     // bucket turned upside down didn't yeild anything. new connection
     cxt = cxt_new(pi);

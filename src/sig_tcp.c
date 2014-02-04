@@ -251,6 +251,7 @@ void print_sig(fp_entry * e)
     char *c = bstr2cstr(b, '-');
     printf("[%s", c);
     bcstrfree(c);
+    bdestroy(b);
 
     printf("],%s:%s\n", e->os, e->desc);
 }
@@ -499,6 +500,8 @@ static void collide(uint32_t id)
 static void free_sigs(fp_entry *e){
     if(e->next)
         free_sigs(e->next);
+    free(e->os);
+    free(e->desc);
     free(e);
 }
 

@@ -15,7 +15,7 @@ void client_tcp6(packetinfo *pi, signature *db);
 void client_tcp4(packetinfo *pi, signature *db);
 void del_signature_lists();
 int add_service_sig(signature *sig, signature **dbp);
-void add_known_services(uint8_t proto, uint16_t port, bstring service_name);
+void add_known_services(uint8_t proto, uint16_t port, const char *service_name);
 void del_known_services();
 bstring check_known_port(uint8_t proto, uint16_t port);
 void init_services();
