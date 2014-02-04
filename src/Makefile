@@ -7,7 +7,7 @@ CFLAGS=-O3
 LIBDIR=/usr/lib/x86_64-linux-gnu
 
 # RHEL5 libresolv doesnt export certain essential symbols, but they are present
-ifeq ($(findstring 5.,$(shell [ -f /etc/redhat-release ] && cat /etc/redhat-release | awk '{ print $3 }'))),5.)
+ifneq ($(findstring 5.,$(shell [ -f /etc/redhat-release ] && cat /etc/redhat-release | awk '{ print $3 }'))),)
 LDFLAGS+=/usr/lib64/libresolv.a
 endif
 
