@@ -4,6 +4,12 @@ UNAME := $(shell uname -s)
 CFLAGS=-O3
 
 #STATIC=y
+# RHEL5 libresolv doesnt export certain essential symbols, but they are present
+ifeq ($(findstring 5.,$(shell [ -f /etc/redhat-release ] && cat /etc/redhat-release | awk '{ print $3 }'))),5.)
+LDFLAGS+=/usr/lib64/libresolv.a
+endif
+
+
 ifeq (${STATIC},)
 LDFLAGS+=-lpcap -lpcre -lresolv
 CFLAGS+=-DCONFDIR='"${CONFDIR}/"' -DRELEASE='"$(shell git describe | cut -f2- -d_ | sed s/`git tag -l | grep -v /| tail -n1`//)"'
