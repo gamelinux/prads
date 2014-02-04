@@ -2,7 +2,7 @@
  PRADS ROADMAP
 ===============
 
-Features as of version 0.2.6
+Features as of version 0.3.1
  - parse pcaps/realtime with BPF
  - TCP SYN/SYNACK/StrayACK/RST/FIN
  - mac sig matching
@@ -11,8 +11,9 @@ Features as of version 0.2.6
  - connection tracking
  - tos, mtu
  - vlan support
- - logfile output
- - sguil/fifo output
+ - output plugins: logfile, sguil, fifo output
+ - passiveDNS (experimental)
+ - DHCP fingerprinting (experimental)
  - network filtering
  - arp discovery
  - ANSI + libpcap/pcre, runs on
@@ -25,20 +26,13 @@ Features as of version 0.2.6
 
 Features in prads.pl missing as yet in C:
  - database injector (SQLite,ODBC,..)
- - UDP fingerprinting
- - ICMP fingerprinting
- - ??? 
 
-Features wanted in 2011 the year of the Rabbit.
- - [v] cxtracker output.
- - [v] sguil output fifo
+Features wanted in 2012 the year of the Dragon
+(since the year of the Rabbit)
  - scripting with lua
- - shared memory log
  - plugin API
- - [v] MAC,ARP,DNS
- - mDNS,passiveDNS,DHCP
+ - [x] DHCP
  - RPM packages
- - push into Debian archive
  - switch and router discovery (OSPF, RIP, STP etc)
  - useragent/etc OS matching
  - asset datastructure that can track changes..
@@ -54,26 +48,21 @@ What follows is a rudimentary release plan. Releases are made "when it's ready"
 and may include other features, fixes,
 furthermore, features may come in a different order, but these are our priorities:
 
-Point release 0.3.0
- - MAC lookup
- - cxtracker output
- - sguil output
+Point release 0.3.6
+ - shared memory log {asset,cxtracker}
+ - full banner logging
 
-Point release 0.3.5
- - merge in file tracker [nftracker]
+Point release 0.4.0
  - feature complete compared to prads.pl
  that means:
-   -sql insertion
+   -sql insertion (done in prads2db.pl)
    -better icmp
    -better udp
    -cleaner tcp fingerprinting
 
-Point release 0.4.0
- - DNS, mDNS, passiveDNS
- - DHCP
-
 Point release 0.5.0
- - versioned shared memory {asset,cxtracker}
+ - DNS, mDNS, passiveDNS (work started)
+ - DHCP                  (work started)
  - lua?
 
 Point release 0.6.0

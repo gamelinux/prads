@@ -1,7 +1,45 @@
 #Makefile
 #CC=gcc
-LDFLAGS=-lpcap -lpcre -lresolv
-CFLAGS=-O3 -DCONFDIR='"${CONFDIR}/"'
+UNAME := $(shell uname -s)
+CFLAGS=-O3
+
+# for finding static libraries
+LIBDIR=/usr/lib/x86_64-linux-gnu
+
+# RHEL5 libresolv doesnt export certain essential symbols, but they are present
+ifneq ($(findstring 5.,$(shell [ -f /etc/redhad-release ] && cat /etc/redhat-release | awk '{ print $3 }')),)
+LDFLAGS+=/usr/lib64/libresolv.a
+endif
+
+ifeq (${RELEASE},)
+CFLAGS+=-DRELEASE='"$(shell git describe | cut -f2- -d_ | sed s/`git tag -l | grep -v /| tail -n1`//)"'
+endif
+
+# for using a newer libpcap
+ifneq (${PCAPDIR},)
+LDFLAGS+=-L${PCAPDIR}
+else
+PCAPDIR=${LIBDIR}
+endif
+
+ifeq (${STATIC},)
+
+# if you want to use perftools
+ifeq (${TCMALLOC},y)
+LDFLAGS+=-ltcmalloc
+endif
+LDFLAGS+=-lpcap -lpcre -lresolv
+CFLAGS+=-DCONFDIR='"${CONFDIR}/"'
+else
+ifeq (${TCMALLOC},y)
+LDFLAGS+=/usr/lib/libtcmalloc_minimal.a
+endif
+
+CFLAGS+=-DCONFDIR='"prads.d/"' -static
+LDFLAGS=-static
+LDFLAGS+=${LIBDIR}/libpcre.a ${PCAPDIR}/libpcap.a ${LIBDIR}/libresolv.a
+
+endif
 
 ifneq (${DEBUG},)
 CFLAGS = -g -DDEBUG -Wall -DCONFDIR='"${CONFDIR}/"'
@@ -9,11 +47,18 @@ endif
 ifneq (${PROFILE},)
 CFLAGS=-g -pg -DCONFDIR='"${CONFDIR}/"'
 endif
+ifneq (${PPROF},)
+LDFLAGS+=-lprofiler
+endif
 ifneq (${EXTRADEBUG},)
 CFLAGS+= -DDUMP_HASH -DDEBUG_HASH -DDEBUG=2 -DDEBUG=2
 endif
 ifneq (${DEBUG_PACKET},)
 CFLAGS+= -DDEBUG_PACKET
+endif
+ifeq ($(UNAME), FreeBSD)
+LDFLAGS= -L/usr/local/lib -lpcre -lpcap
+CPPFLAGS= -I/usr/local/include
 endif
 
 BUILD=gnu
@@ -28,12 +73,13 @@ endif
 SERVICE_OBJ = servicefp/servicefp.o servicefp/tcpc.o servicefp/tcps.o servicefp/udps.o 
 
 IPFP_OBJ = ipfp/ipfp.o ipfp/udp_fp.o ipfp/icmp_fp.o
-LOG_OBJ = output-plugins/log_dispatch.o output-plugins/log_stdout.o output-plugins/log_file.o output-plugins/log_fifo.o
+LOG_OBJ = output-plugins/log_dispatch.o output-plugins/log_stdout.o output-plugins/log_file.o output-plugins/log_fifo.o output-plugins/log_ringbuffer.o output-plugins/log_sguil.o
 CXT_OBJ = cxt.o
-MODULES = dump_dns.o mac.o ${SERVICE_OBJ} ${IPFP_OBJ} ${CXT_OBJ} ${LOG_OBJ}
+MODULES = dhcp.o dump_dns.o mac.o ${SERVICE_OBJ} ${IPFP_OBJ} ${CXT_OBJ} ${LOG_OBJ}
 OBJECTS = bstrlib.o sig_tcp.o config.o sys_func.o assets.o prads.o ${MODULES}
+SHM_CLIENT_OBJECTS = shm-client.o
 
-all: prads
+all: prads shm-client
 
 osx:
 	$(MAKE) BUILD=osx
@@ -41,8 +87,11 @@ osx:
 prads: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
 
-static: $(OBJECTS)
-	$(MAKE) CFLAGS+=-static prads
+shm-client: $(SHM_CLIENT_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(SHM_CLIENT_OBJECTS) $(LDFLAGS)
+
+static: 
+	$(MAKE) STATIC=y prads
 
 debug:
 	 ${MAKE} DEBUG=y
@@ -52,7 +101,7 @@ profile:
 
 clean:
 	-rm -fv $(OBJECTS)
-	-rm -f prads 
+	-rm -f prads
 
 indent:
 	find -type f -name '*.[ch]' | xargs indent -kr -i4 -cdb -sc -sob -ss -ncs -ts8 -nut

@@ -433,6 +433,15 @@ S4:64:1:60:M*,N,N,T,N,W4:.:Linux:2.6.28 Maemo 5 (Nokia N900)
 S44:70:1:64:M1460,N,N,T,N,W0,N,N,S:.:Nokia:E71 Mobile (UC)
 S4:64:1:52:M*,N,N,S,N,W1:.:Linux:2.6 OpenWRT (UC) Kacper confirm
 
+# Blackberry sigs (testing)
+65534:255:1:48:M1360,W0,E:.:RIM:Blackberry OS 5.0.x (8530)
+65535:128:0:48:M1360,N,N,S:.:RIM:Blackberry OS 5.0.x (8520/8900/9700)
+65535:128:0:48:M1452,N,N,S:.:RIM:Blackberry OS 6.0.x (9300/9780)
+65535:128:1:44:M1360:.:RIM:Blackberry OS 5.0.x (9000)
+65535:128:1:60:M1452,N,N,S,N,N,T:.:RIM:Blackberry OS 5.0.x (9300/9700/9780/9800)
+65535:128:1:64:M1452,N,N,S,W2,N,N,N,T:.:RIM:Blackberry OS 7.0.x (9360/9790)
+32768:255:1:52:M1360,S,W3,E,E,E:P:RIM:Blackberry OS 7.1.x (9900)
+
 # Generic *Linux* sigs
 65535:64:0:60:M*,N,W*,S,T:.:@Linux:2.6 (Generic dfrag-)
 65535:64:1:60:M*,N,W*,S,T:.:@Linux:2.6 (Generic dfrag+)
@@ -444,6 +453,7 @@ S4:64:1:52:M*,N,N,S,N,W1:.:Linux:2.6 OpenWRT (UC) Kacper confirm
 
 16384:64:1:44:M*:.:FreeBSD:2.0-4.2
 16384:64:1:60:M*,N,W0,N,N,T:.:FreeBSD:4.4 (1)
+16384:64:1:60:M*,N,W0,N,N,T:Z:FreeBSD:4.4
 
 1024:64:1:60:M*,N,W0,N,N,T:.:FreeBSD:4.4 (2)
 
@@ -774,7 +784,8 @@ S4:64:1:60:W0,N,S,T,M1460:.:FortiNet:FortiGate 50
 
 # ----------- Iron Port (Cisco) -------------
 
-16384:64:1:48:M1380,S,E,E:P:Cisco:AsyncOS phoebe 7.1.2 (Iron Port)
+16384:64:1:48:M1380,S,E,E:P:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
+16384:64:1:48:M1380,S,E,E:PZ:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
 16384:254:1:44:M536:.:Cisco:IOS 15.0 (loopback) UC
 
 # ------- Switches and other stuff ----------
@@ -915,6 +926,7 @@ S4:64:0:60:M*,S,T,N,W*:.:@Linux:2.6 (Generic dfrag-)
 S4:64:0:60:M1430,S,T,N,W6:.:Linux:2.6 (Google)
 
 # Spiders
+S4:52:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider)
 S4:44:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
 S4:51:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)
 S4:52:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W2:.:Baidu:2.0 (baiduspider)
@@ -970,3 +982,8 @@ S4:47:1:60:M1460,S,N,N,N,N,N,N,N,N,N,N,N,W7:.:Baidu:2.0 (baiduspider+)
 #65535:64:0:60:M1460,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N:.:UNKNOWN:UNKNOWN
 #S43:128:1:60:M1460,N,N,T0,N,N,S:.:UNKNOWN:UNKNOWN (ip:79.175.198.172)
 
+# for comparison
+#S4:64:1:60:M*,S,T,N,W7:Z:Linux:2.6 (newer, 7 fedora12)
+S10:57:1:60:M1460,S,T,N,W7:.:Linux:2.6 (Ubuntu 11.04 huayra)
+S10:56:1:60:M1452,S,T,N,W6:.:Linux:2.6 (Backtrack 5 rooty)
+S10:57:1:60:M1460,S,T,N,W6:.:Linux:3.2 (Debian Wheezy amaeth)

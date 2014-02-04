@@ -24,7 +24,7 @@
 /*  I N C L U D E S  *********************************************************/
 #ifdef __APPLE__
 #include <sys/malloc.h>
-#else
+#elseif !defined(__FreeBSD__)
 #include <malloc.h>
 #endif
 
@@ -36,12 +36,11 @@
 #include "cxt.h"
 #include "ipfp/ipfp.h"
 #include "servicefp/servicefp.h"
-#include "util-cxt.h"
-#include "util-cxt-queue.h"
 #include "sig.h"
 #include "mac.h"
 #include "tcp.h"
 #include "dump_dns.h"
+#include "dhcp.h"
 //#include "output-plugins/log_init.h"
 #include "output-plugins/log.h"
 
@@ -49,7 +48,7 @@
 #define CONFDIR "/etc/prads/"
 #endif
 
-#define ARGS "C:c:b:d:Dg:hi:p:r:P:u:va:l:f:qtxs:OXFRMSAKUTIZt"
+#define ARGS "C:c:b:d:Dg:hi:p:r:u:va:l:L:f:qtxs:OXFRMSAKUTIZtHPB"
 
 /*  G L O B A L S  *** (or candidates for refactoring, as we say)***********/
 globalconfig config;
@@ -197,9 +196,16 @@ inline int filter_packet(const int af, void *ipptr)
                 if(network[i].type != AF_INET6)
                     continue;
 #ifdef DEBUG_PACKET
+                struct in6_addr tmp_netmask;
+
+                IP6ADDR0(&tmp_netmask) = htonl(IP6ADDR0(&network[i].mask));
+                IP6ADDR1(&tmp_netmask) = htonl(IP6ADDR1(&network[i].mask));
+                IP6ADDR2(&tmp_netmask) = htonl(IP6ADDR2(&network[i].mask));
+                IP6ADDR3(&tmp_netmask) = htonl(IP6ADDR3(&network[i].mask));
+
                 u_ntop(network[i].addr, af, output);
                 dlog("net:  %s\n", output);
-                u_ntop(network[i].mask, af, output);
+                u_ntop(tmp_netmask, af, output);
                 dlog("mask: %s\n", output);
                 u_ntop(ip_vec.ip6, af, output);
                 dlog("ip: %s\n", output);
@@ -326,7 +332,7 @@ void prepare_ip4 (packetinfo *pi)
     config.pr_s.ip4_recv++;
     pi->af = AF_INET;
     pi->ip4 = (ip4_header *) (pi->packet + pi->eth_hlen);
-    pi->packet_bytes = (pi->ip4->ip_len - (IP_HL(pi->ip4) * 4));
+    pi->packet_bytes = (ntohs(pi->ip4->ip_len) - (IP_HL(pi->ip4) * 4));
     
     pi->our = filter_packet(pi->af, &PI_IP4SRC(pi));
     vlog(0x3, "Got %s IPv4 Packet...\n", (pi->our?"our":"foregin"));
@@ -544,7 +550,7 @@ void prepare_ip6 (packetinfo *pi)
     config.pr_s.ip6_recv++;
     pi->af = AF_INET6;
     pi->ip6 = (ip6_header *) (pi->packet + pi->eth_hlen);
-    pi->packet_bytes = pi->ip6->len;
+    pi->packet_bytes = ntohs(pi->ip6->len);
     // may be dropped due to macros plus
     //pi->ip_src = PI_IP6SRC(pi);
     //pi->ip_dst = PI_IP6DST(pi);
@@ -753,12 +759,16 @@ void parse_udp (packetinfo *pi)
     //if (is_set_guess_upd_direction(config)) {
     udp_guess_direction(pi); // fix DNS server transfers?
     // Check for Passive DNS
-    static char ip_addr_s[INET6_ADDRSTRLEN];
-    u_ntop_src(pi, ip_addr_s);
-    if ( ntohs(pi->s_port) == 53 ) {
+    if ( ntohs(pi->s_port) == 53 ||  ntohs(pi->s_port) == 5353 ) {
         // For now - Proof of Concept! - Fix output way
-        if(config.cflags & CONFIG_PDNS)
+        if(config.cflags & CONFIG_PDNS) {
+            static char ip_addr_s[INET6_ADDRSTRLEN];
+            u_ntop_src(pi, ip_addr_s);
             dump_dns(pi->payload, pi->plen, stdout, "\n", ip_addr_s, pi->pheader->ts.tv_sec);
+        }
+    }
+    if (IS_COSET(&config, CO_DHCP) && ntohs(pi->s_port) == 68 && ntohs(pi->d_port) == 67) {
+        dhcp_fingerprint(pi); /* basic DHCP parsing*/
     }
     // if (IS_COSET(&config,CO_DNS) && (pi->sc == SC_SERVER && ntohs(pi->s_port) == 53)) passive_dns (pi);
 
@@ -934,8 +944,10 @@ int parse_netmask (char *f, int type, struct in6_addr *netmask)
             if (mask > 0) {
                 netmask->s6_addr[j] = -1 << (8 - mask);
             }
+#ifdef DEBUG
             inet_ntop(type, &IP4ADDR(netmask), output, MAX_NETS);
             dlog("mask: %s\n", output);
+#endif
             // pcap packets are in host order.
             IP6ADDR0(netmask) = ntohl(IP6ADDR0(netmask));
             IP6ADDR1(netmask) = ntohl(IP6ADDR1(netmask));
@@ -1020,7 +1032,6 @@ void game_over()
 
     if (inpacket == 0) {
         end_sessions(); /* Need to have correct human output when reading -r pcap */
-        //cxt_write_all(); /* redundant ? see end_all_sessions(); */
         clear_asset_list();
         end_all_sessions();
         del_known_services();
@@ -1046,6 +1057,7 @@ void reparse_conf()
     if(inpacket == 0) {
         olog("Reparsing config file...");
         parse_config_file(config.file);
+        end_sessions();
         intr_flag = 0;
         return;
     }
@@ -1083,6 +1095,8 @@ void set_end_sessions()
         intr_flag = 0;
         alarm(SIG_ALRM);
     }
+    // install self again
+    signal(SIGUSR1, set_end_sessions);
 }
 
 void print_prads_stats()
@@ -1128,34 +1142,98 @@ static void usage()
     olog(" -r <file>       Read pcap <file>.\n");
     olog(" -c <file>       Read config from <file>\n");
     olog(" -b <filter>     Apply Berkeley packet filter <filter>.\n");
-    olog(" -u <user>       Run as user <user>.\n");
-    olog(" -g <group>      Run as group <group>.\n");
+    olog(" -u <user>       Run as user <user>   (Default: uid 1)\n");
+    olog(" -g <group>      Run as group <group> (Default: gid 1)\n");
     olog(" -d              Do not drop privileges.\n");
     olog(" -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').\n");
-    olog(" -D              Enables daemon mode.\n");
-    //olog(" -d            to logdir\n");
+    olog(" -D              Daemonize.\n");
     olog(" -p <pidfile>    Name of pidfile - inside chroot\n");
     olog(" -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog);
     olog(" -f <FIFO>       Log assets to <FIFO>\n");
+    olog(" -B              Log connections to ringbuffer\n");
     olog(" -C <dir>        Chroot into <dir> before dropping privs.\n");
     olog(" -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK\n");
     olog(" -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient\n");
+    olog(" -P              DHCP fingerprinting.\n");
     olog(" -s <snaplen>    Dump <snaplen> bytes of each payload.\n");
     olog(" -v              Verbose output - repeat for more verbosity.\n");
     olog(" -q              Quiet - try harder not to produce output.\n");
+    olog(" -L <dir>        log cxtracker type output to <dir> (will be owned by <uid>).\n");
     olog(" -O              Connection tracking [O]utput - per-packet!\n");
     olog(" -x              Conne[x]ion tracking output  - New, expired and ended.\n");
     olog(" -Z              Passive DNS (Experimental).\n");
+    olog(" -H              DHCP fingerprinting (Expermiental).\n");
     olog(" -h              This help message.\n");
 }
 
+int load_bpf(globalconfig* conf, const char* file)
+{
+    int sz, i;
+    FILE* fs;
+    char* lineptr;
+    struct stat statbuf;
+    fs = fopen(file, "r");
+    if(!fs){
+        perror("bpf file");
+        return 1;
+    }
+    if(fstat(fileno(fs), &statbuf)){
+        perror("oh god my eyes!");
+        fclose(fs);
+        return 2;
+    }
+    sz = statbuf.st_size; 
+    if(conf->bpff) free(conf->bpff);
+    if(!(conf->bpff = calloc(sz, 1))){
+        perror("mem alloc");
+        fclose(fs);
+        return 3;
+    }
+    lineptr = conf->bpff;
+    // read file but ignore comments and newlines
+    while(fgets(lineptr, sz-(conf->bpff-lineptr), fs)) {
+        // skip spaces
+        for(i=0;;i++) 
+            if(lineptr[i] != ' ')
+               break;
+        // scan ahead and kill comments
+        for(i=0;lineptr[i];i++)
+            switch(lineptr[i]){
+                case '#':                // comment on the line
+                    lineptr[i] = '\n';   // end line here
+                    lineptr[i+1] = '\0'; // ends outer loop & string
+                case '\n':               // end-of-line
+                case '\0':               // end-of-string
+                    break;
+            }
+        if(i<=1) continue;               // empty line
+        lineptr = lineptr+strlen(lineptr);
+    }
+    fclose(fs);
+    olog("[*] BPF file\t\t %s (%d bytes read)\n", conf->bpf_file, sz);
+    if(config.verbose) olog("BPF: { %s}\n", conf->bpff);
+    return 0;
+}
+
+
 int prads_initialize(globalconfig *conf)
 {
+    if (conf->bpf_file) {
+        if(load_bpf(conf, conf->bpf_file)){
+           elog("[!] Failed to load bpf from file.\n");
+        }
+    }
     if (conf->pcap_file) {
+        struct stat sb;
+        if(stat(conf->pcap_file, &sb) || !sb.st_size) {
+           elog("[!] '%s' not a pcap. Bailing.\n", conf->pcap_file);
+           exit(1);
+        }
+
         /* Read from PCAP file specified by '-r' switch. */
         olog("[*] Reading from file %s\n", conf->pcap_file);
         if (!(conf->handle = pcap_open_offline(conf->pcap_file, conf->errbuf))) {
-            olog("[*] Unable to open %s.  (%s)", conf->pcap_file, conf->errbuf);
+            olog("[*] Unable to open %s.  (%s)\n", conf->pcap_file, conf->errbuf);
         } 
 
     } else {
@@ -1173,7 +1251,7 @@ int prads_initialize(globalconfig *conf)
                     exit(ENOENT);
                 }
                 if (gid && getuid() == 0 && initgroups(conf->user_name, gid) < 0) {
-                    elog("[!] Unable to init group names (%s/%lu)\n", conf->user_name, gid);
+                    elog("[!] Unable to init group names (%s/%u)\n", conf->user_name, gid);
                 }
             }
         }
@@ -1217,13 +1295,23 @@ int prads_initialize(globalconfig *conf)
                conf->user_name?conf->user_name:"", conf->group_name?conf->group_name:"");
             drop_privs(uid, gid);
         }
+        /* NOTE: we init sancp-style conntrack-logging after dropping privs,
+         * because the logs need rotation after dropping privs */
+        if(config.cxtlogdir[0] != '\0'){
+           static char log_prefix[PATH_MAX];
+           snprintf(log_prefix, PATH_MAX, "%sstats.%s", 
+                    config.cxtlogdir, config.dev? config.dev : "pcap");
+           int rc = init_logging(LOG_SGUIL, log_prefix, 0);
+           if (rc)
+              perror("Logging to sguil output failed!");
+        }
 
-       if(conf->pidfile){
-            if (!is_valid_path(conf->pidfile)){
-                elog("[!] Pidfile '%s' is not writable.\n", conf->pidfile);
-                exit(ENOENT);
-            }
-       }
+        if(conf->pidfile){
+           if (!is_valid_path(conf->pidfile)){
+              elog("[!] Pidfile '%s' is not writable.\n", conf->pidfile);
+              exit(ENOENT);
+           }
+        }
         if (conf->daemon_flag) {
             olog("[*] Daemonizing...\n");
             daemonize(NULL);
@@ -1237,6 +1325,13 @@ int prads_initialize(globalconfig *conf)
         }
     }
     return 0;
+}
+
+void prads_version(void)
+{
+    olog("[*] prads %s\n", VERSION);
+    olog("    Using %s\n", pcap_lib_version());
+    olog("    Using PCRE version %s\n", pcre_version());
 }
 
 /* magic main */
@@ -1257,6 +1352,10 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, game_over);
     signal(SIGALRM, set_end_sessions);
     signal(SIGHUP, reparse_conf);
+    signal(SIGUSR1, set_end_sessions);
+#ifdef DEBUG
+    signal(SIGUSR1, cxt_log_buckets);
+#endif
 
     // do first-pass args parse for commandline-passed config file
     opterr = 0;
@@ -1267,6 +1366,9 @@ int main(int argc, char *argv[])
             break;
         case 'v':
             config.verbose++;
+            break;
+        case 'q':
+            config.cflags |= CONFIG_QUIET;
             break;
         case 'h':
             usage();
@@ -1284,36 +1386,36 @@ int main(int argc, char *argv[])
     if(verbose_already)
         config.verbose = 0;
     optind = 1;
+    prads_version();
 
     if(parse_args(&config, argc, argv, ARGS) != 0){
         usage();
         exit(0);
     }
     // we're done parsing configs - now initialize prads
-
     if(ISSET_CONFIG_SYSLOG(config)) {
         openlog("prads", LOG_PID | LOG_CONS, LOG_DAEMON);
     }
-    olog("[*] Running prads %s\n", VERSION);
-    olog("    Using %s\n", pcap_lib_version());
-    olog("    Using PCRE version %s\n", pcre_version());
-
-
-    if(config.verbose){
-        rc = init_logging(LOG_STDOUT, NULL, config.verbose);
+    if (config.ringbuffer) {
+        rc = init_logging(LOG_RINGBUFFER, NULL, config.cflags);
+        if (rc)
+            perror("Logging to ringbuffer failed!");
+    }
+    if (config.cflags & (CONFIG_VERBOSE | CONFIG_CXWRITE | CONFIG_CONNECT)) {
+        rc = init_logging(LOG_STDOUT, NULL, config.cflags);
         if(rc) perror("Logging to standard out failed!");
     }
-
     if(config.assetlog) {
         olog("logging to file '%s'\n", config.assetlog);
-        rc = init_logging(LOG_FILE, config.assetlog, config.verbose);
+        rc = init_logging(LOG_FILE, config.assetlog, config.cflags);
         if(rc) perror("Logging to file failed!");
     }
     if(config.fifo) {
         olog("logging to FIFO '%s'\n", config.fifo);
-        rc = init_logging(LOG_FIFO, config.fifo, config.verbose);
+        rc = init_logging(LOG_FIFO, config.fifo, config.cflags);
         if(rc) perror("Logging to fifo failed!");
     }
+    /* moved NOTE: cxtlog is inited in prads_initialize, after dropping privs */
     if(config.s_net){
        parse_nets(config.s_net, network);
     }
@@ -1338,7 +1440,7 @@ int main(int argc, char *argv[])
     load_foo(load_sigs, ctf, CO_ACK, sig_file_ack, sig_ack, sig_hashsize, dump_sigs);
     load_foo(load_sigs, ctf, CO_FIN, sig_file_fin, sig_fin, sig_hashsize, dump_sigs);
     load_foo(load_sigs, ctf, CO_RST, sig_file_rst, sig_rst, sig_hashsize, dump_sigs);
-
+    load_foo(load_dhcp_sigs, ctf, CO_DHCP, sig_file_dhcp, sig_dhcp, sig_hashsize, dump_dhcp_sigs);
     load_foo(load_servicefp_file, cof, CS_TCP_SERVER, sig_file_serv_tcp, sig_serv_tcp, sig_hashsize, dump_sig_service);
     load_foo(load_servicefp_file, cof, CS_UDP_SERVICES, sig_file_serv_udp, sig_serv_udp, sig_hashsize, dump_sig_service);
     load_foo(load_servicefp_file, cof, CS_TCP_CLIENT, sig_file_cli_tcp, sig_client_tcp, sig_hashsize, dump_sig_service);
@@ -1348,18 +1450,19 @@ int main(int argc, char *argv[])
 
     prads_initialize(&config);
  
-    bucket_keys_NULL();
     alarm(SIG_ALRM);
 
     /** segfaults on empty pcap! */
-    if ((pcap_compile(config.handle, &config.cfilter, config.bpff, 1, config.net_mask)) == -1) {
+    struct bpf_program  cfilter;        /**/
+    if ((pcap_compile(config.handle, &cfilter, config.bpff, 1, config.net_mask)) == -1) {
             olog("[*] Error pcap_compile user_filter: %s\n", pcap_geterr(config.handle));
             exit(1);
     }
 
-    if (pcap_setfilter(config.handle, &config.cfilter)) {
+    if (pcap_setfilter(config.handle, &cfilter)) {
             olog("[*] Unable to set pcap filter!  %s", pcap_geterr(config.handle));
     }
+    pcap_freecode(&cfilter);
 
     cxt_init();
     olog("[*] Sniffing...\n");

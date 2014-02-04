@@ -15,12 +15,14 @@ do{ \
 }while(0)
 
 #ifdef DEBUG
+#define DEBUG_ON 1
 #define dlog(fmt, ...) do { fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__);} while(0)
 #define vlog(v, fmt, ...) do{ if(DEBUG == v) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__); }while(0)
 
 #define elog(fmt, ...) fprintf(stderr, ("[%s:%d(%s)] " fmt), __FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__)
 
 #else
+#define DEBUG_ON 0
 
 #define elog(fmt, ...) \
     do { \
@@ -39,7 +41,6 @@ do{ \
 size_t strlcpy(char *dst, const char *src, size_t size);
 size_t strlcat(char *dst, const char *src, size_t len);
 const char *u_ntop(const struct in6_addr ip_addr, int af, char *dest);
-void bucket_keys_NULL();
 int set_chroot(void);
 long get_gid(const char *group);
 long get_uid(const char *user, int *group);

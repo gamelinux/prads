@@ -44,6 +44,7 @@
 
 #include "common.h"
 #include "prads.h"
+#include "dhcp.h"
 #include "sys_func.h"
 #include "mtu.h"
 #include "tos.h"
@@ -250,6 +251,7 @@ void print_sig(fp_entry * e)
     char *c = bstr2cstr(b, '-');
     printf("[%s", c);
     bcstrfree(c);
+    bdestroy(b);
 
     printf("],%s:%s\n", e->os, e->desc);
 }
@@ -498,6 +500,8 @@ static void collide(uint32_t id)
 static void free_sigs(fp_entry *e){
     if(e->next)
         free_sigs(e->next);
+    free(e->os);
+    free(e->desc);
     free(e);
 }
 
@@ -733,6 +737,7 @@ int load_sigs(const char *file, fp_entry **sigp[], int hashsize)
         return errno;
     }
     if(!sigp){
+        fclose(f);
         perror("need a pointer to fill");
         return -1;
     }
@@ -1411,8 +1416,10 @@ continue_search:
   }
 
   if (!no_unknown) { 
-     u_ntop_src(pi, outbuf);
-     vlog(2,"%s:%d - UNKNOWN [:?:?]",outbuf,PI_TCP_SP(pi));
+      if (config.verbose) {
+         u_ntop_src(pi, outbuf);
+         vlog(2,"%s:%d - UNKNOWN [:?:?]",outbuf,PI_TCP_SP(pi));
+      }
 
     //display_signature(e->ttl,e->size,orig_df,e->opt,e->optcnt,e->mss,e->wsize,e->wsc,tstamp,e->quirks);
 
@@ -1560,7 +1567,7 @@ fp_entry *fp_tcp(packetinfo *pi, uint8_t ftype)
                 e.quirks |= QUIRK_ZEROID;
             break;
         case AF_INET:
-            opt_ptr = (uint8_t *) pi->ip4 + ntohs(pi->ip4->ip_len); // fixed from htons
+            opt_ptr = (uint8_t *) pi->ip4 + ntohs(pi->ip4->ip_len);
             if (end_ptr > opt_ptr)
                 end_ptr = opt_ptr;
             if ((uint8_t *) (pi->ip4 + 1) > end_ptr)

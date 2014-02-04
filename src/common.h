@@ -22,4 +22,9 @@
 #include <errno.h>
 #include <syslog.h>
 
+#ifdef __FreeBSD__
+#include <sys/socket.h>
+#define s6_addr32   __u6_addr.__u6_addr32
+#endif /* __FreeBSD__ */
+
 #endif

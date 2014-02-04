@@ -202,6 +202,7 @@ S1:255:1:60:N,N,T,N,W0,M*:AT:Solaris:7
 
 # ----------------- FreeBSD ----------------
 
+16384:64:1:60:M*,N,W0,N,N,T:AT:FreeBSD:4.4
 65535:64:1:60:M*,N,W1,N,N,T:AT:FreeBSD:5.0
 57344:64:1:44:M*:A:FreeBSD:4.6-4.8
 65535:64:1:44:M*:A:FreeBSD:4.4
@@ -240,6 +241,11 @@ S6:64:1:60:M1460,N,W0,N,N,T:AT:BSD/OS:4.0.x
 # ------------------ MacOS -----------------
 
 33304:64:1:60:M*,N,W0,N,N,T:AT:MacOS:X 10.2.6
+
+# ----------- Iron Port (Cisco) -------------
+
+16384:64:1:48:M1380,S,E,E:PA:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
+16384:64:1:44:M1380:A:Cisco:AsyncOS phoebe 7.1.x (Iron Port)
 
 # ------------------ Commodore 64 ----------
 # We just needed to have this one!

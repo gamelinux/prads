@@ -28,7 +28,7 @@ connection *cxt_new(packetinfo *pi)
     cxt->cxid = cxtrackerid;
 
     cxt->af = pi->af;
-    if(pi->tcph) cxt->s_tcpFlags |= pi->tcph->t_flags;
+    if(pi->tcph) cxt->s_tcpFlags = pi->tcph->t_flags;
     //cxt->s_tcpFlags |= (pi->tcph ? pi->tcph->t_flags : 0x00);//why??
     //cxt->d_tcpFlags = 0x00;
     cxt->s_total_bytes = pi->packet_bytes;
@@ -40,8 +40,6 @@ connection *cxt_new(packetinfo *pi)
         cxt->s_ip = PI_IP6SRC(pi);
         cxt->d_ip = PI_IP6DST(pi);
     }else {
-        // ugly hack :(
-        // the way we do ip4/6 is DIRTY
         ips.s6_addr32[0] = pi->ip4->ip_src;
         ipd.s6_addr32[0] = pi->ip4->ip_dst;
         cxt->s_ip = ips;
@@ -51,6 +49,7 @@ connection *cxt_new(packetinfo *pi)
     cxt->s_port = pi->s_port;
     cxt->d_port = pi->d_port;
     cxt->proto = pi->proto;
+    cxt->hw_proto = ntohs(pi->eth_type);
 
     cxt->check = 0x00;
     cxt->c_asset = NULL;
@@ -64,23 +63,11 @@ int connection_tracking(packetinfo *pi)
 {
     static char ip_addr_s[INET6_ADDRSTRLEN];
     static char ip_addr_d[INET6_ADDRSTRLEN];
-    struct in_addr *ipa; 
     cx_track(pi);
 
-    if(pi->af == AF_INET6) {
-      u_ntop(pi->ip6->ip_src, pi->af, ip_addr_s);
-      u_ntop(pi->ip6->ip_dst, pi->af, ip_addr_d);
-    } else {
-      ipa = pi->ip4->ip_src;
-      inet_ntop(pi->af, &ipa, ip_addr_s, INET6_ADDRSTRLEN);
-      ipa = pi->ip4->ip_dst;
-      inet_ntop(pi->af, &ipa, ip_addr_d, INET6_ADDRSTRLEN);
+    if(config.cflags & CONFIG_CONNECT){
+        log_connection(pi->cxt, CX_EXCESSIVE);
     }
-    if(config.cflags & CONFIG_CONNECT)
-        printf("conn[%4lu] %s:%u -> %s:%u [%s]\n", pi->cxt->cxid, 
-               ip_addr_s, ntohs(pi->s_port),
-               ip_addr_d, ntohs(pi->d_port),
-               pi->sc?pi->sc==SC_SERVER? "server":"client":"NONE"); 
     return 0;
 }
 
@@ -147,7 +134,6 @@ int cx_track(packetinfo *pi) {
     }else {
         // ugly hack :(
         // the way we do ip4/6 is DIRTY
-        // FIX IT?!!?
         ips.s6_addr32[0] = pi->ip4->ip_src;
         ipd.s6_addr32[0] = pi->ip4->ip_dst;
         ip_src = &ips;
@@ -156,15 +142,17 @@ int cx_track(packetinfo *pi) {
 
     // find the right connection bucket
     if (af == AF_INET) {
-        hash = CXT_HASH4(IP4ADDR(ip_src),IP4ADDR(ip_dst));
+        hash = CXT_HASH4(IP4ADDR(ip_src),IP4ADDR(ip_dst),src_port,dst_port,pi->proto);
     } else if (af == AF_INET6) {
-        hash = CXT_HASH6(ip_src,ip_dst);
+        hash = CXT_HASH6(ip_src,ip_dst,src_port,dst_port,pi->proto);
     }
-    cxt = bucket[hash];
-    head = cxt;
+    head = bucket[hash];
 
     // search through the bucket
-    while (cxt != NULL) {
+    for (cxt = head; cxt != NULL; cxt = cxt->next) {
+        if (af != cxt->af)
+          continue;
+
         // Two-way compare of given connection against connection table
         if (af == AF_INET) {
             if (CMP_CXT4(cxt,IP4ADDR(ip_src),src_port,IP4ADDR(ip_dst),dst_port)){
@@ -181,12 +169,10 @@ int cx_track(packetinfo *pi) {
                 return cxt_update_server(cxt, pi);
             }
         }
-        cxt = cxt->next;
     }
     // bucket turned upside down didn't yeild anything. new connection
     cxt = cxt_new(pi);
-    if(config.cflags & CONFIG_CXWRITE)
-        log_connection(cxt, stdout, CX_NEW);
+    log_connection(cxt, CX_NEW);
 
     /* * New connections are pushed on to the head of bucket[s_hash] */
     cxt->next = head;
@@ -255,51 +241,48 @@ void end_sessions()
 {
 
     connection *cxt;
-    time_t check_time;
-    check_time = time(NULL);
-    int ended, expired = 0;
-    uint32_t curcxt = 0;
-    
     int iter;
+    int cxstatus = CX_NONE;
+    time_t check_time = time(NULL);
+
+    log_rotate(check_time);
     for (iter = 0; iter < BUCKET_SIZE; iter++) {
         cxt = bucket[iter];
         while (cxt != NULL) {
-            ended = 0;
-            curcxt++;
             /* TCP */
             if (cxt->proto == IP_PROTO_TCP) {
                 /* * FIN from both sides */
                 if (cxt->s_tcpFlags & TF_FIN && cxt->d_tcpFlags & TF_FIN
                     && (check_time - cxt->last_pkt_time) > 5) {
-                    ended = 1;
+                    cxstatus = CX_ENDED;
                 } /* * RST from either side */
                 else if ((cxt->s_tcpFlags & TF_RST
                           || cxt->d_tcpFlags & TF_RST)
                           && (check_time - cxt->last_pkt_time) > 5) {
-                    ended = 1;
+                    cxstatus = CX_ENDED;
                 }
                 else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-                    expired = 1;
+                    cxstatus = CX_EXPIRE;
                 }
             }
             /* UDP */
             else if (cxt->proto == IP_PROTO_UDP
                      && (check_time - cxt->last_pkt_time) > 60) {
-                expired = 1;
+                cxstatus = CX_EXPIRE;
             }
             /* ICMP */
             else if (cxt->proto == IP_PROTO_ICMP
                      || cxt->proto == IP6_PROTO_ICMP) {
                 if ((check_time - cxt->last_pkt_time) > 60) {
-                     expired = 1;
+                    cxstatus = CX_EXPIRE;
                 }
             }
             /* All Other protocols */
             else if ((check_time - cxt->last_pkt_time) > TCP_TIMEOUT) {
-                expired = 1;
+                cxstatus = CX_EXPIRE;
             }
 
-            if (ended == 1 || expired == 1) {
+            if (cxstatus == CX_ENDED || cxstatus == CX_EXPIRE) {
                 /* remove from the hash */
                 if (cxt->prev)
                     cxt->prev->next = cxt->next;
@@ -307,26 +290,20 @@ void end_sessions()
                     cxt->next->prev = cxt->prev;
                 connection *tmp = cxt;
 
-                if (config.cflags & CONFIG_CXWRITE) {
-                    if (expired == 1)
-                        log_connection(cxt, stdout, CX_EXPIRE);
-                    else if (ended == 1)
-                        log_connection(cxt, stdout, CX_ENDED);
-                }
-                ended = expired = 0;
+                log_connection(cxt, cxstatus);
+                cxstatus = CX_NONE;
 
-                cxt = cxt->prev;
+                cxt = cxt->next;
 
-                //CLEAR_CXT(tmp);
                 del_connection(tmp, &bucket[iter]);
                 if (cxt == NULL) {
                     bucket[iter] = NULL;
                 }
             } else {
-                cxt = cxt->prev;
+                cxt = cxt->next;
             }
-        }
-    }
+        } // end while cxt
+    } // end for buckets
 }
 
 void log_connection_all()
@@ -338,7 +315,7 @@ void log_connection_all()
     for(i = 0; i < BUCKET_SIZE; i++) {
         cxt = bucket[i];
         while(cxt) {
-            log_connection(cxt, stdout, CX_HUMAN);
+            log_connection(cxt, CX_HUMAN);
             cxt = cxt->next;
         }
     }
@@ -375,15 +352,15 @@ void end_all_sessions()
 {
     connection *cxt;
     int cxkey;
+    FILE *cxtFile = NULL;
 
+    log_rotate(time(NULL));
     for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
         cxt = bucket[cxkey];
         while (cxt != NULL) {
             connection *tmp = cxt;
 
-            if(config.cflags & CONFIG_CXWRITE)
-                log_connection(cxt, stdout, CX_ENDED);
-
+            log_connection(cxt, CX_ENDED);
             cxt = cxt->next;
             del_connection(tmp, &bucket[cxkey]);
             if (cxt == NULL) {
@@ -391,15 +368,42 @@ void end_all_sessions()
             }
         }
     }
+    if (cxtFile != NULL) {
+        fclose(cxtFile);
+    }
 }
+
+void cxt_log_buckets(int dummy)
+{
+    connection *cxt = NULL;
+    FILE *logfile = NULL;
+    int i;
+    int len;
+
+    logfile = fopen("/tmp/prads-buckets.log", "w");
+    if (!logfile)
+        return;
+
+    dlog("Recieved SIGUSR1 - Dumping bucketlist to logfile\n");
+    for (i = 0; i < BUCKET_SIZE; i++) {
+        len = 0;
+        for (cxt = bucket[i]; cxt; cxt = cxt->next)
+            len++;
+        if (len > 0)
+            fprintf(logfile, "%d in bucket[%5d]\n", len, i);
+    }
+
+    fflush(logfile);
+    fclose(logfile);
+}
+
+
 
 /* vector comparisons to speed up cx tracking.
  * meaning, compare source:port and dest:port at the same time.
  *
  * about vectors and potential improvements:
- *
- * all 64bit machines have at least SSE2 instructions
- * *BUT* there is no guarantee we won't loose time on
+ * * all 64bit machines have at least SSE2 instructions * *BUT* there is no guarantee we won't loose time on
  * copying the vectors around.
  * ... indeed, a quick objdump shows us that
  * there is a shitton of mov instructions to align the addresses.

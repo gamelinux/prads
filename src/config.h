@@ -1,6 +1,5 @@
 #ifndef CONFIG_H
 #define CONFIG_H
-#include "common.h"
 
 #define CONFIG_VERBOSE 0x01
 #define CONFIG_UPDATES 0x02
@@ -12,11 +11,35 @@
 
 #define DEFAULT_NETS "0.0.0.0/0,::/0"
 
+/* Flags to set for enabling different OS Fingerprinting checks.
+ * Make these compatible with TCP flags!*/
+#define CO_FIN                        0x01      /* Check FIN packets */
+#define CO_SYN                        0x02      /* Check SYN packets */
+#define CO_RST                        0x04      /* Check RST packets */
+// push                               0x08
+#define CO_SYNACK                     0x08      /* Check SYNACK packets */
+#define CO_ACK                        0x10      /* Check Stray-ACK packets */
+// urg                                0x20
+// ece                                0x40
+// cwr                                0x80
+#define CO_ICMP                       0x20      /* Check ICMP Packets */
+#define CO_UDP                        0x40      /* Check UDP Packets */
+#define CO_DHCP                       0x80      /* Check DHCP Packets */
+#define CO_OTHER                      0x7f      /* Check Other Packets - need a flag! */
+
+/* Flags to set for enabling different service/client checks */
+#define CS_TCP_SERVER                 0x01
+#define CS_TCP_CLIENT                 0x02
+#define CS_UDP_SERVICES               0x04  /* Currently implying server+client*/
+#define CS_UDP_CLIENT                 0x08
+#define CS_MAC                        0x10
+#define CS_ICMP                       0x20
+#define CS_ARP                        0x80
+
 typedef struct _globalconfig {
     pcap_t              *handle;        /* Pointer to libpcap handle */
     struct pcap_stat    ps;             /* libpcap stats */
     prads_stat          pr_s;           /* prads stats */
-    struct bpf_program  cfilter;        /**/
     bpf_u_int32         net_mask;       /**/
     uint8_t     cflags;                 /* config flags */
     uint8_t     verbose;                /* Verbose or not */
@@ -35,9 +58,12 @@ typedef struct _globalconfig {
     connection  *cxtbuffer;             /* Pointer to list of expired connections */
     asset       *passet[BUCKET_SIZE];   /* Pointer to list of assets */
     port_t      *lports[MAX_IP_PROTO];  /* Pointer to list of known ports */
+    char        cxtfname[4096];         /* cxtracker/sancp like output file */
+    char        cxtlogdir[2048];        /* log dir for sancp/cxtracker output */
     char       *file;                   /* config file location, if known */
     char       *assetlog;               /* Filename of prads-asset.log */
     char       *fifo;                   /* Path to FIFO output */
+    uint8_t    ringbuffer;              /* Enable logging to ringbuffer */
     char       *pcap_file;              /* Filename to pcap too read */
     char       *sig_file_syn;           /* Filename of TCP SYN sig file */
     char       *sig_file_synack;        /* Filename of TCP SYNACK sig file */
@@ -45,6 +71,7 @@ typedef struct _globalconfig {
     char       *sig_file_fin;           /* Filename of TCP FIN sig file */
     char       *sig_file_rst;           /* Filename of TCP RST sig file */
     char       *sig_file_mac;           /* Filename of MAC signature file */
+    char       *sig_file_dhcp;          /* Filename of DHCP signature file */
     char       *sig_file_serv_tcp;      /* Filename of tcp server sig file */
     char       *sig_file_cli_tcp;       /* Filename of tcp client sig file */
     char       *sig_file_serv_udp;      /* Filename of udp server sig file */
@@ -69,6 +96,8 @@ typedef struct _globalconfig {
     fp_entry   **sig_fin;               /* FIN signature hash */
     fp_entry   **sig_rst;               /* RST signature hash */
     mac_entry  **sig_mac;               /* Pointer to hash of mac signatures */
+    dhcp_fp_entry **sig_dhcp;           /* DHCP signature hash */
+    char        *bpf_file;              /* filename of BPF file to load */
 } globalconfig;
 #define ISSET_CONFIG_VERBOSE(config)    ((config).cflags & CONFIG_VERBOSE)
 #define ISSET_CONFIG_UPDATES(config)    ((config).cflags & CONFIG_UPDATES)

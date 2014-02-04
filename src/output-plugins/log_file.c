@@ -108,7 +108,8 @@ reopen:
         /* Open file and assign it to the global FILE pointer.  */
         if ((log->data = (void *) fopen(log->path, "a")) == NULL) {
             int e = errno;
-            printf("Cannot open log file %s for append!\n", log->path); 
+            if(flags & CONFIG_VERBOSE)
+               printf("Cannot open log file %s for append!\n", log->path); 
             return e;
         }
     }
@@ -254,9 +255,9 @@ void file_arp (output_plugin *log, asset *main)
     if (main->macentry != NULL) {
         /* ip,0,0,ARP (mac-resolved),mac-address,timstamp */
         /* XXX: vendor info breaks csv niceness */
-        fprintf((FILE*)log->data, "%s,%u,0,0,ARP (%s),%s,0,%lu\n", ip_addr_s,
-            main->vlan ? ntohs(main->vlan) : 0,main->macentry->vendor,
-            hex2mac(main->mac_addr), main->last_seen);
+        fprintf((FILE*)log->data, "%s,%u,0,0,ARP,[%s,(%s)],0,%lu\n", ip_addr_s,
+            main->vlan ? ntohs(main->vlan) : 0, hex2mac(main->mac_addr), 
+            main->macentry->vendor, main->last_seen);
     } else {
         /* ip,0,0,ARP,mac-address,timstamp */
         fprintf((FILE*)log->data, "%s,%u,0,0,ARP,[%s],0,%lu\n", ip_addr_s,
@@ -353,6 +354,8 @@ file_os (output_plugin *log, asset *main, os_asset *os, connection *cxt)
             // 58 is ICMPv6
             fprintf((FILE*)log->data, "1,ICMP");
             break;
+        case CO_DHCP:
+            fprintf((FILE*)log->data, "17,DHCP");
 
         default:
         fprintf(stderr,

@@ -159,7 +159,7 @@ check_match:
 
    if(!match) {
       while(ditch++ < 0xFF) {
-         match = db[index +ditch %MAC_HASHSIZE];
+         match = db[(index + ditch) % MAC_HASHSIZE];
          if(match)
             goto check_match;
       }
@@ -193,6 +193,7 @@ int load_mac(const char *file, mac_entry **sigp[], int hashsize)
         return errno;
     }
     if(!sigp){
+        fclose(f);
         perror("need a pointer to fill");
         return -1;
     }

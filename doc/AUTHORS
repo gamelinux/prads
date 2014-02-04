@@ -7,6 +7,8 @@ Contributers:
         (Connection tracking - Based on Suricata (OISF))
     Jan Henning Thorsen <jan.henning.thorsen@redpill-linpro.com>
         (prads.pl initial skeleton and service detection)
+    Miguel Angel Cabrera Moya (madmac2501@gmail.com)
+        (Different patches/fixes)
 
 Some initially code borrowed from (Changes has been made):
     Service detection:

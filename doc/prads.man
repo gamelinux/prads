@@ -43,29 +43,36 @@ OPTIONS
 
  -i <iface>      Network device <iface> (default: eth0).
  -r <file>       Read pcap <file>.
- -c <file>       Read config from <file>
+ -c <file>       Read config from <file>.
  -b <filter>     Apply Berkeley packet filter <filter>.
- -u <user>       Run as user <user>.
- -g <group>      Run as group <group>.
+ -u <user>       Run as user <user>   (Default: uid 1).
+ -g <group>      Run as group <group> (Default: gid 1).
+ -d              Do not drop privileges.
  -a <nets>       Specify home nets (eg: '192.168.0.0/25,10.0.0.0/255.0.0.0').
- -D              Enables daemon mode.
- -p <pidfile>    Name of pidfile - inside chroot
- -l <file>       Log assets to <file> (default: '/var/log/prads-asset.log')
- -f <FIFO>       Log assets to <FIFO> -C <dir>        Chroot into <dir> before dropping privs.
+ -D              Daemonize.
+ -p <pidfile>    Name of pidfile - inside chroot.
+ -l <file>       Log assets to <file> (default: '%s')\n", config.assetlog.
+ -f <FIFO>       Log assets to <FIFO>.
+ -B              Log connections to ringbuffer.
+ -C <dir>        Chroot into <dir> before dropping privs.
  -XFRMSAK        Flag picker: X - clear flags, F:FIN, R:RST, M:MAC, S:SYN, A:ACK, K:SYNACK
  -UTtI           Service checks: U:UDP, T:TCP-server, I:ICMP, t:TCP-cLient
+ -P              DHCP fingerprinting.
  -s <snaplen>    Dump <snaplen> bytes of each payload.
  -v              Verbose output - repeat for more verbosity.
  -q              Quiet - try harder not to produce output.
+ -L <dir>        log cxtracker type output to <dir> (will be owned by <uid>).
  -O              Connection tracking [O]utput - per-packet!
  -x              Conne[x]ion tracking output  - New, expired and ended.
+ -Z              Passive DNS (Experimental).
+ -H              DHCP fingerprinting (Expermiental).
  -h              This help message.
-
 
 PROBLEMS
 ========
 
 1. Doesn't detect everything out there :-P
+2. This man page.
 
 SEE ALSO
 ========

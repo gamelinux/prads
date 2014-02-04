@@ -20,8 +20,8 @@
 
 #include "../prads.h"
 #include "../assets.h"
+#include "../cxt.h"
 #include "servicefp.h"
-#include "../util-cxt.h"
 
 extern bstring UNKNOWN;
 
@@ -29,7 +29,6 @@ void service_udp4(packetinfo *pi, signature* sig_serv_udp)
 {
     int rc;                     /* PCRE */
     int ovector[15];
-    int tmplen;
     signature *tmpsig;
     bstring app, service_name;
     app = service_name = NULL;
@@ -38,9 +37,6 @@ void service_udp4(packetinfo *pi, signature* sig_serv_udp)
     /* should make a config.tcp_client_flowdept etc
      * a range between 500-1000 should be good!
      */
-    if (pi->plen > 600) tmplen = 600;
-        else tmplen = pi->plen;
-
     tmpsig = sig_serv_udp;
     while (tmpsig != NULL) {
         rc = pcre_exec(tmpsig->regex, tmpsig->study, (const char*) pi->payload, pi->plen, 0, 0,

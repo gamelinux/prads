@@ -1,10 +1,51 @@
 #### PRADS INSTALL
 
-# TODO : apt-get install prads
+# apt-get install prads
 
-# On a Ubuntu system:
-$ sudo aptitude install libnet-pcap-perl libgetopt-long-descriptive-perl git-core libdbd-sqlite3-perl
+### or, from source
+
+## dependencies
+libpcap0.8 (>= 0.9.8), libpcre3 (>= 8.10), libresolv
+
+# On an Ubuntu system:
+$ sudo apt-get install rst2man libpcap0.8-dev libpcre3-dev
 $ git clone git://github.com/gamelinux/prads.git
-$ sudo ln -s $PWD/prads/etc /etc/prads
-$ sudo perl prads/sbin/prads.pl --help
+$ cd prads
+$ make
+$ sudo make install
+
+# On a FreeBSD system (C version)
+$ pkg_add -r pcre git gmake py26-docutils
+$ git clone git://github.com/gamelinux/prads.git
+$ cd prads
+$ gmake
+
+*Note: Installer doesn't work on FreeBSD, so manually copy, or symlink, the binary and config files.
+
+
+### Compile-time options
+remember to `make clean` first!
+
+## Static install
+$ make static
+
+## Build with debug options
+$ make debug
+
+## Profiling prads
+$ make profile
+
+## use perftools faster malloc
+$ make TCMALLOC=y
+
+## Profile with perftools
+$ make TCMALLOC=y PPROF=y debug
+
+## the newest, fastest libpcap into prads
+$ git clone git://bpf.tcpdump.org/libpcap
+$ cd libpcap && ./configure --disable-dbus && make -j2 && cd ..
+$ make PCAPDIR=libpcap
+
+*Note* that prads will now always look for libpcap in that directory!
+
 

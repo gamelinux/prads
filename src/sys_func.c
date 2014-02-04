@@ -1,7 +1,6 @@
 #include "common.h"
 #include "prads.h"
 #include "sys_func.h"
-#include "util-cxt.h"
 #include "assets.h"
 #include "servicefp/servicefp.h"
 #include "config.h"
@@ -77,13 +76,6 @@ uint8_t normalize_ttl (uint8_t ttl)
     else  return  32;
 }
 
-void bucket_keys_NULL()
-{
-    int cxkey;
-    for (cxkey = 0; cxkey < BUCKET_SIZE; cxkey++) {
-        bucket[cxkey] = NULL;
-    }
-}
 
 void unload_tcp_sigs()
 {
@@ -121,7 +113,6 @@ int set_chroot(void)
 {
     char *absdir;
     //char *logdir;
-    int abslen;
 
     /*
      * logdir = get_abs_path(logpath); 
@@ -139,7 +130,6 @@ int set_chroot(void)
      * always returns an absolute pathname 
      */
     absdir = getcwd(NULL, 0);
-    abslen = strlen(absdir);
 
     /*
      * make the chroot call 
@@ -225,7 +215,6 @@ long get_gid(const char *group_name)
 {
    char *endptr;
    struct group *gr;
-   struct passwd *pw;
 
    if(!group_name) return 0;
    if (!isdigit(group_name[0])) {

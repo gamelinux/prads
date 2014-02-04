@@ -190,12 +190,11 @@ void fifo_service (output_plugin *p, asset *main, serv_asset *service, connectio
         role = B64_PRADS_SERVER;
     }
     fprintf(fd, "01\n%s\n%u\n%s\n%u\n%d\n%d\n%d\n%s\n%s\n%lu\n%s\n.\n",
-            /* srcip == dstip - dirty trick for sguil :( */
-            sip, htonl(IP4ADDR(&main->ip_addr)),
+            sip, htonl(IP4ADDR(&cxt->s_ip)),
             dip, htonl(IP4ADDR(&cxt->d_ip)), 
-            ntohs(service->port), ntohs(cxt->d_port), service->proto, 
+            ntohs(cxt->s_port), ntohs(cxt->d_port), service->proto, 
             bdata(service->service), bdata(service->application), 
-            main->first_seen, role);
+            main->last_seen, role);
     fflush(fd);
 }
 

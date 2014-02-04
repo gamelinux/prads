@@ -1,3 +1,47 @@
+2014-02-04 0.3.3: loud lemur
+    * performance: avoid calls to ntop
+    * install: don't overwrite conf
+    * documentation: depends, compile options, default privilege drop,
+    * feature: perftools support
+    * bugfix: conntrack output after priv drop
+    * bugfix: endianness inconsistencies
+    * bugfix: sguil log init and rotation
+    * bugfix: RHEL5 libresolv compile
+    * bugfix: connection deallocation
+    * bugfix: multiple memory leaks
+    * bugfix: mac sig hash table indexing
+    * bugfix: close opened files on error
+    * bugfix: wrong packet-byte-count
+    * bugfix: don't compare connections from different protocol versions
+    * bugfix: ip6 netmask debug trace
+    * bugfix: don't core on invalid pcap
+
+2012-12-05 0.3.2-rc3: reud bwai
+    * feature: argument -B enables shared-mem ringbuffer output
+    * utility: example shm-client for reading the shared-mem buffer
+    * bugfix: sancp output (github #30, #31, #32)
+
+2012-11-05 0.3.2-rc2: ya skipped dat one
+    * bugfixes (github #17, #19, #20, #21
+    * bpf_file config param to read BPF filters from file
+    * ever more beautiful code
+
+2012-08-16 0.3.1-rc1: shut your pie
+    * ever more beautiful code
+    * 1000x speed improvement due to leet output and bucket optimizations
+    * feature: argument -P enables DHCP fingerprinting (experimental)
+    * feature: argument -L enables cxtracker like output
+    * feature: support home_nets= in the conf file
+    * prads2db.pl: asset log to database parser
+    * prads.rc: init script now starts with prads-asset.log instead of prads.log
+    * compile: static prads available for those who want it
+    * new signatures (xp, debian, ubuntu, asyncos, openwrt, ++)
+    * more MTU-fu (3G/WAN) 
+    * nicer ARP output
+    * make install no longer overwrites conf and sig files
+    * bugfix: BSD build was broken
+    * bugfix: large user-agents would make garbage appnames in the asset log
+
 2011-09-27 0.3.0: all good things are three
     * No changes since rc3.
 

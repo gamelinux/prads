@@ -27,6 +27,7 @@
 // the print_ and display_ functions need to be refactored
 // and folded into gen_fp - to return a string for printing / storing
 void print_sig(fp_entry * e);
+void print_sigs(fp_entry * e);
 void display_signature(uint8_t ttl, uint16_t tot, uint8_t df,
                                      uint8_t * op, uint8_t ocnt,
                                      uint16_t mss, uint16_t wss,
