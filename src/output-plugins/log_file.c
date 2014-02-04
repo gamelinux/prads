@@ -108,7 +108,8 @@ reopen:
         /* Open file and assign it to the global FILE pointer.  */
         if ((log->data = (void *) fopen(log->path, "a")) == NULL) {
             int e = errno;
-            printf("Cannot open log file %s for append!\n", log->path); 
+            if(flags & CONFIG_VERBOSE)
+               printf("Cannot open log file %s for append!\n", log->path); 
             return e;
         }
     }
