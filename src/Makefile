@@ -11,7 +11,9 @@ ifneq ($(findstring 5.,$(shell [ -f /etc/redhad-release ] && cat /etc/redhat-rel
 LDFLAGS+=/usr/lib64/libresolv.a
 endif
 
+ifeq (${RELEASE},)
 CFLAGS+=-DRELEASE='"$(shell git describe | cut -f2- -d_ | sed s/`git tag -l | grep -v /| tail -n1`//)"'
+endif
 
 # for using a newer libpcap
 ifneq (${PCAPDIR},)
