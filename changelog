@@ -1,3 +1,21 @@
+2014-02-04 0.3.3: loud lemur
+    * performance: avoid calls to ntop
+    * install: don't overwrite conf
+    * documentation: depends, compile options, default privilege drop,
+    * feature: perftools support
+    * bugfix: conntrack output after priv drop
+    * bugfix: endianness inconsistencies
+    * bugfix: sguil log init and rotation
+    * bugfix: RHEL5 libresolv compile
+    * bugfix: connection deallocation
+    * bugfix: multiple memory leaks
+    * bugfix: mac sig hash table indexing
+    * bugfix: close opened files on error
+    * bugfix: wrong packet-byte-count
+    * bugfix: don't compare connections from different protocol versions
+    * bugfix: ip6 netmask debug trace
+    * bugfix: don't core on invalid pcap
+
 2012-12-05 0.3.2-rc3: reud bwai
     * feature: argument -B enables shared-mem ringbuffer output
     * utility: example shm-client for reading the shared-mem buffer
