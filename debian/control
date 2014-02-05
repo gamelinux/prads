@@ -5,7 +5,7 @@ Maintainer: Prads package developers <prads-devel@projects.linpro.no>
 Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>,
            Kacper Wysocki <comotion@krutt.org>
 Build-Depends:
- debhelper (>= 7.0.50~),
+ debhelper (>= 9),
  libpcap-dev,
  libpcre3-dev,
  python-docutils,
