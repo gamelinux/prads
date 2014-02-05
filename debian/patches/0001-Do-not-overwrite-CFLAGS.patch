@@ -1,0 +1,21 @@
+From: Stig Sandbeck Mathisen <ssm@debian.org>
+Date: Wed, 5 Feb 2014 08:47:22 +0100
+Subject: Do not overwrite CFLAGS
+
+---
+ src/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Makefile b/src/Makefile
+index ec85038..06319a4 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -1,7 +1,7 @@
+ #Makefile
+ #CC=gcc
+ UNAME := $(shell uname -s)
+-CFLAGS=-O3
++CFLAGS += -O3
+ 
+ # for finding static libraries
+ LIBDIR=/usr/lib/x86_64-linux-gnu
