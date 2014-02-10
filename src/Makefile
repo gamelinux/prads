@@ -1,7 +1,7 @@
 #Makefile
 #CC=gcc
 UNAME := $(shell uname -s)
-CFLAGS=-O3
+CFLAGS+=-O3
 
 # for finding static libraries
 LIBDIR=/usr/lib/x86_64-linux-gnu
