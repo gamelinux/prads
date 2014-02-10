@@ -1,0 +1,12 @@
+[Unit]
+Description=Passive Realtime Asset Detection System
+Documentation=man:prads(1) man:prads-asset-report(1)
+Documentation=http://gamelinux.github.io/prads/
+
+[Service]
+EnvironmentFile=/etc/default/prads
+UMask=0027
+ExecStart=/usr/bin/prads -u prads -g prads -C /run/prads -p prads.pid $DAEMON_OPTS
+
+[Install]
+WantedBy=multi-user.target

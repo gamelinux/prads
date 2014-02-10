@@ -1,0 +1,8 @@
+prads (0.3.3-1) unstable; urgency=medium
+
+  The /etc/default/prads file has changed. There is now only one variable
+  used, DAEMON_OPTS. All previous variables set are ignored.
+
+  This file is is read by all supported init systems.
+
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Tue, 11 Feb 2014 09:22:16 +0100

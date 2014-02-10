@@ -18,24 +18,24 @@
 DESC="Prads Realtime Asset Detection System"
 NAME="prads"
 DAEMON="/usr/bin/${NAME}"
-CONFIG="/etc/{$NAME}/{$NAME}.conf"
-USER="prads"
-GROUP="prads"
-CHROOT="/var/run/prads"
-PIDFILE="prads.pid"
-
-DAEMON_OPTS="-D -u $(id -u $USER) -g $(id -g $GROUP) -C $CHROOT -p $PIDFILE"
 
 test -f $DAEMON || exit 0
 
 # Read LSB init functions
 . /lib/lsb/init-functions
 
-# Read service defaults, if it exists
+# Read DAEMON_OPTS from defaults file, if it exists
 if [ -r /etc/default/$NAME -a -f /etc/default/$NAME ]
 then
     . /etc/default/$NAME
 fi
+
+USER="prads"
+GROUP="prads"
+CHROOT="/run/prads"
+PIDFILE="prads.pid"
+
+DAEMON_OPTS="-D -u $USER -g $GROUP -C $CHROOT -p $PIDFILE ${DAEMON_OPTS:-}"
 
 create_chroot() {
     install -o $USER -g $GROUP -d $CHROOT
@@ -46,9 +46,7 @@ start_service() {
     [ ! -d $CHROOT ] && create_chroot
     start-stop-daemon --start --quiet --pidfile $CHROOT/$PIDFILE \
         --umask "007" \
-        --exec $DAEMON -- $DAEMON_OPTS \
-        ${INTERFACE:+-i "${INTERFACE}"} \
-        ${HOME_NETS:+-a "${HOME_NETS}"} 2>&1
+        --exec $DAEMON -- $DAEMON_OPTS
     log_end_msg $?
 }
 

@@ -6,6 +6,7 @@ Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>,
            Kacper Wysocki <comotion@krutt.org>
 Build-Depends:
  debhelper (>= 9),
+ dh-systemd,
  libpcap-dev,
  libpcre3-dev,
  python-docutils,

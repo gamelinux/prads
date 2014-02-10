@@ -1,35 +1,6 @@
 # /etc/default/prads - runtime options for prads
 
-# HOME_NET: Networks we consider "ours", only log assets on these networks.
-#
-# The debian default contains all rc1918 networks, and the ipv6 link
-# local network. The Debian defaults is set here.
+# This file is read by the systemd unit, upstart config and SysV init
+# script. It should only contain variable assignments.
 
-HOME_NETS="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
-
-# Alternatively, set HOME_NETS to "" to log all traffic, which is the
-# builtin default.
-#
-# HOME_NETS=""
-# 
-# LOGFILE: asset log location - opened for write before chrooting
-# LOGFILE=/var/log/prads.log
-
-# RUNDIR: Directory to chroot into when daemonized. Created if it doesn't exist.
-# RUNDIR=/var/run/prads
-
-# PIDFILE: Path to pidfile - must be under $RUNDIR to work under chroot
-# PIDFILE=$RUNDIR/$NAME.pid
-
-# USER: username for dropping privileges
-# USER=prads
-
-# GROUP: group for dropping privileges
-# GROUP=prads
-
-# INTERFACE: Interface to listen on.  Default is to autodetect a capture source.
-# INTERFACE="eth0"
-#
-# DAEMON_OPTS: The options that our daemon runs with. NOTE: PIDNAME is relative to rundir.
-# DAEMON_OPTS="-D -u $(id -u $USER) -g $(id -g $GROUP) -C $RUNDIR -l $LOGFILE -a $HOME_NETS -p PIDNAME"
-
+DAEMON_OPTS="-a 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/64"
