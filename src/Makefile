@@ -24,13 +24,24 @@ endif
 
 ifeq (${STATIC},)
 
+ifeq (${JEMALLOC},y)
+CFLAGS+=-DUSE_JEMALLOC
+LDFLAGS+=-ljemalloc
+endif
 # if you want to use perftools
 ifeq (${TCMALLOC},y)
 LDFLAGS+=-ltcmalloc
 endif
 LDFLAGS+=-lpcap -lpcre -lresolv
 CFLAGS+=-DCONFDIR='"${CONFDIR}/"'
+
 else
+
+ifeq (${JEMALLOC},y)
+CFLAGS+=-DUSE_JEMALLOC
+LDFLAGS+=${LIBDIR}/libjemalloc.a
+endif
+
 ifeq (${TCMALLOC},y)
 LDFLAGS+=/usr/lib/libtcmalloc_minimal.a
 endif

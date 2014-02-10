@@ -2,8 +2,11 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <stdio.h>
 #include <stdlib.h>
+#ifdef USE_JEMALLOC
+#include <jemalloc/jemalloc.h>
+#endif
+#include <stdio.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
