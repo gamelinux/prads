@@ -1,8 +1,14 @@
-prads (0.3.3-1) UNRELEASED; urgency=medium
+prads (0.3.3-1) unstable; urgency=medium
 
   * Imported upstream release 0.3.3
+  * Support multiple init systems
+  * Bump debhelper version to 9
+    - we now build with hardening flags
+  * Add patch to not overwrite CFLAGS when building
+  * Install missing /etc/prads/dhcp.fp
+  * Remove obsolete conffile /etc/prads/init.d/prads.rc
 
- -- Stig Sandbeck Mathisen <ssm@debian.org>  Tue, 04 Feb 2014 20:33:29 +0100
+ -- Stig Sandbeck Mathisen <ssm@debian.org>  Tue, 11 Feb 2014 09:24:42 +0100
 
 prads (0.3.0-1) unstable; urgency=low
 
