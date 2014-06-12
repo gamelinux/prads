@@ -30,8 +30,8 @@ int init_output_sguil(output_plugin *p, const char* log_prefix, int check_time)
        return 1;
     }
     if(!check_time)
-        check_time = time(NULL);
-    snprintf(filename, PATH_MAX, "%s.%ld", log_prefix, check_time);
+        check_time = (int) time(NULL);
+    snprintf(filename, PATH_MAX, "%s.%d", log_prefix, check_time);
     cxtfile = fopen(filename, "w");
     if (cxtfile == NULL) {
        elog("[*] ERROR: Cant open file %s\n", filename);
