@@ -2,7 +2,8 @@
 # ---------------------------------------------------------------------
 # prads-asset-report.pl
 #
-# Edward Fjellskål <edward@redpill-linpro.com>
+# Edward Fjellskaal <edwardfjellskaal@gmail.com>
+# Kacper Wysocki <comotion@krutt.org>
 #
 # This script will generate a formatted report based on the data
 # produced by Passive Real-time Asset Detection System (PRADS).
@@ -23,8 +24,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-my $version	= '0.2';
-my $date	= '2010-04-14';
+my $version	= '0.4';
+my $date	= '2012-08-30';
 
 # ---------------------------------------------------------------------
 #use strict;
@@ -150,16 +151,24 @@ foreach $asset (sort (keys (%asset_storage))) {
 
     # Output DNS Name
     unless ($opt_n) {
-    	if ($opt_p) {
-    	    # Check to see if this is a RFC 1918 address.
-    	    unless (check_rfc1918($asset)) {
-    		my ($peer_host) = gethostbyaddr(inet_aton($asset), AF_INET());
-    		print "DNS:  $peer_host\n" if ($peer_host);
-    	    }
-    	} else {
-    	    my ($peer_host) = gethostbyaddr(inet_aton($asset), AF_INET());
-    	    print "DNS:  $peer_host\n" if ($peer_host);
-    	}
+       if (not $opt_p or check_rfc1918($asset)) {
+          my $ass_ip = inet_aton($asset);
+          my ($peer_host) = gethostbyaddr($ass_ip, AF_INET());
+          if($peer_host) {
+             print "DNS:  $peer_host";
+             my $fwd_ip = gethostbyname($peer_host.'.');
+             if(not $fwd_ip) {
+                print ' (dnswall: no such domain)'
+             }elsif($fwd_ip ne $ass_ip){
+                print ' ('.inet_ntoa($fwd_ip).') ';
+                my ($rev_host) = gethostbyaddr($fwd_ip, AF_INET());
+                if($rev_host ne $peer_host){
+                   print "[$rev_host]";
+                }
+             }
+             print "\n";
+          }
+       }
     }
 
     my ($os,$desc,$confidence,$timestamp,$flux) = guess_asset_os($asset);
@@ -443,8 +452,10 @@ sub print_header {
     print <<__EOT__;
 \n prads-asset-report - PRADS Text Reporting Module
  $version - $date
- Edward Fjellskaal <edward\@redpill-linpro.com>
- http://prads.projects.linpro.no/
+ Edward Fjellskaal <edwardfjellskaal\@gmail.com>
+ Kacper Wysocki <comotion\@krutt.org>
+
+ http://github.com/gamemlinux/prads/
 
 __EOT__
 }
