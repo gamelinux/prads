@@ -1,0 +1,180 @@
+#!/usr/bin/python
+# 
+# This script will generate a formatted report based on the data
+# produced by Passive Real-time Asset Detection System (PRADS).
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# TODO: DNS lookups
+# TODO: ARP (mac, date)
+# TODO: ICMP
+# TODO: SERVICE/CLIENT port/service/application
+# TODO: guess_os
+
+# TODO: check flux
+
+import re
+import socket
+import pycares
+import select
+
+version = '0.5'
+date = '2015-05-20'
+
+assetlogfile = 'prads-asset.log'
+
+def wait_channel(channel):
+    while True:
+        read_fds, write_fds = channel.getsock()
+        if not read_fds and not write_fds:
+            break
+        timeout = channel.timeout()
+        if not timeout:
+            channel.process_fd(pycares.ARES_SOCKET_BAD, pycares.ARES_SOCKET_BAD)
+            continue
+        rlist, wlist, xlist = select.select(read_fds, write_fds, [], timeout)
+        for fd in rlist:
+            channel.process_fd(fd, pycares.ARES_SOCKET_BAD)
+        for fd in wlist:
+            channel.process_fd(pycares.ARES_SOCKET_BAD, fd)
+
+def lookup_dns(address):
+    #try:
+        ai = socket.getaddrinfo(address, None)
+        if ai is not None:
+            return ai[0][-1][0]
+    #except:
+    #    print("address %s error: %s" % address, )
+
+def lookup_reversedns(address):
+    try:
+        ha = socket.gethostbyaddr(address)
+        if ha is not None:
+            return ha[0]
+    except socket.herror:
+        pass
+
+def lookup_dns(channel, address, reverse=False, ip6=False):
+    def cb(results, error):
+        print("Should add this to queue: ")
+        print(results)
+        print(error)
+    if ip6:
+        if reverse:
+            channel.gethostbyaddr6(address, cb)
+        else:
+            channel.gethostbyname(address, socket.AF_INET6, cb)
+    else:
+        if reverse:
+            channel.gethostbyaddr(address, cb)
+        else:
+            channel.gethostbyname(address, socket.AF_INET, cb)
+
+
+def do_lookups():
+    def cb(result, error):
+        print(result)
+        print(error)
+    channel = pycares.Channel()
+    channel.gethostbyname('google.com', socket.AF_INET, cb)
+    channel.query('google.com', pycares.QUERY_TYPE_A, cb)
+    channel.query('sip2sip.info', pycares.QUERY_TYPE_SOA, cb)
+    wait_channel(channel)
+    print("Done!")
+
+def match_serviceline(line):
+    m = validpartial.match(line)
+    if m is None:
+        return None
+    return  m.groups()
+
+def guess_os(asset):
+   return "unknown", "unknown", 0, 0, 1
+
+if __name__ == '__main__':
+    do_lookups()
+    exit(0)
+
+    # asset,vlan,port,proto,service,[service-info],distance,discovered
+    validline = re.compile('^([\w\.:]+),([\d]{1,4}),([\d]{1,5}),([\d]{1,3}),(\S+?),\[(.*)\],([\d]{1,3}),(\d{10})')
+    validpartial = re.compile('^\[(.*)\],([\d]{1,3}),(\d{10})')
+
+    fpinfo = re.compile('^SYN')
+    #Invalid match on S20:58:1:60:M1452,S,T,N,W7:.:unknown:unknown:link:pppoe (DSL):uptime:184hrs
+    validsyn = re.compile(':[\d]{2,4}:\d:.*:.*:.*:(\w+):(.*):link')
+
+    validservice = re.compile('^(\w+):(.*)$')
+
+# asset = (
+#	<IP Address> => {
+#		ARP      => [ $mac, $discovered, $vendor ],
+#		ICMP     => ICMP,
+#		TCP      => [ $port, $service, $app, $discovered ]
+#			},
+#	}
+# )
+# m = liner.match("85.105.159.158,0,33372,6,SYN,[S4:53:1:60:M1452,S,T,N,W1:.:Linux:2.6, seldom 2.4 (older, 2):link:pppoe (DSL):uptime:154hrs],11,1429563367")
+
+
+    asset = {}
+
+    with open(assetlogfile) as file:
+        for line in file:
+            l = line.split(',')
+            ip, vlan, sport, proto, service = l[0:5]
+            s_info, distance, discovered = '','',''
+            if proto == 6:
+                proto = 'TCP'
+            elif proto == 17:
+                proto = 'UDP'
+
+            os, details = '',''
+            if fpinfo.match(service):
+                smatch = match_serviceline(','.join(l[5:]))
+                s_info, distance, discovered = smatch
+                fp = s_info.split(':')
+                os,details = fp[6], fp[7]
+            if service == 'SERVER' or service == 'CLIENT':
+                ms = validservice.match(s_info)
+                if ms is not None:
+                    service_nfo = ms.group(1)
+            #ARP (info, discovered, vendor) ICMP, 
+            if ip not in asset:
+                asset[ip] = {}
+            if service not in asset[ip]:
+                asset[ip][service] = [ (proto, sport, service, s_info, discovered, distance, os, details )]
+            else:
+                asset[ip][service].append( (proto, sport, service, s_info, discovered, distance, os, details) )
+            
+# now iterate over all assets and dump them
+    for ip in sorted(asset.keys()):
+        host = lookup_reversedns(ip)
+        if host is not None:
+            print("DNS: %s" % (host))
+            fwdip = lookup_dns(host)
+        else:
+            fwdip = None
+        if fwdip is None:
+            print(" (dnswall: no such domain)")
+        elif fwdip != ip:
+            print(" (%s)" % fwdip)
+            revhost = lookup_reversedns(fwdip)
+            if revhost != host:
+                print("[%s]" % revhost)
+
+        # and now the prads data.. 
+        os, desc, confidence, timestamp, flux = guess_os(asset[ip])
+        #print("OS: %s %s (%s%%) %s" % (os,desc,confidence,flux))
+
