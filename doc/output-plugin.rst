@@ -101,4 +101,8 @@ You will want to add your new files to the build system, so go into `src/Makefil
   LOG_OBJ = output-plugins/log_dispatch.o output-plugins/log_stdout.o output-plugins/log_file.o output-plugins/log_fifo.o output-plugins/log_ringbuffer.o output-plugins/log_sguil.o output-plugins/log_simpl.o
 
 
+Now, when you type `make` in the src/ directory, the build process should compile and link in your very own output plugin!
+
+We deeply encourage you to send us a patch with your output plugins!
+
 
