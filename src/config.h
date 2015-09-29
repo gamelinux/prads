@@ -98,6 +98,8 @@ typedef struct _globalconfig {
     mac_entry  **sig_mac;               /* Pointer to hash of mac signatures */
     dhcp_fp_entry **sig_dhcp;           /* DHCP signature hash */
     char        *bpf_file;              /* filename of BPF file to load */
+    uint8_t      tcpopt_parsable;
+
 } globalconfig;
 #define ISSET_CONFIG_VERBOSE(config)    ((config).cflags & CONFIG_VERBOSE)
 #define ISSET_CONFIG_UPDATES(config)    ((config).cflags & CONFIG_UPDATES)

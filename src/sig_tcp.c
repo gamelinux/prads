@@ -118,7 +118,8 @@ bstring gen_fp_tcpopt(uint32_t ocnt, uint8_t op[], uint16_t mss, uint16_t wss, u
             bformata(fp, "?%d", op[j]);
             break;
         }
-        if (j != ocnt - 1)
+        if(!config.tcpopt_parsable) // experimental format change!
+          if (j != ocnt - 1)
             bformata(fp, ",");
     }
 

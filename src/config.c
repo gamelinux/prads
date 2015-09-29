@@ -124,6 +124,7 @@ void set_default_config_options(globalconfig *conf)
     conf->daemon_flag = 0;
     conf->cxtlogdir[0] = '\0';
     conf->cxtfname[0] = '\0';
+    conf->tcpopt_parsable = 1;
 }
 
 void parse_config_file(const char* fname)
