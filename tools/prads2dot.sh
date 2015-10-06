@@ -41,13 +41,16 @@
 #######################################################################
 # use csvtool?
 # only if this gets very complicated
-
-#the general format fo this data is:
+#
+# it can be optimized... ;)
+#######################################################################
+#
+#the general format for prads data is:
 #asset,vlan,port,proto,service,[service-info],distance,discovered
-
+#
 ### inside [service info] there is again "," !!!
-### standby...
-
+### standby... temporarily solved by prads author
+#
 #1 asset       = The ip address of the asset.
 #2 vlan        = The virtual lan tag of the asset.
 #3 port        = The port number of the detected service.
@@ -56,51 +59,55 @@
 #6 service-info= The fingerprint that the match was done on, with info.
 #7 distance    = Distance based on guessed initial TTL (service = SYN/SYNACK)
 #8 discovered  = The timestamp when the data was collected
-
+#
 #######################################################################
 
-FILE=net.inventory  # log from prads (in final will be passed as a command line parameter)
-#cut -f1,7 -d"," $FILE|sort|uniq > $FILE.filtered
+if
+ test $# -ne 1
+then
+ echo Usage: $0 '<logfile from prads>'
+ exit
+fi
+FILE=$1
 
 # sort on distance?
 #sort -k7 -b -n -t"," $FILE
 #exit
 
-# it can be optimized... ;)
-
 #NODES=$(cut -f1 -d"," $FILE|sort -n|uniq|grep 192.168)  # 192.168 just to test it
 NODES=$(grep -v -F "asset,vlan,port,proto,service,[service-info],distance,discovered" $FILE|cut -f1 -d","|sort -n|uniq)
 #echo \#Nodes: $NODES
 
-#DISTANCES=$(cut -f7 -d"," $FILE|sort -n|uniq|sed '/^\s*$/d'|tail -n +2)
-DISTANCES=$(grep -v -F "asset,vlan,port,proto,service,[service-info],distance,discovered" $FILE|cut -f7 -d"," |sort -n|uniq)  # servono tutte perche' mi servono i target
+DISTANCES=$(grep -v -F "asset,vlan,port,proto,service,[service-info],distance,discovered" $FILE|cut -f7 -d"," |sort -n|uniq)
 #echo \#Distances: $DISTANCES
 
 echo "digraph \"$FILE\" {"
 #echo "node [shape=parallelogram]"
 echo "graph [rankdir = \"LR\"];"
 
+# nodes loop
 for node in $NODES
 do
 
-#echo $node \($(host $node)\);
-echo \"Node_$node\" #  |tr "." "_"
+ #echo $node \($(host $node)\);
+ echo \"Node_$node\" #  |tr "." "_"
 
-#fields=$(grep $node $FILE|head -n 1|cut -f 2- -d"," | tr -d " "|tr "," "\n")
+ #fields=$(grep $node $FILE|head -n 1|cut -f 2- -d"," | tr -d " "|tr "," "\n")
 
-echo -n "[ label = "
-echo \"$node \|
+ echo -n "[ label = "
+ echo \"$node \|
 
-#echo $fields\"|tr -d "[]\n"
-grep -F "$node," $FILE | cut -f 2- -d"," | tr -d " "|tr "\n" "|"|rev|cut -c2-|rev
-echo \"
-echo -n shape = record
-echo "];"
+ #echo $fields\"|tr -d "[]\n"
+ grep -F "$node," $FILE | cut -f 2- -d"," | tr -d " "|tr "\n" "|"|rev|cut -c2-|rev
+ echo \"
+ echo -n shape = record
+ echo "];"
 
-##	grep $node $FILE|cut -f 2,3,4,5,6,8 -d","
-#	grep $node $FILE|cut -f 2- -d","
+ ##	grep $node $FILE|cut -f 2,3,4,5,6,8 -d","
+ #	grep $node $FILE|cut -f 2- -d","
 done
 
+# connect the dots
 for dist in $DISTANCES
 do
  #echo \#  === distance $dist
