@@ -83,7 +83,7 @@ DISTANCES=$(grep -v -F "asset,vlan,port,proto,service,[service-info],distance,di
 
 echo "digraph \"$FILE\" {"
 #echo "node [shape=parallelogram]"
-echo "graph [rankdir = \"LR\"];"
+echo "graph [root=\"Distance_0\",ratio=\"1\",rankdir = \"LR\"];"
 
 # nodes loop
 for node in $NODES
