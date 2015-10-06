@@ -1,6 +1,6 @@
 #!/bin/bash
 #######################################################################
-# prads to dotviz script - Version 0.91_RC
+# prads to dotviz script - Version 1.0
 # Copyright © 2015  Andrea Trentini (www.atrent.it)
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -68,7 +68,19 @@ then
  echo Usage: $0 '<logfile from prads>'
  exit
 fi
-FILE=$1
+PRADSLOG=$1
+
+FILE=$(mktemp)
+
+# convert file to substitute internal "," in "[]" field
+cat $PRADSLOG|while
+ read LINE
+do
+ LEFT=$(echo $LINE|cut -f1 -d"[")
+ MIDDLE=$(echo $LINE|cut -f2 -d"["|cut -f1 -d"]"|tr "," ";")
+ RIGHT=$(echo $LINE|cut -f2 -d"]")
+ echo $LEFT"["$MIDDLE"]"$RIGHT
+done > $FILE
 
 # sort on distance?
 #sort -k7 -b -n -t"," $FILE
@@ -126,3 +138,6 @@ do
 done
 
 echo "}"
+
+# cleaning...
+rm $FILE
