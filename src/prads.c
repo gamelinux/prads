@@ -367,6 +367,12 @@ void parse_ip4 (packetinfo *pi)
             prepare_ip4ip(pi);
             break;
         case IP_PROTO_GRE:
+            /* Note: fragmented IPv4 GRE packets will be
+               skipped in the following functions as the
+               interesting information for prads is in the
+               first packet and flow-assembly is not part
+               of prads
+             */
             prepare_gre(pi);
             parse_gre(pi);
             break;
@@ -383,6 +389,10 @@ void parse_ip4 (packetinfo *pi)
 void prepare_gre (packetinfo *pi)
 {
     config.pr_s.gre_recv++;
+    // do not handle fragmented IPv4 gre packets
+    if(pi->af == AF_INET && pi->ip4->ip_off > 0){
+        return;
+    }
     if((pi->pheader->caplen - pi->eth_hlen) < GRE_HDR_LEN)    {
         return;
     }
@@ -402,6 +412,15 @@ void parse_gre (packetinfo *pi)
     uint16_t gre_header_len = GRE_HDR_LEN;
     gre_sre_header *gsre = NULL;
     uint16_t len = (pi->pheader->caplen - pi->eth_hlen);
+
+    // do not process invalid packets
+    if(len < GRE_HDR_LEN){
+        return;
+    }
+    // do not process fragmented GRE packets
+    if(pi->af == AF_INET && pi->ip4->ip_off > 0){
+	return;
+    }
 
     update_asset(pi);
 
@@ -438,6 +457,7 @@ void parse_gre (packetinfo *pi)
                         return;
                 }
             }
+            pi->gre_hlen = gre_header_len;
             break;
 
         case GRE_VERSION_1:
