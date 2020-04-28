@@ -12,8 +12,8 @@ Build-Depends:
  python | python-all | python-dev | python-all-dev,
 Standards-Version: 3.9.5
 Homepage: https://gamelinux.github.com/prads/
-Vcs-Git: git://github.com/gamelinux/prads.git
-Vcs-Browser: http://github.com/gamelinux/prads/tree/master
+Vcs-Git: https://github.com/gamelinux/prads.git
+Vcs-Browser: https://github.com/gamelinux/prads/tree/master
 
 Package: prads
 Architecture: any
