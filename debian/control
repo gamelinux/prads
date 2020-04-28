@@ -1,6 +1,6 @@
 Source: prads
 Section: utils
-Priority: extra
+Priority: optional
 Maintainer: Prads package developers <prads-devel@projects.linpro.no>
 Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>,
            Kacper Wysocki <comotion@krutt.org>
