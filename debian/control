@@ -1,20 +1,19 @@
 Source: prads
 Section: utils
-Priority: extra
+Priority: optional
 Maintainer: Prads package developers <prads-devel@projects.linpro.no>
 Uploaders: Stig Sandbeck Mathisen <ssm@debian.org>,
            Kacper Wysocki <comotion@krutt.org>
 Build-Depends:
- debhelper (>= 9),
- dh-systemd,
+ debhelper-compat (= 12),
  libpcap-dev,
  libpcre3-dev,
  python-docutils,
  python | python-all | python-dev | python-all-dev,
 Standards-Version: 3.9.5
-Homepage: http://gamelinux.github.com/prads/
-Vcs-Git: git://github.com/gamelinux/prads.git
-Vcs-Browser: http://github.com/gamelinux/prads/tree/master
+Homepage: https://gamelinux.github.com/prads/
+Vcs-Git: https://github.com/gamelinux/prads.git
+Vcs-Browser: https://github.com/gamelinux/prads/tree/master
 
 Package: prads
 Architecture: any
