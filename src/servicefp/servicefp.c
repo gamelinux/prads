@@ -47,7 +47,7 @@
 
 extern globalconfig config;
 
-servicelist *services[MAX_PORTS];
+extern servicelist *services[MAX_PORTS];
 
 /* ----------------------------------------------------------
  * FUNCTION     : init_identification
