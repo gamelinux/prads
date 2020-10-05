@@ -296,9 +296,6 @@ void end_sessions()
                 cxt = cxt->next;
 
                 del_connection(tmp, &bucket[iter]);
-                if (cxt == NULL) {
-                    bucket[iter] = NULL;
-                }
             } else {
                 cxt = cxt->next;
             }
