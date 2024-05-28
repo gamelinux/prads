@@ -98,7 +98,7 @@ void printchars(char buf[NS_MAXDNAME], u_char * cdata, u_int16_t dlen);
 	(cp) += INT32SZ; \
 } while (0)
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__loongarch__)
 const char *_res_opcodes[] = {
         "QUERY",
         "IQUERY",
